@@ -22,7 +22,7 @@ except ImportError:
 # ==========================================
 st.set_page_config(page_title="NVIDIA AI 통합 문서 요약기", page_icon="📚", layout="wide")
 st.title("📚 NVIDIA AI 멀티 파일 요약 서비스")
-st.caption("ZIP, PDF, DOCX, TXT, IPYNB 등 다양한 파일을 업로드하면 NVIDIA NIM API가 디테일을 살려 핵심을 정리해 드립니다.")
+st.caption("ZIP, PDF, DOCX, TXT, IPYNB 등 다양한 파일을 업로드하면 NVIDIA AI가 디테일을 살려 핵심을 정리해 드립니다.")
 
 with st.sidebar:
     st.header("⚙️ API 및 모델 설정")
@@ -129,35 +129,51 @@ def split_text(text: str, max_chars: int) -> list[str]:
     return chunks
 
 # ==========================================
-# 3. NVIDIA API 통신 로직 (스트리밍 추가)
+# 3. NVIDIA API 통신 로직 (무한 반복 방지 및 에러 방어)
 # ==========================================
 def call_nvidia_api(prompt: str, api_key: str, model_name: str) -> str:
-    """중간 청크 요약을 위한 일반 호출 함수"""
+    """중간 청크 요약을 위한 API 호출 (비스트리밍)"""
     client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
     response = client.chat.completions.create(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2, 
+        messages=[
+            {"role": "system", "content": "당신은 냉철하고 객관적인 전문 문서 분석가입니다. 중복된 내용을 반복해서 출력하지 말고, 명확하고 구조화된 형태로 핵심만 요약하세요."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.4,       # 루프에 빠지지 않도록 유연성 약간 부여
+        frequency_penalty=0.6, # 💡 같은 단어/문장 무한 반복 강제 억제
         top_p=0.7,
         max_tokens=4000 
     )
+    
+    # 💡 방어 코드: 비어있는 응답으로 인한 list index out of range 에러 차단
+    if not response.choices:
+        return "[오류: 서버에서 유효한 응답을 반환하지 않았습니다. 해당 청크는 건너뜁니다.]"
+        
     return response.choices[0].message.content
 
 def stream_nvidia_api(prompt: str, api_key: str, model_name: str):
-    """최종 요약 출력을 위한 실시간 스트리밍 제너레이터"""
+    """최종 종합 보고서를 실시간으로 타자 치듯 보여주는 제너레이터"""
     client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=api_key)
     response = client.chat.completions.create(
         model=model_name,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2, 
+        messages=[
+            {"role": "system", "content": "당신은 냉철하고 객관적인 전문 문서 분석가입니다. 중복된 내용을 반복해서 출력하지 말고, 명확하고 구조화된 형태로 핵심만 요약하세요. 문장이 중간에 끊기지 않도록 완결성 있게 끝맺어야 합니다."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.4,
+        frequency_penalty=0.6,
         top_p=0.7,
         max_tokens=4000,
-        stream=True # 💡 스트리밍 활성화
+        stream=True 
     )
     
     for chunk in response:
-        if chunk.choices[0].delta.content is not None:
-            yield chunk.choices[0].delta.content
+        # 💡 방어 코드: 스트리밍 중 비어있는 패킷이 날아와도 앱이 터지지 않도록 보호
+        if chunk.choices and len(chunk.choices) > 0:
+            delta = chunk.choices[0].delta
+            if delta and delta.content is not None:
+                yield delta.content
 
 # ==========================================
 # 4. 메인 UI 화면 구성
@@ -186,17 +202,19 @@ if uploaded_file is not None:
             if not nvidia_api_key:
                 st.error("사이드바에서 NVIDIA API Key를 먼저 입력해 주세요!")
             else:
+                # 추출된 파일 텍스트를 하나로 결합
                 combined_all_text = ""
                 for fname, content in parsed_files.items():
                     combined_all_text += f"\n\n====================\n[파일명: {fname}]\n====================\n{content}"
                 
+                # 지정된 글자 수 단위로 분할
                 chunks = split_text(combined_all_text, chunk_size)
                 
-                # 단일 청크일 경우 바로 스트리밍 출력
+                # 1) 단일 청크일 경우: 바로 실시간 스트리밍 출력
                 if len(chunks) == 1:
                     final_prompt = f"""다음 제공된 문서를 꼼꼼하게 분석하고 상세히 요약해 주세요.
-단순히 길이를 줄이는 것이 목적이 아닙니다. 중요한 개념, 기술적 세부 사항, 데이터, 핵심 로직이 누락되지 않도록 주의하세요.
-글이 중간에 잘리지 않도록 분량을 적절히 조절하여 반드시 결론까지 완성해 주세요:
+중요한 개념, 기술적 세부 사항, 데이터, 핵심 로직이 누락되지 않도록 주의하세요.
+글이 중간에 잘리지 않도록 분량을 적절히 조절하여 반드시 '결론' 부분까지 완성해 주세요:
 
 {chunks[0]}"""
                     
@@ -205,25 +223,25 @@ if uploaded_file is not None:
                         final_result = st.write_stream(stream_nvidia_api(final_prompt, nvidia_api_key, selected_model))
                         st.download_button("요약 결과 다운로드 (.txt)", final_result, "nvidia_detailed_summary.txt", "text/plain")
                     except Exception as e:
-                        st.error(f"요약 처리 중 오류가 발생했습니다: {str(e)}")
+                        st.error(f"요약 처리 중 통신 오류가 발생했습니다: {str(e)}")
                         
-                # 여러 청크일 경우 중간 과정 표시 후 최종 요약 스트리밍 출력
+                # 2) 여러 청크일 경우: Map-Reduce 방식 적용
                 else:
-                    st.info(f"문서가 길어 총 {len(chunks)}개 부분으로 나누어 심층 분석을 진행합니다. (진행 상황이 아래에 표시됩니다)")
+                    st.info(f"문서가 길어 총 {len(chunks)}개 부분으로 나누어 심층 분석을 진행합니다. (진행 상황이 아래에 실시간으로 표시됩니다)")
                     intermediate_summaries = []
                     progress_bar = st.progress(0)
                     
-                    # 💡 중간 진행 상황을 실시간으로 보여줄 컨테이너
                     status_container = st.empty()
                     expander = st.expander("⏳ 부분별 세부 분석 내역 확인 (클릭해서 펼치기)")
                     
                     try:
+                        # 2-A) 중간 요약 진행 (Map 단계)
                         for idx, chunk in enumerate(chunks):
-                            status_container.info(f"🔄 부분 {idx+1}/{len(chunks)} 분석 중...")
+                            status_container.info(f"🔄 부분 {idx+1}/{len(chunks)} 기초 분석 중...")
                             
                             prompt = f"""다음은 전체 문서의 일부({idx+1}/{len(chunks)})입니다.
 이 부분에 포함된 중요한 세부 정보, 데이터, 로직, 핵심 맥락을 빠뜨리지 말고 상세히 기록해 주세요.
-불필요하게 쳐내지 말고, 있는 정보를 최대한 구조화해서 정리하세요:
+내용을 억지로 생략하지 말고, 마크다운을 활용해 있는 정보를 최대한 구조화해서 정리하세요:
 
 {chunk}"""
                             
@@ -231,34 +249,36 @@ if uploaded_file is not None:
                             for attempt in range(max_retries):
                                 try:
                                     summary = call_nvidia_api(prompt, nvidia_api_key, selected_model)
-                                    intermediate_summaries.append(f"[부분 {idx+1} 상세 정리]\n{summary}")
-                                    expander.markdown(f"**✅ 부분 {idx+1} 완료**")
+                                    intermediate_summaries.append(f"### [부분 {idx+1} 핵심 정리]\n{summary}")
+                                    expander.markdown(f"**✅ 부분 {idx+1} 처리 완료**")
                                     break 
                                 except Exception as e:
                                     if attempt == max_retries - 1:
-                                        raise e 
+                                        st.error(f"부분 {idx+1} 처리 중 오류가 지속 발생하여 건너뜁니다: {str(e)}")
                                     time.sleep(2) 
                                     
                             progress_bar.progress((idx + 1) / len(chunks))
-                            time.sleep(1) 
+                            time.sleep(1) # 연속 호출에 의한 서버 차단(Rate Limit) 방지
                             
-                        status_container.success("✅ 모든 부분의 기초 분석이 완료되었습니다. 최종 보고서를 작성합니다!")
+                        status_container.success("✅ 모든 부분의 기초 분석이 완료되었습니다. 최종 보고서를 실시간으로 작성합니다!")
                         
+                        # 2-B) 최종 종합 요약 (Reduce 단계)
                         combined_summary_input = "\n\n".join(intermediate_summaries)
                         
-                        final_prompt = f"""다음은 긴 문서를 여러 부분으로 나누어 상세히 분석한 결과물들입니다.
+                        final_prompt = f"""다음은 방대한 문서를 여러 부분으로 나누어 상세히 분석한 중간 결과물들입니다.
 이 정보들을 모두 종합하여, 전체 문서의 흐름과 디테일이 완벽하게 살아있는 최종 종합 보고서를 작성해 주세요.
-마크다운을 활용해 목차와 소제목을 나누어 전문적인 문서 형태로 출력해 주세요.
-주의사항: 글이 중간에 끊기지 않도록 내용의 완급을 조절하여, 반드시 문서를 끝맺음(결론)까지 완성해야 합니다.
+마크다운을 활용해 목차와 소제목을 명확하게 나누어 전문적인 보고서 형태로 출력해 주세요.
+주의사항: 글이 중간에 절대 끊기지 않도록 내용의 완급을 조절하며, 반드시 전체 내용에 대한 '결론'을 맺어주세요.
 
 {combined_summary_input}"""
                         
                         st.divider()
                         st.subheader("📋 AI 상세 종합 요약 결과")
                         
-                        # 💡 최종 결과 실시간 스트리밍 출력
+                        # 최종 결과를 눈으로 바로 볼 수 있도록 스트리밍 처리
                         final_result = st.write_stream(stream_nvidia_api(final_prompt, nvidia_api_key, selected_model))
                         
+                        # 다 써진 결과물을 다운로드할 수 있도록 버튼 제공
                         st.download_button(
                             label="요약 결과 다운로드 (.txt)",
                             data=final_result,
@@ -267,4 +287,4 @@ if uploaded_file is not None:
                         )
                         
                     except Exception as e:
-                        st.error(f"요약 처리 중 오류가 발생했습니다: {str(e)}")
+                        st.error(f"요약 처리 중 통신 오류가 발생했습니다: {str(e)}")
