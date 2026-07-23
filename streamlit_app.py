@@ -3,6 +3,7 @@ import zipfile
 import io
 import os
 import time
+import json
 from openai import OpenAI
 
 # PDF 및 DOCX 파싱 라이브러리 예외 처리
@@ -21,7 +22,7 @@ except ImportError:
 # ==========================================
 st.set_page_config(page_title="NVIDIA AI 통합 문서 요약기", page_icon="📚", layout="wide")
 st.title("📚 NVIDIA AI 멀티 파일 요약 서비스")
-st.caption("ZIP, PDF, DOCX, TXT 등 다양한 파일을 업로드하면 NVIDIA NIM API가 핵심을 정리해 드립니다.")
+st.caption("ZIP, PDF, DOCX, TXT, IPYNB 등 다양한 파일을 업로드하면 NVIDIA NIM API가 디테일을 살려 핵심을 정리해 드립니다.")
 
 with st.sidebar:
     st.header("⚙️ API 및 모델 설정")
@@ -31,7 +32,6 @@ with st.sidebar:
         type="password"
     )
     
-    # 💡 최신 인기 모델 엔드포인트 적용
     model_choice = st.selectbox(
         "사용할 AI 모델 선택",
         [
@@ -42,8 +42,7 @@ with st.sidebar:
             "mistralai/mistral-medium-3.5-128b",
             "meta/llama-3.1-8b-instruct",
             "직접 입력하기 (NVIDIA 사이트 복사)"
-        ],
-        help="NVIDIA NIM 홈페이지(build.nvidia.com)에 명시된 공식 엔드포인트입니다."
+        ]
     )
     
     if model_choice == "직접 입력하기 (NVIDIA 사이트 복사)":
@@ -54,7 +53,7 @@ with st.sidebar:
     else:
         selected_model = model_choice
         
-    chunk_size = st.slider("텍스트 분할 크기 (글자 수)", min_value=1000, max_value=8000, value=3000, step=500)
+    chunk_size = st.slider("텍스트 분할 크기 (글자 수)", min_value=2000, max_value=10000, value=4000, step=1000)
 
 # ==========================================
 # 2. 파일 파싱 헬퍼 함수들
@@ -63,8 +62,20 @@ def extract_text_from_file(file_name: str, file_bytes: bytes) -> str:
     ext = os.path.splitext(file_name)[1].lower()
     extracted_text = ""
     try:
-        if ext in ['.txt', '.md', '.py', '.csv', '.json', '.log', '.html', '.xml', '.js', '.css']:
+        # 💡 ipynb 파일 파싱 로직 추가
+        if ext == '.ipynb':
+            notebook = json.loads(file_bytes.decode('utf-8'))
+            for cell in notebook.get('cells', []):
+                if cell.get('cell_type') in ['markdown', 'code']:
+                    source = cell.get('source', [])
+                    if isinstance(source, list):
+                        extracted_text += "".join(source) + "\n\n"
+                    else:
+                        extracted_text += source + "\n\n"
+                        
+        elif ext in ['.txt', '.md', '.py', '.csv', '.json', '.log', '.html', '.xml', '.js', '.css']:
             extracted_text = file_bytes.decode('utf-8', errors='ignore')
+            
         elif ext == '.pdf':
             if pypdf is None:
                 return "[오류: pypdf 라이브러리가 설치되지 않았습니다.]"
@@ -73,6 +84,7 @@ def extract_text_from_file(file_name: str, file_bytes: bytes) -> str:
                 text = page.extract_text()
                 if text:
                     extracted_text += text + "\n"
+                    
         elif ext in ['.docx', '.doc']:
             if docx is None:
                 return "[오류: python-docx 라이브러리가 설치되지 않았습니다.]"
@@ -132,9 +144,9 @@ def call_nvidia_api(prompt: str, api_key: str, model_name: str) -> str:
     response = client.chat.completions.create(
         model=model_name,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
+        temperature=0.2, # 온도를 낮춰 팩트 위주로 정리하도록 설정
         top_p=0.7,
-        max_tokens=1500
+        max_tokens=4000 # 💡 답변이 잘리지 않도록 토큰 제한 대폭 상향
     )
     return response.choices[0].message.content
 
@@ -142,22 +154,31 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
     chunks = split_text(full_text, max_chars)
     
     if len(chunks) == 1:
-        prompt = f"다음 문서를 읽고 핵심 내용을 체계적으로 요약해 주세요:\n\n{chunks[0]}"
+        prompt = (
+            "다음 제공된 문서를 꼼꼼하게 분석하고 상세히 요약해 주세요. "
+            "단순히 길이를 줄이는 것이 목적이 아닙니다. 중요한 개념, 기술적 세부 사항, 데이터, 핵심 로직이 누락되지 않도록 주의하세요. "
+            "가독성을 위해 마크다운(헤딩, 불릿 포인트 등)을 적극적으로 활용하여 체계적으로 구조화해 주세요:\n\n"
+            f"{chunks[0]}"
+        )
         return call_nvidia_api(prompt, api_key, model_name)
     
-    st.info(f"문서가 길어 총 {len(chunks)}개 부분으로 나누어 분석을 진행합니다.")
+    st.info(f"문서가 길어 총 {len(chunks)}개 부분으로 나누어 심층 분석을 진행합니다.")
     intermediate_summaries = []
     progress_bar = st.progress(0)
     
     for idx, chunk in enumerate(chunks):
-        prompt = f"다음은 전체 문서의 일부입니다 ({idx+1}/{len(chunks)}). 핵심 내용을 축약하여 요약해 주세요:\n\n{chunk}"
+        # 💡 중간 청크 요약 프롬프트 강화
+        prompt = (
+            f"다음은 전체 문서의 일부({idx+1}/{len(chunks)})입니다. "
+            "이 부분에 포함된 중요한 세부 정보, 데이터, 로직, 핵심 맥락을 빠뜨리지 말고 상세히 기록해 주세요. "
+            "불필요하게 쳐내지 말고, 있는 정보를 최대한 구조화해서 정리하세요:\n\n{chunk}"
+        )
         
-        # 💡 API 호출 재시도 및 딜레이 로직 (Rate Limit 방지)
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 summary = call_nvidia_api(prompt, api_key, model_name)
-                intermediate_summaries.append(f"[부분 {idx+1} 요약]\n{summary}")
+                intermediate_summaries.append(f"[부분 {idx+1} 상세 정리]\n{summary}")
                 break 
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -168,9 +189,13 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
         time.sleep(1) 
         
     combined_summary_input = "\n\n".join(intermediate_summaries)
+    
+    # 💡 최종 종합 요약 프롬프트 강화
     final_prompt = (
-        "다음은 전체 문서를 나누어 요약한 중간 결과들입니다. "
-        "이 정보들을 종합하여 전체 문서의 구조화된 최종 요약 보고서를 작성해 주세요:\n\n"
+        "다음은 매우 긴 문서를 여러 부분으로 나누어 상세히 분석한 결과물들입니다. "
+        "이 정보들을 모두 종합하여, 전체 문서의 흐름과 디테일이 완벽하게 살아있는 최종 종합 보고서를 작성해 주세요. "
+        "분량에 구애받지 말고, 각 부분의 핵심적인 맥락과 중요 데이터가 절대로 누락되지 않도록 풍부하게 작성해야 합니다. "
+        "마크다운을 활용해 목차와 소제목을 나누어 전문적인 문서 형태로 출력해 주세요:\n\n"
         f"{combined_summary_input}"
     )
     
@@ -180,8 +205,8 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
 # 4. 메인 UI 화면 구성
 # ==========================================
 uploaded_file = st.file_uploader(
-    "파일을 선택하세요 (ZIP, PDF, DOCX, TXT, MD, CSV 등)", 
-    type=["zip", "pdf", "docx", "txt", "md", "csv", "json", "py"]
+    "파일을 선택하세요 (ZIP, PDF, DOCX, TXT, IPYNB, CSV 등)", 
+    type=["zip", "pdf", "docx", "txt", "md", "csv", "json", "py", "ipynb"] # ipynb 추가
 )
 
 if uploaded_file is not None:
@@ -199,7 +224,7 @@ if uploaded_file is not None:
                 with tabs[idx]:
                     st.text_area(f"{fname} 미리보기", value=fcontent[:2000] + ("..." if len(fcontent) > 2000 else ""), height=200)
 
-        if st.button("🚀 NVIDIA AI 전체 요약 시작", type="primary"):
+        if st.button("🚀 NVIDIA AI 전체 상세 요약 시작", type="primary"):
             if not nvidia_api_key:
                 st.error("사이드바에서 NVIDIA API Key를 먼저 입력해 주세요!")
             else:
@@ -207,7 +232,7 @@ if uploaded_file is not None:
                 for fname, content in parsed_files.items():
                     combined_all_text += f"\n\n====================\n[파일명: {fname}]\n====================\n{content}"
                 
-                with st.spinner("NVIDIA AI가 문서 내용을 분석 및 요약하고 있습니다... (파일이 커서 시간이 다소 소요될 수 있습니다)"):
+                with st.spinner("NVIDIA AI가 문서의 디테일을 분석하며 종합 보고서를 작성 중입니다... (상세 분석 모드라 시간이 더 걸릴 수 있습니다)"):
                     try:
                         final_result = summarize_text_with_chunks(
                             combined_all_text, 
@@ -216,13 +241,13 @@ if uploaded_file is not None:
                             chunk_size
                         )
                         
-                        st.subheader("📋 AI 최종 요약 결과")
+                        st.subheader("📋 AI 상세 종합 요약 결과")
                         st.markdown(final_result)
                         
                         st.download_button(
                             label="요약 결과 다운로드 (.txt)",
                             data=final_result,
-                            file_name="nvidia_summary_result.txt",
+                            file_name="nvidia_detailed_summary.txt",
                             mime="text/plain"
                         )
                     except Exception as e:
