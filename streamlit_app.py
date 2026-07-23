@@ -31,31 +31,29 @@ with st.sidebar:
         type="password"
     )
     
-    # 💡 지원 모델 대폭 확장 (가장 인기 있고 널리 쓰이는 무료 크레딧 지원 모델들)
-    selected_model = st.selectbox(
+    # 💡 최신 인기 모델 엔드포인트 적용
+    model_choice = st.selectbox(
         "사용할 AI 모델 선택",
         [
-            # Llama 3.1 최신 시리즈
-            "meta/llama-3.1-70b-instruct",
+            "z-ai/glm-5.2",
+            "deepseek-ai/deepseek-v4-pro",
+            "deepseek-ai/deepseek-v4-flash",
+            "nvidia/nemotron-3-ultra-550b-a55b",
+            "mistralai/mistral-medium-3.5-128b",
             "meta/llama-3.1-8b-instruct",
-            "meta/llama-3.1-405b-instruct",
-            # Google Gemma (빠르고 가벼움)
-            "google/gemma-2-27b-it",
-            "google/gemma-2-9b-it",
-            # Microsoft Phi-3 (작은 크기, 훌륭한 성능)
-            "microsoft/phi-3-mini-128k-instruct",
-            "microsoft/phi-3-medium-4k-instruct",
-            # Mistral 시리즈
-            "mistralai/mistral-large-2-instruct",
-            "mistralai/mixtral-8x22b-instruct-v0.1",
-            "mistralai/mistral-7b-instruct-v0.3",
-            # 한국어 특화 및 기타 강력한 모델
-            "upstage/solar-10.7b-instruct",
-            "nvidia/nemotron-4-340b-instruct"
+            "직접 입력하기 (NVIDIA 사이트 복사)"
         ],
-        help="만약 특정 모델에서 404 에러가 난다면, 다른 모델(예: Llama 3.1 8B 또는 Gemma 2)로 변경해 보세요."
+        help="NVIDIA NIM 홈페이지(build.nvidia.com)에 명시된 공식 엔드포인트입니다."
     )
     
+    if model_choice == "직접 입력하기 (NVIDIA 사이트 복사)":
+        selected_model = st.text_input(
+            "NVIDIA 홈페이지의 예제 코드에 있는 모델명을 그대로 붙여넣으세요:", 
+            value="z-ai/glm-5.2"
+        )
+    else:
+        selected_model = model_choice
+        
     chunk_size = st.slider("텍스트 분할 크기 (글자 수)", min_value=1000, max_value=8000, value=3000, step=500)
 
 # ==========================================
@@ -160,14 +158,14 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
             try:
                 summary = call_nvidia_api(prompt, api_key, model_name)
                 intermediate_summaries.append(f"[부분 {idx+1} 요약]\n{summary}")
-                break # 성공 시 루프 탈출
+                break 
             except Exception as e:
                 if attempt == max_retries - 1:
-                    raise e # 마지막 시도까지 실패하면 에러 발생
-                time.sleep(2) # 에러 발생 시 잠시 대기 후 재시도
+                    raise e 
+                time.sleep(2) 
                 
         progress_bar.progress((idx + 1) / len(chunks))
-        time.sleep(1) # 연속 호출에 의한 서버 차단 방지 (1초 대기)
+        time.sleep(1) 
         
     combined_summary_input = "\n\n".join(intermediate_summaries)
     final_prompt = (
