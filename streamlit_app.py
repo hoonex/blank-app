@@ -62,7 +62,7 @@ def extract_text_from_file(file_name: str, file_bytes: bytes) -> str:
     ext = os.path.splitext(file_name)[1].lower()
     extracted_text = ""
     try:
-        # 💡 ipynb 파일 파싱 로직 추가
+        # ipynb 파일 파싱 로직
         if ext == '.ipynb':
             notebook = json.loads(file_bytes.decode('utf-8'))
             for cell in notebook.get('cells', []):
@@ -144,9 +144,9 @@ def call_nvidia_api(prompt: str, api_key: str, model_name: str) -> str:
     response = client.chat.completions.create(
         model=model_name,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.2, # 온도를 낮춰 팩트 위주로 정리하도록 설정
+        temperature=0.2, 
         top_p=0.7,
-        max_tokens=4000 # 💡 답변이 잘리지 않도록 토큰 제한 대폭 상향
+        max_tokens=4000 
     )
     return response.choices[0].message.content
 
@@ -154,12 +154,12 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
     chunks = split_text(full_text, max_chars)
     
     if len(chunks) == 1:
-        prompt = (
-            "다음 제공된 문서를 꼼꼼하게 분석하고 상세히 요약해 주세요. "
-            "단순히 길이를 줄이는 것이 목적이 아닙니다. 중요한 개념, 기술적 세부 사항, 데이터, 핵심 로직이 누락되지 않도록 주의하세요. "
-            "가독성을 위해 마크다운(헤딩, 불릿 포인트 등)을 적극적으로 활용하여 체계적으로 구조화해 주세요:\n\n"
-            f"{chunks[0]}"
-        )
+        # 💡 프롬프트 수정 완료
+        prompt = f"""다음 제공된 문서를 꼼꼼하게 분석하고 상세히 요약해 주세요.
+단순히 길이를 줄이는 것이 목적이 아닙니다. 중요한 개념, 기술적 세부 사항, 데이터, 핵심 로직이 누락되지 않도록 주의하세요.
+가독성을 위해 마크다운(헤딩, 불릿 포인트 등)을 적극적으로 활용하여 체계적으로 구조화해 주세요:
+
+{chunks[0]}"""
         return call_nvidia_api(prompt, api_key, model_name)
     
     st.info(f"문서가 길어 총 {len(chunks)}개 부분으로 나누어 심층 분석을 진행합니다.")
@@ -167,12 +167,12 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
     progress_bar = st.progress(0)
     
     for idx, chunk in enumerate(chunks):
-        # 💡 중간 청크 요약 프롬프트 강화
-        prompt = (
-            f"다음은 전체 문서의 일부({idx+1}/{len(chunks)})입니다. "
-            "이 부분에 포함된 중요한 세부 정보, 데이터, 로직, 핵심 맥락을 빠뜨리지 말고 상세히 기록해 주세요. "
-            "불필요하게 쳐내지 말고, 있는 정보를 최대한 구조화해서 정리하세요:\n\n{chunk}"
-        )
+        # 💡 오타(f-string 누락)가 있었던 곳! 확실하게 변수가 들어가도록 수정 완료
+        prompt = f"""다음은 전체 문서의 일부({idx+1}/{len(chunks)})입니다.
+이 부분에 포함된 중요한 세부 정보, 데이터, 로직, 핵심 맥락을 빠뜨리지 말고 상세히 기록해 주세요.
+불필요하게 쳐내지 말고, 있는 정보를 최대한 구조화해서 정리하세요:
+
+{chunk}"""
         
         max_retries = 3
         for attempt in range(max_retries):
@@ -190,14 +190,13 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
         
     combined_summary_input = "\n\n".join(intermediate_summaries)
     
-    # 💡 최종 종합 요약 프롬프트 강화
-    final_prompt = (
-        "다음은 매우 긴 문서를 여러 부분으로 나누어 상세히 분석한 결과물들입니다. "
-        "이 정보들을 모두 종합하여, 전체 문서의 흐름과 디테일이 완벽하게 살아있는 최종 종합 보고서를 작성해 주세요. "
-        "분량에 구애받지 말고, 각 부분의 핵심적인 맥락과 중요 데이터가 절대로 누락되지 않도록 풍부하게 작성해야 합니다. "
-        "마크다운을 활용해 목차와 소제목을 나누어 전문적인 문서 형태로 출력해 주세요:\n\n"
-        f"{combined_summary_input}"
-    )
+    # 💡 프롬프트 수정 완료
+    final_prompt = f"""다음은 매우 긴 문서를 여러 부분으로 나누어 상세히 분석한 결과물들입니다.
+이 정보들을 모두 종합하여, 전체 문서의 흐름과 디테일이 완벽하게 살아있는 최종 종합 보고서를 작성해 주세요.
+분량에 구애받지 말고, 각 부분의 핵심적인 맥락과 중요 데이터가 절대로 누락되지 않도록 풍부하게 작성해야 합니다.
+마크다운을 활용해 목차와 소제목을 나누어 전문적인 문서 형태로 출력해 주세요:
+
+{combined_summary_input}"""
     
     return call_nvidia_api(final_prompt, api_key, model_name)
 
@@ -206,7 +205,7 @@ def summarize_text_with_chunks(full_text: str, api_key: str, model_name: str, ma
 # ==========================================
 uploaded_file = st.file_uploader(
     "파일을 선택하세요 (ZIP, PDF, DOCX, TXT, IPYNB, CSV 등)", 
-    type=["zip", "pdf", "docx", "txt", "md", "csv", "json", "py", "ipynb"] # ipynb 추가
+    type=["zip", "pdf", "docx", "txt", "md", "csv", "json", "py", "ipynb"]
 )
 
 if uploaded_file is not None:
