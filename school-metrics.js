@@ -1,3 +1,9 @@
+const v5Style = document.createElement('link');
+v5Style.rel = 'stylesheet';
+v5Style.href = './school-v5.css';
+document.head.append(v5Style);
+import('./school-v5.js').catch(() => {});
+
 const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
 const ANON_KEY = 'flow-school-anon-v1';
 const SEEN_KEY = 'flow-school-seen-v1';
