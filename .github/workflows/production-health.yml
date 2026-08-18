@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Verify jsDelivr public static site
+      - name: Verify public static site renders as HTML
         shell: bash
         run: |
           set -euo pipefail
-          base="https://cdn.jsdelivr.net/gh/hoonex/blank-app@main/"
+          base="https://raw.githack.com/hoonex/blank-app/main/"
           check() {
             path="$1"
             expected="$2"
