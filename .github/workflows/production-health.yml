@@ -19,69 +19,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify repository pages
+      - name: Verify Flow School files
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html home.css home.js calendar.html focus.html quest.html quest.css quest.js quest-cloud.js quest-analytics.js quest-growth.js leaderboard.html leaderboard.js study-calculator.html grade-calculator.html styles.css app.js scripts/vercel-rest.mjs; do
+          for file in index.html school.css school.js scripts/vercel-rest.mjs; do
             test -s "$file"
             echo "OK $file"
           done
-          node --check app.js
-          node --check quest.js
-          node --check quest-analytics.js
-          node --check quest-growth.js
+          node --input-type=module --check < school.js
           node --check scripts/vercel-rest.mjs
-          node --input-type=module --check < home.js
-          node --input-type=module --check < leaderboard.js
-          node --input-type=module --check < quest-cloud.js
-          grep -q 'Flow — 오늘 할 일을 고르세요' index.html
-          grep -q 'home.js' index.html
-          grep -q 'Flow Calendar' calendar.html
-          grep -q 'Flow Quest' quest.html
-          grep -q 'leaderboard.html' quest.html
-          grep -q 'quest-cloud.js' quest.html
-          grep -q 'flow-quest-state-v1' quest.js
-          grep -q 'flow-quest-event' quest-analytics.js
-          grep -q 'quest-growth.js' quest.html
-          grep -q 'flow_quest_scores' leaderboard.js
-          grep -q 'flow_weekly_leaderboard' leaderboard.js
-          grep -q 'WEEKLY ARENA' leaderboard.html
+          grep -q 'Flow School' index.html
+          grep -q 'school.css' index.html
+          grep -q 'school.js' index.html
+          grep -q 'flow-school-profile-v2' school.js
+          grep -q 'functions/v1/school-data' school.js
           grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
-          grep -q '/v13/deployments' scripts/vercel-rest.mjs
 
-      - name: Verify public static site renders as HTML
+      - name: Verify NEIS proxy search
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          base="https://raw.githack.com/hoonex/blank-app/main/"
-          check() {
-            path="$1"
-            expected="$2"
-            mime_prefix="$3"
-            file="/tmp/$(echo "$path" | tr '/.' '__').out"
-            mime=$(curl --fail --silent --show-error --location \
-              --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
-              -o "$file" -w '%{content_type}' "${base}${path}")
-            echo "PATH=$path MIME=$mime BYTES=$(wc -c < "$file")"
-            [[ "$mime" == "$mime_prefix"* ]]
-            grep -qi "$expected" "$file"
-          }
-          check "index.html" "오늘 할 일을" "text/html"
-          check "home.css" "launch-grid" "text/css"
-          check "home.js" "flow_profiles" "application/javascript"
-          check "calendar.html" "Flow Calendar" "text/html"
-          check "focus.html" "Flow Focus" "text/html"
-          check "quest.html" "Flow Quest" "text/html"
-          check "quest.css" "quest-panel" "text/css"
-          check "quest.js" "flow-quest-state-v1" "application/javascript"
-          check "quest-cloud.js" "quest-session" "application/javascript"
-          check "quest-analytics.js" "flow-quest-event" "application/javascript"
-          check "quest-growth.js" "Flow Quest" "application/javascript"
-          check "leaderboard.html" "Flow Arena" "text/html"
-          check "leaderboard.js" "flow_weekly_leaderboard" "application/javascript"
-          check "study-calculator.html" "시험 공부시간 계산기" "text/html"
-          check "grade-calculator.html" "내신 5등급 계산기" "text/html"
-          check "styles.css" "glass-panel" "text/css"
-          check "app.js" "flow-calendar-events-v1" "application/javascript"
+          url='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data?action=search&q=%EC%A0%95%EB%8F%99%EA%B3%A0'
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 "$url" > /tmp/school.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/school.json'))
+          schools=data.get('schools') or []
+          assert schools, data
+          assert any('정동' in (x.get('name') or '') for x in schools), schools
+          print('NEIS proxy OK:', schools[0].get('name'))
+          PY
