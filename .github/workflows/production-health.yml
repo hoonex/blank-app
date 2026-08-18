@@ -37,5 +37,6 @@ jobs:
           check "index.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
+          check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
           check "app.js" "flow-calendar-events-v1" "application/javascript"
