@@ -17,7 +17,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify repository pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qi 'Flow Calendar' index.html
+          grep -qi 'Flow Focus' focus.html
+          grep -qi '시험 공부시간 계산기' study-calculator.html
+          grep -qi '내신 5등급 계산기' grade-calculator.html
+          grep -qi 'glass-panel' styles.css
+          grep -qi 'flow-calendar-events-v1' app.js
+
       - name: Verify public static site renders as HTML
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -37,5 +51,6 @@ jobs:
           check "index.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
+          check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
           check "app.js" "flow-calendar-events-v1" "application/javascript"
