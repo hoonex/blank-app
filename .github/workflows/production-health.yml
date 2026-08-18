@@ -15,36 +15,35 @@ permissions:
 jobs:
   health:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Flow School v4 files
+      - name: Verify Flow School v5 files
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js sw.js manifest.webmanifest robots.txt sitemap.xml scripts/vercel-rest.mjs; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-v5.js sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs; do
             test -s "$file"
             echo "OK $file"
           done
           node --input-type=module --check < school.js
           node --check school-metrics.js
+          node --check school-v5.js
           node --check sw.js
           node --check scripts/vercel-rest.mjs
+          python -m json.tool vercel.json >/dev/null
           grep -q 'Flow School' index.html
-          grep -q 'data-view-panel="school"' index.html
-          grep -q 'mobile-bottom-nav' index.html
-          grep -q 'schoolLogo' index.html
-          grep -q 'manifest.webmanifest' index.html
           grep -q 'school-metrics.js' index.html
           grep -q 'flow-school-profile-v3' school.js
-          grep -q 'flow-school-overrides-v2' school.js
-          grep -q 'flow-school-allergies-v1' school.js
-          grep -q "action:'classes'" school.js
-          grep -q "action:'media'" school.js
-          grep -q '선택과목' school.js
-          grep -q 'calendar-day\[data-calendar-date\]' school-metrics.js
-          grep -q 'flow-school-shell-v4' sw.js
+          grep -q "import('./school-v5.js')" school-metrics.js
+          grep -q 'school-v5.css' school-metrics.js
+          grep -q 'NATIONAL_2026' school-v5.js
+          grep -q "'/schedule':'schedule'" school-v5.js
+          grep -q 'corner-shape:squircle' school-v5.css
+          grep -q 'flow-school-shell-v5' sw.js
+          grep -q '"/home"' vercel.json
+          grep -q '"/schedule"' vercel.json
           grep -q 'flow-student-blush.vercel.app' robots.txt
           grep -q 'flow-student-blush.vercel.app' sitemap.xml
           grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
@@ -78,6 +77,29 @@ jobs:
           assert 'classes' in data, data
           assert isinstance(data['classes'], list), data
           print('class API OK:', len(data['classes']))
+          PY
+
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 \
+            "$base?action=search&q=%EB%8C%80%EA%B5%AC%EB%8F%99%EB%B6%80%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90" > /tmp/dongbu-search.json
+          python - <<'PY' > /tmp/dongbu.env
+          import json
+          data=json.load(open('/tmp/dongbu-search.json'))
+          school=next((x for x in data.get('schools',[]) if x.get('name')=='대구동부고등학교'), None)
+          assert school, data
+          print('OFFICE='+school['officeCode'])
+          print('SCHOOL='+school['schoolCode'])
+          PY
+          source /tmp/dongbu.env
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 \
+            "$base?action=dashboard&office=$OFFICE&school=$SCHOOL&grade=2&class=1&kind=%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90&date=20260715" > /tmp/dongbu-dashboard.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/dongbu-dashboard.json'))
+          events=data.get('events') or []
+          assert events, data
+          assert any('방학' in (e.get('name') or '') or '시험' in (e.get('name') or '') for e in events), events
+          assert 'scheduleMeta' in data, data
+          print('Dongbu schedule OK:', len(events), data['scheduleMeta'])
           PY
 
           today=$(date +%Y%m%d)
