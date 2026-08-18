@@ -31,54 +31,14 @@ for (const input of [document.querySelector('#schoolSearch'), document.querySele
   });
 }
 
-/*
- * UX patch for the academic calendar.
- * school.js historically switches to the Today tab when a calendar day is clicked.
- * Intercept that click before the old bubble handler, drive the existing date picker,
- * and let the dashboard reload while keeping the current Schedule view intact.
- */
-function calendarDateToIso(raw) {
-  return /^\d{8}$/.test(raw || '') ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}` : '';
-}
-
-function syncScheduleSelection() {
-  const selected = document.querySelector('.calendar-day.selected[data-calendar-date]');
-  const rows = [...document.querySelectorAll('.schedule-row')];
-  rows.forEach((row) => row.classList.remove('selected-event'));
-  if (!selected) return;
-  const raw = selected.dataset.calendarDate || '';
-  if (!/^\d{8}$/.test(raw)) return;
-  const label = `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}`;
-  rows.forEach((row) => {
-    if (row.querySelector('time')?.textContent?.trim() === label) row.classList.add('selected-event');
-  });
-}
-
-document.addEventListener('click', (event) => {
-  const day = event.target.closest?.('.calendar-day[data-calendar-date]');
-  if (!day) return;
-  const iso = calendarDateToIso(day.dataset.calendarDate);
-  const picker = document.querySelector('#datePicker');
-  if (!iso || !picker) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-  picker.value = iso;
-  picker.dispatchEvent(new Event('change', { bubbles: true }));
-  window.setTimeout(syncScheduleSelection, 80);
-}, true);
-
-for (const target of [document.querySelector('#calendarGrid'), document.querySelector('#scheduleGrid')].filter(Boolean)) {
-  new MutationObserver(() => window.requestAnimationFrame(syncScheduleSelection))
-    .observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-}
-
 document.addEventListener('click', (event) => {
   if (event.target.closest?.('[data-result-index]')) track('school_select');
   if (event.target.closest?.('#setupSave')) track('setup_complete');
   if (event.target.closest?.('[data-view]')) track('tab_view');
   if (event.target.closest?.('#saveSubjectBtn')) track('subject_override');
   if (event.target.closest?.('.dish[data-dish]')) track('meal_photo_search');
+  if (event.target.closest?.('.calendar-day[data-calendar-date]')) track('calendar_date_select');
+  if (event.target.closest?.('.national-event')) track('national_schedule_open');
 });
 
 const dashboard = document.querySelector('#dashboard');
