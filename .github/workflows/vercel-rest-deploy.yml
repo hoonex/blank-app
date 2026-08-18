@@ -1,5 +1,6 @@
 name: Vercel REST deploy
 
+# Deployment is intentionally triggered on main pushes after VERCEL_TOKEN is configured.
 on:
   workflow_dispatch:
   push:
