@@ -1,18 +1,96 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="system">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#090b10" />
-  <meta http-equiv="refresh" content="0;url=./quest.html" />
-  <link rel="canonical" href="https://raw.githack.com/hoonex/blank-app/main/quest.html" />
-  <title>Flow Quest</title>
-  <style>
-    html,body{margin:0;min-height:100%;display:grid;place-items:center;background:#07090d;color:#f3f6fb;font-family:Inter,"Noto Sans KR",system-ui,sans-serif}a{color:#dbe7ff;text-decoration:none;border:1px solid #ffffff1a;background:#ffffff0a;border-radius:14px;padding:12px 16px}
-  </style>
-  <script>location.replace('./quest.html'+location.search+location.hash)</script>
+  <meta name="theme-color" content="#eef1f6" />
+  <meta name="description" content="시간표, 공부 계획, Flow Quest, 내신 계산과 리더보드를 한 곳에서 여는 학생용 홈." />
+  <title>Flow — 오늘 할 일을 고르세요</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./home.css" />
 </head>
 <body>
-  <a href="./quest.html">Flow Quest 시작</a>
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="shell">
+    <header class="topbar glass">
+      <a class="brand" href="./index.html" aria-label="Flow 홈"><span class="brand-dot"></span><span>Flow</span></a>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="테마 변경"><span id="themeLabel">SYSTEM</span></button>
+        <button class="account-btn" id="accountBtn" type="button"><span class="avatar" id="accountAvatar">F</span><span id="accountLabel">로그인</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">FLOW HOME</p>
+          <h1 id="greeting">오늘 할 일을 고르세요.</h1>
+          <p class="welcome-copy">시간표를 확인하고, 계획을 잡고, 실제 집중은 게임 진행도로 바꿉니다. 필요한 기능만 열고 나머지는 숨겨둡니다.</p>
+        </div>
+        <div class="snapshot glass-soft" aria-label="오늘 상태">
+          <div><span>LEVEL</span><strong id="levelValue">1</strong></div>
+          <div><span>TODAY</span><strong id="todayMinutes">0m</strong></div>
+          <div><span>STREAK</span><strong id="streakValue">0</strong></div>
+        </div>
+      </section>
+
+      <section class="launch-grid" aria-label="주요 기능">
+        <a class="launch-card hero-card quest-card" href="./quest.html" data-track="quest">
+          <div class="card-copy"><span class="eyebrow">PLAY</span><h2>Flow Quest</h2><p>집중한 시간이 보스 피해량과 성장으로 이어지는 현실 집중 RPG.</p></div>
+          <div class="mini-world" aria-hidden="true"><div class="planet"></div><div class="ship"></div><div class="trail"></div></div>
+          <div class="card-foot"><span>집중 시작</span><span class="arrow">↗</span></div>
+        </a>
+
+        <a class="launch-card rank-card" href="./leaderboard.html" data-track="leaderboard">
+          <div class="card-copy"><span class="eyebrow">ARENA</span><h2>주간 경쟁</h2><p>로그인 사용자의 서버 검증 집중 기록으로 순위를 비교합니다.</p></div>
+          <div class="rank-preview" id="rankPreview"><div class="skeleton"></div><div class="skeleton short"></div><div class="skeleton"></div></div>
+          <div class="card-foot"><span>리더보드 보기</span><span class="arrow">↗</span></div>
+        </a>
+
+        <a class="launch-card" href="./focus.html" data-track="focus"><div class="card-copy"><span class="eyebrow">PLAN</span><h2>시험 계획</h2><p>마감일까지 필요한 공부량을 실제 날짜와 집중 세션으로 나눕니다.</p></div><div class="card-foot"><span>계획 만들기</span><span class="arrow">↗</span></div></a>
+        <a class="launch-card" href="./calendar.html" data-track="calendar"><div class="card-copy"><span class="eyebrow">CALENDAR</span><h2>일정</h2><p>수행평가, 시험과 개인 일정을 한눈에 정리합니다.</p></div><div class="card-foot"><span>캘린더 열기</span><span class="arrow">↗</span></div></a>
+        <a class="launch-card" href="./grade-calculator.html" data-track="grade"><div class="card-copy"><span class="eyebrow">GRADE LAB</span><h2>내신 계산</h2><p>5등급제 기준을 빠르게 확인합니다. 학교 자동화는 다음 단계에서 연결합니다.</p></div><div class="card-foot"><span>계산기 열기</span><span class="arrow">↗</span></div></a>
+        <a class="launch-card" href="./study-calculator.html" data-track="study"><div class="card-copy"><span class="eyebrow">TOOLBOX</span><h2>공부시간 계산</h2><p>시험일까지 하루 몇 분이 필요한지 바로 계산합니다.</p></div><div class="card-foot"><span>도구 열기</span><span class="arrow">↗</span></div></a>
+      </section>
+
+      <section class="next-strip glass-soft">
+        <div><span class="eyebrow">NEXT</span><strong>학교 연결</strong><p>학교와 학년·반만 고르면 시간표·급식·학사일정을 자동으로 채우는 흐름을 다음으로 붙입니다.</p></div>
+        <button id="schoolPreviewBtn" type="button">설계 보기</button>
+      </section>
+    </main>
+  </div>
+
+  <dialog class="modal" id="authDialog">
+    <form method="dialog" class="modal-card glass">
+      <button class="modal-close" value="cancel" aria-label="닫기">×</button>
+      <span class="eyebrow">FLOW ACCOUNT</span>
+      <h2 id="authTitle">로그인</h2>
+      <p class="modal-copy">계정 없이도 대부분 기능을 쓸 수 있습니다. 로그인하면 리더보드와 클라우드 기록이 활성화됩니다.</p>
+      <label>이메일<input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" /></label>
+      <label>비밀번호<input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="6자 이상" /></label>
+      <button class="primary" id="authSubmit" type="button">로그인</button>
+      <button class="text-action" id="authModeBtn" type="button">처음이라면 계정 만들기</button>
+      <div class="auth-status" id="authStatus" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="profileDialog">
+    <form method="dialog" class="modal-card glass">
+      <button class="modal-close" value="cancel" aria-label="닫기">×</button>
+      <span class="eyebrow">PROFILE</span>
+      <h2>내 계정</h2>
+      <label>리더보드 닉네임<input id="nicknameInput" maxlength="16" minlength="2" /></label>
+      <button class="primary" id="saveProfileBtn" type="button">저장</button>
+      <button class="text-action danger-text" id="signOutBtn" type="button">로그아웃</button>
+      <div class="auth-status" id="profileStatus" aria-live="polite"></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="schoolDialog"><form method="dialog" class="modal-card glass"><button class="modal-close" value="cancel" aria-label="닫기">×</button><span class="eyebrow">SCHOOL LINK</span><h2>다음 연결 구조</h2><p class="modal-copy">학교 검색 → 학년·반 선택 → NEIS 시간표·급식·학사일정 자동 입력. 선택과목처럼 공개 데이터로 확정할 수 없는 부분만 사용자가 수정하게 설계합니다.</p><button class="primary" value="cancel">확인</button></form></dialog>
+
+  <script type="module" src="./home.js"></script>
 </body>
 </html>
