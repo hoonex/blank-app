@@ -11,6 +11,18 @@ for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css
   document.head.append(link);
 }
 
+/* Keep the source HTML generic; no school-specific examples or marketing filler. */
+const schoolSearch = document.querySelector('#schoolSearch');
+const switchSearch = document.querySelector('#switchSearch');
+if (schoolSearch) schoolSearch.placeholder = '학교 이름을 입력하세요';
+if (switchSearch) switchSearch.placeholder = '학교 이름을 입력하세요';
+const eyebrow = document.querySelector('.onboarding-copy .eyebrow');
+if (eyebrow) eyebrow.textContent = 'FLOW SCHOOL';
+const intro = document.querySelector('.onboarding-copy p');
+if (intro) intro.textContent = '시간표, 급식, 학사일정과 학교정보를 한곳에서 확인합니다.';
+const hints = document.querySelector('.search-hints');
+if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span>';
+
 let anonId = localStorage.getItem(ANON_KEY);
 if (!anonId) {
   anonId = crypto.randomUUID();
@@ -31,7 +43,7 @@ if (localStorage.getItem(SEEN_KEY)) track('return_visit');
 else localStorage.setItem(SEEN_KEY, String(Date.now()));
 
 let searchTimer = null;
-for (const input of [document.querySelector('#schoolSearch'), document.querySelector('#switchSearch')].filter(Boolean)) {
+for (const input of [schoolSearch, switchSearch].filter(Boolean)) {
   input.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
