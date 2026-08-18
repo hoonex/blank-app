@@ -45,20 +45,20 @@
         </a>
 
         <a class="launch-card rank-card" href="./leaderboard.html" data-track="leaderboard">
-          <div class="card-copy"><span class="eyebrow">ARENA</span><h2>Arena 순위</h2><p>로그인 사용자의 서버 검증 집중 기록으로 누적 순위를 비교합니다.</p></div>
+          <div class="card-copy"><span class="eyebrow">ARENA</span><h2>주간 Arena</h2><p>서버가 검증한 실제 완료 세션으로 매주 월요일 다시 경쟁합니다.</p></div>
           <div class="rank-preview" id="rankPreview"><div class="skeleton"></div><div class="skeleton short"></div><div class="skeleton"></div></div>
-          <div class="card-foot"><span>리더보드 보기</span><span class="arrow">↗</span></div>
+          <div class="card-foot"><span>이번 주 순위</span><span class="arrow">↗</span></div>
         </a>
 
         <a class="launch-card" href="./focus.html" data-track="focus"><div class="card-copy"><span class="eyebrow">PLAN</span><h2>시험 계획</h2><p>마감일까지 필요한 공부량을 실제 날짜와 집중 세션으로 나눕니다.</p></div><div class="card-foot"><span>계획 만들기</span><span class="arrow">↗</span></div></a>
         <a class="launch-card" href="./calendar.html" data-track="calendar"><div class="card-copy"><span class="eyebrow">CALENDAR</span><h2>일정</h2><p>수행평가, 시험과 개인 일정을 한눈에 정리합니다.</p></div><div class="card-foot"><span>캘린더 열기</span><span class="arrow">↗</span></div></a>
-        <a class="launch-card" href="./grade-calculator.html" data-track="grade"><div class="card-copy"><span class="eyebrow">GRADE LAB</span><h2>내신 계산</h2><p>5등급제 기준을 빠르게 확인합니다. 학교 자동화는 다음 단계에서 연결합니다.</p></div><div class="card-foot"><span>계산기 열기</span><span class="arrow">↗</span></div></a>
+        <a class="launch-card" href="./grade-calculator.html" data-track="grade"><div class="card-copy"><span class="eyebrow">GRADE LAB</span><h2>내신 계산</h2><p>5등급제 기준을 빠르게 확인합니다. 학교 자동화는 공식 NEIS 인증 연결 후 붙입니다.</p></div><div class="card-foot"><span>계산기 열기</span><span class="arrow">↗</span></div></a>
         <a class="launch-card" href="./study-calculator.html" data-track="study"><div class="card-copy"><span class="eyebrow">TOOLBOX</span><h2>공부시간 계산</h2><p>시험일까지 하루 몇 분이 필요한지 바로 계산합니다.</p></div><div class="card-foot"><span>도구 열기</span><span class="arrow">↗</span></div></a>
       </section>
 
       <section class="next-strip glass-soft">
-        <div><span class="eyebrow">NEXT</span><strong>학교 연결</strong><p>학교와 학년·반만 고르면 시간표·급식·학사일정을 자동으로 채우는 흐름을 다음으로 붙입니다.</p></div>
-        <button id="schoolPreviewBtn" type="button">설계 보기</button>
+        <div><span class="eyebrow">NEXT</span><strong>학교 연결</strong><p>공식 NEIS 인증키를 서버에 연결한 뒤 학교·학년·반만 고르면 시간표·급식·학사일정을 자동으로 채우는 흐름을 붙입니다.</p></div>
+        <button id="schoolPreviewBtn" type="button">구조 보기</button>
       </section>
     </main>
   </div>
@@ -89,7 +89,7 @@
     </form>
   </dialog>
 
-  <dialog class="modal" id="schoolDialog"><form method="dialog" class="modal-card glass"><button class="modal-close" value="cancel" aria-label="닫기">×</button><span class="eyebrow">SCHOOL LINK</span><h2>다음 연결 구조</h2><p class="modal-copy">학교 검색 → 학년·반 선택 → NEIS 시간표·급식·학사일정 자동 입력. 선택과목처럼 공개 데이터로 확정할 수 없는 부분만 사용자가 수정하게 설계합니다.</p><button class="primary" value="cancel">확인</button></form></dialog>
+  <dialog class="modal" id="schoolDialog"><form method="dialog" class="modal-card glass"><button class="modal-close" value="cancel" aria-label="닫기">×</button><span class="eyebrow">SCHOOL LINK</span><h2>공식 NEIS 연결 구조</h2><p class="modal-copy">학교 검색 → 학년·반 선택 → 시간표·급식·학사일정 자동 입력. NEIS 공식 Open API는 인증키 발급 후 사용하는 서비스라 키를 공개 프론트엔드에 넣지 않고 서버에서 호출합니다. 선택과목처럼 공개 데이터로 확정할 수 없는 부분만 사용자가 수정하게 설계합니다.</p><button class="primary" value="cancel">확인</button></form></dialog>
 
   <script type="module" src="./home.js"></script>
 </body>
