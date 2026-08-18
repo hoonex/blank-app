@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Verify public production routes
+      - name: Verify public production routes and MIME types
         shell: bash
         run: |
           set -euo pipefail
@@ -25,21 +25,24 @@ jobs:
           check() {
             path="$1"
             expected="$2"
+            mime="$3"
             file="/tmp/$(echo "$path" | tr '/.' '__').out"
+            headers="${file}.headers"
             code=$(curl --silent --show-error --location \
               --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
-              -o "$file" -w '%{http_code}' "${base}${path}")
+              -D "$headers" -o "$file" -w '%{http_code}' "${base}${path}")
             echo "PATH=${path:-/} HTTP=$code BYTES=$(wc -c < "$file")"
             test "$code" = "200"
             grep -qi "$expected" "$file"
+            grep -qiE "^content-type: ${mime}" "$headers"
           }
-          check "" "Flow"
-          check "focus.html" "Flow Focus"
-          check "study-calculator.html" "시험 공부시간 계산기"
-          check "styles.css" "glass-panel"
-          check "app.js" "flow-calendar-events-v1"
-          check "robots.txt" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/sitemap.xml"
-          check "sitemap.xml" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html"
+          check "" "Flow" "text/html"
+          check "focus.html" "Flow Focus" "text/html"
+          check "study-calculator.html" "시험 공부시간 계산기" "text/html"
+          check "styles.css" "glass-panel" "text/css"
+          check "app.js" "flow-calendar-events-v1" "application/javascript"
+          check "robots.txt" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/sitemap.xml" "text/plain"
+          check "sitemap.xml" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html" "application/xml"
 
       - name: Verify public canonical replacement
         run: |
