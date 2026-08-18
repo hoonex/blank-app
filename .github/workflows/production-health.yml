@@ -45,6 +45,8 @@ jobs:
           grep -q 'flow-quest-event' quest-analytics.js
           grep -q 'quest-growth.js' quest.html
           grep -q 'flow_quest_scores' leaderboard.js
+          grep -q 'flow_weekly_leaderboard' leaderboard.js
+          grep -q 'WEEKLY ARENA' leaderboard.html
           grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
           grep -q '/v13/deployments' scripts/vercel-rest.mjs
 
@@ -78,7 +80,7 @@ jobs:
           check "quest-analytics.js" "flow-quest-event" "application/javascript"
           check "quest-growth.js" "Flow Quest" "application/javascript"
           check "leaderboard.html" "Flow Arena" "text/html"
-          check "leaderboard.js" "flow_quest_scores" "application/javascript"
+          check "leaderboard.js" "flow_weekly_leaderboard" "application/javascript"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
           check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
