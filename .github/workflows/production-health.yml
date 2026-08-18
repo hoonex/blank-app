@@ -23,17 +23,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html focus.html quest.html quest.css quest.js quest-analytics.js study-calculator.html grade-calculator.html styles.css app.js; do
+          for file in index.html focus.html quest.html quest.css quest.js quest-analytics.js quest-growth.js study-calculator.html grade-calculator.html styles.css app.js; do
             test -s "$file"
             echo "OK $file"
           done
           node --check app.js
           node --check quest.js
           node --check quest-analytics.js
+          node --check quest-growth.js
           grep -q 'Flow Quest' quest.html
           grep -q 'flow-quest-state-v1' quest.js
           grep -q 'flow-quest-event' quest-analytics.js
-          grep -q 'quest-analytics.js' quest.html
+          grep -q 'quest-growth.js' quest.html
+          grep -q 'quick' quest-growth.js
           grep -q "location.href='./quest.html'" index.html
 
       - name: Verify public static site renders as HTML
@@ -60,6 +62,7 @@ jobs:
           check "quest.css" "quest-panel" "text/css"
           check "quest.js" "flow-quest-state-v1" "application/javascript"
           check "quest-analytics.js" "flow-quest-event" "application/javascript"
+          check "quest-growth.js" "Flow Quest" "application/javascript"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
           check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
