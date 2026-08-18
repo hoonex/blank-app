@@ -1,0 +1,48 @@
+name: Vercel REST deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '*.json'
+      - '*.xml'
+      - '*.txt'
+      - 'scripts/vercel-rest.mjs'
+      - '.github/workflows/vercel-rest-deploy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-vercel-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_PROJECT_NAME: flow-student
+      VERCEL_DISABLE_AUTH: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate deployment module
+        run: node --check scripts/vercel-rest.mjs
+
+      - name: Deploy through Vercel REST API
+        if: env.VERCEL_TOKEN != ''
+        run: node scripts/vercel-rest.mjs deploy
+
+      - name: Explain missing token
+        if: env.VERCEL_TOKEN == ''
+        run: |
+          echo 'VERCEL_TOKEN is not configured yet.'
+          echo 'The REST deployment module is installed and validated; production deploy is intentionally skipped.'
