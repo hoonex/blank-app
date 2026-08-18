@@ -15,7 +15,7 @@ permissions:
 jobs:
   health:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html calendar.html focus.html quest.html quest.css quest.js quest-analytics.js quest-growth.js study-calculator.html grade-calculator.html styles.css app.js; do
+          for file in index.html home.css home.js calendar.html focus.html quest.html quest.css quest.js quest-cloud.js quest-analytics.js quest-growth.js leaderboard.html leaderboard.js study-calculator.html grade-calculator.html styles.css app.js scripts/vercel-rest.mjs; do
             test -s "$file"
             echo "OK $file"
           done
@@ -31,13 +31,22 @@ jobs:
           node --check quest.js
           node --check quest-analytics.js
           node --check quest-growth.js
-          grep -q 'location.replace' index.html
-          grep -q 'quest.html' index.html
+          node --check scripts/vercel-rest.mjs
+          node --input-type=module --check < home.js
+          node --input-type=module --check < leaderboard.js
+          node --input-type=module --check < quest-cloud.js
+          grep -q 'Flow — 오늘 할 일을 고르세요' index.html
+          grep -q 'home.js' index.html
           grep -q 'Flow Calendar' calendar.html
           grep -q 'Flow Quest' quest.html
+          grep -q 'leaderboard.html' quest.html
+          grep -q 'quest-cloud.js' quest.html
           grep -q 'flow-quest-state-v1' quest.js
           grep -q 'flow-quest-event' quest-analytics.js
           grep -q 'quest-growth.js' quest.html
+          grep -q 'flow_quest_scores' leaderboard.js
+          grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
+          grep -q '/v13/deployments' scripts/vercel-rest.mjs
 
       - name: Verify public static site renders as HTML
         if: github.event_name != 'pull_request'
@@ -57,14 +66,19 @@ jobs:
             [[ "$mime" == "$mime_prefix"* ]]
             grep -qi "$expected" "$file"
           }
-          check "index.html" "Flow Quest" "text/html"
+          check "index.html" "오늘 할 일을" "text/html"
+          check "home.css" "launch-grid" "text/css"
+          check "home.js" "flow_profiles" "application/javascript"
           check "calendar.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
           check "quest.html" "Flow Quest" "text/html"
           check "quest.css" "quest-panel" "text/css"
           check "quest.js" "flow-quest-state-v1" "application/javascript"
+          check "quest-cloud.js" "quest-session" "application/javascript"
           check "quest-analytics.js" "flow-quest-event" "application/javascript"
           check "quest-growth.js" "Flow Quest" "application/javascript"
+          check "leaderboard.html" "Flow Arena" "text/html"
+          check "leaderboard.js" "flow_quest_scores" "application/javascript"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
           check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
