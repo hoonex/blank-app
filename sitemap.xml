@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://flow-focus-agfvrd-5616s-projects.vercel.app/</loc>
+    <loc>https://raw.githack.com/hoonex/blank-app/main/index.html</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://flow-focus-agfvrd-5616s-projects.vercel.app/study-calculator.html</loc>
+    <loc>https://raw.githack.com/hoonex/blank-app/main/study-calculator.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
