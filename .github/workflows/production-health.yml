@@ -23,6 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check quest.js
           grep -qi 'Flow Calendar' index.html
           grep -qi 'Flow Focus' focus.html
           grep -qi 'Flow Quest' quest.html
