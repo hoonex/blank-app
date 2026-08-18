@@ -1,0 +1,51 @@
+name: Browser UX audit
+
+on:
+  push:
+    branches: [perf/browser-audit]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start local Flow server
+        run: |
+          python3 -m http.server 4173 > /tmp/flow-server.log 2>&1 &
+          echo $! > /tmp/flow-server.pid
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep .5
+          done
+          cat /tmp/flow-server.log
+          exit 1
+
+      - name: Run browser interaction + performance audit
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: node tests/browser-audit.mjs
+
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-audit
+          path: browser-audit-artifacts
+          retention-days: 7
