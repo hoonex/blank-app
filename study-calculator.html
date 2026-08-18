@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d11" />
+  <meta name="description" content="시험일까지 남은 날짜와 총 공부량을 입력하면 하루에 몇 분, 몇 세션 공부해야 하는지 바로 계산합니다. 무료 시험 공부시간 계산기." />
+  <meta name="keywords" content="시험 공부시간 계산기, 시험 계획, 공부 계획표, D-day 공부량, 시험기간 계획" />
+  <link rel="canonical" href="https://flow-focus-agfvrd-5616s-projects.vercel.app/study-calculator.html" />
+  <title>시험 공부시간 계산기 — 하루 몇 분 공부해야 할까? | Flow Focus</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0d11;--panel:#151922cc;--line:#ffffff17;--text:#f6f7fb;--muted:#979eaa;--accent:#abc7ff;--good:#90e8c8;--warn:#ffd08a;--bad:#ff9ead}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Noto Sans KR",system-ui,sans-serif}body{min-height:100vh}button,input,select{font:inherit}.wrap{width:min(880px,calc(100% - 22px));margin:0 auto;padding:22px 0 50px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.brand{font-weight:700;letter-spacing:-.02em}.top a{color:#dce7ff;text-decoration:none;border:1px solid var(--line);padding:9px 12px;border-radius:11px;background:#ffffff08}.hero h1{font-size:clamp(2rem,7vw,4rem);line-height:1.04;letter-spacing:-.055em;margin:0}.hero p{color:var(--muted);line-height:1.7;max-width:650px;margin:14px 0 0}.panel{margin-top:22px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,#ffffff08,#ffffff03),var(--panel);padding:20px;box-shadow:0 26px 70px #00000055;backdrop-filter:blur(20px)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:7px}.field label{font-size:.76rem;color:var(--muted)}input,select{width:100%;background:#ffffff09;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px;outline:none}.btn{width:100%;margin-top:15px;border:0;border-radius:13px;padding:13px 16px;font-weight:700;color:#16213b;background:linear-gradient(#e0e9ff,#a6bff2);cursor:pointer}.result{display:none;margin-top:17px;border-top:1px solid var(--line);padding-top:18px}.result.show{display:block}.big{font-size:clamp(2.3rem,8vw,4.5rem);font-weight:700;letter-spacing:-.06em}.unit{color:var(--muted);font-size:.9rem}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.mini{border:1px solid var(--line);background:#ffffff06;border-radius:14px;padding:12px}.mini span{display:block;color:var(--muted);font-size:.7rem}.mini strong{display:block;margin-top:5px;font-size:1rem}.advice{margin-top:13px;color:#c5cbd5;line-height:1.65;font-size:.88rem}.cta{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:20px;border:1px solid #abc7ff2b;background:#abc7ff0b;border-radius:17px;padding:14px}.cta p{margin:0;color:#b9c1cf;font-size:.82rem;line-height:1.5}.cta a{flex:none;text-decoration:none;background:#dce7ff;color:#17213a;border-radius:11px;padding:10px 12px;font-weight:700;font-size:.78rem}.faq{margin-top:28px}.faq h2{font-size:1.3rem;letter-spacing:-.03em}.faq article{border-top:1px solid var(--line);padding:15px 0}.faq h3{font-size:.93rem;margin:0 0 7px}.faq p{margin:0;color:var(--muted);line-height:1.65;font-size:.83rem}.note{margin-top:24px;color:#707887;font-size:.72rem;line-height:1.6}@media(max-width:640px){.grid,.cards{grid-template-columns:1fr}.wrap{padding-top:14px}.panel{padding:16px;border-radius:20px}.cta{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><div class="brand">Flow Focus</div><a href="./index.html">자동 계획 만들기</a></header>
+    <section class="hero"><h1>시험까지<br>하루 몇 분 해야 할까?</h1><p>남은 날짜와 필요한 총 공부시간을 입력하면 하루 공부량을 바로 계산합니다. 계획을 너무 크게 잡아서 포기하는 대신, 실제 하루 단위로 쪼개서 확인하세요.</p></section>
+    <section class="panel">
+      <form id="calc">
+        <div class="grid">
+          <div class="field"><label for="examDate">시험일</label><input id="examDate" type="date" required /></div>
+          <div class="field"><label for="hours">시험 전까지 필요한 총 공부시간</label><input id="hours" type="number" min="1" max="300" step="0.5" value="20" required /></div>
+          <div class="field"><label for="rest">공부를 쉬는 날</label><select id="rest"><option value="0">매일 가능</option><option value="1">주 1일 휴식</option><option value="2">주 2일 휴식</option></select></div>
+          <div class="field"><label for="session">집중 세션 길이</label><select id="session"><option value="25">25분</option><option value="40">40분</option><option value="50" selected>50분</option><option value="60">60분</option></select></div>
+        </div>
+        <button class="btn" type="submit">내 하루 공부량 계산</button>
+      </form>
+      <div id="result" class="result">
+        <div class="big"><span id="daily">0</span><span class="unit"> 분 / 공부하는 날</span></div>
+        <div class="cards"><div class="mini"><span>남은 기간</span><strong id="days">0일</strong></div><div class="mini"><span>실제 공부일</span><strong id="studyDays">0일</strong></div><div class="mini"><span>하루 세션</span><strong id="sessions">0회</strong></div></div>
+        <div id="advice" class="advice"></div>
+        <div class="cta"><p>숫자만 계산하지 말고 실제 날짜에 자동으로 나누고 싶다면 Flow Focus가 세션을 만들어줍니다.</p><a href="./index.html">자동 분할하기</a></div>
+      </div>
+    </section>
+    <section class="faq">
+      <h2>시험 공부 계획을 잡을 때 자주 생기는 문제</h2>
+      <article><h3>총 공부시간을 모르겠으면 어떻게 입력하나요?</h3><p>처음에는 과목별로 대략적인 시간을 잡아도 됩니다. 예를 들어 개념 복습 5시간, 문제 풀이 8시간, 오답 3시간처럼 작업을 나눠 합산하면 막연한 숫자보다 현실적으로 잡기 쉽습니다.</p></article>
+      <article><h3>하루 공부량이 너무 크게 나오면?</h3><p>남은 날짜에 비해 목표 공부시간이 과한 상태입니다. 범위를 줄이거나 우선순위를 정하고, 공부할 수 있는 날짜를 늘리는 쪽이 무작정 하루 공부시간을 늘리는 것보다 현실적입니다.</p></article>
+      <article><h3>50분 세션이 꼭 좋은가요?</h3><p>정답은 없습니다. 집중이 빨리 끊기면 25분, 오래 집중할 수 있다면 40~60분처럼 자신에게 맞는 길이를 선택하는 것이 좋습니다.</p></article>
+    </section>
+    <div class="note">이 계산기는 학습 계획을 돕기 위한 단순 계산 도구입니다. 실제 필요한 공부시간은 과목, 현재 실력, 시험 범위에 따라 달라질 수 있습니다.</div>
+  </main>
+  <script>
+    const $=s=>document.querySelector(s);const pad=n=>String(n).padStart(2,'0');const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};function parse(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}function diff(a,b){a=new Date(a);b=new Date(b);a.setHours(0,0,0,0);b.setHours(0,0,0,0);return Math.round((b-a)/86400000)}
+    const exam=$('#examDate');exam.min=iso(add(new Date(),1));exam.value=iso(add(new Date(),14));
+    $('#calc').addEventListener('submit',e=>{e.preventDefault();const totalDays=Math.max(1,diff(new Date(),parse(exam.value)));const rest=Number($('#rest').value);const studyDays=Math.max(1,totalDays-Math.floor(totalDays/7)*rest);const minutes=Math.round(Number($('#hours').value)*60/studyDays);const session=Number($('#session').value);const sessions=Math.ceil(minutes/session);$('#daily').textContent=minutes;$('#days').textContent=`${totalDays}일`;$('#studyDays').textContent=`${studyDays}일`;$('#sessions').textContent=`${sessions}회`;let text;if(minutes<=60)text='현재 계획은 비교적 여유가 있습니다. 초반부터 조금씩 진행하면 시험 직전 부담을 줄일 수 있습니다.';else if(minutes<=150)text='현실적으로 관리 가능한 편입니다. 하루 공부시간을 한 번에 몰기보다 여러 세션으로 나누는 편이 좋습니다.';else if(minutes<=240)text='하루 부담이 꽤 큽니다. 과목별 우선순위를 정하고 쉬는 날을 줄이거나 총 목표시간을 다시 점검해보세요.';else text='현재 목표는 하루 부담이 매우 큽니다. 시험 범위와 목표를 우선순위별로 줄이는 것이 좋습니다.';$('#advice').textContent=text;$('#result').classList.add('show')});
+  </script>
+</body>
+</html>
