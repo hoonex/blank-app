@@ -39,14 +39,19 @@ jobs:
           grep -q 'flow-school-profile-v3' school.js
           grep -q "import('./school-v5.js')" school-metrics.js
           grep -q "import('./school-hotfix.js')" school-metrics.js
+          grep -q 'MutationObserver.prototype.observe = nativeObserve' school-metrics.js
+          grep -q 'allowNavReset' school-metrics.js
           grep -q 'school-hotfix.css' school-metrics.js
-          grep -q 'calendarGrid' school-metrics.js
           grep -q 'NATIONAL_2026' school-v5.js
           grep -q "'/schedule':'schedule'" school-v5.js
           grep -q 'corner-shape:squircle' school-v5.css
+          grep -q 'body.dialog-open' school-hotfix.css
+          grep -q 'overflow-x:auto' school-hotfix.css
           grep -q 'overscroll-behavior-x:contain' school-hotfix.css
           grep -q '공휴일' school-hotfix.js
-          grep -q 'flow-school-shell-v5' sw.js
+          grep -q 'flow-school-shell-v6' sw.js
+          grep -q 'school-hotfix.css' sw.js
+          grep -q 'school-hotfix.js' sw.js
           grep -q '"/home"' vercel.json
           grep -q '"/schedule"' vercel.json
           grep -q 'flow-student-blush.vercel.app' robots.txt
