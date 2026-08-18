@@ -1,11 +1,13 @@
 {
-  "name": "Flow School",
+  "name": "Flow School — 시간표 · 급식 · 학사일정",
   "short_name": "Flow School",
-  "description": "시간표, 급식, 학사일정을 한 번에 확인하는 학생용 학교생활 대시보드",
+  "description": "학교를 한 번 선택하면 시간표, 급식, 학사일정과 학교정보를 바로 확인하는 학생용 학교생활 앱",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f6f8",
-  "theme_color": "#f4f6f8",
-  "lang": "ko-KR"
+  "orientation": "any",
+  "background_color": "#edf2f7",
+  "theme_color": "#edf2f7",
+  "lang": "ko-KR",
+  "categories": ["education", "productivity"]
 }
