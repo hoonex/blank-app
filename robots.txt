@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://flow-focus-agfvrd-5616s-projects.vercel.app/sitemap.xml
