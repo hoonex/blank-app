@@ -15,29 +15,6 @@ if (!TOKEN) {
   process.exit(2);
 }
 
-const query = () => TEAM_ID ? `?teamId=${encodeURIComponent(TEAM_ID)}` : '';
-
-async function api(endpoint, options = {}) {
-  const response = await fetch(`${API}${endpoint}${endpoint.includes('?') ? '&' : query() ? '?' : ''}${endpoint.includes('?') ? (TEAM_ID ? `teamId=${encodeURIComponent(TEAM_ID)}` : '') : (TEAM_ID ? `teamId=${encodeURIComponent(TEAM_ID)}` : '')}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
-  const text = await response.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
-  if (!response.ok) {
-    const err = new Error(`${options.method || 'GET'} ${endpoint} -> ${response.status}: ${data?.error?.message || data?.message || text}`);
-    err.status = response.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-}
-
 function withScope(endpoint) {
   if (!TEAM_ID) return endpoint;
   return `${endpoint}${endpoint.includes('?') ? '&' : '?'}teamId=${encodeURIComponent(TEAM_ID)}`;
@@ -89,21 +66,16 @@ async function ensureProject() {
     console.log(`Created Vercel project ${project.name} (${project.id})`);
   }
 
-  if (DISABLE_AUTH && project?.ssoProtection) {
-    project = await request(`/v9/projects/${encodeURIComponent(project.id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ ssoProtection: null }),
-    });
-    console.log('Disabled Vercel Authentication for the project.');
-  } else if (DISABLE_AUTH) {
-    // Idempotently enforce a public project even when the API omits the current field.
+  if (DISABLE_AUTH) {
     try {
       project = await request(`/v9/projects/${encodeURIComponent(project.id)}`, {
         method: 'PATCH',
         body: JSON.stringify({ ssoProtection: null }),
       });
+      console.log('Vercel Authentication is disabled for this project.');
     } catch (error) {
-      console.warn(`Could not update ssoProtection: ${error.message}`);
+      if (project?.ssoProtection) throw error;
+      console.warn(`Could not re-apply ssoProtection=null, continuing because the project was not reported protected: ${error.message}`);
     }
   }
   return project;
@@ -111,7 +83,7 @@ async function ensureProject() {
 
 const TEXT_EXTENSIONS = new Set(['.html','.css','.js','.mjs','.json','.xml','.txt','.svg','.webmanifest']);
 const EXCLUDED_DIRS = new Set(['.git','.github','node_modules','scripts','.devcontainer','__pycache__']);
-const EXCLUDED_FILES = new Set(['MONETIZATION_LAB.md','README.md','LICENSE','requirements.txt','streamlit_app.py','.python-version','.gitignore']);
+const EXCLUDED_FILES = new Set(['MONETIZATION_LAB.md','README.md','LICENSE','requirements.txt','streamlit_app.py','.python-version','.gitignore','VERCEL_REST.md']);
 
 async function collectFiles(root = process.cwd(), dir = '.') {
   const entries = await readdir(path.join(root, dir), { withFileTypes: true });
@@ -156,20 +128,27 @@ async function deploy() {
       project: project.id,
       target: 'production',
       files,
-      projectSettings: { framework: null },
       meta: { source: 'flow-vercel-rest', commitSha: process.env.GITHUB_SHA || '' },
     }),
   });
   const ready = await waitForDeployment(deployment.id);
   const url = ready.alias?.[0] || ready.url || deployment.url;
-  console.log(JSON.stringify({ ok: true, projectId: project.id, deploymentId: ready.id, url: url ? `https://${url.replace(/^https?:\/\//,'')}` : null }, null, 2));
+  console.log(JSON.stringify({
+    ok: true,
+    projectId: project.id,
+    deploymentId: ready.id,
+    url: url ? `https://${url.replace(/^https?:\/\//,'')}` : null,
+  }, null, 2));
 }
 
 async function status() {
   const project = await getProject();
   if (!project) throw new Error(`Project ${PROJECT_ID || PROJECT_NAME} not found.`);
   const deployments = await request(`/v6/deployments?projectId=${encodeURIComponent(project.id)}&limit=5`);
-  console.log(JSON.stringify({ project: { id: project.id, name: project.name, ssoProtection: project.ssoProtection ?? null }, deployments: deployments.deployments || [] }, null, 2));
+  console.log(JSON.stringify({
+    project: { id: project.id, name: project.name, ssoProtection: project.ssoProtection ?? null },
+    deployments: deployments.deployments || [],
+  }, null, 2));
 }
 
 try {
