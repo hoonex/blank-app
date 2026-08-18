@@ -41,14 +41,41 @@ document.addEventListener('click', (event) => {
   flowShareInvite();
 }, true);
 
-(function applyQuickStartFromLink() {
-  const quick = Number(new URLSearchParams(location.search).get('quick'));
-  if (![10, 25, 40, 50].includes(quick)) return;
-  requestAnimationFrame(() => {
-    const button = document.querySelector(`[data-quick="${quick}"]`);
-    if (button) {
-      button.click();
-      flowShowToast(`${quick}분 원정 준비 완료`);
+function installFirstRunDemo() {
+  const state = flowReadState();
+  if ((Number(state.totalSessions) || 0) > 0) return;
+  const row = document.querySelector('.quick-row');
+  if (!row || row.querySelector('[data-demo="true"]')) return;
+  const demo = document.createElement('button');
+  demo.type = 'button';
+  demo.dataset.demo = 'true';
+  demo.textContent = '2m 체험';
+  demo.addEventListener('click', () => {
+    if (typeof setQuick === 'function') {
+      setQuick(2);
+      flowShowToast('2분 체험 원정 준비 완료');
     }
   });
+  row.prepend(demo);
+}
+
+(function applyEntryMode() {
+  installFirstRunDemo();
+  const quick = Number(new URLSearchParams(location.search).get('quick'));
+  if ([2, 10, 25, 40, 50].includes(quick)) {
+    requestAnimationFrame(() => {
+      if (quick === 2 && typeof setQuick === 'function') setQuick(2);
+      else document.querySelector(`[data-quick="${quick}"]`)?.click();
+      flowShowToast(`${quick}분 원정 준비 완료`);
+    });
+    return;
+  }
+
+  const state = flowReadState();
+  if ((Number(state.totalSessions) || 0) === 0 && typeof setQuick === 'function') {
+    requestAnimationFrame(() => {
+      setQuick(2);
+      flowShowToast('처음이라면 2분 체험부터 해보세요');
+    });
+  }
 })();
