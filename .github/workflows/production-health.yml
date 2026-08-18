@@ -25,6 +25,10 @@ jobs:
           set -euo pipefail
           grep -qi 'Flow Calendar' index.html
           grep -qi 'Flow Focus' focus.html
+          grep -qi 'Flow Quest' quest.html
+          grep -qi 'flow-quest-state-v1' quest.js
+          grep -qi 'CURRENT BOSS' quest.html
+          grep -qi 'quest-panel' quest.css
           grep -qi '시험 공부시간 계산기' study-calculator.html
           grep -qi '내신 5등급 계산기' grade-calculator.html
           grep -qi 'glass-panel' styles.css
@@ -50,6 +54,9 @@ jobs:
           }
           check "index.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
+          check "quest.html" "Flow Quest" "text/html"
+          check "quest.css" "quest-panel" "text/css"
+          check "quest.js" "flow-quest-state-v1" "application/javascript"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
           check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
