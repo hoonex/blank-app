@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: flow-vercel-production
@@ -39,11 +40,35 @@ jobs:
         run: node --check scripts/vercel-rest.mjs
 
       - name: Deploy through Vercel REST API
+        id: deploy
         if: env.VERCEL_TOKEN != ''
-        run: node scripts/vercel-rest.mjs deploy
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/vercel-rest.mjs deploy 2>&1 | tee /tmp/vercel-deploy.log
 
       - name: Explain missing token
         if: env.VERCEL_TOKEN == ''
         run: |
-          echo 'VERCEL_TOKEN is not configured yet.'
-          echo 'The REST deployment module is installed and validated; production deploy is intentionally skipped.'
+          echo 'VERCEL_TOKEN is not configured yet.' | tee /tmp/vercel-deploy.log
+          echo 'The REST deployment module is installed and validated; production deploy is intentionally skipped.' | tee -a /tmp/vercel-deploy.log
+
+      - name: Publish deployment result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          {
+            echo "### Vercel REST deploy — ${GITHUB_SHA:0:7}"
+            echo
+            echo '```text'
+            tail -n 40 /tmp/vercel-deploy.log 2>/dev/null || echo 'No deployment log was produced.'
+            echo '```'
+          } > /tmp/deploy-comment.md
+          gh issue comment 14 --repo hoonex/blank-app --body-file /tmp/deploy-comment.md
+
+      - name: Fail when REST deployment failed
+        if: steps.deploy.outcome == 'failure'
+        run: exit 1
