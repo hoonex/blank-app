@@ -1,0 +1,139 @@
+/* Flow School v5 — restrained surfaces, soft press feedback, squircle geometry */
+:root{
+  --v5-card:rgba(255,255,255,.74);
+  --v5-card-strong:rgba(255,255,255,.9);
+  --v5-tonal:rgba(76,112,208,.09);
+  --v5-shadow:0 10px 30px rgba(70,88,112,.08),0 2px 8px rgba(70,88,112,.045);
+  --v5-shadow-float:0 12px 26px rgba(47,65,91,.14);
+  --v5-pressed:0 4px 10px rgba(58,76,101,.12);
+}
+html[data-theme="dark"]{
+  --v5-card:rgba(35,44,55,.82);
+  --v5-card-strong:rgba(42,52,64,.94);
+  --v5-tonal:rgba(134,165,255,.11);
+  --v5-shadow:0 12px 30px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.1);
+  --v5-shadow-float:0 14px 30px rgba(0,0,0,.25);
+  --v5-pressed:0 4px 12px rgba(0,0,0,.2);
+}
+
+/* Continuous-corner fallback + progressive squircle where supported. */
+.neo-panel,.neo-button,.primary-button,.school-search-panel,.search-box,.search-results,.result-btn,.school-identity,.school-badge,.nav-item,.mobile-school-button,.school-hero,.status-card,.content-card,.day-chip,.period-button,.period-no,.meal-tab,.dish,.event,.week-cell,.calendar-day,.schedule-row,.profile-hero,.info-tile,.mobile-bottom-nav,.mobile-tab,.sheet,.dialog-close,.choice-chip,.subject-chip,.allergy-chip,.segmented button,.selected-day-panel,.national-schedule-card,.rank-card,.rank-field input,.rank-result{
+  border-radius:22px;
+}
+@supports (corner-shape:squircle){
+  .neo-panel,.neo-button,.primary-button,.school-search-panel,.search-box,.search-results,.result-btn,.school-identity,.school-badge,.nav-item,.mobile-school-button,.school-hero,.status-card,.content-card,.day-chip,.period-button,.period-no,.meal-tab,.dish,.event,.week-cell,.calendar-day,.schedule-row,.profile-hero,.info-tile,.mobile-bottom-nav,.mobile-tab,.sheet,.dialog-close,.choice-chip,.subject-chip,.allergy-chip,.segmented button,.selected-day-panel,.national-schedule-card,.rank-card,.rank-field input,.rank-result{corner-shape:squircle}
+}
+
+/* Content is flat. Neumorphism is reserved for controls. */
+.content-card,.status-card,.week-card,.calendar-card,.profile-hero,.info-tile,.schedule-row,.event,.week-cell{
+  border:0!important;
+  background:var(--v5-card)!important;
+  box-shadow:var(--v5-shadow)!important;
+}
+.desktop-sidebar,.school-search-panel,.sheet{
+  border:0!important;
+}
+.period-button{
+  border:0!important;
+  background:var(--v5-card-strong)!important;
+  box-shadow:0 5px 16px rgba(70,88,112,.07)!important;
+}
+.period-button:active{transform:translateY(1px) scale(.995)!important;box-shadow:0 2px 8px rgba(70,88,112,.08)!important}
+.period-no{box-shadow:none!important;background:var(--surface-soft)!important}
+.day-chip,.meal-tab,.calendar-head button,.choice-chip,.subject-chip,.allergy-chip,.segmented button{
+  border:0!important;
+  box-shadow:0 6px 16px rgba(70,88,112,.07)!important;
+  background:var(--surface-strong)!important;
+}
+.day-chip:active,.meal-tab:active,.calendar-head button:active,.choice-chip:active,.subject-chip:active,.allergy-chip:active,.segmented button:active{
+  transform:translateY(1px) scale(.985)!important;
+  box-shadow:var(--v5-pressed)!important;
+}
+.day-chip.active,.meal-tab.active,.choice-chip.active,.subject-chip.selected,.allergy-chip.selected,.segmented button.active{
+  background:var(--accent-soft)!important;
+  color:var(--accent)!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+.neo-button{
+  border:0!important;
+  box-shadow:0 7px 17px rgba(70,88,112,.11)!important;
+}
+.neo-button:active{
+  transform:translateY(1px) scale(.985)!important;
+  box-shadow:var(--v5-pressed)!important;
+}
+.neo-button.active{box-shadow:0 7px 17px rgba(70,88,112,.11)!important;transform:none!important}
+.primary-button:active{transform:translateY(1px) scale(.988)!important;box-shadow:0 5px 12px rgba(68,102,195,.2)!important}
+.nav-item.active,.mobile-tab.active{box-shadow:none!important;background:var(--accent-soft)!important;color:var(--accent)!important}
+.school-identity{box-shadow:none!important;background:var(--surface-soft)!important}
+
+/* Calendar: clean grid, no embossed cells. */
+.calendar-grid{gap:4px!important}
+.calendar-day{
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  border-radius:16px!important;
+  transition:background .16s ease,color .16s ease,transform .14s ease!important;
+}
+.calendar-day:hover{background:var(--surface-soft)!important}
+.calendar-day:active{transform:scale(.96)!important}
+.calendar-day.selected{background:var(--accent)!important;color:#fff!important;box-shadow:0 7px 18px rgba(80,120,232,.2)!important}
+.calendar-day.selected .calendar-event-label{color:rgba(255,255,255,.82)!important}
+.calendar-day.selected .calendar-dot{background:#fff!important}
+.calendar-day.today:not(.selected){outline:0!important;background:var(--accent-soft)!important;color:var(--accent)!important}
+.schedule-row.selected-event{background:var(--accent-soft)!important;box-shadow:none!important}
+
+/* Selected date context in Schedule. */
+.selected-day-panel{padding:15px 16px;margin:-4px 0 14px;background:var(--surface-soft);box-shadow:none}
+.selected-day-panel .selected-day-date{font-size:.66rem;color:var(--muted);font-weight:750}
+.selected-day-panel .selected-day-title{margin-top:5px;font-size:1rem;font-weight:800;letter-spacing:-.035em}
+.selected-day-panel .selected-day-items{display:grid;gap:7px;margin-top:11px}
+.selected-day-item{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;background:var(--v5-card-strong);border-radius:14px}
+.selected-day-item b{font-size:.74rem;line-height:1.45}
+.source-pill{flex:none;font-size:.54rem;font-weight:800;color:var(--accent);background:var(--accent-soft);padding:4px 7px;border-radius:999px}
+
+/* National high-school schedule. */
+.national-schedule-card{margin-top:16px;padding:20px;background:var(--v5-card);box-shadow:var(--v5-shadow)}
+.national-schedule-head{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-bottom:12px}
+.national-schedule-head h2{margin:4px 0 0;font-size:1.1rem;letter-spacing:-.04em}
+.national-schedule-list{display:grid;gap:8px}
+.national-event{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;background:var(--surface-soft);border-radius:15px}
+.national-event time{font-size:.63rem;color:var(--accent);font-weight:800}
+.national-event strong{font-size:.76rem}
+.national-event small{font-size:.58rem;color:var(--muted)}
+
+/* Timetable non-class/vacation state. */
+.timetable-state{padding:30px 14px;text-align:center}
+.timetable-state strong{display:block;font-size:1.2rem;letter-spacing:-.04em}
+.timetable-state span{display:block;margin-top:6px;color:var(--muted);font-size:.68rem}
+.period-name.is-empty{color:var(--muted)!important;font-weight:650}
+
+/* Rank calculator. */
+.rank-card{margin-top:16px;padding:20px;background:var(--v5-card);box-shadow:var(--v5-shadow)}
+.rank-card h2{margin:5px 0 0;font-size:1.15rem;letter-spacing:-.04em}
+.rank-card>p{margin:7px 0 16px;color:var(--muted);font-size:.66rem;line-height:1.55}
+.rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rank-field{display:grid;gap:7px;color:var(--muted);font-size:.62rem;font-weight:700}
+.rank-field input{height:46px;border:0;outline:0;background:var(--surface-soft);color:var(--text);padding:0 13px;box-shadow:none}
+.rank-result{margin-top:12px;padding:14px 15px;background:var(--surface-soft);display:flex;justify-content:space-between;gap:12px;align-items:center}
+.rank-result strong{font-size:1rem}
+.rank-result span{font-size:.62rem;color:var(--muted);text-align:right}
+
+/* Remove copy that reads like generated marketing copy. */
+.onboarding-copy .eyebrow{letter-spacing:.1em!important}
+.search-hints{opacity:.88}
+.public-data-note,.source-note{opacity:.8}
+
+@media(max-width:820px){
+  .content-card,.status-card,.week-card,.calendar-card,.national-schedule-card,.rank-card{box-shadow:0 5px 18px rgba(70,88,112,.055)!important}
+  .national-schedule-card,.rank-card{margin:12px 0 0;padding:17px}
+  .national-event{grid-template-columns:52px minmax(0,1fr);gap:8px}.national-event small{grid-column:2}
+  .selected-day-panel{margin:0 0 12px}
+}
+@media(max-width:520px){
+  .rank-grid{grid-template-columns:1fr 1fr}
+  .rank-result{align-items:flex-start;flex-direction:column}.rank-result span{text-align:left}
+  .calendar-day{border-radius:13px!important}
+}
