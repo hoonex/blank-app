@@ -26,6 +26,8 @@ html{scroll-behavior:auto!important}
 }
 .week-head,.week-period{background:var(--surface-2)!important}
 .week-subject.is-empty{color:var(--muted-2)!important;font-weight:600!important}
+.timetable-actions{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
+.timetable-actions .neo-button{white-space:nowrap;min-width:max-content}
 
 /* Keep the landing composition above the fold on landscape tablets / desktop. */
 @media(min-width:821px){
@@ -50,4 +52,22 @@ html{scroll-behavior:auto!important}
   .week-card{padding:12px!important}
   .week-table-wrap{margin:0!important;touch-action:pan-x pan-y}
   .week-cell{min-height:58px!important;padding:9px!important}
+
+  /* Four status blocks as 1 + 2 + 1 reads cleanly; never leave a stranded half-width card. */
+  .status-grid>.status-card:nth-child(4){grid-column:1/-1}
+
+  /* On narrow screens the heading owns the text, controls stay one-line and compact. */
+  .timetable-card .card-heading{display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:start!important}
+  .timetable-card .card-heading>div:first-child{min-width:0}
+  .timetable-actions{gap:5px}
+  .timetable-actions .neo-button{min-height:34px!important;padding:0 9px!important;font-size:.6rem!important;border-radius:11px!important}
+
+  .mobile-bottom-nav{contain:layout paint;will-change:auto}
+}
+
+@media(max-width:430px){
+  .school-hero,.school-hero-content{min-height:190px!important}
+  .school-hero-content{padding:14px!important}
+  .status-grid{grid-template-columns:1fr 1fr!important}
+  .timetable-card .card-heading p{max-width:210px}
 }
