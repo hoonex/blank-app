@@ -17,32 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Check production home
+      - name: Verify public production routes
+        shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
-            --retry 3 --retry-delay 3 --connect-timeout 10 --max-time 25 \
-            -o /tmp/home.html \
-            https://flow-focus-agfvrd-5616s-projects.vercel.app/
-          test -s /tmp/home.html
-          grep -qiE 'Flow|Calendar|Focus' /tmp/home.html
-
-      - name: Check Flow Focus
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location \
-            --retry 3 --retry-delay 3 --connect-timeout 10 --max-time 25 \
-            -o /tmp/focus.html \
-            https://flow-focus-agfvrd-5616s-projects.vercel.app/focus.html
-          test -s /tmp/focus.html
-          grep -qi 'Flow Focus' /tmp/focus.html
-
-      - name: Check study calculator
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location \
-            --retry 3 --retry-delay 3 --connect-timeout 10 --max-time 25 \
-            -o /tmp/calculator.html \
-            https://flow-focus-agfvrd-5616s-projects.vercel.app/study-calculator.html
-          test -s /tmp/calculator.html
-          grep -qi '시험 공부시간 계산기' /tmp/calculator.html
+          base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
+          check() {
+            path="$1"
+            expected="$2"
+            file="/tmp/$(echo "$path" | tr '/.' '__').out"
+            code=$(curl --silent --show-error --location \
+              --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
+              -o "$file" -w '%{http_code}' "${base}${path}")
+            echo "PATH=${path:-/} HTTP=$code BYTES=$(wc -c < "$file")"
+            test "$code" = "200"
+            grep -qi "$expected" "$file"
+          }
+          check "" "Flow"
+          check "focus.html" "Flow Focus"
+          check "study-calculator.html" "시험 공부시간 계산기"
+          check "styles.css" "glass-panel"
+          check "app.js" "flow-calendar-events-v1"
