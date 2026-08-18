@@ -23,12 +23,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -qi 'Flow Calendar' index.html
-          grep -qi 'Flow Focus' focus.html
-          grep -qi '시험 공부시간 계산기' study-calculator.html
-          grep -qi '내신 5등급 계산기' grade-calculator.html
-          grep -qi 'glass-panel' styles.css
-          grep -qi 'flow-calendar-events-v1' app.js
+          for file in index.html focus.html quest.html quest.css quest.js study-calculator.html grade-calculator.html styles.css app.js; do
+            test -s "$file"
+            echo "OK $file"
+          done
+          node --check app.js
+          node --check quest.js
+          grep -q 'Flow Quest' quest.html
+          grep -q 'flow-quest-state-v1' quest.js
+          grep -q "location.href='./quest.html'" index.html
 
       - name: Verify public static site renders as HTML
         if: github.event_name != 'pull_request'
@@ -50,6 +53,9 @@ jobs:
           }
           check "index.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
+          check "quest.html" "Flow Quest" "text/html"
+          check "quest.css" "quest-panel" "text/css"
+          check "quest.js" "flow-quest-state-v1" "application/javascript"
           check "study-calculator.html" "시험 공부시간 계산기" "text/html"
           check "grade-calculator.html" "내신 5등급 계산기" "text/html"
           check "styles.css" "glass-panel" "text/css"
