@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html focus.html quest.html quest.css quest.js quest-analytics.js quest-growth.js study-calculator.html grade-calculator.html styles.css app.js; do
+          for file in index.html calendar.html focus.html quest.html quest.css quest.js quest-analytics.js quest-growth.js study-calculator.html grade-calculator.html styles.css app.js; do
             test -s "$file"
             echo "OK $file"
           done
@@ -31,12 +31,13 @@ jobs:
           node --check quest.js
           node --check quest-analytics.js
           node --check quest-growth.js
+          grep -q 'location.replace' index.html
+          grep -q 'quest.html' index.html
+          grep -q 'Flow Calendar' calendar.html
           grep -q 'Flow Quest' quest.html
           grep -q 'flow-quest-state-v1' quest.js
           grep -q 'flow-quest-event' quest-analytics.js
           grep -q 'quest-growth.js' quest.html
-          grep -q 'quick' quest-growth.js
-          grep -q "location.href='./quest.html'" index.html
 
       - name: Verify public static site renders as HTML
         if: github.event_name != 'pull_request'
@@ -56,7 +57,8 @@ jobs:
             [[ "$mime" == "$mime_prefix"* ]]
             grep -qi "$expected" "$file"
           }
-          check "index.html" "Flow Calendar" "text/html"
+          check "index.html" "Flow Quest" "text/html"
+          check "calendar.html" "Flow Calendar" "text/html"
           check "focus.html" "Flow Focus" "text/html"
           check "quest.html" "Flow Quest" "text/html"
           check "quest.css" "quest-panel" "text/css"
