@@ -38,6 +38,9 @@ jobs:
           grep -q 'manifest.webmanifest' index.html
           grep -q 'flow-school-profile-v2' school.js
           grep -q 'functions/v1/school-data' school.js
+          grep -q 'functions/v1/flow-quest-event' school-extras.js
+          grep -q "track('page_view')" school-extras.js
+          grep -q "track('return_visit')" school-extras.js
           grep -q 'flow-student-blush.vercel.app' robots.txt
           grep -q 'flow-student-blush.vercel.app' sitemap.xml
           grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
