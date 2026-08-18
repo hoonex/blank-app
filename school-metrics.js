@@ -1,3 +1,12 @@
+const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
+const ANON_KEY = 'flow-school-anon-v1';
+const SEEN_KEY = 'flow-school-seen-v1';
+
+/*
+ * v5 still layers enhancements over the original shell. During module setup only,
+ * keep the two known DOM observers shallow so text updates cannot retrigger them.
+ * Restore the native prototype immediately after the enhancement modules are ready.
+ */
 const nativeObserve = MutationObserver.prototype.observe;
 MutationObserver.prototype.observe = function(target, options = {}) {
   const guarded = target instanceof Element && ['timetable', 'calendarGrid'].includes(target.id) && options.childList
@@ -6,19 +15,59 @@ MutationObserver.prototype.observe = function(target, options = {}) {
   return nativeObserve.call(this, target, guarded);
 };
 
-const v5Style = document.createElement('link');
-v5Style.rel = 'stylesheet';
-v5Style.href = './school-v5.css';
-document.head.append(v5Style);
-const hotfixStyle = document.createElement('link');
-hotfixStyle.rel = 'stylesheet';
-hotfixStyle.href = './school-hotfix.css';
-document.head.append(hotfixStyle);
-import('./school-v5.js').then(() => import('./school-hotfix.js')).catch(() => {});
+function loadStyle(href) {
+  if (document.querySelector(`link[href="${href}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  document.head.append(link);
+}
 
-const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
-const ANON_KEY = 'flow-school-anon-v1';
-const SEEN_KEY = 'flow-school-seen-v1';
+loadStyle('./school-v5.css');
+loadStyle('./school-hotfix.css');
+
+(async () => {
+  try {
+    await import('./school-v5.js');
+    await import('./school-hotfix.js');
+  } finally {
+    MutationObserver.prototype.observe = nativeObserve;
+  }
+})();
+
+/*
+ * The legacy view switcher requests a smooth scroll-to-top on every programmatic
+ * tab click. Route restoration also uses synthetic clicks, so that could fight a
+ * user's finger while the page was already being scrolled. Only a real user tab
+ * press may reset the page, and that reset is instant rather than animated.
+ */
+const nativeScrollTo = window.scrollTo.bind(window);
+let allowNavReset = false;
+document.addEventListener('click', (event) => {
+  if (!event.target.closest?.('[data-view],[data-go-view]')) return;
+  allowNavReset = event.isTrusted;
+  queueMicrotask(() => { allowNavReset = false; });
+}, true);
+window.scrollTo = (...args) => {
+  const options = args[0];
+  if (options && typeof options === 'object' && Number(options.top) === 0 && options.behavior === 'smooth') {
+    if (!allowNavReset) return;
+    return nativeScrollTo({ ...options, behavior: 'auto' });
+  }
+  return nativeScrollTo(...args);
+};
+
+/* Avoid a costly :has(dialog[open]) selector and make scroll locking explicit. */
+const dialogs = [...document.querySelectorAll('dialog')];
+function syncDialogLock() {
+  document.body.classList.toggle('dialog-open', dialogs.some(dialog => dialog.open));
+}
+for (const dialog of dialogs) {
+  new MutationObserver(syncDialogLock).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+  dialog.addEventListener('close', syncDialogLock);
+  dialog.addEventListener('cancel', syncDialogLock);
+}
+syncDialogLock();
 
 let anonId = localStorage.getItem(ANON_KEY);
 if (!anonId) {
@@ -108,9 +157,8 @@ function ensureShareButton() {
   }
 }
 
+/* The timetable heading is static, so observing the whole timetable subtree was unnecessary. */
 ensureShareButton();
-const timetable = document.querySelector('#timetable');
-if (timetable) new MutationObserver(() => ensureShareButton()).observe(timetable, { childList: true, subtree: true });
 
 document.addEventListener('click', (event) => {
   if (event.target.closest?.('[data-result-index]')) track('school_select');
