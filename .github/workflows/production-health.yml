@@ -19,39 +19,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Flow School v5 files
+      - name: Verify Flow School runtime
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-v5.js school-hotfix.css school-hotfix.js sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs; do
             test -s "$file"
             echo "OK $file"
           done
           node --input-type=module --check < school.js
           node --check school-metrics.js
-          node --check school-v5.js
-          node --check school-hotfix.js
           node --check sw.js
           node --check scripts/vercel-rest.mjs
           python -m json.tool vercel.json >/dev/null
           grep -q 'Flow School' index.html
           grep -q 'school-metrics.js' index.html
           grep -q 'flow-school-profile-v3' school.js
-          grep -q "import('./school-v5.js')" school-metrics.js
-          grep -q "import('./school-hotfix.js')" school-metrics.js
-          grep -q 'MutationObserver.prototype.observe = nativeObserve' school-metrics.js
-          grep -q 'allowNavReset' school-metrics.js
-          grep -q 'school-hotfix.css' school-metrics.js
-          grep -q 'NATIONAL_2026' school-v5.js
-          grep -q "'/schedule':'schedule'" school-v5.js
+          grep -q 'NATIONAL_2026' school.js
+          grep -q "'/schedule':'schedule'" school.js
+          grep -q 'renderActiveView' school.js
+          grep -q 'memoryCache' school.js
+          grep -q 'school-polish.css' school-metrics.js
+          ! grep -q "import('./school-v5.js')" school-metrics.js
+          ! grep -q 'MutationObserver' school.js
+          ! grep -q 'MutationObserver' school-metrics.js
+          ! grep -q 'scrollTo' school.js
           grep -q 'corner-shape:squircle' school-v5.css
           grep -q 'body.dialog-open' school-hotfix.css
-          grep -q 'overflow-x:auto' school-hotfix.css
-          grep -q 'overscroll-behavior-x:contain' school-hotfix.css
-          grep -q '공휴일' school-hotfix.js
-          grep -q 'flow-school-shell-v6' sw.js
-          grep -q 'school-hotfix.css' sw.js
-          grep -q 'school-hotfix.js' sw.js
+          grep -q 'week-cell' school-polish.css
+          grep -q 'flow-school-shell-v7' sw.js
+          grep -q 'school-polish.css' sw.js
           grep -q '"/home"' vercel.json
           grep -q '"/schedule"' vercel.json
           grep -q 'flow-student-blush.vercel.app' robots.txt
@@ -84,8 +81,7 @@ jobs:
           python - <<'PY'
           import json
           data=json.load(open('/tmp/classes.json'))
-          assert 'classes' in data, data
-          assert isinstance(data['classes'], list), data
+          assert 'classes' in data and isinstance(data['classes'], list), data
           print('class API OK:', len(data['classes']))
           PY
 
@@ -119,8 +115,7 @@ jobs:
           import json
           data=json.load(open('/tmp/dashboard.json'))
           for key in ('timetable','meals','events'):
-            assert key in data, data
-            assert isinstance(data[key], list), (key, data[key])
+            assert key in data and isinstance(data[key], list), (key, data.get(key))
           school=data.get('school') or {}
           for key in ('name','officeName','address','homepage'):
             assert key in school, (key, school)
