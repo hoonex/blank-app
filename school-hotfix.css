@@ -1,0 +1,25 @@
+/* Small mobile stability patch based on real-device screenshots. */
+body:has(dialog[open]){overflow:hidden}
+
+@media(max-width:820px){
+  html{scroll-padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+  .product-shell{padding-bottom:calc(122px + env(safe-area-inset-bottom))!important}
+  .mobile-topbar,
+  .mobile-bottom-nav{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  .mobile-topbar{background:color-mix(in srgb,var(--bg) 98%,transparent)!important}
+  .mobile-bottom-nav{background:color-mix(in srgb,var(--surface) 97%,transparent)!important}
+  dialog::backdrop{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  .week-table-wrap{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    padding-bottom:8px;
+  }
+  .week-cell{box-shadow:none!important}
+  .week-head,.week-period{background:var(--surface-2)!important}
+}

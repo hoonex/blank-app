@@ -1,8 +1,20 @@
+const nativeObserve = MutationObserver.prototype.observe;
+MutationObserver.prototype.observe = function(target, options = {}) {
+  const guarded = target instanceof Element && ['timetable', 'calendarGrid'].includes(target.id) && options.childList
+    ? { ...options, subtree: false }
+    : options;
+  return nativeObserve.call(this, target, guarded);
+};
+
 const v5Style = document.createElement('link');
 v5Style.rel = 'stylesheet';
 v5Style.href = './school-v5.css';
 document.head.append(v5Style);
-import('./school-v5.js').catch(() => {});
+const hotfixStyle = document.createElement('link');
+hotfixStyle.rel = 'stylesheet';
+hotfixStyle.href = './school-hotfix.css';
+document.head.append(hotfixStyle);
+import('./school-v5.js').then(() => import('./school-hotfix.js')).catch(() => {});
 
 const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
 const ANON_KEY = 'flow-school-anon-v1';
