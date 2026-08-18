@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const API = 'https://api.vercel.com';
@@ -8,10 +8,23 @@ const TEAM_ID = process.env.VERCEL_TEAM_ID || '';
 const PROJECT_ID = process.env.VERCEL_PROJECT_ID || '';
 const PROJECT_NAME = process.env.VERCEL_PROJECT_NAME || 'flow-student';
 const DISABLE_AUTH = process.env.VERCEL_DISABLE_AUTH !== 'false';
+const STATUS_FILE = process.env.VERCEL_STATUS_FILE || '';
 const command = process.argv[2] || 'deploy';
+
+async function writeStatus(payload) {
+  if (!STATUS_FILE) return;
+  const status = {
+    ...payload,
+    projectName: PROJECT_NAME,
+    generatedAt: new Date().toISOString(),
+    commitSha: process.env.GITHUB_SHA || null,
+  };
+  await writeFile(STATUS_FILE, `${JSON.stringify(status, null, 2)}\n`, 'utf8');
+}
 
 if (!TOKEN) {
   console.error('VERCEL_TOKEN is required.');
+  await writeStatus({ ok: false, error: 'VERCEL_TOKEN is required.' });
   process.exit(2);
 }
 
@@ -83,7 +96,7 @@ async function ensureProject() {
 
 const TEXT_EXTENSIONS = new Set(['.html','.css','.js','.mjs','.json','.xml','.txt','.svg','.webmanifest']);
 const EXCLUDED_DIRS = new Set(['.git','.github','node_modules','scripts','.devcontainer','__pycache__']);
-const EXCLUDED_FILES = new Set(['MONETIZATION_LAB.md','README.md','LICENSE','requirements.txt','streamlit_app.py','.python-version','.gitignore','VERCEL_REST.md']);
+const EXCLUDED_FILES = new Set(['MONETIZATION_LAB.md','README.md','LICENSE','requirements.txt','streamlit_app.py','.python-version','.gitignore','VERCEL_REST.md','vercel-deployment.json']);
 
 async function collectFiles(root = process.cwd(), dir = '.') {
   const entries = await readdir(path.join(root, dir), { withFileTypes: true });
@@ -133,22 +146,29 @@ async function deploy() {
   });
   const ready = await waitForDeployment(deployment.id);
   const url = ready.alias?.[0] || ready.url || deployment.url;
-  console.log(JSON.stringify({
+  const result = {
     ok: true,
     projectId: project.id,
     deploymentId: ready.id,
     url: url ? `https://${url.replace(/^https?:\/\//,'')}` : null,
-  }, null, 2));
+    readyState: ready.readyState || ready.state || 'READY',
+    ssoProtection: project.ssoProtection ?? null,
+  };
+  await writeStatus(result);
+  console.log(JSON.stringify(result, null, 2));
+  return result;
 }
 
 async function status() {
   const project = await getProject();
   if (!project) throw new Error(`Project ${PROJECT_ID || PROJECT_NAME} not found.`);
   const deployments = await request(`/v6/deployments?projectId=${encodeURIComponent(project.id)}&limit=5`);
-  console.log(JSON.stringify({
+  const result = {
     project: { id: project.id, name: project.name, ssoProtection: project.ssoProtection ?? null },
     deployments: deployments.deployments || [],
-  }, null, 2));
+  };
+  console.log(JSON.stringify(result, null, 2));
+  return result;
 }
 
 try {
@@ -157,6 +177,8 @@ try {
   else if (command === 'project') console.log(JSON.stringify(await ensureProject(), null, 2));
   else throw new Error(`Unknown command: ${command}`);
 } catch (error) {
-  console.error(`Vercel REST module failed: ${error.message}`);
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`Vercel REST module failed: ${message}`);
+  try { await writeStatus({ ok: false, error: message }); } catch (statusError) { console.error(`Could not write status file: ${statusError.message}`); }
   process.exit(1);
 }
