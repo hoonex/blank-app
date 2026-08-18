@@ -17,30 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Diagnose production routes
+      - name: Verify public production routes
         shell: bash
         run: |
-          set -u
-          failed=0
+          set -euo pipefail
+          base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
           check() {
             path="$1"
             expected="$2"
-            file="/tmp/$(echo "$path" | tr '/.' '__').html"
+            file="/tmp/$(echo "$path" | tr '/.' '__').out"
             code=$(curl --silent --show-error --location \
-              --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 25 \
-              -o "$file" -w '%{http_code}' \
-              "https://flow-focus-agfvrd-5616s-projects.vercel.app${path}" || echo curl_error)
-            echo "PATH=$path HTTP=$code BYTES=$(wc -c < "$file" 2>/dev/null || echo 0)"
-            title=$(grep -oim1 '<title>[^<]*</title>' "$file" 2>/dev/null || true)
-            echo "TITLE=${title:-none}"
-            if [ "$code" != "200" ] || ! grep -qi "$expected" "$file" 2>/dev/null; then
-              echo "VERIFY=FAIL expected=$expected"
-              failed=1
-            else
-              echo "VERIFY=PASS expected=$expected"
-            fi
+              --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
+              -o "$file" -w '%{http_code}' "${base}${path}")
+            echo "PATH=${path:-/} HTTP=$code BYTES=$(wc -c < "$file")"
+            test "$code" = "200"
+            grep -qi "$expected" "$file"
           }
-          check "/" "Flow"
-          check "/focus.html" "Flow Focus"
-          check "/study-calculator.html" "시험 공부시간 계산기"
-          exit "$failed"
+          check "" "Flow"
+          check "focus.html" "Flow Focus"
+          check "study-calculator.html" "시험 공부시간 계산기"
+          check "styles.css" "glass-panel"
+          check "app.js" "flow-calendar-events-v1"
