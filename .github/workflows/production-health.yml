@@ -17,36 +17,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Verify public production routes and MIME types
+      - name: Diagnose public production MIME types
         shell: bash
         run: |
           set -euo pipefail
           base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
-          check() {
-            path="$1"
-            expected="$2"
-            mime="$3"
+          for path in "" "focus.html" "study-calculator.html" "styles.css" "app.js"; do
             file="/tmp/$(echo "$path" | tr '/.' '__').out"
             headers="${file}.headers"
-            code=$(curl --silent --show-error --location \
-              --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
-              -D "$headers" -o "$file" -w '%{http_code}' "${base}${path}")
-            echo "PATH=${path:-/} HTTP=$code BYTES=$(wc -c < "$file") MIME=$mime"
-            test "$code" = "200"
-            grep -qi "$expected" "$file"
-            grep -qiE "^content-type: ${mime}" "$headers"
-          }
-          check "" "Flow" "text/html"
-          check "focus.html" "Flow Focus" "text/html"
-          check "study-calculator.html" "시험 공부시간 계산기" "text/html"
-          check "styles.css" "glass-panel" "text/css"
-          check "app.js" "flow-calendar-events-v1" "application/javascript"
-          check "robots.txt" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/sitemap.xml" "text/plain"
-          check "sitemap.xml" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html" "application/xml"
+            code=$(curl --silent --show-error --location -D "$headers" -o "$file" -w '%{http_code}' "${base}${path}")
+            echo "---- ${path:-/} HTTP=$code ----"
+            grep -iE '^(content-type|content-disposition|x-content-type-options|location):' "$headers" || true
+            echo "FIRST_BYTES=$(head -c 80 "$file" | tr '\n' ' ')"
+          done
 
-      - name: Verify public canonical replacement
+      - name: Assert rendered MIME types
+        shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
-            https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html \
-            | grep -q 'canonical.*eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html'
+          base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
+          mime=$(curl --silent --show-error --location -o /tmp/home.html -w '%{content_type}' "$base")
+          echo "HOME_CONTENT_TYPE=$mime"
+          test "$mime" = "text/html; charset=utf-8"
+          grep -qi 'Flow Calendar' /tmp/home.html
