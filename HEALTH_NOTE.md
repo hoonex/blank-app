@@ -1,1 +1,0 @@
-Flow School health trigger.
