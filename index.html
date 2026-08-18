@@ -1,1 +1,252 @@
-<!doctype html><html lang="ko" data-theme="system"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f4f6f8"><meta name="description" content="학교를 고르면 시간표, 급식, 학사일정을 바로 보여주는 학생용 학교생활 대시보드."><title>Flow School</title><link rel="manifest" href="./manifest.webmanifest"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="./school.css"></head><body><div class="loading-line" id="loadingLine"></div><div class="app"><header class="topbar glass"><div class="brand"><span class="brand-mark"></span><span class="brand-text">Flow School</span></div><div class="top-actions"><button class="school-btn hidden" id="schoolBtn" type="button"><span id="schoolNameTop">학교</span><span class="school-class" id="schoolClassTop"></span></button><button class="icon-btn" id="themeBtn" type="button">A</button></div></header><main><section class="landing" id="landing"><div class="landing-inner"><div class="landing-kicker">FLOW SCHOOL</div><h1>학교생활,<br>열자마자 바로.</h1><p>학교를 한 번만 선택하세요. 다음부터는 오늘 시간표, 급식, 학사일정을 바로 보여줍니다.</p><div class="search-wrap"><div class="search-box"><input id="schoolSearch" type="search" autocomplete="off" placeholder="학교 이름 검색 · 예: 정동고"><button id="schoolSearchBtn" type="button">찾기</button></div><div class="search-results hidden" id="schoolResults"></div></div><div class="landing-features"><span><i></i>설정 자동 기억</span><span><i></i>NEIS 데이터</span><span><i></i>선택과목 수정</span></div></div></section><section class="dashboard hidden" id="dashboard"><div class="error-box hidden" id="errorBox"></div><section class="hero"><div><div class="hero-kicker" id="heroKicker">TODAY</div><h1 id="heroDate">오늘</h1><div class="hero-sub" id="heroSub"></div></div><div class="date-nav"><button id="prevDay" type="button">‹</button><div class="date-title" id="dateTitle"></div><button id="nextDay" type="button">›</button><button class="ghost-btn" id="todayBtn" type="button">오늘</button></div></section><section class="quickbar"><div class="quick"><span>수업</span><strong id="quickLessons">—</strong></div><div class="quick"><span>급식</span><strong id="quickMeal">—</strong></div><div class="quick"><span>다음 일정</span><strong id="quickEvent">—</strong></div></section><section id="todaySection"><div class="workspace"><article class="card"><div class="card-head"><div><div class="card-title">시간표</div><div class="card-caption">요일을 눌러 날짜를 바꿉니다.</div></div><button class="soft-btn" id="editSubjectsBtn" type="button">과목 수정</button></div><div class="day-strip" id="dayStrip"></div><div class="timetable" id="timetable"></div></article><div><article class="card"><div class="card-head"><div><div class="card-title">급식</div><div class="card-caption">메뉴를 누르면 음식 사진도 바로 볼 수 있습니다.</div></div></div><div class="meal-tabs" id="mealTabs"></div><div class="meal-list" id="mealList"></div><div class="meal-cal" id="mealCal"></div></article><article class="card schedule-card"><div class="card-head"><div><div class="card-title">다가오는 일정</div></div></div><div class="event-list" id="eventList"></div></article></div></div></section><section class="hidden" id="weekSection"><article class="card week-card"><div class="card-head"><div><div class="card-title">이번 주</div></div><div class="date-nav"><button id="prevWeek" type="button">‹</button><button id="nextWeek" type="button">›</button></div></div><div class="week-table-wrap"><div class="week-table" id="weekTable"></div></div></article></section><section class="hidden" id="scheduleSection"><article class="card week-card"><div class="card-head"><div><div class="card-title">학사일정</div></div></div><div class="schedule-grid" id="scheduleGrid"></div></article></section><p class="source-note">교육부·17개 시도교육청 NEIS 교육정보 개방 데이터를 사용합니다.</p></section></main></div><nav class="bottom-nav hidden" id="bottomNav"><button class="tab-btn active" type="button" data-view="today">오늘</button><button class="tab-btn" type="button" data-view="week">주간</button><button class="tab-btn" type="button" data-view="schedule">일정</button></nav><dialog id="setupDialog"><div class="sheet"><button class="close-btn dialog-close" type="button">×</button><h2>내 반 설정</h2><p>이 설정은 현재 기기에만 저장됩니다.</p><div class="setup-school" id="setupSchoolName"></div><div class="field-label">학년</div><div class="grade-row" id="gradeRow"></div><div class="field-label">반</div><div class="class-control"><button id="classMinus" type="button">−</button><input id="classInput" type="number" min="1" max="99" value="1"><button id="classPlus" type="button">+</button></div><button class="primary-btn" id="setupSave" type="button">이대로 시작</button></div></dialog><dialog id="switchDialog"><div class="sheet"><button class="close-btn dialog-close" type="button">×</button><h2>학교 바꾸기</h2><p id="currentSchoolMeta"></p><div class="search-wrap modal-search"><div class="search-box"><input id="switchSearch" type="search" autocomplete="off" placeholder="다른 학교 검색"></div><div class="search-results hidden" id="switchResults"></div></div><button class="soft-btn" id="changeSchoolBtn" type="button">현재 설정 지우기</button></div></dialog><div class="toast" id="toast"></div><script type="module" src="./school.js"></script><script type="module" src="./school-extras.js"></script></body></html>
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#edf2f7">
+  <meta name="description" content="학교를 한 번 선택하면 시간표, 급식, 학사일정, 학교정보를 바로 보여주는 학생용 학교생활 대시보드.">
+  <title>Flow School</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./school.css">
+</head>
+<body>
+  <div class="loading-line" id="loadingLine" aria-hidden="true"></div>
+
+  <section class="onboarding" id="landing">
+    <div class="onboarding-orb orb-a" aria-hidden="true"></div>
+    <div class="onboarding-orb orb-b" aria-hidden="true"></div>
+    <header class="landing-header">
+      <a class="flow-logo" href="./" aria-label="Flow School 홈">
+        <span class="flow-logo-mark">F</span>
+        <span class="flow-logo-copy"><strong>Flow</strong><small>School</small></span>
+      </a>
+      <button class="neo-button compact" id="landingThemeBtn" type="button" aria-label="테마 변경">Light</button>
+    </header>
+    <main class="onboarding-main">
+      <div class="onboarding-copy">
+        <span class="eyebrow">SCHOOL, WITHOUT THE FRICTION</span>
+        <h1>학교생활을<br><span>한 화면에.</span></h1>
+        <p>학교만 한 번 고르면 끝. 시간표, 급식, 학사일정과 학교정보를 매번 다시 찾지 않아도 됩니다.</p>
+      </div>
+      <div class="school-search-panel neo-panel">
+        <label for="schoolSearch">내 학교 찾기</label>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+          <input id="schoolSearch" type="search" autocomplete="off" placeholder="정동고, 동부고처럼 검색">
+          <button id="schoolSearchBtn" type="button">검색</button>
+        </div>
+        <div class="search-results hidden" id="schoolResults"></div>
+        <div class="search-hints">
+          <span>학교·반 자동 기억</span><span>NEIS 실시간 데이터</span><span>선택과목 직접 수정</span>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <div class="product-shell hidden" id="dashboard">
+    <aside class="desktop-sidebar neo-panel" id="desktopSidebar">
+      <a class="flow-logo sidebar-logo" href="./" aria-label="Flow School">
+        <span class="flow-logo-mark">F</span>
+        <span class="flow-logo-copy"><strong>Flow</strong><small>School</small></span>
+      </a>
+      <button class="school-identity" id="schoolBtn" type="button">
+        <span class="school-badge mini"><img id="schoolLogoSmall" alt=""><b id="schoolInitialSmall">S</b></span>
+        <span class="school-identity-copy"><strong id="schoolNameTop">학교</strong><small id="schoolClassTop">학년 · 반</small></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <nav class="side-nav" aria-label="주요 메뉴">
+        <button class="nav-item active" data-view="today" type="button"><span>오늘</span><small>시간표 · 급식</small></button>
+        <button class="nav-item" data-view="week" type="button"><span>주간</span><small>주간 시간표</small></button>
+        <button class="nav-item" data-view="schedule" type="button"><span>일정</span><small>학사 캘린더</small></button>
+        <button class="nav-item" data-view="school" type="button"><span>학교</span><small>학교 기본정보</small></button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="countdown-pill" id="csatPill"><span>2027 수능</span><strong id="csatDday">D-—</strong></div>
+      <button class="nav-item settings-trigger" id="settingsBtn" type="button"><span>설정</span><small>타종 · 테마 · 앱</small></button>
+    </aside>
+
+    <main class="product-main">
+      <header class="mobile-topbar">
+        <a class="flow-logo" href="./" aria-label="Flow School">
+          <span class="flow-logo-mark">F</span>
+          <span class="flow-logo-copy"><strong>Flow</strong><small>School</small></span>
+        </a>
+        <button class="mobile-school-button" id="mobileSchoolBtn" type="button">
+          <span id="mobileSchoolName">학교</span><small id="mobileClassName">학년 · 반</small>
+        </button>
+      </header>
+
+      <div class="error-box hidden" id="errorBox"></div>
+
+      <section class="view" id="todayView" data-view-panel="today">
+        <section class="school-hero neo-panel" id="schoolHero">
+          <div class="school-hero-image" id="schoolHeroImage" aria-hidden="true"></div>
+          <div class="school-hero-shade" aria-hidden="true"></div>
+          <div class="school-hero-content">
+            <div class="school-badge"><img id="schoolLogo" alt=""><b id="schoolInitial">S</b></div>
+            <div class="school-hero-copy">
+              <span class="eyebrow light" id="heroEyebrow">TODAY</span>
+              <h1 id="heroSchoolName">학교</h1>
+              <p id="heroSchoolMeta">학년 · 반</p>
+            </div>
+            <div class="hero-right">
+              <div class="date-controller neo-float">
+                <button id="prevDay" type="button" aria-label="이전 날짜">‹</button>
+                <label class="date-label" for="datePicker"><strong id="heroDate">오늘</strong><span id="dateTitle">날짜</span></label>
+                <input id="datePicker" type="date" aria-label="날짜 선택">
+                <button id="nextDay" type="button" aria-label="다음 날짜">›</button>
+              </div>
+              <button class="today-jump" id="todayBtn" type="button">오늘로</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="status-grid">
+          <article class="status-card neo-panel clock-card">
+            <span class="status-label">지금</span>
+            <strong id="clockTitle">수업 시간 확인 중</strong>
+            <p id="clockCaption">학교별 타종 차이는 설정에서 조정할 수 있어요.</p>
+            <div class="progress-track"><i id="clockProgress"></i></div>
+          </article>
+          <article class="status-card neo-panel"><span class="status-label">오늘 수업</span><strong id="quickLessons">—</strong><p id="quickLessonSub">시간표 기준</p></article>
+          <article class="status-card neo-panel"><span class="status-label">급식</span><strong id="quickMeal">—</strong><p id="quickMealSub">오늘 제공</p></article>
+          <article class="status-card neo-panel"><span class="status-label">다음 일정</span><strong id="quickEvent">—</strong><p id="quickEventSub">학사일정 기준</p></article>
+        </section>
+
+        <section class="today-grid">
+          <article class="content-card neo-panel timetable-card">
+            <div class="card-heading">
+              <div><span class="section-kicker">TIMETABLE</span><h2>오늘 시간표</h2><p>비어 있는 교시는 선택과목으로 두고 직접 채울 수 있어요.</p></div>
+              <button class="neo-button" id="editSubjectsBtn" type="button">과목 편집</button>
+            </div>
+            <div class="day-strip" id="dayStrip"></div>
+            <div class="timetable" id="timetable"></div>
+          </article>
+
+          <div class="right-stack">
+            <article class="content-card neo-panel meal-card">
+              <div class="card-heading compact-heading">
+                <div><span class="section-kicker">MEAL</span><h2>급식</h2><p>메뉴를 누르면 음식 사진을 검색해요.</p></div>
+                <button class="neo-button compact" id="allergyBtn" type="button">알레르기</button>
+              </div>
+              <div class="meal-tabs" id="mealTabs"></div>
+              <div class="meal-list" id="mealList"></div>
+              <div class="meal-footer"><span id="mealCal"></span><button class="text-button" id="mealDetailBtn" type="button">영양·원산지</button></div>
+              <div class="meal-details hidden" id="mealDetails"></div>
+            </article>
+
+            <article class="content-card neo-panel upcoming-card">
+              <div class="card-heading compact-heading"><div><span class="section-kicker">UP NEXT</span><h2>다가오는 일정</h2></div><button class="text-button" data-go-view="schedule" type="button">전체 보기</button></div>
+              <div class="event-list" id="eventList"></div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="view hidden" id="weekView" data-view-panel="week">
+        <header class="view-header">
+          <div><span class="section-kicker">WEEK</span><h1>주간 시간표</h1><p id="weekRangeText">이번 주 수업을 한눈에 봅니다.</p></div>
+          <div class="week-controls"><button class="neo-button compact" id="prevWeek" type="button">이전 주</button><button class="neo-button compact" id="thisWeekBtn" type="button">이번 주</button><button class="neo-button compact" id="nextWeek" type="button">다음 주</button></div>
+        </header>
+        <article class="content-card neo-panel week-card"><div class="week-table-wrap"><div class="week-table" id="weekTable"></div></div></article>
+      </section>
+
+      <section class="view hidden" id="scheduleView" data-view-panel="schedule">
+        <header class="view-header">
+          <div><span class="section-kicker">SCHEDULE</span><h1>학사일정</h1><p>시험, 행사, 휴업일을 월별로 확인합니다.</p></div>
+          <label class="month-picker neo-button"><span>월 선택</span><input id="monthPicker" type="month"></label>
+        </header>
+        <div class="schedule-layout">
+          <article class="content-card neo-panel calendar-card"><div class="calendar-head"><button id="prevMonth" type="button">‹</button><strong id="calendarMonthTitle">이번 달</strong><button id="nextMonth" type="button">›</button></div><div class="calendar-grid" id="calendarGrid"></div></article>
+          <article class="content-card neo-panel"><div class="card-heading compact-heading"><div><span class="section-kicker">EVENTS</span><h2>이번 달 일정</h2></div></div><div class="schedule-list" id="scheduleGrid"></div></article>
+        </div>
+      </section>
+
+      <section class="view hidden" id="schoolView" data-view-panel="school">
+        <header class="view-header"><div><span class="section-kicker">SCHOOL PROFILE</span><h1>학교 정보</h1><p>NEIS 학교기본정보를 보기 좋게 정리했습니다.</p></div></header>
+        <section class="profile-hero neo-panel">
+          <div class="profile-photo" id="profilePhoto"></div>
+          <div class="profile-overlay"></div>
+          <div class="profile-content"><div class="school-badge large"><img id="profileLogo" alt=""><b id="profileInitial">S</b></div><div><span id="profileKind">학교</span><h2 id="profileName">학교 이름</h2><p id="profileEnglishName"></p></div></div>
+        </section>
+        <section class="school-info-grid" id="schoolInfoGrid"></section>
+        <section class="school-actions">
+          <a class="neo-button action-link" id="homepageLink" target="_blank" rel="noopener noreferrer">학교 홈페이지</a>
+          <a class="neo-button action-link" id="mapLink" target="_blank" rel="noopener noreferrer">지도에서 보기</a>
+          <a class="neo-button action-link" id="phoneLink">학교에 전화</a>
+          <a class="neo-button action-link" id="schoolInfoLink" href="https://www.schoolinfo.go.kr/Main.do" target="_blank" rel="noopener noreferrer">학교알리미</a>
+        </section>
+        <p class="public-data-note">학생수·교원수·시설·도서관 등 학교알리미의 세부 공시는 별도 공시 API 데이터라 NEIS 기본정보와 구분해 표시합니다.</p>
+      </section>
+
+      <footer class="source-note">교육부·17개 시도교육청 NEIS 교육정보 개방 데이터를 사용합니다.</footer>
+    </main>
+
+    <nav class="mobile-bottom-nav" id="bottomNav" aria-label="모바일 메뉴">
+      <button class="mobile-tab active" data-view="today" type="button"><span>오늘</span></button>
+      <button class="mobile-tab" data-view="week" type="button"><span>주간</span></button>
+      <button class="mobile-tab" data-view="schedule" type="button"><span>일정</span></button>
+      <button class="mobile-tab" data-view="school" type="button"><span>학교</span></button>
+      <button class="mobile-tab" id="mobileSettingsBtn" type="button"><span>설정</span></button>
+    </nav>
+  </div>
+
+  <dialog id="setupDialog">
+    <form method="dialog" class="sheet neo-panel" onsubmit="return false">
+      <button class="dialog-close" type="button" aria-label="닫기">×</button>
+      <span class="section-kicker">ONE-TIME SETUP</span><h2>학년과 반만 고르면 끝.</h2><p id="setupSchoolName">선택한 학교</p>
+      <div class="field-label">학년</div><div class="choice-grid grades" id="gradeRow"></div>
+      <div class="field-label">반</div><div class="choice-grid classes" id="classRow"><span class="loading-copy">반 정보 불러오는 중</span></div>
+      <div class="manual-class hidden" id="manualClassWrap"><label>직접 입력<input id="classInput" type="text" inputmode="numeric" value="1"></label></div>
+      <button class="primary-button" id="setupSave" type="button">내 시간표 열기</button>
+    </form>
+  </dialog>
+
+  <dialog id="switchDialog">
+    <div class="sheet neo-panel">
+      <button class="dialog-close" type="button" aria-label="닫기">×</button>
+      <span class="section-kicker">CHANGE SCHOOL</span><h2>학교 또는 반 바꾸기</h2><p id="currentSchoolMeta"></p>
+      <div class="search-box modal-search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg><input id="switchSearch" type="search" autocomplete="off" placeholder="다른 학교 검색"></div>
+      <div class="search-results modal-results hidden" id="switchResults"></div>
+      <button class="neo-button full" id="reselectClassBtn" type="button">현재 학교에서 학년·반 다시 선택</button>
+      <button class="text-button danger" id="changeSchoolBtn" type="button">저장된 학교 지우기</button>
+    </div>
+  </dialog>
+
+  <dialog id="subjectDialog">
+    <div class="sheet subject-sheet neo-panel">
+      <button class="dialog-close" type="button" aria-label="닫기">×</button>
+      <span class="section-kicker">ELECTIVE</span><h2 id="subjectDialogTitle">선택과목 바꾸기</h2><p>같은 요일·교시에 다음 주에도 그대로 적용됩니다.</p>
+      <div class="subject-presets" id="subjectPresets"></div>
+      <label class="custom-subject">직접 입력<input id="customSubjectInput" type="text" maxlength="40" placeholder="예: 인공지능 기초"></label>
+      <div class="dialog-actions"><button class="neo-button" id="resetSubjectBtn" type="button">NEIS로 되돌리기</button><button class="primary-button inline" id="saveSubjectBtn" type="button">저장</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="allergyDialog">
+    <div class="sheet neo-panel">
+      <button class="dialog-close" type="button" aria-label="닫기">×</button>
+      <span class="section-kicker">ALLERGY</span><h2>알레르기 표시</h2><p>선택한 성분이 포함된 급식 메뉴를 눈에 띄게 표시합니다. 설정은 이 기기에만 저장됩니다.</p>
+      <div class="allergy-grid" id="allergyGrid"></div>
+      <button class="primary-button" id="saveAllergyBtn" type="button">저장</button>
+    </div>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <div class="sheet settings-sheet neo-panel">
+      <button class="dialog-close" type="button" aria-label="닫기">×</button>
+      <span class="section-kicker">SETTINGS</span><h2>내 화면 설정</h2>
+      <div class="settings-group"><h3>화면</h3><div class="segmented" id="themeSegment"><button data-theme-choice="light" type="button">밝게</button><button data-theme-choice="system" type="button">기기 설정</button><button data-theme-choice="dark" type="button">어둡게</button></div></div>
+      <div class="settings-group"><h3>예상 타종표</h3><p>현재 교시 표시에만 사용됩니다. 학교 실제 타종과 다르면 여기서 맞추세요.</p><div class="setting-fields"><label>1교시 시작<input id="bellStart" type="time" value="08:30"></label><label>수업 시간<input id="lessonMinutes" type="number" min="30" max="90" value="50"><span>분</span></label><label>쉬는 시간<input id="breakMinutes" type="number" min="5" max="30" value="10"><span>분</span></label></div></div>
+      <div class="settings-group"><h3>앱처럼 사용</h3><p>지원되는 브라우저에서는 홈 화면에 설치할 수 있습니다.</p><button class="neo-button full" id="installBtn" type="button">홈 화면에 설치</button></div>
+      <button class="primary-button" id="saveSettingsBtn" type="button">설정 저장</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./school.js"></script>
+</body>
+</html>
