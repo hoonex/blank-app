@@ -17,26 +17,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Diagnose public production MIME types
+      - name: Verify jsDelivr public static site
         shell: bash
         run: |
           set -euo pipefail
-          base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
-          for path in "" "focus.html" "study-calculator.html" "styles.css" "app.js"; do
+          base="https://cdn.jsdelivr.net/gh/hoonex/blank-app@main/"
+          check() {
+            path="$1"
+            expected="$2"
+            mime_prefix="$3"
             file="/tmp/$(echo "$path" | tr '/.' '__').out"
-            headers="${file}.headers"
-            code=$(curl --silent --show-error --location -D "$headers" -o "$file" -w '%{http_code}' "${base}${path}")
-            echo "---- ${path:-/} HTTP=$code ----"
-            grep -iE '^(content-type|content-disposition|x-content-type-options|location):' "$headers" || true
-            echo "FIRST_BYTES=$(head -c 80 "$file" | tr '\n' ' ')"
-          done
-
-      - name: Assert rendered MIME types
-        shell: bash
-        run: |
-          set -euo pipefail
-          base="https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/"
-          mime=$(curl --silent --show-error --location -o /tmp/home.html -w '%{content_type}' "$base")
-          echo "HOME_CONTENT_TYPE=$mime"
-          test "$mime" = "text/html; charset=utf-8"
-          grep -qi 'Flow Calendar' /tmp/home.html
+            mime=$(curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 25 \
+              -o "$file" -w '%{content_type}' "${base}${path}")
+            echo "PATH=$path MIME=$mime BYTES=$(wc -c < "$file")"
+            [[ "$mime" == "$mime_prefix"* ]]
+            grep -qi "$expected" "$file"
+          }
+          check "index.html" "Flow Calendar" "text/html"
+          check "focus.html" "Flow Focus" "text/html"
+          check "study-calculator.html" "시험 공부시간 계산기" "text/html"
+          check "styles.css" "glass-panel" "text/css"
+          check "app.js" "flow-calendar-events-v1" "application/javascript"
