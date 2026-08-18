@@ -3,7 +3,7 @@ const ANON_KEY = 'flow-school-anon-v1';
 const SEEN_KEY = 'flow-school-seen-v1';
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
-for (const href of ['./school-v5.css','./school-hotfix.css']) {
+for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
   if (document.querySelector(`link[href="${href}"]`)) continue;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
