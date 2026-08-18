@@ -23,6 +23,7 @@ if (intro) intro.textContent = '시간표, 급식, 학사일정과 학교정보�
 const hints = document.querySelector('.search-hints');
 if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span>';
 
+const telemetryEnabled = !['localhost','127.0.0.1','::1'].includes(location.hostname);
 let anonId = localStorage.getItem(ANON_KEY);
 if (!anonId) {
   anonId = crypto.randomUUID();
@@ -30,6 +31,7 @@ if (!anonId) {
 }
 
 function track(name) {
+  if (!telemetryEnabled) return;
   fetch(EVENT_EDGE, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
