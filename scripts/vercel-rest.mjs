@@ -10,6 +10,7 @@ const PROJECT_NAME = process.env.VERCEL_PROJECT_NAME || 'flow-student';
 const DISABLE_AUTH = process.env.VERCEL_DISABLE_AUTH !== 'false';
 const STATUS_FILE = process.env.VERCEL_STATUS_FILE || '';
 const command = process.argv[2] || 'deploy';
+const CLEAN_ROUTES = ['home','week','schedule','school'];
 
 async function writeStatus(payload) {
   if (!STATUS_FILE) return;
@@ -117,6 +118,19 @@ async function collectFiles(root = process.cwd(), dir = '.') {
   return files;
 }
 
+function addCleanRouteFallbacks(files) {
+  const index = files.find((f) => f.file === 'index.html');
+  if (!index) throw new Error('index.html not found in deployment files.');
+  const routeHtml = index.data.includes('<base ')
+    ? index.data
+    : index.data.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}\n  <base href="/">`);
+  for (const route of CLEAN_ROUTES) {
+    const file = `${route}/index.html`;
+    if (!files.some((f) => f.file === file)) files.push({ file, data: routeHtml });
+  }
+  return files;
+}
+
 async function waitForDeployment(id) {
   for (let i = 0; i < 90; i += 1) {
     const deployment = await request(`/v13/deployments/${encodeURIComponent(id)}`);
@@ -129,10 +143,30 @@ async function waitForDeployment(id) {
   throw new Error('Timed out waiting for Vercel deployment.');
 }
 
+async function verifyCleanRoutes(baseUrl) {
+  if (!baseUrl) return;
+  for (const route of CLEAN_ROUTES) {
+    const target = new URL(`/${route}`, baseUrl).toString();
+    let response = null;
+    let lastError = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        response = await fetch(target, { redirect: 'follow', signal: AbortSignal.timeout(10000) });
+        if (response.ok) break;
+        lastError = new Error(`${target} -> ${response.status}`);
+      } catch (error) {
+        lastError = error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+    if (!response?.ok) throw new Error(`Clean route verification failed: ${lastError?.message || target}`);
+    console.log(`Verified ${route}: ${response.status}`);
+  }
+}
+
 async function deploy() {
   const project = await ensureProject();
-  const files = await collectFiles();
-  if (!files.some((f) => f.file === 'index.html')) throw new Error('index.html not found in deployment files.');
+  const files = addCleanRouteFallbacks(await collectFiles());
   console.log(`Deploying ${files.length} text assets to ${project.name}...`);
   const deployment = await request('/v13/deployments', {
     method: 'POST',
@@ -141,11 +175,16 @@ async function deploy() {
       project: project.id,
       target: 'production',
       files,
+      projectSettings: { framework: null },
       meta: { source: 'flow-vercel-rest', commitSha: process.env.GITHUB_SHA || '' },
     }),
   });
   const ready = await waitForDeployment(deployment.id);
-  const url = ready.alias?.[0] || ready.url || deployment.url;
+  const deploymentUrl = ready.url || deployment.url;
+  const alias = ready.alias?.[0] || null;
+  const verifyUrl = deploymentUrl ? `https://${deploymentUrl.replace(/^https?:\/\//,'')}` : (alias ? `https://${alias.replace(/^https?:\/\//,'')}` : null);
+  await verifyCleanRoutes(verifyUrl);
+  const url = alias || deploymentUrl;
   const result = {
     ok: true,
     projectId: project.id,
@@ -153,6 +192,7 @@ async function deploy() {
     url: url ? `https://${url.replace(/^https?:\/\//,'')}` : null,
     readyState: ready.readyState || ready.state || 'READY',
     ssoProtection: project.ssoProtection ?? null,
+    verifiedRoutes: CLEAN_ROUTES.map((route) => `/${route}`),
   };
   await writeStatus(result);
   console.log(JSON.stringify(result, null, 2));
