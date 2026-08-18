@@ -1,5 +1,5 @@
-const CACHE='flow-school-shell-v5';
-const SHELL=['/','/index.html','/school.css','/school.js','/school-metrics.js','/school-v5.css','/school-v5.js','/manifest.webmanifest'];
+const CACHE='flow-school-shell-v6';
+const SHELL=['/','/index.html','/school.css','/school.js','/school-metrics.js','/school-v5.css','/school-v5.js','/school-hotfix.css','/school-hotfix.js','/manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
