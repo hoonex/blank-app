@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d11" />
+  <meta name="description" content="2025학년도 고1부터 적용되는 고교 내신 5등급제를 기준으로 석차와 수강자 수를 입력해 예상 등급과 누적 백분위를 계산합니다." />
+  <meta name="keywords" content="내신 등급 계산기, 5등급제, 고교 내신, 석차 등급, 2028 대입" />
+  <link rel="canonical" href="https://raw.githack.com/hoonex/blank-app/main/grade-calculator.html" />
+  <title>내신 5등급 계산기 — 석차로 예상 등급 확인 | Flow Focus</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0d11;--panel:#151922cc;--line:#ffffff18;--text:#f6f7fb;--muted:#969daa;--accent:#c9dbff;--good:#9be3c7}*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(circle at 20% 0%,#1a2235 0,#0b0d11 38%);color:var(--text);font-family:Inter,"Noto Sans KR",system-ui,sans-serif}body{min-height:100vh}.wrap{width:min(860px,calc(100% - 22px));margin:auto;padding:20px 0 50px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}.brand{font-weight:700}.top a{color:#dce7ff;text-decoration:none;border:1px solid var(--line);padding:9px 12px;border-radius:12px;background:#ffffff08}.hero h1{font-size:clamp(2.1rem,8vw,4.8rem);line-height:1.02;letter-spacing:-.055em;margin:0}.hero p{max-width:680px;color:var(--muted);line-height:1.7}.panel{margin-top:22px;border:1px solid var(--line);background:linear-gradient(#ffffff08,#ffffff03),var(--panel);backdrop-filter:blur(22px);border-radius:24px;padding:20px;box-shadow:0 28px 80px #0007}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:7px}.field label{font-size:.78rem;color:var(--muted)}input{width:100%;background:#ffffff09;border:1px solid var(--line);color:var(--text);border-radius:13px;padding:13px;outline:none;font:inherit}.btn{margin-top:14px;width:100%;border:0;border-radius:14px;padding:13px 15px;font:inherit;font-weight:700;color:#142039;background:linear-gradient(#edf3ff,#b8cdf6);cursor:pointer}.result{display:none;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.result.show{display:block}.grade{font-size:clamp(3.4rem,13vw,7rem);font-weight:800;letter-spacing:-.08em}.sub{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:15px}.card{border:1px solid var(--line);background:#ffffff06;border-radius:15px;padding:13px}.card span{font-size:.72rem;color:var(--muted);display:block}.card strong{display:block;margin-top:5px}.table{margin-top:22px;overflow:auto;border:1px solid var(--line);border-radius:18px}.table table{width:100%;border-collapse:collapse;min-width:520px}.table th,.table td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:.82rem}.table th{color:var(--muted);font-weight:600}.note,.source{margin-top:20px;color:var(--muted);line-height:1.7;font-size:.78rem}.source a{color:#cbdcff}@media(max-width:620px){.grid,.cards{grid-template-columns:1fr}.panel{padding:16px;border-radius:20px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><div class="brand">Flow Focus</div><a href="./study-calculator.html">공부시간 계산기</a></header>
+    <section class="hero"><h1>내신 5등급,<br>내 석차는 몇 등급?</h1><p>2025학년도 고1부터 적용되는 5등급 상대평가 기준으로 석차와 수강자 수를 넣으면 예상 등급과 누적 위치를 바로 계산합니다.</p></section>
+    <section class="panel">
+      <form id="calc"><div class="grid">
+        <div class="field"><label for="rank">내 석차</label><input id="rank" type="number" min="1" value="12" required></div>
+        <div class="field"><label for="total">수강자 수</label><input id="total" type="number" min="1" value="120" required></div>
+      </div><button class="btn" type="submit">예상 등급 계산</button></form>
+      <div id="result" class="result"><div class="grade"><span id="grade">-</span>등급</div><div class="sub" id="summary"></div><div class="cards"><div class="card"><span>누적 위치</span><strong id="percent">-</strong></div><div class="card"><span>다음 상위 등급 기준</span><strong id="next">-</strong></div><div class="card"><span>현재 구간</span><strong id="band">-</strong></div></div></div>
+      <div class="table"><table><thead><tr><th>등급</th><th>개별 비율</th><th>누적 상위</th></tr></thead><tbody><tr><td>1등급</td><td>10%</td><td>10%</td></tr><tr><td>2등급</td><td>24%</td><td>34%</td></tr><tr><td>3등급</td><td>32%</td><td>66%</td></tr><tr><td>4등급</td><td>24%</td><td>90%</td></tr><tr><td>5등급</td><td>10%</td><td>100%</td></tr></tbody></table></div>
+      <p class="note">이 계산기는 석차 ÷ 수강자 수로 누적 백분위를 계산한 간단한 참고용 도구입니다. 실제 학교 성적 산출은 동점자 처리, 과목별 평가 방식, 학교 지침에 따라 달라질 수 있습니다.</p>
+      <p class="source">기준: 2028 대입제도 개편에 따라 2025학년도 고1부터 고교 내신 상대평가가 5등급제로 개편되며, 누적 기준은 10%·34%·66%·90%·100%입니다.</p>
+    </section>
+  </main>
+  <script>
+    const cuts=[10,34,66,90,100],labels=['상위 10%','상위 10~34%','상위 34~66%','상위 66~90%','상위 90~100%'];
+    document.querySelector('#calc').addEventListener('submit',e=>{e.preventDefault();const rank=Number(document.querySelector('#rank').value);const total=Number(document.querySelector('#total').value);if(rank<1||total<1||rank>total){alert('석차는 1 이상, 수강자 수 이하로 입력하세요.');return;}const pct=rank/total*100;let g=cuts.findIndex(c=>pct<=c)+1;document.querySelector('#grade').textContent=g;document.querySelector('#percent').textContent=`상위 ${pct.toFixed(1)}%`;document.querySelector('#band').textContent=labels[g-1];document.querySelector('#next').textContent=g===1?'이미 최상위 구간':`상위 ${cuts[g-2]}% 이내`;document.querySelector('#summary').textContent=`${total}명 중 ${rank}등 기준 예상 ${g}등급입니다.`;document.querySelector('#result').classList.add('show')});
+  </script>
+</body>
+</html>
