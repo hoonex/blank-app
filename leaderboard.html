@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko" data-theme="system">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#edf1f6" />
+  <meta name="description" content="Flow Quest 서버 검증 집중 기록 리더보드." />
+  <title>Flow Arena — 리더보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./home.css" />
+  <style>
+    .arena-shell{width:min(900px,calc(100% - 28px));margin:0 auto;padding:18px 0 60px}.arena-head{padding:70px 10px 24px}.arena-head h1{font-size:clamp(2.7rem,8vw,6rem);line-height:.96;letter-spacing:-.07em;margin:0}.arena-head p{max-width:620px;color:var(--muted);line-height:1.7;font-size:.86rem}.board{border-radius:24px;overflow:hidden}.board-head,.board-row{display:grid;grid-template-columns:64px minmax(0,1fr) 130px 110px;gap:12px;align-items:center;padding:15px 18px}.board-head{color:var(--muted);font-size:.6rem;letter-spacing:.1em;font-weight:700;border-bottom:1px solid var(--line)}.board-row{border-bottom:1px solid var(--line);font-size:.8rem}.board-row:last-child{border-bottom:0}.board-row.me{background:color-mix(in srgb,var(--accent) 8%,transparent)}.position{font-size:1rem;font-weight:700}.player{display:flex;gap:10px;align-items:center}.player-mark{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--panel-soft);border:1px solid var(--line);font-size:.68rem;font-weight:700}.xp,.minutes{font-variant-numeric:tabular-nums}.xp{font-weight:700}.minutes{color:var(--muted)}.empty{padding:38px 20px;color:var(--muted);text-align:center;font-size:.8rem}.arena-note{margin-top:12px;padding:15px 17px;border-radius:18px;color:var(--muted);font-size:.72rem;line-height:1.6}.arena-actions{display:flex;gap:8px;margin-top:18px}.arena-actions a{color:var(--text);text-decoration:none;border:1px solid var(--line);background:var(--panel-soft);border-radius:12px;padding:10px 13px;font-size:.74rem;font-weight:600}@media(max-width:620px){.arena-shell{width:min(100% - 18px,900px);padding-top:9px}.arena-head{padding:52px 4px 20px}.board-head{display:none}.board-row{grid-template-columns:34px minmax(0,1fr) auto;padding:14px 13px}.minutes{display:none}.xp{text-align:right}.board{border-radius:20px}}
+  </style>
+</head>
+<body>
+  <div class="ambient ambient-a" aria-hidden="true"></div><div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="arena-shell">
+    <header class="topbar glass"><a class="brand" href="./index.html"><span class="brand-dot"></span><span>Flow Arena</span></a><div class="top-actions"><button class="icon-btn" id="themeBtn" type="button"><span id="themeLabel">SYSTEM</span></button><a class="account-btn" href="./quest.html"><span class="avatar">Q</span><span>QUEST</span></a></div></header>
+    <section class="arena-head"><span class="eyebrow">WEEKLY ARENA — BETA</span><h1>공부한 만큼만<br>순위가 오른다.</h1><p>현재는 누적 XP 기준 베타 리더보드입니다. 로그인 상태에서 Flow Quest 집중 타이머를 실제로 완료한 세션만 서버에서 검증해 반영합니다.</p><div class="arena-actions"><a href="./quest.html">원정 시작</a><a href="./index.html">홈으로</a></div></section>
+    <section class="board glass" aria-label="리더보드"><div class="board-head"><span>RANK</span><span>PLAYER</span><span>XP</span><span>FOCUS</span></div><div id="boardRows"><div class="empty">순위를 불러오는 중…</div></div></section>
+    <div class="arena-note glass-soft">공정성 메모: 브라우저 localStorage 숫자는 순위에 사용하지 않습니다. 로그인 사용자가 서버에 시작 기록을 만들고, 설정한 집중 시간이 실제로 경과한 뒤 완료된 세션만 XP가 적립됩니다. 완전한 부정행위 방지는 아니지만 단순 점수 조작은 막는 구조입니다.</div>
+  </div>
+  <script type="module" src="./leaderboard.js"></script>
+</body>
+</html>
