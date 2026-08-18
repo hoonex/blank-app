@@ -38,3 +38,12 @@ jobs:
           check "study-calculator.html" "시험 공부시간 계산기"
           check "styles.css" "glass-panel"
           check "app.js" "flow-calendar-events-v1"
+          check "robots.txt" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/sitemap.xml"
+          check "sitemap.xml" "eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html"
+
+      - name: Verify public canonical replacement
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html \
+            | grep -q 'canonical.*eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/study-calculator.html'
