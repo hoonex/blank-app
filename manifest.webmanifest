@@ -1,0 +1,11 @@
+{
+  "name": "Flow School",
+  "short_name": "Flow School",
+  "description": "시간표, 급식, 학사일정을 한 번에 확인하는 학생용 학교생활 대시보드",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#f4f6f8",
+  "lang": "ko-KR"
+}
