@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 8
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+      VERCEL_TEAM_ID: team_jZtmaTEMCNsqutNYWwFUpxAS
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_PROJECT_NAME: flow-student
       VERCEL_DISABLE_AUTH: 'true'
