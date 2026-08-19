@@ -1,14 +1,20 @@
 const BRAND_RULES=[
-  {key:'cu',label:'CU',match:(v)=>v.startsWith('cu')||v.includes('씨유')},
-  {key:'gs25',label:'GS25',match:(v)=>v.includes('gs25')},
-  {key:'seven',label:'7',match:(v)=>v.includes('세븐일레븐')||v.includes('7eleven')||v.includes('7-eleven')},
-  {key:'emart24',label:'emart24',match:(v)=>v.includes('이마트24')||v.includes('emart24')},
-  {key:'storyway',label:'StoryWay',match:(v)=>v.includes('스토리웨이')||v.includes('storyway')},
+  {key:'cu',types:['stores'],label:'CU',match:(v)=>v.startsWith('cu')||v.includes('씨유'),style:{background:'#7b2cbf',color:'#fff',border:'#7b2cbf'}},
+  {key:'gs25',types:['stores'],label:'GS25',match:(v)=>v.includes('gs25'),style:{background:'#1477d4',color:'#fff',border:'#1477d4',width:38}},
+  {key:'seven',types:['stores'],label:'7',match:(v)=>v.includes('세븐일레븐')||v.includes('7eleven')||v.includes('7-eleven'),style:{background:'#14824a',color:'#fff',border:'#14824a'}},
+  {key:'emart24',types:['stores'],label:'emart24',match:(v)=>v.includes('이마트24')||v.includes('emart24'),style:{background:'#f6c900',color:'#171717',border:'#e7bc00',width:46}},
+  {key:'storyway',types:['stores'],label:'StoryWay',match:(v)=>v.includes('스토리웨이')||v.includes('storyway'),style:{background:'#2773c8',color:'#fff',border:'#2773c8',width:50}},
+  {key:'starbucks',types:['cafes'],label:'STARBUCKS',match:(v)=>v.includes('스타벅스')||v.includes('starbucks'),style:{background:'#00754a',color:'#fff',border:'#00754a',width:58}},
+  {key:'mega',types:['cafes'],label:'MEGA',match:(v)=>v.includes('메가mgc')||v.includes('메가커피')||v.includes('megamgc')||v.includes('megacoffee'),style:{background:'#ffd400',color:'#151515',border:'#e6bf00',width:42}},
+  {key:'compose',types:['cafes'],label:'COMPOSE',match:(v)=>v.includes('컴포즈커피')||v.includes('컴포즈')||v.includes('composecoffee'),style:{background:'#f4cf00',color:'#161616',border:'#dbb900',width:55}},
+  {key:'ediya',types:['cafes'],label:'EDIYA',match:(v)=>v.includes('이디야')||v.includes('ediya'),style:{background:'#173f8a',color:'#fff',border:'#173f8a',width:44}},
+  {key:'paik',types:['cafes'],label:'PAIK',match:(v)=>v.includes('빽다방')||v.includes('paik')||v.includes('paikscoffee'),style:{background:'#1769aa',color:'#ffe442',border:'#1769aa',width:40}},
+  {key:'twosome',types:['cafes'],label:'TWOSOME',match:(v)=>v.includes('투썸플레이스')||v.includes('투썸')||v.includes('atwosomeplace')||v.includes('twosome'),style:{background:'#8b1538',color:'#fff',border:'#8b1538',width:56}},
 ];
 
-export function poiBrand(name=''){
+export function poiBrand(name='',type='stores'){
   const compact=String(name).replace(/\s+/g,'').toLowerCase();
-  return BRAND_RULES.find((rule)=>rule.match(compact))||null;
+  return BRAND_RULES.find((rule)=>rule.types.includes(type)&&rule.match(compact))||null;
 }
 
 export function poiIconSvg(type='stores'){
@@ -19,19 +25,35 @@ export function poiIconSvg(type='stores'){
   return `<svg ${common}><path d="M4 10v9h16v-9M3 10l2-5h14l2 5M8 19v-5h5v5M3 10h18"/></svg>`;
 }
 
+function brandStyleString(brand){
+  if(!brand?.style)return'';
+  const s=brand.style;
+  return `background:${s.background};color:${s.color};border-color:${s.border};${s.width?`width:${s.width}px;`:''}`;
+}
+
+function applyBrandStyle(node,brand){
+  const s=brand?.style;
+  if(!s)return;
+  node.style.background=s.background;
+  node.style.color=s.color;
+  node.style.borderColor=s.border;
+  if(s.width)node.style.width=`${s.width}px`;
+}
+
 export function poiBadgeMarkup(type,item={}){
-  const brand=type==='stores'?poiBrand(item?.name):null;
-  if(brand)return `<span class="campus-poi-badge brand-${brand.key}" data-poi-brand="${brand.key}" aria-hidden="true"><span>${brand.label}</span></span>`;
+  const brand=poiBrand(item?.name,type);
+  if(brand)return `<span class="campus-poi-badge brand-${brand.key}" data-poi-brand="${brand.key}" style="${brandStyleString(brand)}" aria-hidden="true"><span>${brand.label}</span></span>`;
   return `<span class="campus-poi-badge kind-${type}" data-poi-kind="${type}" aria-hidden="true">${poiIconSvg(type)}</span>`;
 }
 
 export function decoratePoiNode(node,type,item={}){
-  const brand=type==='stores'?poiBrand(item?.name):null;
+  const brand=poiBrand(item?.name,type);
   node.title=String(item?.name||'');
   node.setAttribute('aria-label',String(item?.name||'주변 장소'));
   if(brand){
     node.classList.add(`brand-${brand.key}`);
     node.dataset.poiBrand=brand.key;
+    applyBrandStyle(node,brand);
     const text=document.createElement('span');
     text.className='flow-poi-brand-text';
     text.textContent=brand.label;
