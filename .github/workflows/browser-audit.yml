@@ -54,6 +54,10 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/kakao-map-audit.mjs
 
+      - name: Verify official school emblem resolution
+        if: success()
+        run: node tests/school-logo-edge-audit.mjs
+
       - name: Capture current-date mobile and wide-touch layouts
         if: success()
         env:
