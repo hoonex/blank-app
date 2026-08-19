@@ -8,6 +8,7 @@
     { "source": "/school", "destination": "/index.html" },
     { "source": "/university", "destination": "/university/index.html" },
     { "source": "/university/timetable", "destination": "/university/index.html" },
+    { "source": "/university/campus", "destination": "/university/index.html" },
     { "source": "/university/school", "destination": "/university/index.html" }
   ]
 }
