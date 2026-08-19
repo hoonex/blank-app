@@ -1,6 +1,8 @@
 const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
+const SCHOOL_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data';
 const ANON_KEY = 'flow-school-anon-v1';
 const SEEN_KEY = 'flow-school-seen-v1';
+const KAKAO_PLACE_CACHE_PREFIX = 'flow-school-kakao-place-v1:';
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
 for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
@@ -36,6 +38,72 @@ if (timetableCard && !document.querySelector('#neisTimetableHelp')) {
   help.innerHTML = '<summary>시간표가 안 보이나요?</summary><p>학교에 따라 개학 직후 약 1~2주 동안 시간표 조정으로 NEIS에 정보가 아직 반영되지 않아 표시되지 않을 수 있습니다. NEIS에 등록되면 Flow에도 자동으로 표시됩니다.</p>';
   timetableCard.append(help);
 }
+
+/*
+ * Resolve the school address to a real Kakao place URL without exposing the
+ * Kakao REST key to the browser. The Edge Function owns authentication.
+ * Until the precise place result arrives, the button already falls back to a
+ * Kakao Map search URL so it never sends users to the old Google link.
+ */
+function schoolMapContext() {
+  const name = document.querySelector('#profileName')?.textContent?.trim() || '';
+  const addressTile = [...document.querySelectorAll('#schoolInfoGrid .info-tile')]
+    .find((tile) => tile.querySelector('span')?.textContent?.trim() === '주소');
+  const address = addressTile?.querySelector('strong')?.textContent?.trim() || '';
+  if (!name || name === '학교 이름' || !address) return null;
+  return { name, address };
+}
+
+function kakaoSearchUrl(name, address) {
+  return `https://map.kakao.com/link/search/${encodeURIComponent(`${name} ${address}`.trim())}`;
+}
+
+async function hydrateKakaoMapLink() {
+  const link = document.querySelector('#mapLink');
+  const context = schoolMapContext();
+  if (!link || !context) return false;
+
+  link.href = kakaoSearchUrl(context.name, context.address);
+  link.dataset.mapProvider = 'kakao';
+
+  const cacheKey = `${KAKAO_PLACE_CACHE_PREFIX}${context.name}|${context.address}`;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.url && Date.now() - Number(cached.savedAt || 0) < 7 * 86400000) {
+      link.href = String(cached.url).replace(/^http:/, 'https:');
+      link.dataset.mapResolved = 'true';
+      return true;
+    }
+  } catch {}
+
+  try {
+    const url = new URL(SCHOOL_EDGE);
+    url.searchParams.set('action', 'place');
+    url.searchParams.set('name', context.name);
+    url.searchParams.set('address', context.address);
+    const response = await fetch(url);
+    if (!response.ok) return true;
+    const body = await response.json().catch(() => ({}));
+    const placeUrl = body?.place?.url;
+    if (typeof placeUrl === 'string' && /^(?:https?:\/\/)?place\.map\.kakao\.com\//.test(placeUrl.replace(/^https?:\/\//, ''))) {
+      const normalized = placeUrl.startsWith('http') ? placeUrl.replace(/^http:/, 'https:') : `https://${placeUrl}`;
+      link.href = normalized;
+      link.dataset.mapResolved = 'true';
+      localStorage.setItem(cacheKey, JSON.stringify({ url: normalized, savedAt: Date.now() }));
+    }
+  } catch {}
+  return true;
+}
+
+function scheduleKakaoMapHydration(attempt = 0) {
+  const delay = attempt === 0 ? 0 : Math.min(1500, 300 + attempt * 180);
+  setTimeout(async () => {
+    const ready = await hydrateKakaoMapLink();
+    if (!ready && attempt < 6) scheduleKakaoMapHydration(attempt + 1);
+  }, delay);
+}
+
+if (location.pathname === '/school') scheduleKakaoMapHydration();
 
 const telemetryEnabled = !['localhost','127.0.0.1','::1'].includes(location.hostname);
 let anonId = localStorage.getItem(ANON_KEY);
@@ -77,4 +145,6 @@ document.addEventListener('click', (event) => {
   else if (event.target.closest?.('.calendar-day[data-calendar-date]')) track('calendar_date_select');
   else if (event.target.closest?.('.national-event')) track('national_schedule_open');
   else if (event.target.closest?.('#shareTimetableBtn')) track('timetable_share');
+
+  if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) scheduleKakaoMapHydration();
 }, { passive: true });
