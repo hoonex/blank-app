@@ -15,7 +15,7 @@ permissions:
 jobs:
   health:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
 
@@ -23,13 +23,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university.js; do
             test -s "$file"
             echo "OK $file"
           done
           node --input-type=module --check < school.js
           node --check school-metrics.js
           node --check sw.js
+          node --check university/university.js
           node --check scripts/vercel-rest.mjs
           python -m json.tool vercel.json >/dev/null
           grep -q 'Flow School' index.html
@@ -47,10 +48,15 @@ jobs:
           grep -q 'corner-shape:squircle' school-v5.css
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
-          grep -q 'flow-school-shell-v7' sw.js
-          grep -q 'school-polish.css' sw.js
+          grep -q 'flow-school-shell-v8' sw.js
+          grep -q '/university/index.html' sw.js
+          grep -q 'Flow University' university/index.html
+          grep -q 'flow-university-profile-v1' university/university.js
+          grep -q 'import-everytime' university/university.js
           grep -q '"/home"' vercel.json
           grep -q '"/schedule"' vercel.json
+          grep -q '"/university/timetable"' vercel.json
+          grep -q 'UNIVERSITY_CLEAN_ROUTES' scripts/vercel-rest.mjs
           grep -q 'flow-student-blush.vercel.app' robots.txt
           grep -q 'flow-student-blush.vercel.app' sitemap.xml
           grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
@@ -120,4 +126,33 @@ jobs:
           for key in ('name','officeName','address','homepage'):
             assert key in school, (key, school)
           print('dashboard API OK:', school.get('name'))
+          PY
+
+      - name: Verify university API
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data'
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 \
+            "$base?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90&v=6" > /tmp/university.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/university.json'))
+          schools=data.get('schools') or []
+          assert schools and schools[0].get('name')=='경북대학교', data
+          assert all(x.get('division')=='대학' for x in schools), schools
+          print('university search OK:', len(schools))
+          PY
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 \
+            -X POST -H 'content-type: application/json' \
+            -d '{"url":"https://everytime.kr/@de9YHaTAnl47JtxH0muz"}' \
+            "$base?action=import-everytime" > /tmp/everytime.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/everytime.json'))
+          tt=data.get('timetable') or {}
+          subjects=tt.get('subjects') or []
+          assert subjects and any((s.get('times') or []) for s in subjects), data
+          print('Everytime import OK:', len(subjects))
           PY

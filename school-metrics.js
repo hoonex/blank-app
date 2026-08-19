@@ -21,7 +21,7 @@ if (eyebrow) eyebrow.textContent = 'FLOW SCHOOL';
 const intro = document.querySelector('.onboarding-copy p');
 if (intro) intro.textContent = '시간표, 급식, 학사일정과 학교정보를 한곳에서 확인합니다.';
 const hints = document.querySelector('.search-hints');
-if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span>';
+if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span><a class="text-button" href="/university">대학교 시간표</a>';
 
 /*
  * Some schools publish the new term timetable to NEIS later than others.

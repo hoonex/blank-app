@@ -1,0 +1,56 @@
+name: University mode audit
+
+on:
+  push:
+    branches: [feat/university-mode]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  university-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate university source
+        run: |
+          node --check university/university.js
+          node --check scripts/university-audit.mjs
+          node --check scripts/vercel-rest.mjs
+          test -f university/index.html
+          grep -q 'Flow University' university/index.html
+      - name: Verify university server APIs
+        run: |
+          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90' | tee university-search.json | grep -q '경북대학교'
+          curl -fsSL -X POST -H 'content-type: application/json' \
+            -d '{"url":"https://everytime.kr/@de9YHaTAnl47JtxH0muz"}' \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=import-everytime' \
+            | tee university-import.json | grep -q '컴퓨터네트워크및보안'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Start local server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/flow-university-server.log 2>&1 &
+          echo $! > /tmp/flow-university-server.pid
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/university/ >/dev/null && exit 0; sleep .3; done
+          cat /tmp/flow-university-server.log
+          exit 1
+      - name: Run university browser audit
+        run: node scripts/university-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: university-audit
+          path: |
+            university-audit/
+            university-search.json
+            university-import.json
+          retention-days: 5
