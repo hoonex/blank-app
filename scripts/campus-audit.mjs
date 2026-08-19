@@ -27,7 +27,7 @@ await page.evaluate(()=>{
   ]};
   localStorage.setItem('flow-university-timetable-v1',JSON.stringify(timetable));
 });
-await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded'});
+await page.locator('.bottom-nav [data-view="campus"]').click();
 await page.locator('#campusView:not(.hidden)').waitFor({timeout:10000});
 await page.locator('#campusMapWrap img').waitFor({timeout:25000});
 await page.waitForFunction(()=>{const img=document.querySelector('#campusMapWrap img');return img&&img.complete&&img.naturalWidth>100},{timeout:15000});
