@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university.js; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js; do
             test -s "$file"
             echo "OK $file"
           done
@@ -48,9 +48,12 @@ jobs:
           grep -q 'corner-shape:squircle' school-v5.css
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
-          grep -q 'flow-school-shell-v8' sw.js
+          grep -q 'only light' school-polish.css
+          grep -q 'flow-school-shell-v9' sw.js
           grep -q '/university/index.html' sw.js
           grep -q 'Flow University' university/index.html
+          grep -q 'university-polish.css' university/index.html
+          grep -q 'only light' university/university-polish.css
           grep -q 'flow-university-profile-v1' university/university.js
           grep -q 'import-everytime' university/university.js
           grep -q '"/home"' vercel.json

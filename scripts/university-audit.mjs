@@ -6,13 +6,21 @@ const sample = process.env.EVERYTIME_SAMPLE || 'https://everytime.kr/@de9YHaTAnl
 await mkdir('university-audit', { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'ko-KR', isMobile: true, hasTouch: true });
+const context = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'ko-KR', isMobile: true, hasTouch: true, colorScheme: 'dark' });
 const page = await context.newPage();
 const consoleErrors = [], pageErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
 await page.goto(`${base}/university/`, { waitUntil: 'domcontentloaded' });
+const landingTheme = await page.evaluate(() => ({
+  dataTheme: document.documentElement.dataset.theme,
+  bgVar: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+  bodyBackground: getComputedStyle(document.body).backgroundColor,
+  colorScheme: getComputedStyle(document.documentElement).colorScheme,
+}));
+if (landingTheme.dataTheme !== 'light' || landingTheme.bgVar.toLowerCase() !== '#f5f6f8') throw new Error(`University light theme was overridden: ${JSON.stringify(landingTheme)}`);
+
 await page.locator('#universitySearch').fill('경북대학교');
 await page.locator('#searchBtn').click();
 await page.locator('#searchResults .result-button').first().waitFor({ timeout: 15000 });
@@ -27,6 +35,15 @@ await page.locator('#importDialog').waitFor({ state: 'hidden', timeout: 20000 })
 const imported = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || 'null'));
 if (!imported?.subjects?.length) throw new Error('Everytime import did not persist timetable subjects.');
 if (!imported.subjects.some((s) => s.times?.length)) throw new Error('Imported timetable has no timed blocks.');
+
+const appTheme = await page.evaluate(() => ({
+  bodyBackground: getComputedStyle(document.body).backgroundColor,
+  headerBackground: getComputedStyle(document.querySelector('.mobile-header')).backgroundColor,
+  navBackground: getComputedStyle(document.querySelector('.bottom-nav')).backgroundColor,
+  colorScheme: getComputedStyle(document.documentElement).colorScheme,
+}));
+const rgbLuma=(value)=>{const n=(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number);return n.length<3?0:.2126*n[0]+.7152*n[1]+.0722*n[2]};
+if (rgbLuma(appTheme.bodyBackground) < 220 || rgbLuma(appTheme.headerBackground) < 215 || rgbLuma(appTheme.navBackground) < 215) throw new Error(`University mobile Light mode is visually dark: ${JSON.stringify(appTheme)}`);
 
 await page.locator('[data-view="timetable"]').last().click();
 await page.locator('.course-block:visible').first().waitFor({ timeout: 10000 });
@@ -61,7 +78,7 @@ const report = {
   importedSubjectCount: imported.subjects.length,
   importedTimedBlockCount: imported.subjects.flatMap((s) => s.times || []).length,
   mobileVisibleBlocks, mobileAllBlocks, desktopVisibleBlocks, desktopAllBlocks,
-  majorCount, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
+  majorCount, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
 };
 await writeFile('university-audit/report.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
