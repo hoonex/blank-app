@@ -14,22 +14,21 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe university APIs
+      - name: Probe university APIs and Everytime share page
         run: |
-          echo '=== search ==='
+          echo '=== university search ==='
           curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90' | tee university-search.json
           echo
-          echo '=== majors ==='
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug-major' | tee university-major.json
-          echo
-          echo '=== metrics ==='
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug-metrics' | tee university-metrics.json
+          echo '=== everytime raw page ==='
+          curl -fsSL -A 'Mozilla/5.0' 'https://everytime.kr/@de9YHaTAnl47JtxH0muz' -o everytime.html
+          wc -c everytime.html
+          grep -Eio '.{0,160}(table|timetable|subject|course|height:[^;]+|top:[^;]+|월요일|월|화|수|목|금).{0,260}' everytime.html | head -n 160 | tee everytime-hints.txt || true
           echo
       - uses: actions/upload-artifact@v4
         with:
           name: university-probe
           path: |
             university-search.json
-            university-major.json
-            university-metrics.json
+            everytime.html
+            everytime-hints.txt
           retention-days: 2
