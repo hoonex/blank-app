@@ -3,6 +3,8 @@ const SCHOOL_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/schoo
 const ANON_KEY = 'flow-school-anon-v1';
 const SEEN_KEY = 'flow-school-seen-v1';
 const KAKAO_PLACE_CACHE_PREFIX = 'flow-school-kakao-place-v1:';
+const SCHOOL_PROFILE_KEY = 'flow-school-profile-v3';
+const SCHOOL_LOGO_CACHE_PREFIX = 'flow-school-logo-fallback-v2:';
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
 for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
@@ -119,6 +121,118 @@ function scheduleKakaoMapHydration(attempt = 0) {
 
 if (location.pathname === '/school') scheduleKakaoMapHydration();
 
+/*
+ * School homepages are unusually hostile to server-side media discovery: many
+ * education-office CMS sites block datacenter requests or expose only an HTTP
+ * icon. Keep the existing homepage discovery in school.js, but recover the
+ * visible school emblem locally when that request fails. This is finite retry
+ * logic (no MutationObserver) and never replaces an already loaded real logo.
+ */
+function schoolLogoProfile() {
+  try { return JSON.parse(localStorage.getItem(SCHOOL_PROFILE_KEY) || 'null'); }
+  catch { return null; }
+}
+
+function normalizeHomepage(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  try { return new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`); }
+  catch { return null; }
+}
+
+function schoolLogoTargets() {
+  return ['#schoolLogo','#schoolLogoSmall','#profileLogo']
+    .map((selector) => document.querySelector(selector))
+    .filter(Boolean);
+}
+
+function schoolLogoLoaded() {
+  return schoolLogoTargets().some((img) => img.classList.contains('loaded') && img.naturalWidth >= 12 && img.naturalHeight >= 12);
+}
+
+function schoolLogoCandidates(homepage) {
+  const url = normalizeHomepage(homepage);
+  if (!url) return [];
+  const host = url.hostname;
+  const candidates = [];
+  if (url.protocol === 'https:') {
+    candidates.push(`${url.origin}/apple-touch-icon.png`, `${url.origin}/favicon.ico`);
+  }
+  candidates.push(
+    `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(url.origin)}&sz=128`,
+    `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`,
+  );
+  return [...new Set(candidates)];
+}
+
+function probeImage(url, timeout = 2600) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(ok ? url : '');
+    };
+    const timer = setTimeout(() => finish(false), timeout);
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => finish(img.naturalWidth >= 12 && img.naturalHeight >= 12);
+    img.onerror = () => finish(false);
+    img.src = url;
+  });
+}
+
+function applySchoolLogo(url, source = 'fallback') {
+  if (!url) return false;
+  const targets = schoolLogoTargets();
+  if (!targets.length) return false;
+  for (const img of targets) {
+    img.src = url;
+    img.dataset.logoSource = source;
+    img.onload = () => img.classList.add('loaded');
+    img.onerror = () => img.classList.remove('loaded');
+  }
+  return true;
+}
+
+async function recoverSchoolLogo({ force = false } = {}) {
+  const profile = schoolLogoProfile();
+  const school = profile?.school;
+  if (!school?.schoolCode || !school?.homepage) return false;
+  if (!force && schoolLogoLoaded()) return true;
+
+  const cacheKey = `${SCHOOL_LOGO_CACHE_PREFIX}${school.schoolCode}`;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.url && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
+      const hit = await probeImage(cached.url, 1800);
+      if (hit) return applySchoolLogo(hit, cached.source || 'cached-fallback');
+      localStorage.removeItem(cacheKey);
+    }
+  } catch {}
+
+  for (const candidate of schoolLogoCandidates(school.homepage)) {
+    const hit = await probeImage(candidate);
+    if (!hit) continue;
+    const source = candidate.includes('google.com/s2/favicons') ? 'google-favicon'
+      : candidate.includes('duckduckgo.com') ? 'duckduckgo-favicon'
+      : candidate.endsWith('apple-touch-icon.png') ? 'apple-touch-icon'
+      : 'favicon';
+    localStorage.setItem(cacheKey, JSON.stringify({ url: hit, source, savedAt: Date.now() }));
+    return applySchoolLogo(hit, source);
+  }
+  return false;
+}
+
+function scheduleSchoolLogoRecovery() {
+  for (const delay of [1200, 5200, 9000]) {
+    setTimeout(() => { if (!schoolLogoLoaded()) void recoverSchoolLogo(); }, delay);
+  }
+}
+
+if (schoolLogoProfile()) scheduleSchoolLogoRecovery();
+
 const telemetryEnabled = !['localhost','127.0.0.1','::1'].includes(location.hostname);
 let anonId = localStorage.getItem(ANON_KEY);
 if (!anonId) {
@@ -160,5 +274,9 @@ document.addEventListener('click', (event) => {
   else if (event.target.closest?.('.national-event')) track('national_schedule_open');
   else if (event.target.closest?.('#shareTimetableBtn')) track('timetable_share');
 
-  if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) scheduleKakaoMapHydration();
+  if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) {
+    scheduleKakaoMapHydration();
+    setTimeout(() => void recoverSchoolLogo(), 650);
+  }
+  if (event.target.closest?.('#setupSave')) setTimeout(scheduleSchoolLogoRecovery, 250);
 }, { passive: true });
