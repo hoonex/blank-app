@@ -44,6 +44,19 @@ jobs:
             -d '{"schoolName":"경북대학교","address":"대구광역시 북구 대학로 80","items":[{"place":"IT대학 2호관"},{"place":"공대9호관"},{"place":"법과대학"}]}' \
             'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus' \
             | tee university-campus.json | grep -q 'nearby'
+          curl -fsSL -X POST -H 'content-type: application/json' \
+            -d '{"schoolName":"경북대학교","address":"대구광역시 북구 대학로 80","items":[{"place":"산격동 캠퍼스 미래융합과학관(물리생명공학관)-101"},{"place":"산격동 캠퍼스 IT대학1호관(공대10호관)-211"},{"place":"산격동 캠퍼스 IT융합산업빌딩-409"}]}' \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus' \
+            | tee university-campus-place-formats.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('university-campus-place-formats.json','utf8'));
+          const rows=data.places||[];
+          console.log(rows.map(x=>({raw:x.raw,resolved:x.resolved,place:x.place?.name,confidence:x.confidence,queries:x.queries}))); 
+          if(rows.length!==3) throw new Error(`Expected 3 places, got ${rows.length}`);
+          const failed=rows.filter(x=>!x.resolved||!x.place?.x||!x.place?.y);
+          if(failed.length) throw new Error(`Unresolved Everytime places: ${JSON.stringify(failed)}`);
+          NODE
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -68,4 +81,5 @@ jobs:
             university-search.json
             university-import.json
             university-campus.json
+            university-campus-place-formats.json
           retention-days: 5
