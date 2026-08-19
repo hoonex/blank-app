@@ -12,6 +12,7 @@ on:
       - '*.json'
       - '*.xml'
       - '*.txt'
+      - 'university/**'
       - 'scripts/vercel-rest.mjs'
       - '.github/workflows/vercel-rest-deploy.yml'
 
