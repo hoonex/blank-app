@@ -14,20 +14,25 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe university API proxy
+      - name: Probe university API proxy and official swagger
         run: |
-          echo '=== base ==='
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug' | tee university-debug.json
+          echo '=== school years ==='
+          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug-years' | tee university-years.json
           echo
-          echo '=== official portal source hints ==='
-          curl -fsSL 'https://www.data.go.kr/data/15158665/openapi.do' -o portal.html
-          grep -Eio '.{0,140}(getSchoolInfo|SchoolInfoService|swagger|request[^ <]{0,20}|schl[A-Za-z_]*|school[A-Za-z_]*|univ[A-Za-z_]*).{0,220}' portal.html | head -n 120 | tee portal-hints.txt || true
-          echo
+
+          for item in '15158665 school' '15158666 major' '15158679 condition' '15158680 finance'; do
+            set -- $item
+            id=$1
+            name=$2
+            echo "=== $name swagger ==="
+            curl -fsSL "https://www.data.go.kr/data/$id/openapi.do" -o "$name.html"
+            grep -Eio '.{0,150}(operationId|parameters|serviceKey|svyYr|schlId|schlKrnNm|schlNm|get[A-Za-z0-9_]+).{0,260}' "$name.html" | head -n 180 | tee "$name-hints.txt" || true
+            echo
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: university-probe
           path: |
-            university-debug.json
-            portal-hints.txt
-            portal.html
+            university-years.json
+            *-hints.txt
           retention-days: 2
