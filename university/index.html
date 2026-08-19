@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f6f8">
+  <meta name="description" content="대학을 선택하고 에브리타임 공유 링크로 시간표를 가져오는 Flow 대학 모드.">
+  <title>Flow University</title>
+  <link rel="stylesheet" href="/university/university.css">
+</head>
+<body>
+  <div class="loading-bar" id="loadingBar" aria-hidden="true"></div>
+
+  <section class="setup" id="setupView">
+    <header class="setup-header">
+      <a class="brand" href="/university" aria-label="Flow University 홈">
+        <span class="brand-mark">F</span>
+        <span><strong>Flow</strong><small>University</small></span>
+      </a>
+      <a class="quiet-link" href="/">초·중·고</a>
+    </header>
+
+    <main class="setup-main">
+      <section class="setup-copy">
+        <span class="kicker">UNIVERSITY</span>
+        <h1>대학 시간표를<br>한 번에 가져오기</h1>
+        <p>대학을 선택한 뒤 에브리타임 공유 링크를 붙여넣으면 시간표를 바로 구성합니다.</p>
+      </section>
+
+      <section class="search-card">
+        <label for="universitySearch">대학 찾기</label>
+        <div class="search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+          <input id="universitySearch" type="search" autocomplete="off" placeholder="대학교 이름을 입력하세요">
+          <button id="searchBtn" type="button">검색</button>
+        </div>
+        <div class="search-results hidden" id="searchResults"></div>
+        <p class="source-copy">대학 기본정보는 공공데이터포털 대학정보공시 데이터를 사용합니다.</p>
+      </section>
+    </main>
+  </section>
+
+  <div class="app hidden" id="appView">
+    <aside class="sidebar">
+      <a class="brand" href="/university">
+        <span class="brand-mark">F</span>
+        <span><strong>Flow</strong><small>University</small></span>
+      </a>
+
+      <button class="university-chip" id="changeUniversityBtn" type="button">
+        <span class="university-initial" id="universityInitial">U</span>
+        <span><strong id="sidebarUniversityName">대학교</strong><small id="sidebarMajorName">학과 미선택</small></span>
+        <span class="chevron">›</span>
+      </button>
+
+      <nav class="nav" aria-label="대학교 메뉴">
+        <button class="nav-item active" data-view="today" type="button"><strong>오늘</strong><small>수업 · 다음 일정</small></button>
+        <button class="nav-item" data-view="timetable" type="button"><strong>시간표</strong><small>주간 시간표</small></button>
+        <button class="nav-item" data-view="school" type="button"><strong>학교</strong><small>대학 · 학과 정보</small></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="soft-button full" id="importSidebarBtn" type="button">시간표 다시 가져오기</button>
+        <a class="quiet-link centered" href="/">초·중·고 모드</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="mobile-header">
+        <a class="brand" href="/university">
+          <span class="brand-mark">F</span>
+          <span><strong>Flow</strong><small>University</small></span>
+        </a>
+        <button class="mobile-school" id="mobileSchoolBtn" type="button"><strong id="mobileUniversityName">대학교</strong><small id="mobileSemester">시간표 미등록</small></button>
+      </header>
+
+      <section class="view" id="todayView" data-panel="today">
+        <header class="view-header hero-header">
+          <div>
+            <span class="kicker">TODAY</span>
+            <h1 id="todayTitle">오늘 수업</h1>
+            <p id="todaySubtitle">시간표를 가져오면 오늘 수업을 바로 보여줍니다.</p>
+          </div>
+          <button class="primary-button" id="importTopBtn" type="button">시간표 가져오기</button>
+        </header>
+
+        <section class="summary-grid">
+          <article class="summary-card next-card">
+            <span>다음 수업</span>
+            <strong id="nextClassTitle">시간표 없음</strong>
+            <p id="nextClassMeta">에브리타임 공유 링크로 가져올 수 있습니다.</p>
+          </article>
+          <article class="summary-card"><span>오늘 수업</span><strong id="todayCount">—</strong><p id="todayCountMeta">등록된 수업</p></article>
+          <article class="summary-card"><span>이번 학기</span><strong id="semesterLabel">—</strong><p id="semesterMeta">에브리타임 기준</p></article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel today-list-panel">
+            <div class="panel-heading"><div><span class="kicker">SCHEDULE</span><h2>오늘 일정</h2></div><button class="text-button" data-go="timetable" type="button">전체 시간표</button></div>
+            <div class="today-list" id="todayList"></div>
+          </article>
+
+          <article class="panel import-panel" id="emptyImportPanel">
+            <span class="kicker">IMPORT</span>
+            <h2>공유 링크 하나면 끝</h2>
+            <p>에브리타임에서 시간표 공유 링크를 복사해 붙여넣으세요. 로그인 정보는 필요하지 않습니다.</p>
+            <button class="primary-button" id="emptyImportBtn" type="button">에브리타임에서 가져오기</button>
+          </article>
+        </section>
+      </section>
+
+      <section class="view hidden" id="timetableView" data-panel="timetable">
+        <header class="view-header">
+          <div><span class="kicker">TIMETABLE</span><h1>주간 시간표</h1><p id="timetableMeta">가져온 시간표를 실제 시간 기준으로 표시합니다.</p></div>
+          <button class="soft-button" id="importTimetableBtn" type="button">다시 가져오기</button>
+        </header>
+        <div class="day-tabs" id="dayTabs"></div>
+        <article class="panel timetable-panel">
+          <div class="timetable-scroll" id="timetableScroll">
+            <div class="time-grid" id="timeGrid"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="view hidden" id="schoolView" data-panel="school">
+        <header class="view-header"><div><span class="kicker">UNIVERSITY PROFILE</span><h1 id="profileTitle">대학교 정보</h1><p>대학정보공시 데이터를 한눈에 정리합니다.</p></div></header>
+
+        <section class="profile-card panel">
+          <div class="profile-mark" id="profileInitial">U</div>
+          <div class="profile-copy"><span id="profileType">대학교</span><h2 id="profileName">대학교</h2><p id="profileEnglish"></p><p id="profileAddress"></p></div>
+          <a class="soft-button link-button" id="homepageLink" target="_blank" rel="noopener noreferrer">학교 홈페이지</a>
+        </section>
+
+        <section class="metric-grid" id="metricGrid"></section>
+
+        <section class="panel major-panel">
+          <div class="panel-heading"><div><span class="kicker">MAJOR</span><h2>내 학과</h2><p id="majorDescription">학과를 선택하면 관련 정보를 저장합니다.</p></div><button class="soft-button" id="chooseMajorBtn" type="button">학과 선택</button></div>
+          <div class="major-detail hidden" id="majorDetail"></div>
+        </section>
+
+        <section class="panel basic-info-panel"><div class="panel-heading"><div><span class="kicker">BASIC</span><h2>기본 정보</h2></div></div><div class="basic-grid" id="basicGrid"></div></section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="모바일 대학교 메뉴">
+      <button class="bottom-item active" data-view="today" type="button">오늘</button>
+      <button class="bottom-item" data-view="timetable" type="button">시간표</button>
+      <button class="bottom-item" data-view="school" type="button">학교</button>
+    </nav>
+  </div>
+
+  <dialog id="importDialog">
+    <div class="dialog-sheet">
+      <button class="dialog-close" data-close-dialog type="button" aria-label="닫기">×</button>
+      <span class="kicker">EVERYTIME IMPORT</span>
+      <h2>시간표 가져오기</h2>
+      <p>에브리타임 시간표에서 공유 링크를 복사해 붙여넣으세요.</p>
+      <label class="dialog-field">공유 링크<input id="everytimeUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://everytime.kr/@..."></label>
+      <div class="privacy-note"><strong>로그인 정보는 받지 않습니다.</strong><span>공개 공유 링크의 시간표 데이터만 한 번 읽어 이 기기에 저장합니다.</span></div>
+      <button class="primary-button full" id="runImportBtn" type="button">가져오기</button>
+    </div>
+  </dialog>
+
+  <dialog id="majorDialog">
+    <div class="dialog-sheet large-sheet">
+      <button class="dialog-close" data-close-dialog type="button" aria-label="닫기">×</button>
+      <span class="kicker">MAJOR</span><h2>학과 선택</h2><p>선택하지 않아도 시간표 기능은 그대로 사용할 수 있습니다.</p>
+      <div class="search-field dialog-search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg><input id="majorSearch" type="search" placeholder="학과 또는 단과대학 검색"></div>
+      <div class="major-results" id="majorResults"></div>
+    </div>
+  </dialog>
+
+  <dialog id="changeDialog">
+    <div class="dialog-sheet">
+      <button class="dialog-close" data-close-dialog type="button" aria-label="닫기">×</button>
+      <span class="kicker">UNIVERSITY</span><h2>대학 변경</h2><p id="changeCurrent"></p>
+      <button class="soft-button full" id="clearUniversityBtn" type="button">다른 대학 선택</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/university/university.js"></script>
+</body>
+</html>
