@@ -1,4 +1,5 @@
 import '/university/dashboard.js';
+import {decoratePoiNode} from '/university/poi-icons.js';
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1',TIMETABLE_KEY='flow-university-timetable-v1';
@@ -39,7 +40,7 @@ function markerNode(index,item,entry,isNext=false){
   root.append(pin,label);
   return root;
 }
-function poiNode(type,item){const labels={dining:'학',stores:'편',cafes:'카',food:'식'},n=document.createElement(item?.url?'a':'span');n.className=`flow-campus-poi flow-campus-poi-${type}`;n.textContent=labels[type]||'·';if(item?.url){n.href=item.url;n.target='_blank';n.rel='noopener noreferrer'}return n}
+function poiNode(type,item){const n=document.createElement(item?.url?'a':'span');n.className=`flow-campus-poi flow-campus-poi-${type}`;decoratePoiNode(n,type,item);if(item?.url){n.href=item.url;n.target='_blank';n.rel='noopener noreferrer'}return n}
 function routeDistanceText(meters){const m=Math.max(0,Number(meters||0));if(!m)return'';return m>=1000?`${(m/1000).toFixed(m>=10000?0:1)}km`:`${Math.max(10,Math.round(m/10)*10)}m`}
 function routeMidpoint(path){
   if(!path?.length)return null;
