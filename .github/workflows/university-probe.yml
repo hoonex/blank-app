@@ -22,12 +22,16 @@ jobs:
         run: |
           node --check university/university.js
           node --check university/campus.js
+          node --check university/campus-interactive.js
           node --check scripts/university-audit.mjs
           node --check scripts/campus-audit.mjs
           node --check scripts/vercel-rest.mjs
           test -f university/index.html
           test -f university/campus.css
+          test -f university/campus-interactive.css
           grep -q 'Flow University' university/index.html
+          grep -q 'campus-interactive.js' university/index.html
+          grep -q 'campus-interactive.css' university/index.html
           grep -q '/university/campus' vercel.json
       - name: Verify university server APIs
         run: |
