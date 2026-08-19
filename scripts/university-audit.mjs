@@ -6,15 +6,9 @@ const sample = process.env.EVERYTIME_SAMPLE || 'https://everytime.kr/@de9YHaTAnl
 await mkdir('university-audit', { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({
-  viewport: { width: 412, height: 915 },
-  locale: 'ko-KR',
-  isMobile: true,
-  hasTouch: true,
-});
+const context = await browser.newContext({ viewport: { width: 412, height: 915 }, locale: 'ko-KR', isMobile: true, hasTouch: true });
 const page = await context.newPage();
-const consoleErrors = [];
-const pageErrors = [];
+const consoleErrors = [], pageErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
@@ -35,9 +29,10 @@ if (!imported?.subjects?.length) throw new Error('Everytime import did not persi
 if (!imported.subjects.some((s) => s.times?.length)) throw new Error('Imported timetable has no timed blocks.');
 
 await page.locator('[data-view="timetable"]').last().click();
-await page.locator('.course-block').first().waitFor({ timeout: 10000 });
-const mobileBlocks = await page.locator('.course-block').count();
-if (mobileBlocks < 1) throw new Error('No mobile timetable blocks rendered.');
+await page.locator('.course-block:visible').first().waitFor({ timeout: 10000 });
+const mobileVisibleBlocks = await page.locator('.course-block:visible').count();
+const mobileAllBlocks = await page.locator('.course-block').count();
+if (mobileVisibleBlocks < 1 || mobileAllBlocks < 1) throw new Error('No mobile timetable blocks rendered.');
 await page.screenshot({ path: 'university-audit/mobile-timetable.png', fullPage: true });
 
 await page.locator('[data-view="school"]').last().click();
@@ -52,9 +47,10 @@ await page.screenshot({ path: 'university-audit/mobile-school.png', fullPage: tr
 
 await page.setViewportSize({ width: 1440, height: 900 });
 await page.locator('[data-view="timetable"]').first().click();
-await page.waitForTimeout(250);
-const desktopBlocks = await page.locator('.course-block').count();
-if (desktopBlocks < mobileBlocks) throw new Error('Desktop timetable lost blocks.');
+await page.locator('.course-block:visible').first().waitFor({ timeout: 10000 });
+const desktopVisibleBlocks = await page.locator('.course-block:visible').count();
+const desktopAllBlocks = await page.locator('.course-block').count();
+if (desktopVisibleBlocks < mobileVisibleBlocks || desktopAllBlocks !== mobileAllBlocks) throw new Error('Desktop timetable block count is inconsistent.');
 await page.screenshot({ path: 'university-audit/desktop-timetable.png', fullPage: true });
 await page.locator('[data-view="school"]').first().click();
 await page.waitForTimeout(250);
@@ -64,15 +60,10 @@ const report = {
   firstSchool,
   importedSubjectCount: imported.subjects.length,
   importedTimedBlockCount: imported.subjects.flatMap((s) => s.times || []).length,
-  mobileBlocks,
-  desktopBlocks,
-  majorCount,
-  consoleErrors,
-  pageErrors,
-  currentPath: new URL(page.url()).pathname,
+  mobileVisibleBlocks, mobileAllBlocks, desktopVisibleBlocks, desktopAllBlocks,
+  majorCount, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
 };
 await writeFile('university-audit/report.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
-
 if (consoleErrors.length || pageErrors.length) throw new Error(`Browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
 await browser.close();
