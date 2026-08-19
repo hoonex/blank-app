@@ -1,3 +1,4 @@
+if(!document.querySelector('link[data-flow-timetable-enhance]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/university/timetable-enhance.css';l.dataset.flowTimetableEnhance='1';document.head.append(l)}
 const TIMETABLE_KEY='flow-university-timetable-v1';
 const OVERRIDE_KEY='flow-university-time-overrides-v1';
 const DAY_NAMES=['월','화','수','목','금','토','일'];
