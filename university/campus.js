@@ -1,3 +1,4 @@
+import {poiBadgeMarkup} from '/university/poi-icons.js';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1';
 const TIMETABLE_KEY='flow-university-timetable-v1';
@@ -119,7 +120,7 @@ async function renderNext(){
   const route=await fetchRoute(start,dest,n.from.place,n.next.place);if(route?.status!=='OK'){eta.textContent='경로 없음';dist.textContent='카카오 도보 경로 미탐색';return}
   eta.textContent=durationText(route.time);dist.textContent=`${distanceText(route.distance)} · ${minText(n.next.startMinutes-Math.ceil(route.time/60)-3)} 출발 권장`;if(link&&route.landingUrl){link.href=route.landingUrl;link.classList.remove('hidden')}
 }
-function renderNearby(){const box=$c('#campusNearbyList');if(!box)return;const label={dining:'학식',stores:'편의점',cafes:'카페',food:'식당'}[nearbyType]||'주변';const list=campusData?.nearby?.[nearbyType]||[];if(!list.length){box.innerHTML=`<div class="campus-status">카카오맵에서 확인되는 ${label} 장소가 없습니다.</div>`;return}box.innerHTML=list.slice(0,7).map(p=>`<a class="campus-nearby" href="${cEsc(p.url||'#')}" target="_blank" rel="noopener noreferrer"><span class="campus-pin">·</span><span><strong>${cEsc(p.name)}</strong><small>${cEsc(p.category||p.roadAddress||p.address||'')}</small></span><span class="campus-distance">${p.distance?distanceText(p.distance):''}</span></a>`).join('')}
+function renderNearby(){const box=$c('#campusNearbyList');if(!box)return;const label={dining:'학식',stores:'편의점',cafes:'카페',food:'식당'}[nearbyType]||'주변';const list=campusData?.nearby?.[nearbyType]||[];if(!list.length){box.innerHTML=`<div class="campus-status">카카오맵에서 확인되는 ${label} 장소가 없습니다.</div>`;return}box.innerHTML=list.slice(0,7).map(p=>`<a class="campus-nearby" href="${cEsc(p.url||'#')}" target="_blank" rel="noopener noreferrer">${poiBadgeMarkup(nearbyType,p)}<span><strong>${cEsc(p.name)}</strong><small>${cEsc(p.category||p.roadAddress||p.address||'')}</small></span><span class="campus-distance">${p.distance?distanceText(p.distance):''}</span></a>`).join('')}
 async function renderCampus(){if(!campusData)return;renderCampusDayTabs();renderMap();renderPlaces();renderNearby();await Promise.all([renderRoutes(),renderNext()])}
 
 async function loadCampus(force=false){
