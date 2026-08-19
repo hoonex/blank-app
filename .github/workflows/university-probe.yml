@@ -3,8 +3,6 @@ name: University API probe
 on:
   push:
     branches: [feat/university-mode]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,10 +14,16 @@ jobs:
     steps:
       - name: Probe university API proxy
         run: |
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=probe' | tee university-probe.json
+          echo '=== base ==='
+          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug' | tee university-debug.json
+          echo
+          echo '=== name parameter guesses ==='
+          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug-name' | tee university-name-debug.json
           echo
       - uses: actions/upload-artifact@v4
         with:
           name: university-probe
-          path: university-probe.json
+          path: |
+            university-debug.json
+            university-name-debug.json
           retention-days: 2
