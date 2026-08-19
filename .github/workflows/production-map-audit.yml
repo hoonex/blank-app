@@ -7,6 +7,11 @@ on:
       - 'university/**'
       - 'scripts/production-map-audit.mjs'
       - '.github/workflows/production-map-audit.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/production-map-audit.mjs'
+      - '.github/workflows/production-map-audit.yml'
   workflow_dispatch:
 
 permissions:
@@ -50,7 +55,7 @@ jobs:
           path: production-map-audit/
           retention-days: 5
       - name: Log successful production map audit
-        if: success()
+        if: success() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,7 +69,7 @@ PASS: Kakao Web Map SDK rendered on the registered production domain.
 ${report}
 \`\`\`"
       - name: Log failed production map audit
-        if: failure()
+        if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
