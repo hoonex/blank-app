@@ -19,13 +19,15 @@ jobs:
           echo '=== base ==='
           curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug' | tee university-debug.json
           echo
-          echo '=== name parameter guesses ==='
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=debug-name' | tee university-name-debug.json
+          echo '=== official portal source hints ==='
+          curl -fsSL 'https://www.data.go.kr/data/15158665/openapi.do' -o portal.html
+          grep -Eio '.{0,140}(getSchoolInfo|SchoolInfoService|swagger|request[^ <]{0,20}|schl[A-Za-z_]*|school[A-Za-z_]*|univ[A-Za-z_]*).{0,220}' portal.html | head -n 120 | tee portal-hints.txt || true
           echo
       - uses: actions/upload-artifact@v4
         with:
           name: university-probe
           path: |
             university-debug.json
-            university-name-debug.json
+            portal-hints.txt
+            portal.html
           retention-days: 2
