@@ -50,14 +50,31 @@ const initial=await page.evaluate(()=>({
 
 await page.locator('#campusFilter [data-nearby="stores"]').click();
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-poi').length>=1,{timeout:15000});
-const poiCount=await page.locator('.flow-campus-poi').count();
+await page.waitForFunction(()=>document.querySelectorAll('#campusNearbyList .campus-poi-badge').length>=1,{timeout:15000});
+const poiUi=await page.evaluate(()=>({
+  map:[...document.querySelectorAll('.flow-campus-poi')].map(x=>({
+    brand:x.dataset.poiBrand||'',
+    kind:x.dataset.poiKind||'',
+    hasSvg:Boolean(x.querySelector('svg')),
+    text:x.textContent.trim(),
+    label:x.getAttribute('aria-label')||''
+  })),
+  list:[...document.querySelectorAll('#campusNearbyList .campus-poi-badge')].map(x=>({
+    brand:x.dataset.poiBrand||'',
+    kind:x.dataset.poiKind||'',
+    hasSvg:Boolean(x.querySelector('svg')),
+    text:x.textContent.trim()
+  })),
+  storeNames:[...document.querySelectorAll('#campusNearbyList .campus-nearby strong')].map(x=>x.textContent.trim())
+}));
+const poiCount=poiUi.map.length;
 await page.screenshot({path:`${out}/mobile-interactive-campus.png`,fullPage:true});
 
 await page.setViewportSize({width:1440,height:900});
 await page.waitForTimeout(500);
 await page.screenshot({path:`${out}/desktop-interactive-campus.png`,fullPage:true});
 
-const report={...initial,poiCount,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
+const report={...initial,poiCount,poiUi,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
 await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 
@@ -72,6 +89,8 @@ if(initial.routeCount<1)throw new Error('No Kakao walking route was rendered for
 if(Number(initial.mapOpacity)<0.9)throw new Error(`Interactive map is not visible: opacity ${initial.mapOpacity}`);
 if(initial.fallbackOpacity!==null&&Number(initial.fallbackOpacity)>0.1)throw new Error(`Static fallback remained visible: opacity ${initial.fallbackOpacity}`);
 if(poiCount<1)throw new Error('Nearby store markers were not rendered on the interactive map.');
+if(poiUi.map.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Map POI lost brand/category identity: ${JSON.stringify(poiUi.map)}`);
+if(!poiUi.list.length||poiUi.list.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Nearby list POI lost brand/category identity: ${JSON.stringify(poiUi.list)}`);
 if(consoleErrors.length||pageErrors.length)throw new Error(`Production browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
 
 await browser.close();
