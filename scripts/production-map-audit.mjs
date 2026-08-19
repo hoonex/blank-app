@@ -29,6 +29,8 @@ await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeou
 await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
 await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000});
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-marker').length>=2,{timeout:20000});
+await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-course-label').length>=2,{timeout:20000});
+await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-route-time').length>=1,{timeout:25000});
 await page.locator('#campusRouteList .campus-route').first().waitFor({timeout:20000});
 
 const initial=await page.evaluate(()=>({
@@ -36,6 +38,8 @@ const initial=await page.evaluate(()=>({
   sdk:Boolean(window.kakao?.maps?.Map),
   interactive:document.querySelector('#campusMapWrap')?.dataset.interactiveMap||'',
   markerCount:document.querySelectorAll('.flow-campus-marker').length,
+  courseLabels:[...document.querySelectorAll('.flow-campus-course-label')].map(x=>x.textContent.trim()),
+  routeTimeLabels:[...document.querySelectorAll('.flow-campus-route-time')].map(x=>x.textContent.trim()),
   routeCount:document.querySelectorAll('#campusRouteList .campus-route').length,
   routeTexts:[...document.querySelectorAll('#campusRouteList .campus-route')].map(x=>x.textContent.replace(/\s+/g,' ').trim()),
   mapOpacity:getComputedStyle(document.querySelector('.campus-interactive-map')).opacity,
@@ -61,6 +65,8 @@ if(initial.path!=='/university/campus')throw new Error(`Unexpected path: ${initi
 if(!initial.sdk)throw new Error('Kakao Web Map SDK did not initialize on production domain.');
 if(initial.interactive!=='ready')throw new Error(`Interactive map not ready: ${initial.interactive}`);
 if(initial.markerCount<2)throw new Error(`Too few class markers: ${initial.markerCount}`);
+if(initial.courseLabels.length<2||!initial.courseLabels.some(x=>x.includes('자료구조')))throw new Error(`Course labels are missing: ${JSON.stringify(initial.courseLabels)}`);
+if(initial.routeTimeLabels.length<1||!initial.routeTimeLabels.some(x=>x.includes('분')))throw new Error(`Route-time badges are missing: ${JSON.stringify(initial.routeTimeLabels)}`);
 if(initial.routeCount<1)throw new Error('No Kakao walking route was rendered for consecutive class buildings.');
 if(Number(initial.mapOpacity)<0.9)throw new Error(`Interactive map is not visible: opacity ${initial.mapOpacity}`);
 if(initial.fallbackOpacity!==null&&Number(initial.fallbackOpacity)>0.1)throw new Error(`Static fallback remained visible: opacity ${initial.fallbackOpacity}`);
