@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   production-campus-map:
@@ -48,3 +49,28 @@ jobs:
           name: production-campus-map-audit
           path: production-map-audit/
           retention-days: 5
+      - name: Log successful production map audit
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          report=$(jq -c . production-map-audit/report.json)
+          short=${GITHUB_SHA:0:7}
+          gh issue comment 14 --body "### Production campus map audit — ${short}
+
+PASS: Kakao Web Map SDK rendered on the registered production domain.
+
+\`\`\`json
+${report}
+\`\`\`"
+      - name: Log failed production map audit
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          short=${GITHUB_SHA:0:7}
+          gh issue comment 14 --body "### Production campus map audit — ${short}
+
+FAIL: production interactive map browser audit failed.
+
+Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
