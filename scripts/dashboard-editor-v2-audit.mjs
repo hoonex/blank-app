@@ -8,6 +8,8 @@ const page=await context.newPage();
 const consoleErrors=[],pageErrors=[];
 page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});page.on('pageerror',e=>pageErrors.push(String(e)));
 await page.addInitScript(()=>{
+  if(sessionStorage.getItem('flow-widget-v2-fixture-ready'))return;
+  sessionStorage.setItem('flow-widget-v2-fixture-ready','1');
   const d=(new Date().getDay()+6)%7;
   const make=(name,start,end,place)=>({name,professor:'테스트',times:[{day:d,start,end,startMinutes:Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes:Number(end.slice(0,2))*60+Number(end.slice(3)),place}]});
   localStorage.setItem('flow-university-profile-v1',JSON.stringify({id:'knu',name:'경북대학교',address:'대구광역시 북구 대학로 80'}));
