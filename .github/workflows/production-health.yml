@@ -46,7 +46,8 @@ jobs:
           grep -q 'memoryCache' school.js
           grep -q 'school-polish.css' school-metrics.js
           grep -q 'recoverSchoolLogo' school-metrics.js
-          grep -q 'google.com/s2/favicons' school-metrics.js
+          grep -q 'functions/v1/school-logo' school-metrics.js
+          ! grep -q 'icons.duckduckgo.com' school-metrics.js
           ! grep -q "import('./school-v5.js')" school-metrics.js
           ! grep -q 'MutationObserver' school.js
           ! grep -q 'MutationObserver' school-metrics.js
