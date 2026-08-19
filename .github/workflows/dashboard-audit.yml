@@ -19,11 +19,15 @@ jobs:
       - name: Validate dashboard source
         run: |
           node --check university/dashboard.js
+          node --check university/dashboard-campus.js
           node --check university/campus-interactive.js
           node --check scripts/dashboard-audit.mjs
+          node --check scripts/dashboard-campus-audit.mjs
           test -f university/dashboard.css
           grep -q "dashboard.js" university/campus-interactive.js
+          grep -q "dashboard-campus.js" university/poi-icons.js
           grep -q "dashboard.js" sw.js
+          grep -q "dashboard-campus.js" sw.js
           grep -q "dashboard.css" sw.js
       - name: Install Playwright Chromium
         run: |
@@ -37,6 +41,8 @@ jobs:
           exit 1
       - name: Run dashboard browser audit
         run: node scripts/dashboard-audit.mjs
+      - name: Run campus ETA widget audit
+        run: node scripts/dashboard-campus-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
