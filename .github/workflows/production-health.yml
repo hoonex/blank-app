@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js university/dashboard.css university/dashboard.js university/poi-icons.js university/campus.css university/campus.js university/campus-interactive.css university/campus-interactive.js; do
             test -s "$file"
             echo "OK $file"
           done
@@ -31,6 +31,10 @@ jobs:
           node --check school-metrics.js
           node --check sw.js
           node --check university/university.js
+          node --check university/dashboard.js
+          node --input-type=module --check < university/poi-icons.js
+          node --input-type=module --check < university/campus.js
+          node --input-type=module --check < university/campus-interactive.js
           node --check scripts/vercel-rest.mjs
           python -m json.tool vercel.json >/dev/null
           grep -q 'Flow School' index.html
@@ -41,6 +45,8 @@ jobs:
           grep -q 'renderActiveView' school.js
           grep -q 'memoryCache' school.js
           grep -q 'school-polish.css' school-metrics.js
+          grep -q 'recoverSchoolLogo' school-metrics.js
+          grep -q 'google.com/s2/favicons' school-metrics.js
           ! grep -q "import('./school-v5.js')" school-metrics.js
           ! grep -q 'MutationObserver' school.js
           ! grep -q 'MutationObserver' school-metrics.js
@@ -49,13 +55,18 @@ jobs:
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
           grep -q 'only light' school-polish.css
-          grep -q 'flow-school-shell-v9' sw.js
+          grep -q 'flow-school-shell-v10' sw.js
+          grep -q '/university/poi-icons.js' sw.js
           grep -q '/university/index.html' sw.js
           grep -q 'Flow University' university/index.html
           grep -q 'university-polish.css' university/index.html
           grep -q 'only light' university/university-polish.css
           grep -q 'flow-university-profile-v1' university/university.js
           grep -q 'import-everytime' university/university.js
+          grep -q 'poiBadgeMarkup' university/campus.js
+          grep -q 'decoratePoiNode' university/campus-interactive.js
+          grep -q 'brand-gs25' university/campus.css
+          grep -q 'brand-emart24' university/campus-interactive.css
           grep -q '"/home"' vercel.json
           grep -q '"/schedule"' vercel.json
           grep -q '"/university/timetable"' vercel.json
