@@ -29,6 +29,28 @@ html{scroll-behavior:auto!important}
 .timetable-actions{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
 .timetable-actions .neo-button{white-space:nowrap;min-width:max-content}
 
+/* Missing NEIS timetable help stays available without becoming another card. */
+.neis-timetable-help{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent);
+  color:var(--muted);
+  font-size:.76rem;
+  line-height:1.65;
+}
+.neis-timetable-help summary{
+  width:max-content;
+  cursor:pointer;
+  color:var(--muted);
+  font-weight:650;
+  list-style:none;
+  user-select:none;
+}
+.neis-timetable-help summary::-webkit-details-marker{display:none}
+.neis-timetable-help summary::after{content:'  +';font-weight:700;color:var(--muted-2)}
+.neis-timetable-help[open] summary::after{content:'  −'}
+.neis-timetable-help p{max-width:640px;margin:8px 0 0;color:var(--muted-2)}
+
 /* Keep the landing composition above the fold on landscape tablets / desktop. */
 @media(min-width:821px){
   .onboarding-main{
@@ -70,4 +92,5 @@ html{scroll-behavior:auto!important}
   .school-hero-content{padding:14px!important}
   .status-grid{grid-template-columns:1fr 1fr!important}
   .timetable-card .card-heading p{max-width:210px}
+  .neis-timetable-help{font-size:.72rem}
 }
