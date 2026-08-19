@@ -18,8 +18,11 @@ const landingTheme = await page.evaluate(() => ({
   bgVar: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
   bodyBackground: getComputedStyle(document.body).backgroundColor,
   colorScheme: getComputedStyle(document.documentElement).colorScheme,
+  brand: document.querySelector('.brand-word')?.textContent?.trim() || '',
+  brandMarks: document.querySelectorAll('.brand-mark').length,
 }));
 if (landingTheme.dataTheme !== 'light' || landingTheme.bgVar.toLowerCase() !== '#f5f6f8') throw new Error(`University light theme was overridden: ${JSON.stringify(landingTheme)}`);
+if (landingTheme.brand !== 'Flow' || landingTheme.brandMarks !== 0) throw new Error(`Flow branding was not simplified: ${JSON.stringify(landingTheme)}`);
 
 await page.locator('#universitySearch').fill('경북대학교');
 await page.locator('#searchBtn').click();
@@ -32,9 +35,10 @@ await page.locator('#everytimeUrl').fill(sample);
 await page.locator('#runImportBtn').click();
 await page.locator('#importDialog').waitFor({ state: 'hidden', timeout: 20000 });
 
-const imported = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || 'null'));
+let imported = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || 'null'));
 if (!imported?.subjects?.length) throw new Error('Everytime import did not persist timetable subjects.');
 if (!imported.subjects.some((s) => s.times?.length)) throw new Error('Imported timetable has no timed blocks.');
+if (imported.semester && !String(imported.semester).includes('학기')) throw new Error(`Semester was not normalized: ${imported.semester}`);
 
 const appTheme = await page.evaluate(() => ({
   bodyBackground: getComputedStyle(document.body).backgroundColor,
@@ -46,11 +50,49 @@ const rgbLuma=(value)=>{const n=(value.match(/[\d.]+/g)||[]).slice(0,3).map(Numb
 if (rgbLuma(appTheme.bodyBackground) < 220 || rgbLuma(appTheme.headerBackground) < 215 || rgbLuma(appTheme.navBackground) < 215) throw new Error(`University mobile Light mode is visually dark: ${JSON.stringify(appTheme)}`);
 
 await page.locator('[data-view="timetable"]').last().click();
-await page.locator('.course-block:visible').first().waitFor({ timeout: 10000 });
-const mobileVisibleBlocks = await page.locator('.course-block:visible').count();
-const mobileAllBlocks = await page.locator('.course-block').count();
-if (mobileVisibleBlocks < 1 || mobileAllBlocks < 1) throw new Error('No mobile timetable blocks rendered.');
+await page.locator('.course-block').first().waitFor({ timeout: 10000 });
+const mobileWeek = await page.evaluate(() => {
+  const blocks=[...document.querySelectorAll('.course-block')];
+  const columns=[...document.querySelectorAll('.day-column')];
+  const scroll=document.querySelector('#timetableScroll');
+  return {
+    allBlocks:blocks.length,
+    visibleBlocks:blocks.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length,
+    columns:columns.length,
+    visibleColumns:columns.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length,
+    scrollWidth:scroll?.scrollWidth||0,
+    clientWidth:scroll?.clientWidth||0,
+    semesterLabel:document.querySelector('#timetableMeta')?.textContent||'',
+  };
+});
+if (mobileWeek.allBlocks < 1 || mobileWeek.visibleBlocks !== mobileWeek.allBlocks) throw new Error(`Mobile timetable hides blocks: ${JSON.stringify(mobileWeek)}`);
+if (mobileWeek.columns < 5 || mobileWeek.visibleColumns !== mobileWeek.columns) throw new Error(`Mobile timetable is not a full week: ${JSON.stringify(mobileWeek)}`);
+if (mobileWeek.scrollWidth > mobileWeek.clientWidth + 3) throw new Error(`Mobile timetable still requires horizontal scrolling: ${JSON.stringify(mobileWeek)}`);
+if (!mobileWeek.semesterLabel.includes('학기')) throw new Error(`Timetable semester label is malformed: ${mobileWeek.semesterLabel}`);
 await page.screenshot({ path: 'university-audit/mobile-timetable.png', fullPage: true });
+
+await page.locator('#addPersonalBtn').click();
+await page.locator('#personalDialog').waitFor({state:'visible'});
+await page.locator('#personalName').fill('Flow 테스트 일정');
+await page.locator('#personalDay').selectOption('0');
+await page.locator('#personalStart').fill('17:00');
+await page.locator('#personalEnd').fill('18:00');
+await page.locator('#personalPlace').fill('학생회관');
+await page.locator('#personalForm button[type="submit"]').click();
+await page.locator('#personalDialog').waitFor({state:'hidden'});
+await page.waitForFunction(()=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.name==='Flow 테스트 일정'));
+let personalId=await page.evaluate(()=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')).subjects.find(x=>x.name==='Flow 테스트 일정')?.id||'');
+if(!personalId)throw new Error('Personal schedule was not added.');
+await page.locator(`[data-custom-id="${personalId}"]`).first().click();
+await page.locator('#personalName').fill('Flow 테스트 일정 수정');
+await page.locator('#personalForm button[type="submit"]').click();
+await page.waitForFunction(()=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.name==='Flow 테스트 일정 수정'));
+await page.locator(`[data-custom-id="${personalId}"]`).first().click();
+await page.locator('#deletePersonalBtn').click();
+await page.waitForFunction(()=>!JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.id===window.__flowDeleteId),{timeout:100}).catch(()=>{});
+const personalExists=await page.evaluate(id=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.id===id),personalId);
+if(personalExists)throw new Error('Personal schedule was not deleted.');
+if(await page.locator('#exportBackupBtn').count()!==1||await page.locator('#importBackupBtn').count()!==1)throw new Error('Backup controls are missing.');
 
 await page.locator('[data-view="school"]').last().click();
 await page.locator('.metric-card').first().waitFor({ timeout: 15000 });
@@ -64,21 +106,19 @@ await page.screenshot({ path: 'university-audit/mobile-school.png', fullPage: tr
 
 await page.setViewportSize({ width: 1440, height: 900 });
 await page.locator('[data-view="timetable"]').first().click();
-await page.locator('.course-block:visible').first().waitFor({ timeout: 10000 });
+await page.locator('.course-block').first().waitFor({ timeout: 10000 });
 const desktopVisibleBlocks = await page.locator('.course-block:visible').count();
 const desktopAllBlocks = await page.locator('.course-block').count();
-if (desktopVisibleBlocks < mobileVisibleBlocks || desktopAllBlocks !== mobileAllBlocks) throw new Error('Desktop timetable block count is inconsistent.');
+if (desktopVisibleBlocks !== desktopAllBlocks) throw new Error('Desktop timetable block count is inconsistent.');
 await page.screenshot({ path: 'university-audit/desktop-timetable.png', fullPage: true });
-await page.locator('[data-view="school"]').first().click();
-await page.waitForTimeout(250);
-await page.screenshot({ path: 'university-audit/desktop-school.png', fullPage: true });
 
+imported = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || 'null'));
 const report = {
   firstSchool,
   importedSubjectCount: imported.subjects.length,
   importedTimedBlockCount: imported.subjects.flatMap((s) => s.times || []).length,
-  mobileVisibleBlocks, mobileAllBlocks, desktopVisibleBlocks, desktopAllBlocks,
-  majorCount, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
+  mobileWeek, desktopVisibleBlocks, desktopAllBlocks,
+  personalAddEditDelete:true, majorCount, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
 };
 await writeFile('university-audit/report.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
