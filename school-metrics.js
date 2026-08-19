@@ -23,6 +23,20 @@ if (intro) intro.textContent = '시간표, 급식, 학사일정과 학교정보�
 const hints = document.querySelector('.search-hints');
 if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span>';
 
+/*
+ * Some schools publish the new term timetable to NEIS later than others.
+ * Keep this as an unobtrusive disclosure instead of making a missing timetable
+ * look like an application error.
+ */
+const timetableCard = document.querySelector('.timetable-card');
+if (timetableCard && !document.querySelector('#neisTimetableHelp')) {
+  const help = document.createElement('details');
+  help.id = 'neisTimetableHelp';
+  help.className = 'neis-timetable-help';
+  help.innerHTML = '<summary>시간표가 안 보이나요?</summary><p>학교에 따라 개학 직후 약 1~2주 동안 시간표 조정으로 NEIS에 정보가 아직 반영되지 않아 표시되지 않을 수 있습니다. NEIS에 등록되면 Flow에도 자동으로 표시됩니다.</p>';
+  timetableCard.append(help);
+}
+
 const telemetryEnabled = !['localhost','127.0.0.1','::1'].includes(location.hostname);
 let anonId = localStorage.getItem(ANON_KEY);
 if (!anonId) {
