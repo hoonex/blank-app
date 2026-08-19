@@ -5,7 +5,7 @@ const ANON_KEY = 'flow-school-anon-v1';
 const SEEN_KEY = 'flow-school-seen-v1';
 const KAKAO_PLACE_CACHE_PREFIX = 'flow-school-kakao-place-v1:';
 const SCHOOL_PROFILE_KEY = 'flow-school-profile-v3';
-const SCHOOL_LOGO_CACHE_PREFIX = 'flow-school-logo-fallback-v3:';
+const SCHOOL_LOGO_CACHE_PREFIX = 'flow-school-logo-fallback-v4:';
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
 for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
@@ -122,9 +122,9 @@ if (location.pathname === '/school') scheduleKakaoMapHydration();
 
 /*
  * The primary media resolver still lives in school.js. If an education-office
- * homepage blocks the server crawler, recover a same-origin-safe favicon via a
- * tiny Edge proxy. Browser code never probes the school CMS or third-party icon
- * hosts directly, avoiding mixed-content / ORB / failed-image console noise.
+ * homepage blocks the server crawler, recover a same-origin-safe school mark
+ * via the Edge proxy. The proxy gets the already-known NEIS school name so it
+ * can prefer a real official-site emblem over a generic site favicon.
  */
 function schoolLogoProfile() {
   try { return JSON.parse(localStorage.getItem(SCHOOL_PROFILE_KEY) || 'null'); }
@@ -148,13 +148,14 @@ function schoolLogoLoaded() {
   return schoolLogoTargets().some((img) => img.classList.contains('loaded') && img.naturalWidth >= 12 && img.naturalHeight >= 12);
 }
 
-function applySchoolLogo(url, source = 'fallback') {
+function applySchoolLogo(url, source = 'fallback', score = 0) {
   if (!url) return false;
   const targets = schoolLogoTargets();
   if (!targets.length) return false;
   for (const img of targets) {
     img.src = url;
     img.dataset.logoSource = source;
+    img.dataset.logoScore = String(score || 0);
     img.onload = () => img.classList.add('loaded');
     img.onerror = () => img.classList.remove('loaded');
   }
@@ -170,21 +171,26 @@ function blobToDataUrl(blob) {
   });
 }
 
-async function fetchSchoolLogoData(homepage) {
+async function fetchSchoolLogoData(homepage, schoolName) {
   const host = schoolLogoHost(homepage);
   if (!host) return null;
   try {
     const url = new URL(SCHOOL_LOGO_EDGE);
     url.searchParams.set('host', host);
+    if (schoolName) url.searchParams.set('name', schoolName);
     const response = await fetch(url, { cache: 'force-cache' });
     if (!response.ok || response.status === 204) return null;
     const type = response.headers.get('content-type') || '';
     if (!type.toLowerCase().startsWith('image/')) return null;
     const blob = await response.blob();
-    if (blob.size < 32 || blob.size > 300000) return null;
+    if (blob.size < 32 || blob.size > 500000) return null;
     const dataUrl = await blobToDataUrl(blob);
     if (!dataUrl.startsWith('data:image/')) return null;
-    return { dataUrl, source: response.headers.get('x-flow-logo-source') || 'logo-proxy' };
+    return {
+      dataUrl,
+      source: response.headers.get('x-flow-logo-source') || 'logo-proxy',
+      score: Number(response.headers.get('x-flow-logo-score') || 0),
+    };
   } catch { return null; }
 }
 
@@ -198,18 +204,18 @@ async function recoverSchoolLogo({ force = false } = {}) {
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
-      return applySchoolLogo(cached.dataUrl, cached.source || 'cached-logo-proxy');
+      return applySchoolLogo(cached.dataUrl, cached.source || 'cached-logo-proxy', cached.score || 0);
     }
   } catch {}
 
-  const hit = await fetchSchoolLogoData(school.homepage);
+  const hit = await fetchSchoolLogoData(school.homepage, school.name || '');
   if (!hit) return false;
   try { localStorage.setItem(cacheKey, JSON.stringify({ ...hit, savedAt: Date.now() })); } catch {}
-  return applySchoolLogo(hit.dataUrl, hit.source);
+  return applySchoolLogo(hit.dataUrl, hit.source, hit.score);
 }
 
 function scheduleSchoolLogoRecovery() {
-  for (const delay of [1400, 5200, 9000]) {
+  for (const delay of [900, 3600]) {
     setTimeout(() => { if (!schoolLogoLoaded()) void recoverSchoolLogo(); }, delay);
   }
 }
@@ -259,7 +265,7 @@ document.addEventListener('click', (event) => {
 
   if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) {
     scheduleKakaoMapHydration();
-    setTimeout(() => void recoverSchoolLogo(), 650);
+    setTimeout(() => void recoverSchoolLogo(), 450);
   }
   if (event.target.closest?.('#setupSave')) setTimeout(scheduleSchoolLogoRecovery, 250);
 }, { passive: true });
