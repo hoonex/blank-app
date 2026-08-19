@@ -1,3 +1,4 @@
+import '/university/dashboard.js';
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1',TIMETABLE_KEY='flow-university-timetable-v1';
