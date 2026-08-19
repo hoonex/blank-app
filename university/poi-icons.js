@@ -1,3 +1,5 @@
+import '/university/dashboard-campus.js';
+
 const BRAND_RULES=[
   {key:'cu',types:['stores'],label:'CU',match:(v)=>v.startsWith('cu')||v.includes('씨유'),style:{background:'#7b2cbf',color:'#fff',border:'#7b2cbf'}},
   {key:'gs25',types:['stores'],label:'GS25',match:(v)=>v.includes('gs25'),style:{background:'#1477d4',color:'#fff',border:'#1477d4',width:38}},
