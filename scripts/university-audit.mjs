@@ -54,12 +54,25 @@ await page.locator('.course-block').first().waitFor({ timeout: 10000 });
 const mobileWeek = await page.evaluate(() => {
   const blocks=[...document.querySelectorAll('.course-block')];
   const columns=[...document.querySelectorAll('.day-column')];
+  const visibleColumns=columns.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0);
+  const visibleBlocks=blocks.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0);
   const scroll=document.querySelector('#timetableScroll');
+  const body=document.querySelector('.grid-body');
+  const blockGeometry=visibleBlocks.map(block=>{
+    const r=block.getBoundingClientRect(),p=block.parentElement?.getBoundingClientRect();
+    return {width:r.width,parentWidth:p?.width||0,left:r.left,right:r.right,parentLeft:p?.left||0,parentRight:p?.right||0};
+  });
   return {
     allBlocks:blocks.length,
-    visibleBlocks:blocks.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length,
+    visibleBlocks:visibleBlocks.length,
     columns:columns.length,
-    visibleColumns:columns.filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length,
+    visibleColumns:visibleColumns.length,
+    columnWidths:visibleColumns.map(x=>Math.round(x.getBoundingClientRect().width*10)/10),
+    columnLefts:visibleColumns.map(x=>Math.round(x.getBoundingClientRect().left)),
+    maxBlockWidth:Math.max(0,...blockGeometry.map(x=>x.width)),
+    maxParentWidth:Math.max(0,...blockGeometry.map(x=>x.parentWidth)),
+    blocksOutsideColumn:blockGeometry.filter(x=>x.width>x.parentWidth+1||x.left<x.parentLeft-1||x.right>x.parentRight+1).length,
+    gridTemplate:getComputedStyle(body).gridTemplateColumns,
     scrollWidth:scroll?.scrollWidth||0,
     clientWidth:scroll?.clientWidth||0,
     semesterLabel:document.querySelector('#timetableMeta')?.textContent||'',
@@ -67,6 +80,9 @@ const mobileWeek = await page.evaluate(() => {
 });
 if (mobileWeek.allBlocks < 1 || mobileWeek.visibleBlocks !== mobileWeek.allBlocks) throw new Error(`Mobile timetable hides blocks: ${JSON.stringify(mobileWeek)}`);
 if (mobileWeek.columns < 5 || mobileWeek.visibleColumns !== mobileWeek.columns) throw new Error(`Mobile timetable is not a full week: ${JSON.stringify(mobileWeek)}`);
+if (new Set(mobileWeek.columnLefts).size !== mobileWeek.columns) throw new Error(`Weekday columns overlap each other: ${JSON.stringify(mobileWeek)}`);
+if (mobileWeek.blocksOutsideColumn !== 0 || mobileWeek.maxBlockWidth > mobileWeek.maxParentWidth + 1) throw new Error(`Course blocks escape their weekday columns: ${JSON.stringify(mobileWeek)}`);
+if (Math.max(...mobileWeek.columnWidths) > 90) throw new Error(`Mobile weekday columns are suspiciously wide: ${JSON.stringify(mobileWeek)}`);
 if (mobileWeek.scrollWidth > mobileWeek.clientWidth + 3) throw new Error(`Mobile timetable still requires horizontal scrolling: ${JSON.stringify(mobileWeek)}`);
 if (!mobileWeek.semesterLabel.includes('학기')) throw new Error(`Timetable semester label is malformed: ${mobileWeek.semesterLabel}`);
 await page.screenshot({ path: 'university-audit/mobile-timetable.png', fullPage: true });
@@ -89,7 +105,6 @@ await page.locator('#personalForm button[type="submit"]').click();
 await page.waitForFunction(()=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.name==='Flow 테스트 일정 수정'));
 await page.locator(`[data-custom-id="${personalId}"]`).first().click();
 await page.locator('#deletePersonalBtn').click();
-await page.waitForFunction(()=>!JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.id===window.__flowDeleteId),{timeout:100}).catch(()=>{});
 const personalExists=await page.evaluate(id=>JSON.parse(localStorage.getItem('flow-university-timetable-v1')||'{}').subjects?.some(x=>x.id===id),personalId);
 if(personalExists)throw new Error('Personal schedule was not deleted.');
 if(await page.locator('#exportBackupBtn').count()!==1||await page.locator('#importBackupBtn').count()!==1)throw new Error('Backup controls are missing.');
