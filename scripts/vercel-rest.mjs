@@ -10,16 +10,13 @@ const PROJECT_NAME = process.env.VERCEL_PROJECT_NAME || 'flow-student';
 const DISABLE_AUTH = process.env.VERCEL_DISABLE_AUTH !== 'false';
 const STATUS_FILE = process.env.VERCEL_STATUS_FILE || '';
 const command = process.argv[2] || 'deploy';
-const CLEAN_ROUTES = ['home','week','schedule','school'];
+const ROOT_CLEAN_ROUTES = ['home','week','schedule','school'];
+const UNIVERSITY_CLEAN_ROUTES = ['university','university/timetable','university/school'];
+const VERIFIED_ROUTES = [...ROOT_CLEAN_ROUTES, ...UNIVERSITY_CLEAN_ROUTES];
 
 async function writeStatus(payload) {
   if (!STATUS_FILE) return;
-  const status = {
-    ...payload,
-    projectName: PROJECT_NAME,
-    generatedAt: new Date().toISOString(),
-    commitSha: process.env.GITHUB_SHA || null,
-  };
+  const status = { ...payload, projectName: PROJECT_NAME, generatedAt: new Date().toISOString(), commitSha: process.env.GITHUB_SHA || null };
   await writeFile(STATUS_FILE, `${JSON.stringify(status, null, 2)}\n`, 'utf8');
 }
 
@@ -37,11 +34,7 @@ function withScope(endpoint) {
 async function request(endpoint, options = {}) {
   const response = await fetch(`${API}${withScope(endpoint)}`, {
     ...options,
-    headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const text = await response.text();
   let data = null;
@@ -57,35 +50,19 @@ async function request(endpoint, options = {}) {
 
 async function getProject() {
   const idOrName = PROJECT_ID || PROJECT_NAME;
-  try {
-    return await request(`/v9/projects/${encodeURIComponent(idOrName)}`);
-  } catch (error) {
-    if (error.status !== 404 || PROJECT_ID) throw error;
-    return null;
-  }
+  try { return await request(`/v9/projects/${encodeURIComponent(idOrName)}`); }
+  catch (error) { if (error.status !== 404 || PROJECT_ID) throw error; return null; }
 }
 
 async function ensureProject() {
   let project = await getProject();
   if (!project) {
-    project = await request('/v11/projects', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: PROJECT_NAME,
-        framework: null,
-        publicSource: true,
-        ssoProtection: null,
-      }),
-    });
+    project = await request('/v11/projects', { method: 'POST', body: JSON.stringify({ name: PROJECT_NAME, framework: null, publicSource: true, ssoProtection: null }) });
     console.log(`Created Vercel project ${project.name} (${project.id})`);
   }
-
   if (DISABLE_AUTH) {
     try {
-      project = await request(`/v9/projects/${encodeURIComponent(project.id)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ ssoProtection: null }),
-      });
+      project = await request(`/v9/projects/${encodeURIComponent(project.id)}`, { method: 'PATCH', body: JSON.stringify({ ssoProtection: null }) });
       console.log('Vercel Authentication is disabled for this project.');
     } catch (error) {
       if (project?.ssoProtection) throw error;
@@ -118,15 +95,26 @@ async function collectFiles(root = process.cwd(), dir = '.') {
   return files;
 }
 
-function addCleanRouteFallbacks(files) {
-  const index = files.find((f) => f.file === 'index.html');
-  if (!index) throw new Error('index.html not found in deployment files.');
-  const routeHtml = index.data.includes('<base ')
-    ? index.data
-    : index.data.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}\n  <base href="/">`);
-  for (const route of CLEAN_ROUTES) {
+function withBase(html) {
+  return html.includes('<base ') ? html : html.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}\n  <base href="/">`);
+}
+
+function addRouteFallbacks(files) {
+  const rootIndex = files.find((f) => f.file === 'index.html');
+  if (!rootIndex) throw new Error('index.html not found in deployment files.');
+  const rootHtml = withBase(rootIndex.data);
+  for (const route of ROOT_CLEAN_ROUTES) {
     const file = `${route}/index.html`;
-    if (!files.some((f) => f.file === file)) files.push({ file, data: routeHtml });
+    if (!files.some((f) => f.file === file)) files.push({ file, data: rootHtml });
+  }
+
+  const universityIndex = files.find((f) => f.file === 'university/index.html');
+  if (universityIndex) {
+    const universityHtml = universityIndex.data;
+    for (const route of UNIVERSITY_CLEAN_ROUTES.slice(1)) {
+      const file = `${route}/index.html`;
+      if (!files.some((f) => f.file === file)) files.push({ file, data: universityHtml });
+    }
   }
   return files;
 }
@@ -145,7 +133,7 @@ async function waitForDeployment(id) {
 
 async function verifyCleanRoutes(baseUrl) {
   if (!baseUrl) return;
-  for (const route of CLEAN_ROUTES) {
+  for (const route of VERIFIED_ROUTES) {
     const target = new URL(`/${route}`, baseUrl).toString();
     let response = null;
     let lastError = null;
@@ -154,9 +142,7 @@ async function verifyCleanRoutes(baseUrl) {
         response = await fetch(target, { redirect: 'follow', signal: AbortSignal.timeout(10000) });
         if (response.ok) break;
         lastError = new Error(`${target} -> ${response.status}`);
-      } catch (error) {
-        lastError = error;
-      }
+      } catch (error) { lastError = error; }
       await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
     }
     if (!response?.ok) throw new Error(`Clean route verification failed: ${lastError?.message || target}`);
@@ -166,18 +152,11 @@ async function verifyCleanRoutes(baseUrl) {
 
 async function deploy() {
   const project = await ensureProject();
-  const files = addCleanRouteFallbacks(await collectFiles());
+  const files = addRouteFallbacks(await collectFiles());
   console.log(`Deploying ${files.length} text assets to ${project.name}...`);
   const deployment = await request('/v13/deployments', {
     method: 'POST',
-    body: JSON.stringify({
-      name: project.name,
-      project: project.id,
-      target: 'production',
-      files,
-      projectSettings: { framework: null },
-      meta: { source: 'flow-vercel-rest', commitSha: process.env.GITHUB_SHA || '' },
-    }),
+    body: JSON.stringify({ name: project.name, project: project.id, target: 'production', files, projectSettings: { framework: null }, meta: { source: 'flow-vercel-rest', commitSha: process.env.GITHUB_SHA || '' } }),
   });
   const ready = await waitForDeployment(deployment.id);
   const deploymentUrl = ready.url || deployment.url;
@@ -186,13 +165,10 @@ async function deploy() {
   await verifyCleanRoutes(verifyUrl);
   const url = alias || deploymentUrl;
   const result = {
-    ok: true,
-    projectId: project.id,
-    deploymentId: ready.id,
+    ok: true, projectId: project.id, deploymentId: ready.id,
     url: url ? `https://${url.replace(/^https?:\/\//,'')}` : null,
-    readyState: ready.readyState || ready.state || 'READY',
-    ssoProtection: project.ssoProtection ?? null,
-    verifiedRoutes: CLEAN_ROUTES.map((route) => `/${route}`),
+    readyState: ready.readyState || ready.state || 'READY', ssoProtection: project.ssoProtection ?? null,
+    verifiedRoutes: VERIFIED_ROUTES.map((route) => `/${route}`),
   };
   await writeStatus(result);
   console.log(JSON.stringify(result, null, 2));
@@ -203,10 +179,7 @@ async function status() {
   const project = await getProject();
   if (!project) throw new Error(`Project ${PROJECT_ID || PROJECT_NAME} not found.`);
   const deployments = await request(`/v6/deployments?projectId=${encodeURIComponent(project.id)}&limit=5`);
-  const result = {
-    project: { id: project.id, name: project.name, ssoProtection: project.ssoProtection ?? null },
-    deployments: deployments.deployments || [],
-  };
+  const result = { project: { id: project.id, name: project.name, ssoProtection: project.ssoProtection ?? null }, deployments: deployments.deployments || [] };
   console.log(JSON.stringify(result, null, 2));
   return result;
 }
