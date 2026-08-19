@@ -11,7 +11,7 @@ const DISABLE_AUTH = process.env.VERCEL_DISABLE_AUTH !== 'false';
 const STATUS_FILE = process.env.VERCEL_STATUS_FILE || '';
 const command = process.argv[2] || 'deploy';
 const ROOT_CLEAN_ROUTES = ['home','week','schedule','school'];
-const UNIVERSITY_CLEAN_ROUTES = ['university','university/timetable','university/school'];
+const UNIVERSITY_CLEAN_ROUTES = ['university','university/timetable','university/campus','university/school'];
 const VERIFIED_ROUTES = [...ROOT_CLEAN_ROUTES, ...UNIVERSITY_CLEAN_ROUTES];
 
 async function writeStatus(payload) {

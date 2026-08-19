@@ -58,21 +58,36 @@ function kakaoSearchUrl(name, address) {
   return `https://map.kakao.com/link/search/${encodeURIComponent(`${name} ${address}`.trim())}`;
 }
 
-async function hydrateKakaoMapLink() {
+function liveMapLink(context) {
   const link = document.querySelector('#mapLink');
+  const current = schoolMapContext();
+  if (!link || !current) return null;
+  if (current.name !== context.name || current.address !== context.address) return null;
+  return link;
+}
+
+function applyKakaoMapUrl(context, url, resolved = false) {
+  const link = liveMapLink(context);
+  if (!link) return false;
+  link.href = url;
+  link.dataset.mapProvider = 'kakao';
+  if (resolved) link.dataset.mapResolved = 'true';
+  else delete link.dataset.mapResolved;
+  return true;
+}
+
+async function hydrateKakaoMapLink() {
   const context = schoolMapContext();
+  const link = document.querySelector('#mapLink');
   if (!link || !context) return false;
 
-  link.href = kakaoSearchUrl(context.name, context.address);
-  link.dataset.mapProvider = 'kakao';
+  applyKakaoMapUrl(context, kakaoSearchUrl(context.name, context.address));
 
   const cacheKey = `${KAKAO_PLACE_CACHE_PREFIX}${context.name}|${context.address}`;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached?.url && Date.now() - Number(cached.savedAt || 0) < 7 * 86400000) {
-      link.href = String(cached.url).replace(/^http:/, 'https:');
-      link.dataset.mapResolved = 'true';
-      return true;
+      return applyKakaoMapUrl(context, String(cached.url).replace(/^http:/, 'https:'), true);
     }
   } catch {}
 
@@ -87,9 +102,8 @@ async function hydrateKakaoMapLink() {
     const placeUrl = body?.place?.url;
     if (typeof placeUrl === 'string' && /^(?:https?:\/\/)?place\.map\.kakao\.com\//.test(placeUrl.replace(/^https?:\/\//, ''))) {
       const normalized = placeUrl.startsWith('http') ? placeUrl.replace(/^http:/, 'https:') : `https://${placeUrl}`;
-      link.href = normalized;
-      link.dataset.mapResolved = 'true';
       localStorage.setItem(cacheKey, JSON.stringify({ url: normalized, savedAt: Date.now() }));
+      return applyKakaoMapUrl(context, normalized, true);
     }
   } catch {}
   return true;

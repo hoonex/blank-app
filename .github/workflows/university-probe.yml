@@ -21,10 +21,14 @@ jobs:
       - name: Validate university source
         run: |
           node --check university/university.js
+          node --check university/campus.js
           node --check scripts/university-audit.mjs
+          node --check scripts/campus-audit.mjs
           node --check scripts/vercel-rest.mjs
           test -f university/index.html
+          test -f university/campus.css
           grep -q 'Flow University' university/index.html
+          grep -q '/university/campus' vercel.json
       - name: Verify university server APIs
         run: |
           curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90' | tee university-search.json | grep -q '경북대학교'
@@ -32,6 +36,10 @@ jobs:
             -d '{"url":"https://everytime.kr/@de9YHaTAnl47JtxH0muz"}' \
             'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=import-everytime' \
             | tee university-import.json | grep -q '컴퓨터네트워크및보안'
+          curl -fsSL -X POST -H 'content-type: application/json' \
+            -d '{"schoolName":"경북대학교","address":"대구광역시 북구 대학로 80","items":[{"place":"IT대학 2호관"},{"place":"공대9호관"},{"place":"법과대학"}]}' \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus' \
+            | tee university-campus.json | grep -q 'nearby'
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -45,6 +53,8 @@ jobs:
           exit 1
       - name: Run university browser audit
         run: node scripts/university-audit.mjs
+      - name: Run campus browser audit
+        run: node scripts/campus-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -53,4 +63,5 @@ jobs:
             university-audit/
             university-search.json
             university-import.json
+            university-campus.json
           retention-days: 5
