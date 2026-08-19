@@ -3,6 +3,8 @@ name: University API probe
 on:
   push:
     branches: [feat/university-mode]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
