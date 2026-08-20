@@ -12,6 +12,14 @@ html[data-theme="light"]{
 }
 html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!important}
 
+/* Shared Flow wordmark: University had the cleaner brand treatment, so School follows it. */
+.flow-logo{display:inline-flex!important;align-items:baseline!important;gap:7px!important}
+.flow-logo-mark{display:none!important}
+.flow-logo-copy{display:inline-flex!important;align-items:baseline!important;gap:6px!important}
+.flow-logo-copy strong{font-size:1.32rem!important;font-weight:820!important;letter-spacing:-.055em!important;line-height:1!important;color:var(--text)!important}
+.flow-logo-copy small{font-size:.66rem!important;font-weight:760!important;letter-spacing:.015em!important;color:var(--muted)!important;line-height:1!important}
+.mobile-topbar .flow-logo-copy strong{font-size:1.24rem!important}.mobile-topbar .flow-logo-copy small{font-size:.61rem!important}
+
 /* Search results belong below the field; they should never cover the input itself. */
 .school-search-panel>.search-results{
   position:relative!important;

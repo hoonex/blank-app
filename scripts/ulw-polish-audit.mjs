@@ -1,0 +1,28 @@
+import {chromium} from 'playwright';
+import {mkdir,writeFile} from 'node:fs/promises';
+const base=process.env.FLOW_BASE_URL||'http://127.0.0.1:4173';
+await mkdir('ulw-audit',{recursive:true});
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext({viewport:{width:1280,height:900},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',geolocation:{latitude:35.8888,longitude:128.6103},permissions:['geolocation']});
+const page=await context.newPage();
+const consoleErrors=[],pageErrors=[];page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});page.on('pageerror',e=>pageErrors.push(String(e)));
+await page.addInitScript(()=>{
+  localStorage.setItem('flow-university-profile-v1',JSON.stringify({id:'knu',name:'경북대학교',address:'대구광역시 북구 대학로 80'}));
+  const day=(new Date().getDay()+6)%7;
+  localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[{name:'자료구조',professor:'김교수',place:'IT대학2호관',times:[{day,start:'09:00',end:'10:15',startMinutes:540,endMinutes:615,place:'IT대학2호관'}]},{name:'운영체제',professor:'이교수',place:'공대9호관',times:[{day,start:'13:00',end:'14:15',startMinutes:780,endMinutes:855,place:'공대9호관'}]}]}));
+  localStorage.removeItem('flow-university-dashboard-layout-v2');
+  localStorage.setItem('flow-university-theme-v1','light');
+});
+await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
+await page.locator('#appView:not(.hidden) .brand-mode').first().waitFor({timeout:10000});
+const brand=(await page.locator('#appView:not(.hidden) .brand').first().innerText()).replace(/\s+/g,' ').trim(),modeCount=(brand.match(/University/g)||[]).length;if(!brand.includes('Flow')||modeCount!==1)throw new Error(`University wordmark not unified: ${brand}`);
+await page.locator('.flow-theme-segment [data-university-theme="dark"]').click();let theme=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,mode:document.documentElement.dataset.themeMode,saved:localStorage.getItem('flow-university-theme-v1')}));if(theme.theme!=='dark'||theme.mode!=='dark'||theme.saved!=='dark')throw new Error(`Dark theme failed: ${JSON.stringify(theme)}`);
+await page.locator('.flow-theme-segment [data-university-theme="system"]').click();theme=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,mode:document.documentElement.dataset.themeMode,saved:localStorage.getItem('flow-university-theme-v1')}));if(theme.mode!=='system'||theme.saved!=='system')throw new Error(`System theme failed: ${JSON.stringify(theme)}`);
+await page.locator('#widgetDashboard').waitFor({timeout:10000});await page.locator('#dashboardEditBtn').click();
+const widget=page.locator('#widgetDashboard .dashboard-widget:not(.widget-hidden)').first(),handle=widget.locator('.widget-v2-resize');await handle.waitFor();const before=await widget.getAttribute('data-size'),box=await handle.boundingBox();if(!box)throw new Error('Resize handle has no box.');
+await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.waitForTimeout(45);const pressed=await widget.getAttribute('data-resize-pressed');if(pressed!=='1')throw new Error('Resize handle gives no immediate pressed feedback.');
+await page.mouse.move(box.x+box.width/2+170,box.y+box.height/2+125,{steps:8});await page.waitForTimeout(90);const moving=await widget.getAttribute('data-resize-moving'),during=await widget.getAttribute('data-size');if(moving!=='1')throw new Error('Resize drag threshold feedback is missing.');if(during===before)throw new Error(`Resize did not reach another snap size: ${before}`);await page.mouse.up();await page.waitForTimeout(45);const afterState=await widget.evaluate(el=>({pressed:el.dataset.resizePressed||'',moving:el.dataset.resizeMoving||'',size:el.dataset.size}));if(afterState.pressed||afterState.moving)throw new Error(`Resize state did not clear: ${JSON.stringify(afterState)}`);
+const geo=await page.evaluate(()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('campus geolocation bridge timeout')),4000);window.addEventListener('flow:campus-current-position',e=>{clearTimeout(timer);resolve(e.detail)},{once:true});navigator.geolocation.getCurrentPosition(()=>{},reject,{maximumAge:0,timeout:3000})}));if(Math.abs(geo.lat-35.8888)>.001||Math.abs(geo.lng-128.6103)>.001)throw new Error(`Geolocation bridge mismatch: ${JSON.stringify(geo)}`);
+await page.screenshot({path:'ulw-audit/university-polish.png',fullPage:true});
+const school=await context.newPage();const schoolErrors=[];school.on('console',m=>{if(m.type()==='error')schoolErrors.push(m.text())});await school.goto(`${base}/`,{waitUntil:'domcontentloaded'});const schoolBrand=await school.locator('.flow-logo').first().innerText();const markDisplay=await school.locator('.flow-logo-mark').first().evaluate(el=>getComputedStyle(el).display);if(markDisplay!=='none')throw new Error(`School legacy F mark is still visible: ${markDisplay}`);if(!schoolBrand.includes('Flow')||!schoolBrand.includes('School'))throw new Error(`School wordmark missing: ${schoolBrand}`);await school.screenshot({path:'ulw-audit/school-unified-brand.png',fullPage:true});
+const report={brand,modeCount,theme,beforeSize:before,afterSize:afterState.size,geo,schoolBrand,markDisplay,consoleErrors,pageErrors,schoolErrors};await writeFile('ulw-audit/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(consoleErrors.length||pageErrors.length||schoolErrors.length)throw new Error(`Browser errors: ${JSON.stringify({consoleErrors,pageErrors,schoolErrors})}`);await browser.close();
