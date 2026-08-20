@@ -6,6 +6,7 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
   if(url.origin!==self.location.origin)return;
+  if(url.pathname==='/admin'||url.pathname.startsWith('/admin/'))return;
   const freshShell=['document','script','style','worker'].includes(event.request.destination)||SHELL.includes(url.pathname);
   event.respondWith(fetch(event.request,freshShell?{cache:'no-cache'}:undefined).then(response=>{
     const copy=response.clone();
