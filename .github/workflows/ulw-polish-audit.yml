@@ -11,7 +11,7 @@ permissions:
 jobs:
   polish-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,6 +27,7 @@ jobs:
           node --input-type=module --check < university/campus.js
           node --input-type=module --check < university/campus-interactive.js
           node --check scripts/ulw-polish-audit.mjs
+          node --check scripts/production-map-audit.mjs
           grep -q 'Never edit `main` directly' AGENTS.md
           grep -q 'dashboard-editor-feedback.js' university/campus-interactive.js
           grep -q 'ui-unify.js' university/campus-interactive.js
@@ -52,9 +53,15 @@ jobs:
           exit 1
       - name: Run browser audit
         run: node scripts/ulw-polish-audit.mjs
+      - name: Verify af3b3aa on live production
+        env:
+          FLOW_PRODUCTION_URL: https://flow-student-blush.vercel.app
+        run: node scripts/production-map-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ulw-polish-audit
-          path: ulw-audit/
+          path: |
+            ulw-audit/
+            production-map-audit/
           retention-days: 5
