@@ -9,7 +9,7 @@ await page.addInitScript(()=>{
   const d=(new Date().getDay()+6)%7;
   localStorage.setItem('flow-university-profile-v1',JSON.stringify({id:'knu',name:'경북대학교',address:'대구광역시 북구 대학로 80'}));
   localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[{name:'자료구조',credit:3,times:[{day:d,start:'09:00',end:'10:15',startMinutes:540,endMinutes:615,place:'IT대학1호관'}]}]}));
-  localStorage.removeItem('flow-university-memo-v1');
+  if(!sessionStorage.getItem('flow-memo-panel-audit-ready')){sessionStorage.setItem('flow-memo-panel-audit-ready','1');localStorage.removeItem('flow-university-memo-v1')}
 });
 await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
 const memo=page.locator('[data-widget-id="memo"]');await memo.waitFor({timeout:10000});await page.locator('[data-widget-id="memo"][data-memo-panel-upgraded="1"]').waitFor({timeout:5000});
