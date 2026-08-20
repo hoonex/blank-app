@@ -1,12 +1,11 @@
 import '/university/dashboard.js';
 import '/university/ui-unify.js';
 import '/university/dashboard-editor-feedback.js';
-import '/university/campus-geolocation-bridge.js';
 import {decoratePoiNode} from '/university/poi-icons.js';
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1',TIMETABLE_KEY='flow-university-timetable-v1';
-let sdkPromise=null,campusPromise=null,campusSignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentPosition=null,poiLayerEnabled=false,renderToken=0;
+let sdkPromise=null,campusPromise=null,campusSignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentRouteOverlay=null,currentPosition=null,currentRouteData=null,poiLayerEnabled=false,renderToken=0;
 const routeCache=new Map();
 
 function read(k,f=null){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
@@ -34,7 +33,6 @@ function renderCurrentLocation(bounds){
   if(!map||!currentPosition)return 0;
   const pos=point(currentPosition);if(!pos)return 0;
   currentOverlay=new kakao.maps.CustomOverlay({map,position:pos,content:currentLocationNode(),xAnchor:.5,yAnchor:.5,zIndex:9});bounds?.extend(pos);
-  const next=nextUpcoming(),dest=next?placePoint(resolved(next.place)):null;if(dest)bounds?.extend(dest);
   return 1
 }
 
@@ -75,7 +73,7 @@ function routeMidpoint(path){
   const ratio=Math.max(0,Math.min(1,(target-segment.start)/segment.length));
   return new kakao.maps.LatLng(segment.aLat+(segment.bLat-segment.aLat)*ratio,segment.aLng+(segment.bLng-segment.aLng)*ratio);
 }
-function routeLabel(routeData,path){
+function routeLabel(routeData,path,prefix='도보'){
   const sec=Number(routeData?.duration??routeData?.durationSeconds??routeData?.time??0);
   const dist=Number(routeData?.distance??routeData?.distanceMeters??0);
   let min=sec>0?Math.max(1,Math.round(sec/60)):0;
@@ -83,14 +81,23 @@ function routeLabel(routeData,path){
   const position=routeMidpoint(path);
   if(!min||!position)return null;
   const node=document.createElement('span');
-  node.className='flow-campus-route-time';
+  node.className=`flow-campus-route-time${prefix==='현재'?' is-current':''}`;
   const distance=routeDistanceText(dist);
-  node.textContent=distance?`도보 ${min}분 · ${distance}`:`도보 ${min}분`;
+  node.textContent=distance?`${prefix} ${min}분 · ${distance}`:`${prefix} ${min}분`;
   return{node,position};
 }
 function nextUpcoming(){const now=new Date(),mins=now.getHours()*60+now.getMinutes();return dayEntries(todayIndex()).filter(x=>x.place).find(x=>x.startMinutes>mins)||null}
 async function route(a,b,an,bn){if(!a?.x||!a?.y||!b?.x||!b?.y)return null;const k=`${a.x},${a.y}>${b.x},${b.y}`;if(routeCache.has(k))return routeCache.get(k);const p=campusApi('route',{start:a,end:b,startName:an,endName:bn}).then(x=>x.route).catch(()=>null);routeCache.set(k,p);return p}
-function drawPolyline(r,current=false){if(r?.status!=='OK'||!Array.isArray(r.points)||!r.points.length||!map)return null;const path=r.points.map(point).filter(Boolean);if(path.length<2)return null;return{line:new kakao.maps.Polyline({map,path,strokeWeight:current?6:5,strokeColor:current?'#1769e0':'#26384f',strokeOpacity:.8}),path}}
+function drawPolyline(r,current=false){if(r?.status!=='OK'||!Array.isArray(r.points)||!r.points.length||!map)return null;const path=r.points.map(point).filter(Boolean);if(path.length<2)return null;return{line:new kakao.maps.Polyline({map,path,strokeWeight:current?6:5,strokeColor:current?'#1769e0':'#26384f',strokeOpacity:current?.92:.8}),path}}
+function renderCurrentRoute(bounds){
+  if(currentRouteLine){try{currentRouteLine.setMap(null)}catch{}currentRouteLine=null}
+  if(currentRouteOverlay){try{currentRouteOverlay.setMap(null)}catch{}currentRouteOverlay=null}
+  if(!map||!currentRouteData?.route)return 0;
+  const drawn=drawPolyline(currentRouteData.route,true);if(!drawn)return 0;
+  currentRouteLine=drawn.line;drawn.path.forEach(p=>bounds?.extend(p));
+  const label=routeLabel(currentRouteData.route,drawn.path,'현재');if(label){currentRouteOverlay=new kakao.maps.CustomOverlay({map,position:label.position,content:label.node,xAnchor:.5,yAnchor:.5,zIndex:8})}
+  return drawn.path.length
+}
 
 function ensureMap(){const wrap=document.querySelector('#campusMapWrap');if(!wrap||!campusData?.center?.x||!campusData?.center?.y||!window.kakao?.maps?.Map)return false;if(map&&mapContainer?.isConnected)return true;mapContainer=document.createElement('div');mapContainer.className='campus-interactive-map';wrap.append(mapContainer);map=new kakao.maps.Map(mapContainer,{center:new kakao.maps.LatLng(Number(campusData.center.y),Number(campusData.center.x)),level:3});map.setZoomable(true);map.setDraggable(true);kakao.maps.event.addListener(map,'tilesloaded',()=>{wrap.classList.add('interactive-ready');wrap.dataset.interactiveMap='ready'});return true}
 async function renderMapLayers(){
@@ -119,6 +126,7 @@ async function renderMapLayers(){
   }
   if(poiLayerEnabled){const type=selectedNearby();for(const item of(campusData?.nearby?.[type]||[]).slice(0,8)){const pos=placePoint(item);if(!pos)continue;poiOverlays.push(new kakao.maps.CustomOverlay({map,position:pos,content:poiNode(type,item),xAnchor:.5,yAnchor:.5,zIndex:3}));bounds.extend(pos);count++}}
   count+=renderCurrentLocation(bounds);
+  count+=renderCurrentRoute(bounds);
   if(count>1)map.setBounds(bounds);
   setTimeout(()=>{try{map.relayout()}catch{}},30);
 }
@@ -126,6 +134,7 @@ async function activate(){const wrap=document.querySelector('#campusMapWrap');if
 function schedule(d=80){setTimeout(()=>void activate(),d)}
 document.addEventListener('click',e=>{if(e.target.closest?.('[data-view="campus"],[data-campus-day]'))schedule(120);if(e.target.closest?.('#campusFilter [data-nearby]')){poiLayerEnabled=true;schedule(100)}if(e.target.closest?.('#campusRefreshBtn')){campusData=null;campusSignature='';routeCache.clear();schedule(450)}},{passive:true});
 window.addEventListener('flow:campus-current-position',e=>{const lat=Number(e.detail?.lat),lng=Number(e.detail?.lng),accuracy=Number(e.detail?.accuracy||0);if(!Number.isFinite(lat)||!Number.isFinite(lng))return;currentPosition={lat,lng,accuracy};schedule(0)});
+window.addEventListener('flow:campus-current-route',e=>{const d=e.detail||{},sx=Number(d.start?.x),sy=Number(d.start?.y);if(Number.isFinite(sx)&&Number.isFinite(sy))currentPosition={lng:sx,lat:sy,accuracy:0};currentRouteData=d;schedule(0)});
 window.addEventListener('popstate',()=>{if(location.pathname==='/university/campus')schedule(120)});
 window.addEventListener('resize',()=>{if(map)setTimeout(()=>{try{map.relayout()}catch{}},80)},{passive:true});
 if(location.pathname==='/university/campus')schedule(500);
