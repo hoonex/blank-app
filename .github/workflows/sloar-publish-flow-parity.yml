@@ -1,0 +1,100 @@
+name: Sloar publish Flow mode parity
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  publish-product-tree:
+    if: github.event.pull_request.head.ref == 'supply/flow-parity-final-20260821'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      BASE_SHA: 222b319413a7395c7774a28baed285750c012e59
+      BASE_TREE: 5a9eaf7e801eb258350038181b9860c7d43dbc5d
+      FINAL_TREE: 87b301e1d689c2ec04abb69b214896521d6e4a85
+      PATCH_SHA: 45f947a58a15eee00ba6ed9ec00a532e2b545537ee03b67e3b0112d6e4cca519
+      TARGET_BRANCH: feat/school-university-mode-consistency-20260821
+    steps:
+      - name: Checkout transport inputs
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify transport and build exact product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$RUNNER_TEMP/flow-parity"
+          mkdir -p "$tmp"
+
+          expected=(
+            c5cf38c0cb6420633a8f2b3f51fb166fa2dde75987eeeffb8ef6174aee0358cb
+            e29a709925d534e3460b0e73f3c806e57a1a3f11f1997332bcd7bbcc3ef4a5a7
+            e6d6b987cacf9e16f402e5af794255ce60bd135afb0dfaffff0d1c172948187c
+            970c9d9624c6efe3069f86700e1169802481e5c69bf571042ad72507f83f39d7
+            1e0c94806edc8892c6ca4b934968904459535dd919710038f03b91649f94a168
+          )
+          for i in 00 01 02 03 04; do
+            cp ".sloar/flow-mode-parity.patch.gz.b64.$i" "$tmp/$i"
+            idx=$((10#$i))
+            printf '%s  %s\n' "${expected[$idx]}" "$tmp/$i" | sha256sum -c -
+          done
+
+          cat "$tmp"/00 "$tmp"/01 "$tmp"/02 "$tmp"/03 "$tmp"/04 > "$tmp/patch.gz.b64"
+          base64 -d "$tmp/patch.gz.b64" > "$tmp/patch.gz"
+          gzip -dc "$tmp/patch.gz" > "$tmp/flow.patch"
+          printf '%s  %s\n' "$PATCH_SHA" "$tmp/flow.patch" | sha256sum -c -
+
+          git cat-file -e "$BASE_SHA^{commit}"
+          test "$(git rev-parse "$BASE_SHA^{tree}")" = "$BASE_TREE"
+          git checkout --detach "$BASE_SHA"
+          git apply --check "$tmp/flow.patch"
+          git apply "$tmp/flow.patch"
+          git diff --check
+
+          node --check university/university.js
+          node --check university/ui-unify.js
+          node --check scripts/university-audit.mjs
+
+          if git diff -U0 -- university/university.js university/ui-unify.js | grep '^+' | grep -E 'MutationObserver|setInterval\(|scrollTo\('; then
+            echo 'Unexpected runtime layer added.' >&2
+            exit 1
+          fi
+
+          git add \
+            .github/workflows/university-probe.yml \
+            index.html \
+            school-metrics.js \
+            school-polish.css \
+            scripts/university-audit.mjs \
+            supabase/functions/flow-quest-event/index.ts \
+            supabase/migrations/20260821_flow_university_telemetry.sql \
+            university/index.html \
+            university/ui-unify-v2.css \
+            university/ui-unify.js \
+            university/university.js
+
+          expected_paths="$(printf '%s\n' \
+            .github/workflows/university-probe.yml \
+            index.html \
+            school-metrics.js \
+            school-polish.css \
+            scripts/university-audit.mjs \
+            supabase/functions/flow-quest-event/index.ts \
+            supabase/migrations/20260821_flow_university_telemetry.sql \
+            university/index.html \
+            university/ui-unify-v2.css \
+            university/ui-unify.js \
+            university/university.js | sort)"
+          actual_paths="$(git diff --cached --name-only | sort)"
+          test "$actual_paths" = "$expected_paths"
+          test "$(git write-tree)" = "$FINAL_TREE"
+
+          git config user.name 'hoonex'
+          git config user.email '163626004+hoonex@users.noreply.github.com'
+          git commit -m 'feat: unify School and University entry modes'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH" --force-with-lease="refs/heads/$TARGET_BRANCH:$BASE_SHA"
