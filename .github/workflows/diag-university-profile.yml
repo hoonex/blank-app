@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Compare real and synthetic university profile ids
+      - name: Verify partial profile fallback
         shell: bash
         run: |
           set -euo pipefail
@@ -35,9 +35,14 @@ jobs:
           fake_code="$(curl -sS -L -o /tmp/fake-profile.json -w '%{http_code}' "$fake_url")"
           echo "real profile status=$real_code url=$real_url"
           echo "synthetic profile status=$fake_code url=$fake_url"
-          echo 'real profile body:'
-          head -c 1200 /tmp/real-profile.json || true
-          echo
-          echo 'synthetic profile body:'
-          head -c 1200 /tmp/fake-profile.json || true
-          echo
+          test "$real_code" = 200
+          test "$fake_code" = 200
+          python3 - <<'PY'
+          import json
+          for path in ('/tmp/real-profile.json','/tmp/fake-profile.json'):
+              data=json.load(open(path))
+              assert isinstance(data.get('metrics'), dict), data
+              assert isinstance(data.get('partial'), bool), data
+              assert isinstance(data.get('unavailable'), list), data
+              print(path, {'partial':data['partial'],'unavailable':data['unavailable'],'school':(data.get('school') or {}).get('name')})
+          PY
