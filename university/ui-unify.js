@@ -1,14 +1,14 @@
 const THEME_KEY='flow-university-theme-v1';
-const STYLE='/university/ui-unify.css';
+const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css'];
 const media=matchMedia('(prefers-color-scheme: dark)');
-function ensureStyle(){if(document.querySelector(`link[href="${STYLE}"]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=STYLE;document.head.append(l)}
+function ensureStyles(){for(const href of STYLES){if(document.querySelector(`link[href="${href}"]`))continue;const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.append(l)}}
 function pref(){const v=localStorage.getItem(THEME_KEY)||'light';return['light','system','dark'].includes(v)?v:'light'}
 function effective(value){return value==='system'?(media.matches?'dark':'light'):value}
 function label(value){return value==='light'?'Light':value==='dark'?'Dark':'System'}
 function apply(value=pref()){
   const p=['light','system','dark'].includes(value)?value:'light',e=effective(p);
   localStorage.setItem(THEME_KEY,p);document.documentElement.dataset.theme=e;document.documentElement.dataset.themeMode=p;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',e==='dark'?'#171c23':'#f5f6f8');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',e==='dark'?'#202833':'#f5f7fa');
   document.querySelectorAll('[data-university-theme]').forEach(b=>b.classList.toggle('active',b.dataset.universityTheme===p));
   document.querySelectorAll('.flow-theme-cycle').forEach(b=>b.textContent=label(p));
 }
@@ -20,6 +20,6 @@ function installControls(){
   const bottom=document.querySelector('.sidebar-bottom');if(bottom&&!bottom.querySelector('.flow-theme-segment')){const seg=document.createElement('div');seg.className='flow-theme-segment';seg.setAttribute('aria-label','화면 테마');seg.innerHTML='<button type="button" data-university-theme="light">Light</button><button type="button" data-university-theme="system">System</button><button type="button" data-university-theme="dark">Dark</button>';seg.addEventListener('click',e=>{const b=e.target.closest('[data-university-theme]');if(b)apply(b.dataset.universityTheme)});bottom.prepend(seg)}
   apply(pref())
 }
-function init(){ensureStyle();installControls()}
+function init(){ensureStyles();installControls()}
 media.addEventListener?.('change',()=>{if(pref()==='system')apply('system')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

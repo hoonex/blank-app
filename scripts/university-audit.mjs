@@ -21,7 +21,7 @@ const landingTheme = await page.evaluate(() => ({
   brand: document.querySelector('.brand-word')?.textContent?.trim() || '',
   brandMarks: document.querySelectorAll('.brand-mark').length,
 }));
-if (landingTheme.dataTheme !== 'light' || landingTheme.bgVar.toLowerCase() !== '#f5f6f8') throw new Error(`University light theme was overridden: ${JSON.stringify(landingTheme)}`);
+if (landingTheme.dataTheme !== 'light' || landingTheme.bgVar.toLowerCase() !== '#f5f7fa') throw new Error(`University light theme was overridden: ${JSON.stringify(landingTheme)}`);
 if (landingTheme.brand !== 'Flow' || landingTheme.brandMarks !== 0) throw new Error(`Flow branding was not simplified: ${JSON.stringify(landingTheme)}`);
 
 await page.locator('#universitySearch').fill('경북대학교');

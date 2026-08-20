@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js university/dashboard.css university/dashboard.js university/poi-icons.js university/campus.css university/campus.js university/campus-interactive.css university/campus-interactive.js; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js university/dashboard.css university/dashboard.js university/dashboard-memo-panel.css university/dashboard-memo-panel.js university/ui-unify.css university/ui-unify-v2.css university/ui-unify.js university/poi-icons.js university/campus.css university/campus.js university/campus-interactive.css university/campus-interactive.js; do
             test -s "$file"
             echo "OK $file"
           done
@@ -32,6 +32,8 @@ jobs:
           node --check sw.js
           node --check university/university.js
           node --check university/dashboard.js
+          node --check university/dashboard-memo-panel.js
+          node --check university/ui-unify.js
           node --input-type=module --check < university/poi-icons.js
           node --input-type=module --check < university/campus.js
           node --input-type=module --check < university/campus-interactive.js
@@ -56,14 +58,18 @@ jobs:
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
           grep -q 'only light' school-polish.css
-          grep -q 'flow-school-shell-v10' sw.js
+          grep -q 'flow-school-shell-v11' sw.js
           grep -q '/university/poi-icons.js' sw.js
           grep -q '/university/index.html' sw.js
+          grep -q '/university/dashboard-memo-panel.js' sw.js
+          grep -q '/university/ui-unify-v2.css' sw.js
           grep -q 'Flow University' university/index.html
           grep -q 'university-polish.css' university/index.html
           grep -q 'only light' university/university-polish.css
           grep -q 'flow-university-profile-v1' university/university.js
           grep -q 'import-everytime' university/university.js
+          grep -q 'flow-university-memo-v1' university/dashboard-memo-panel.js
+          grep -q '#5577e9' university/ui-unify-v2.css
           grep -q 'poiBadgeMarkup' university/campus.js
           grep -q 'decoratePoiNode' university/campus-interactive.js
           grep -q 'brand-gs25' university/campus.css

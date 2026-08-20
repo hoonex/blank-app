@@ -27,10 +27,16 @@ if(initial.visible.length<7)throw new Error(`Too few default widgets: ${JSON.str
 if(initial.scrollWidth>initial.bodyWidth+3)throw new Error(`Dashboard causes horizontal scroll: ${JSON.stringify(initial)}`);
 await page.locator('#dashboardEditBtn').click();
 if(!await page.locator('#todayView.dashboard-editing').count())throw new Error('Edit mode did not start.');
-const beforeSize=await page.locator('[data-widget-id="campus"]').getAttribute('data-size');
-await page.locator('[data-widget-id="campus"] .widget-v2-resize').click();
-const afterSize=await page.locator('[data-widget-id="campus"]').getAttribute('data-size');
-if(beforeSize===afterSize)throw new Error('Widget size did not change.');
+const campus=page.locator('[data-widget-id="campus"]');
+const beforeSize=await campus.getAttribute('data-size');
+const resizeHandle=campus.locator('.widget-v2-resize'),rh=await resizeHandle.boundingBox();
+if(!rh)throw new Error('Widget resize handle is missing.');
+await page.mouse.move(rh.x+rh.width/2,rh.y+rh.height/2);await page.mouse.down();await page.mouse.move(rh.x+rh.width/2+105,rh.y+rh.height/2+82,{steps:10});
+const duringResize=await campus.evaluate(el=>({size:el.dataset.size,position:getComputedStyle(el).position,placeholder:document.querySelectorAll('.widget-resize-placeholder').length}));
+if(duringResize.size!==beforeSize||duringResize.position!=='fixed'||duringResize.placeholder!==1)throw new Error(`Widget resize is not direct manipulation: ${JSON.stringify(duringResize)}`);
+await page.mouse.up();await page.waitForTimeout(240);
+const afterSize=await campus.getAttribute('data-size');
+if(beforeSize===afterSize)throw new Error('Widget drag-resize did not change size.');
 await page.locator('[data-widget-id="gap"] .widget-v2-remove').click();
 if(!await page.locator('[data-widget-id="gap"].widget-hidden').count())throw new Error('Widget hide failed.');
 await page.locator('#widgetAddBtn').click();
@@ -41,12 +47,12 @@ if(await page.locator('[data-widget-id="gap"].widget-hidden').count())throw new 
 const orderBefore=await page.evaluate(()=>[...document.querySelectorAll('#widgetDashboard [data-widget-id]:not(.widget-hidden)')].map(x=>x.dataset.widgetId));
 const source=page.locator('[data-widget-id="today"]'),target=page.locator('[data-widget-id="next"]');
 const sb=await source.boundingBox(),tb=await target.boundingBox();
-if(sb&&tb){await page.mouse.move(sb.x+sb.width*.45,sb.y+sb.height*.45);await page.mouse.down();await page.mouse.move(tb.x+6,tb.y+6,{steps:8});await page.mouse.up();}
+if(sb&&tb){await page.mouse.move(sb.x+sb.width*.45,sb.y+sb.height*.45);await page.mouse.down();await page.mouse.move(tb.x+6,tb.y+6,{steps:8});await page.mouse.up();await page.waitForTimeout(220);}
 const orderAfter=await page.evaluate(()=>[...document.querySelectorAll('#widgetDashboard [data-widget-id]:not(.widget-hidden)')].map(x=>x.dataset.widgetId));
 if(orderBefore.join('|')===orderAfter.join('|'))throw new Error(`Widget drag did not reorder: ${JSON.stringify({orderBefore,orderAfter})}`);
 await page.locator('#widgetDoneBtn').click();
 const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('flow-university-dashboard-layout-v2')||'null'));
-if(!saved?.widgets||Object.keys(saved.widgets).length<9)throw new Error('Dashboard v2 layout was not persisted.');
+if(!saved?.widgets||Object.keys(saved.widgets).length<15)throw new Error('Dashboard v2 layout was not persisted.');
 if(saved.widgets.campus?.size!==afterSize)throw new Error(`Widget size was not persisted: ${JSON.stringify(saved)}`);
 await page.reload({waitUntil:'domcontentloaded'});await page.locator('#widgetDashboard').waitFor();await page.locator('[data-widget-id="memo"]').waitFor();
 const reloaded=await page.evaluate(()=>({size:document.querySelector('[data-widget-id="campus"]')?.dataset.size,order:[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId)}));
@@ -63,7 +69,7 @@ await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(15
 const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 if(desktopOverflow>3)throw new Error(`Desktop dashboard horizontal overflow: ${desktopOverflow}`);
 await page.screenshot({path:'university-audit/desktop-dashboard.png',fullPage:true});
-const report={initial,beforeSize,afterSize,orderBefore,orderAfter,reloaded,idleMutations,consoleErrors,pageErrors};
+const report={initial,beforeSize,duringResize,afterSize,orderBefore,orderAfter,reloaded,idleMutations,consoleErrors,pageErrors};
 await writeFile('university-audit/dashboard-report.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 if(consoleErrors.length||pageErrors.length)throw new Error(`Browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
