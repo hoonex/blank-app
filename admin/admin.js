@@ -87,15 +87,20 @@ async function authFetch(path,init={}){
   if(init.body)headers.set('content-type','application/json');
   return fetch(`${SUPABASE_URL}${path}`,{...init,headers,cache:'no-store'});
 }
-async function signInWithPassword(email,password){
-  const response=await authFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+async function signInWithPassword(username,password){
+  const response=await fetch(`${ADMIN_EDGE}?action=login`,{
+    method:'POST',
+    headers:{'apikey':PUBLISHABLE_KEY,'content-type':'application/json'},
+    body:JSON.stringify({username,password}),
+    cache:'no-store'
+  });
   const body=await response.json().catch(()=>({}));
   if(!response.ok||!body?.access_token){
-    if(response.status===400||response.status===401)throw new Error('이메일 또는 비밀번호가 맞지 않습니다.');
+    if(response.status===400||response.status===401)throw new Error('아이디 또는 비밀번호가 맞지 않습니다.');
     if(response.status===429)throw new Error('로그인 시도가 너무 많습니다. 잠시 뒤 다시 시도하세요.');
-    throw new Error(body?.msg||body?.message||body?.error_description||`로그인 실패 (HTTP ${response.status})`);
+    throw new Error(body?.error||`로그인 실패 (HTTP ${response.status})`);
   }
-  saveSession(body,email);
+  saveSession(body,body?.user?.email||'');
   return true;
 }
 async function refreshSession(){
@@ -140,7 +145,7 @@ function showDashboard(admin){
   $('#loginPanel').classList.add('hidden');
   $('#dashboard').classList.remove('hidden');
   $('#signOutBtn').classList.remove('hidden');
-  $('#accessPill').textContent=admin?.email||state.email||'Authorized';
+  $('#accessPill').textContent=admin?.loginName||'flowadmin';
 }
 
 function renderTimeline(items=[]){
@@ -185,7 +190,7 @@ async function loadOverview(){
 }
 async function runProbe(){
   if(state.busy)return;state.busy=true;const btn=$('#probeBtn');btn.disabled=true;btn.textContent='검사 중';
-  try{const response=await adminFetch('probe',{method:'POST'});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body?.error||`HTTP ${response.status}`);render({admin:{email:state.email||'Authorized'},overview:body.overview})}catch(error){alert(`API 상태 검사를 완료하지 못했습니다: ${error.message||error}`)}finally{state.busy=false;btn.disabled=false;btn.textContent='API 상태 검사'}
+  try{const response=await adminFetch('probe',{method:'POST'});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body?.error||`HTTP ${response.status}`);render({admin:{loginName:'flowadmin'},overview:body.overview})}catch(error){alert(`API 상태 검사를 완료하지 못했습니다: ${error.message||error}`)}finally{state.busy=false;btn.disabled=false;btn.textContent='API 상태 검사'}
 }
 async function signOut(){
   const token=state.token;
@@ -195,13 +200,13 @@ async function signOut(){
 
 $('#passwordForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const email=$('#emailInput').value.trim();
+  const username=$('#usernameInput').value.trim();
   const password=$('#passwordInput').value;
-  if(!email||!password)return;
+  if(!username||!password)return;
   const btn=e.submitter||$('#passwordForm button[type="submit"]');
   btn.disabled=true;setStatus('로그인 중…');
   try{
-    await signInWithPassword(email,password);
+    await signInWithPassword(username,password);
     $('#passwordInput').value='';
     setStatus('');
     await loadOverview();
@@ -223,6 +228,5 @@ window.addEventListener('hashchange',()=>{
 
 const linkResult=consumeAuthFragment();
 restoreSession();
-if(state.email)$('#emailInput').value=state.email;
 if(state.token)loadOverview();
 else showLogin(linkResult.error?'인증 링크가 만료되었거나 이미 사용되었습니다.':'');

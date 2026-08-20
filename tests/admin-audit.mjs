@@ -13,23 +13,24 @@ const overview={generatedAt:'2026-08-20T12:00:00Z',windowHours:24,activity:{tota
 await context.route('https://eicwcohfrvhwimwevzkd.supabase.co/auth/v1/token**', async route => {
   const url=new URL(route.request().url());
   const body=route.request().postDataJSON();
-  if(url.searchParams.get('grant_type')==='password'){
-    passwordCalls++;
-    if(body?.email!=='owner@example.com'||body?.password!=='test-password')throw new Error(`Unexpected password login body: ${JSON.stringify(body)}`);
-    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({access_token:'password-token',refresh_token:'password-refresh',expires_in:3600,user:{email:'owner@example.com'}})});
-  }
   if(url.searchParams.get('grant_type')==='refresh_token'){
     refreshCalls++;
     if(body?.refresh_token!=='password-refresh')throw new Error(`Unexpected refresh token: ${JSON.stringify(body)}`);
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({access_token:'refreshed-token',refresh_token:'rotated-refresh',expires_in:3600,user:{email:'owner@example.com'}})});
   }
-  throw new Error(`Unexpected auth grant: ${route.request().url()}`);
+  throw new Error(`Unexpected direct auth grant: ${route.request().url()}`);
 });
 await context.route('https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-admin**', async route => {
   adminCalls++;
+  const url=new URL(route.request().url());
+  if(url.searchParams.get('action')==='login'){
+    passwordCalls++;
+    const body=route.request().postDataJSON();
+    if(body?.username!=='flowadmin'||body?.password!=='test-password')throw new Error(`Unexpected admin login body: ${JSON.stringify(body)}`);
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({access_token:'password-token',refresh_token:'password-refresh',expires_in:3600,user:{id:'admin-id',email:'owner@example.com'},admin:{loginName:'flowadmin'}})});
+  }
   const auth=route.request().headers().authorization||'';
   if(!['Bearer password-token','Bearer refreshed-token'].includes(auth))throw new Error(`Unexpected admin authorization: ${auth}`);
-  const url=new URL(route.request().url());
   if(url.searchParams.get('action')==='probe'){
     probeCalls++;
     const probeOverview={...overview,probes:[
@@ -39,7 +40,7 @@ await context.route('https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-
     ]};
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({results:[],overview:probeOverview})});
   }
-  return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({admin:{id:'admin-id',email:'owner@example.com'},overview})});
+  return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({admin:{id:'admin-id',loginName:'flowadmin'},overview})});
 });
 
 await page.goto(`${BASE}/admin`,{waitUntil:'domcontentloaded'});
@@ -48,8 +49,10 @@ if(!(await page.locator('#dashboard').evaluate(el=>el.classList.contains('hidden
 if(await page.locator('#otpForm').count())throw new Error('Dead OTP UI should not be present');
 if(await page.locator('#emailForm').count())throw new Error('Magic-link login form should not be primary admin auth anymore');
 if(!(await page.locator('#loginPanel').textContent()).includes('비밀번호'))throw new Error('Password login guidance is missing');
+if(await page.locator('#emailInput').count())throw new Error('Admin email input must not be exposed');
+if(!(await page.locator('#loginPanel').textContent()).includes('관리자 아이디'))throw new Error('Admin username guidance is missing');
 
-await page.locator('#emailInput').fill('owner@example.com');
+await page.locator('#usernameInput').fill('flowadmin');
 await page.locator('#passwordInput').fill('test-password');
 await page.locator('#passwordForm button[type="submit"]').click();
 await page.waitForSelector('#dashboard:not(.hidden)');
