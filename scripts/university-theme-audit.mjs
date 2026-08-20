@@ -43,6 +43,9 @@ for(const pref of ['light','dark','system']){
   });
   const expected=pref==='system'?'dark':pref,expectedLabel=pref==='system'?'System':pref==='dark'?'Dark':'Light';
   if(state.theme!==expected||state.mode!==pref||state.cycleText!==expectedLabel)throw new Error(`Theme state mismatch for ${pref}: ${JSON.stringify(state)}`);
+  if(state.metaColorScheme!=='light dark')throw new Error(`University color-scheme metadata was not synchronized: ${JSON.stringify(state)}`);
+  if(expected==='light'&&!state.colorScheme.includes('light'))throw new Error(`Explicit Light did not force a light color scheme: ${JSON.stringify(state)}`);
+  if(expected==='dark'&&!state.colorScheme.includes('dark'))throw new Error(`Dark/System did not expose a dark color scheme: ${JSON.stringify(state)}`);
   const b=bright(rgb(state.bg)),c=bright(rgb(state.cardBg)),p=bright(rgb(state.sampleBg)),t=bright(rgb(state.text));
   if(expected==='light'&&(b<225||c<220||p<220||t>100))throw new Error(`Flow Light was auto-darkened under OS dark/forced dark: ${JSON.stringify({state,b,c,p,t})}`);
   if(expected==='dark'&&(b>90||c>110||p>110||t<180))throw new Error(`Flow Dark palette is inconsistent: ${JSON.stringify({state,b,c,p,t})}`);
