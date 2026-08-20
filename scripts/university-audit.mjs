@@ -112,6 +112,13 @@ if(await page.locator('#exportBackupBtn').count()!==1||await page.locator('#impo
 await page.locator('[data-view="school"]').last().click();
 await page.locator('.metric-card').first().waitFor({ timeout: 15000 });
 if (await page.locator('.metric-card').count() !== 4) throw new Error('University metric cards are incomplete.');
+const metricState=await page.evaluate(()=>({
+  values:[...document.querySelectorAll('.metric-card strong')].map(x=>x.textContent?.trim()||''),
+  notes:[...document.querySelectorAll('.metric-card small')].map(x=>x.textContent?.trim()||''),
+  statusVisible:!document.querySelector('#profileDataStatus')?.classList.contains('hidden'),
+  statusText:document.querySelector('#profileDataStatusText')?.textContent?.trim()||'',
+}));
+if(metricState.values.some(x=>x==='—')&&(!metricState.statusVisible||!metricState.notes.some(x=>x.includes('일시 제한'))))throw new Error(`Unavailable university metrics are unexplained: ${JSON.stringify(metricState)}`);
 await page.locator('#chooseMajorBtn').click();
 await page.locator('#majorResults .major-button').first().waitFor({ timeout: 20000 });
 const majorCount = await page.locator('#majorResults .major-button').count();
@@ -133,7 +140,7 @@ const report = {
   importedSubjectCount: imported.subjects.length,
   importedTimedBlockCount: imported.subjects.flatMap((s) => s.times || []).length,
   mobileWeek, desktopVisibleBlocks, desktopAllBlocks,
-  personalAddEditDelete:true, majorCount, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
+  personalAddEditDelete:true, majorCount, metricState, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
 };
 await writeFile('university-audit/report.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

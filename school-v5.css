@@ -114,9 +114,9 @@ html[data-theme="dark"]{
 .rank-card{margin-top:16px;padding:20px;background:var(--v5-card);box-shadow:var(--v5-shadow)}
 .rank-card h2{margin:5px 0 0;font-size:1.15rem;letter-spacing:-.04em}
 .rank-card>p{margin:7px 0 16px;color:var(--muted);font-size:.66rem;line-height:1.55}
-.rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rank-field{display:grid;gap:7px;color:var(--muted);font-size:.62rem;font-weight:700}
-.rank-field input{height:46px;border:0;outline:0;background:var(--surface-soft);color:var(--text);padding:0 13px;box-shadow:none}
+.rank-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0}
+.rank-field{display:grid;gap:7px;min-width:0;color:var(--muted);font-size:.62rem;font-weight:700}
+.rank-field input{width:100%;min-width:0;box-sizing:border-box;height:46px;border:0;outline:0;background:var(--surface-soft);color:var(--text);padding:0 13px;box-shadow:none}
 .rank-result{margin-top:12px;padding:14px 15px;background:var(--surface-soft);display:flex;justify-content:space-between;gap:12px;align-items:center}
 .rank-result strong{font-size:1rem}
 .rank-result span{font-size:.62rem;color:var(--muted);text-align:right}
@@ -133,7 +133,7 @@ html[data-theme="dark"]{
   .selected-day-panel{margin:0 0 12px}
 }
 @media(max-width:520px){
-  .rank-grid{grid-template-columns:1fr 1fr}
+  .rank-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .rank-result{align-items:flex-start;flex-direction:column}.rank-result span{text-align:left}
   .calendar-day{border-radius:13px!important}
 }

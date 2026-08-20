@@ -67,7 +67,7 @@
       </nav>
       <div class="sidebar-spacer"></div>
       <div class="countdown-pill" id="csatPill"><span>2027 수능</span><strong id="csatDday">D-—</strong></div>
-      <button class="nav-item settings-trigger" id="settingsBtn" type="button"><span>설정</span><small>타종 · 테마 · 앱</small></button>
+      <button class="nav-item settings-trigger" id="settingsBtn" type="button"><span>설정</span><small>타종 · 급식 · 테마</small></button>
     </aside>
 
     <main class="product-main">
@@ -181,7 +181,7 @@
           <a class="neo-button action-link" id="phoneLink">학교에 전화</a>
           <a class="neo-button action-link" id="schoolInfoLink" href="https://www.schoolinfo.go.kr/Main.do" target="_blank" rel="noopener noreferrer">학교알리미</a>
         </section>
-        <p class="public-data-note">학생수·교원수·시설·도서관 등 학교알리미의 세부 공시는 별도 공시 API 데이터라 NEIS 기본정보와 구분해 표시합니다.</p>
+        <p class="public-data-note" id="schoolInfoStatus">NEIS 학교기본정보를 표시합니다. 공개되지 않은 항목은 숨깁니다.</p>
       </section>
 
       <footer class="source-note">교육부·17개 시도교육청 NEIS 교육정보 개방 데이터를 사용합니다.</footer>
@@ -243,6 +243,7 @@
       <span class="section-kicker">SETTINGS</span><h2>내 화면 설정</h2>
       <div class="settings-group"><h3>화면</h3><div class="segmented" id="themeSegment"><button data-theme-choice="light" type="button">밝게</button><button data-theme-choice="system" type="button">기기 설정</button><button data-theme-choice="dark" type="button">어둡게</button></div></div>
       <div class="settings-group"><h3>예상 타종표</h3><p>현재 교시 표시에만 사용됩니다. 학교 실제 타종과 다르면 여기서 맞추세요.</p><div class="setting-fields"><label>1교시 시작<input id="bellStart" type="time" value="08:30"></label><label>수업 시간<input id="lessonMinutes" type="number" min="30" max="90" value="50"><span>분</span></label><label>쉬는 시간<input id="breakMinutes" type="number" min="5" max="30" value="10"><span>분</span></label></div></div>
+      <div class="settings-group"><h3>급식 시간</h3><p>급식 카드에 표시할 점심 시작 시간을 학교에 맞게 설정합니다.</p><div class="setting-fields meal-setting-fields"><label>점심 시작<input id="mealStart" type="time" value="12:20"></label></div></div>
       <div class="settings-group"><h3>앱처럼 사용</h3><p>지원되는 브라우저에서는 홈 화면에 설치할 수 있습니다.</p><button class="neo-button full" id="installBtn" type="button">홈 화면에 설치</button></div>
       <button class="primary-button" id="saveSettingsBtn" type="button">설정 저장</button>
     </div>
