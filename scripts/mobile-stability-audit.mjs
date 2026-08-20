@@ -71,8 +71,22 @@ for(let i=1;i<placeholderPath.length;i++){
 }
 if(reversals>1)throw new Error(`Placeholder ping-ponged during one-way drag: ${JSON.stringify({reversals,placeholderPath})}`);
 
+/* A long dashboard must scroll while the user keeps a lifted widget near the screen edge. */
+await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(80);
+const edgeWidget=page.locator('#widgetDashboard [data-widget-id]:not(.widget-hidden)').first();
+const eb=await edgeWidget.boundingBox();if(!eb)throw new Error('Missing edge-scroll widget geometry.');
+const edgeStart={x:eb.x+eb.width*.5,y:eb.y+Math.min(eb.height*.5,60)};
+const beforeScroll=await page.evaluate(()=>scrollY);
+await page.mouse.move(edgeStart.x,edgeStart.y);await page.mouse.down();
+await page.mouse.move(Math.min(390,edgeStart.x+20),895,{steps:12});await page.waitForTimeout(420);
+const autoScroll=await page.evaluate(()=>({before:0,after:scrollY,direction:document.documentElement.dataset.widgetAutoScroll||'',dragActive:document.body.classList.contains('widget-drag-active')}));
+await page.mouse.up();await page.waitForTimeout(180);
+const edgeCleanup=await page.evaluate(()=>({placeholder:document.querySelectorAll('.widget-drag-placeholder').length,floating:document.querySelectorAll('.widget-direct-floating').length,marker:document.documentElement.dataset.widgetAutoScroll||''}));
+if(autoScroll.after<beforeScroll+24||autoScroll.direction!=='down'||!autoScroll.dragActive)throw new Error(`Widget edge auto-scroll did not engage: ${JSON.stringify({beforeScroll,autoScroll})}`);
+if(edgeCleanup.placeholder||edgeCleanup.floating||edgeCleanup.marker)throw new Error(`Edge-scroll drag cleanup failed: ${JSON.stringify(edgeCleanup)}`);
+
 await page.screenshot({path:'university-audit/mobile-nav-widget-stability.png',fullPage:true});
-const report={nav,flow,placeholderPath,reversals,visual,consoleErrors,pageErrors};
+const report={nav,flow,placeholderPath,reversals,visual,beforeScroll,autoScroll,edgeCleanup,consoleErrors,pageErrors};
 await writeFile('university-audit/mobile-stability-report.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 if(consoleErrors.length||pageErrors.length)throw new Error(`Browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
