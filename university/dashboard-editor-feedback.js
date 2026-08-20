@@ -1,3 +1,4 @@
+import '/university/dashboard-memo-panel.js';
 const STYLE='/university/dashboard-editor-feedback.css';
 let resize=null,press=null;
 function ensureStyle(){if(document.querySelector(`link[href="${STYLE}"]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=STYLE;document.head.append(l)}
