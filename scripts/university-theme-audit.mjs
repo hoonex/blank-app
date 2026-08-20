@@ -20,7 +20,12 @@ function bright([r,g,b]){return (r+g+b)/3}
 
 for(const pref of ['light','dark','system']){
   const context=await browser.newContext({viewport:{width:1280,height:800},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'dark'});
-  await context.addInitScript(({profile,pref})=>{
+  const page=await context.newPage();
+  const consoleErrors=[],pageErrors=[];
+  page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
+  page.on('pageerror',e=>pageErrors.push(String(e)));
+  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
+  await page.evaluate(({profile,pref})=>{
     const day=(new Date().getDay()+6)%7;
     localStorage.setItem('flow-university-profile-v1',JSON.stringify(profile));
     localStorage.setItem('flow-university-theme-v1',pref);
@@ -29,12 +34,9 @@ for(const pref of ['light','dark','system']){
       {id:'b',name:'한국사',professor:'테스트',credit:3,times:[{day,start:'16:30',end:'17:45',startMinutes:990,endMinutes:1065,place:'산격동 캠퍼스 제1과학관-120'}]}
     ]}));
   },{profile,pref});
-  const page=await context.newPage();
-  const consoleErrors=[],pageErrors=[];
-  page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
-  page.on('pageerror',e=>pageErrors.push(String(e)));
-  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
-  await page.locator('.bottom-nav [data-view="campus"]').waitFor({timeout:12000});
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#appView:not(.hidden)').waitFor({timeout:12000});
+  await page.locator('.bottom-nav [data-view="campus"]').waitFor({state:'visible',timeout:12000});
   await page.locator('.bottom-nav [data-view="campus"]').click();
   await page.locator('#campusView:not(.hidden)').waitFor({timeout:12000});
   await page.waitForFunction(()=>document.querySelector('link[href*="ui-unify-v2.css"]')&&document.querySelector('link[href*="campus.css"]'),{timeout:10000});
