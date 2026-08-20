@@ -17,5 +17,4 @@ document.addEventListener('pointermove',e=>{
   if(press&&Math.hypot(e.clientX-press.startX,e.clientY-press.startY)>7)press.el.classList.remove('widget-pressing');
 },{capture:true,passive:true});
 for(const type of ['pointerup','pointercancel'])document.addEventListener(type,()=>{stopResize();stopPress()},{capture:true});
-document.addEventListener('lostpointercapture',()=>{stopResize();stopPress()},true);
 ensureStyle();
