@@ -26,6 +26,7 @@ jobs:
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
           node --check scripts/memo-panel-audit.mjs
+          node --check scripts/mobile-stability-audit.mjs
           test -f university/dashboard-editor-v2.css
           test -f university/dashboard-memo-panel.css
           test -f university/ui-unify-v2.css
@@ -41,6 +42,8 @@ jobs:
           grep -q "data-dashboard-columns" university/dashboard-editor-v2.js
           grep -q "widget-direct-floating" university/dashboard-editor-v2.js
           grep -q "widget-drag-placeholder" university/dashboard-editor-v2.css
+          grep -q "grid-auto-flow:row" university/ui-unify-v2.css
+          grep -q "repeat(4,minmax(0,1fr))" university/ui-unify-v2.css
           grep -q "clock:{label:'현재 시각'" university/dashboard.js
           grep -q "shortcuts:{label:'바로가기'" university/dashboard.js
           grep -q "flow-school-brand-critical" index.html
@@ -58,6 +61,8 @@ jobs:
         run: node scripts/dashboard-editor-v2-audit.mjs
       - name: Run memo and visual unification audit
         run: node scripts/memo-panel-audit.mjs
+      - name: Run mobile nav and widget stability audit
+        run: node scripts/mobile-stability-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
