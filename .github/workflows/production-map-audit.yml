@@ -10,6 +10,9 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'university/campus.js'
+      - 'university/campus-interactive.js'
+      - 'university/campus-interactive.css'
       - 'scripts/production-map-audit.mjs'
       - '.github/workflows/production-map-audit.yml'
   workflow_dispatch:
@@ -27,7 +30,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Validate campus audit sources
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < university/campus.js
+          node --input-type=module --check < university/campus-interactive.js
+          node --check scripts/production-map-audit.mjs
+          grep -q 'flow:campus-current-route' university/campus.js
+          grep -q 'flow:campus-current-route' university/campus-interactive.js
+          grep -q 'currentRouteRequestDelta' scripts/production-map-audit.mjs
       - name: Wait for production assets
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           url='https://flow-student-blush.vercel.app/university/campus'
@@ -41,15 +54,17 @@ jobs:
           echo 'Timed out waiting for production interactive campus asset.' >&2
           exit 1
       - name: Install Playwright Chromium
+        if: github.event_name != 'pull_request'
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
       - name: Audit production interactive map
+        if: github.event_name != 'pull_request'
         env:
           FLOW_PRODUCTION_URL: https://flow-student-blush.vercel.app
         run: node scripts/production-map-audit.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
           name: production-campus-map-audit
           path: production-map-audit/
@@ -63,7 +78,7 @@ jobs:
           short=${GITHUB_SHA:0:7}
           gh issue comment 14 --body "### Production campus map audit — ${short}
 
-PASS: Kakao Web Map SDK rendered on the registered production domain.
+PASS: Kakao Web Map SDK rendered on the registered production domain, including current-position route reuse.
 
 \`\`\`json
 ${report}
