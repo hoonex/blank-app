@@ -22,6 +22,21 @@ const PUBLISHABLE_KEY = envJsonKey("SUPABASE_PUBLISHABLE_KEYS") || Deno.env.get(
 const SECRET_KEY = envJsonKey("SUPABASE_SECRET_KEYS") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: CORS });
+const API_INVENTORY = [
+  { id: "neis", name: "NEIS 교육정보 API", group: "Runtime", type: "Public data API", via: "school-data", purpose: "학교정보 · 반 · 시간표 · 급식 · 학사일정", state: "configured" },
+  { id: "kakao-local", name: "Kakao Local REST", group: "Runtime", type: "REST API", via: "school-data · university-campus", purpose: "주소 검색 · 장소 검색 · 학교/캠퍼스 위치", state: "configured" },
+  { id: "kakao-maps", name: "Kakao Maps JavaScript SDK", group: "Runtime", type: "Browser SDK", via: "university", purpose: "캠퍼스 지도 렌더링", state: "configured" },
+  { id: "university-public", name: "대학 공시 공공데이터 API", group: "Runtime", type: "Public data API", via: "university-data", purpose: "대학 · 학과 · 등록금 · 장학금 · 기숙사 · 교육여건", state: "configured" },
+  { id: "everytime", name: "Everytime 공개 시간표", group: "Runtime", type: "External API", via: "university-data", purpose: "공개 공유 시간표 import", state: "configured" },
+  { id: "school-media", name: "학교 홈페이지 / Media", group: "Runtime", type: "External web", via: "school-data · school-logo", purpose: "학교 홈페이지 · 로고 · 대표 이미지 탐색", state: "configured" },
+  { id: "supabase-auth", name: "Supabase Auth", group: "Infrastructure", type: "Auth", via: "Flow accounts · Admin", purpose: "사용자/관리자 인증과 세션", state: "healthy" },
+  { id: "supabase-db", name: "Supabase Postgres / PostgREST", group: "Infrastructure", type: "Database API", via: "Flow backend", purpose: "프로필 · 이벤트 · 관리자 집계 · 설정", state: "healthy" },
+  { id: "supabase-edge", name: "Supabase Edge Functions", group: "Infrastructure", type: "Serverless", via: "8 active functions", purpose: "school-data · university-data · campus · logo · quest · admin", state: "healthy" },
+  { id: "github-api", name: "GitHub API", group: "Operations", type: "Repository API", via: "hoonex/blank-app", purpose: "소스 · commit · branch · PR 관리", state: "connected" },
+  { id: "github-actions", name: "GitHub Actions", group: "Operations", type: "CI/CD", via: ".github/workflows", purpose: "브라우저 회귀 테스트 · 검증 · 배포 작업", state: "connected" },
+  { id: "vercel-rest", name: "Vercel REST API", group: "Operations", type: "Deployment API", via: "vercel-rest-deploy", purpose: "Flow production 배포 · route health", state: "connected" },
+  { id: "google-fonts", name: "Google Fonts", group: "External", type: "CDN", via: "Flow UI", purpose: "Inter · Noto Sans KR 웹폰트", state: "connected" },
+];
 
 function bearer(req: Request) {
   const match = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
@@ -86,13 +101,44 @@ async function passwordSession(email: string, password: string) {
   return { status: response.status, body };
 }
 
+async function sha256Hex(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function bootstrapPassword(token: string, password: string) {
+  if (token.length < 32 || token.length > 256 || password.length < 10 || password.length > 128) return { status: 400, body: { error: "invalid setup request" } };
+  const tokenHash = await sha256Hex(token);
+  const lookup = await adminFetch(`/rest/v1/flow_admin_bootstrap_tokens?token_hash=eq.${encodeURIComponent(tokenHash)}&select=token_hash,user_id,expires_at,used_at&limit=1`);
+  if (!lookup.ok) throw new Error(`bootstrap lookup ${lookup.status}`);
+  const rows = await lookup.json().catch(() => []);
+  const row = Array.isArray(rows) ? rows[0] : null;
+  if (!row?.user_id || row.used_at || !row.expires_at || new Date(row.expires_at).getTime() <= Date.now()) return { status: 410, body: { error: "setup link expired" } };
+
+  const updateUser = await fetch(`${PROJECT_URL}/auth/v1/admin/users/${encodeURIComponent(row.user_id)}`, {
+    method: "PUT",
+    headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({ password }),
+    signal: AbortSignal.timeout(9000),
+  }).catch(() => null);
+  if (!updateUser?.ok) throw new Error(`bootstrap user update ${updateUser?.status || 599}`);
+
+  const consume = await adminFetch(`/rest/v1/flow_admin_bootstrap_tokens?token_hash=eq.${encodeURIComponent(tokenHash)}&used_at=is.null`, {
+    method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ used_at: new Date().toISOString() }),
+  });
+  if (!consume.ok) throw new Error(`bootstrap consume ${consume.status}`);
+  return { status: 200, body: { ok: true, loginName: "flowadmin" } };
+}
+
 async function overview(hours: number) {
   const response = await adminFetch("/rest/v1/rpc/flow_admin_overview", {
     method: "POST",
     body: JSON.stringify({ p_hours: Math.max(1, Math.min(168, hours || 24)) }),
   });
   if (!response.ok) throw new Error(`overview ${response.status}`);
-  return await response.json();
+  const data = await response.json();
+  return { ...data, inventory: API_INVENTORY };
 }
 
 type Probe = { service: string; action: string; url: string };
@@ -162,6 +208,18 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const action = url.searchParams.get("action") || "overview";
+
+  if (action === "bootstrap-password") {
+    if (req.method !== "POST") return json({ error: "POST required" }, 405);
+    const body = await req.json().catch(() => ({}));
+    try {
+      const result = await bootstrapPassword(String(body?.token || ""), String(body?.password || ""));
+      return json(result.body, result.status);
+    } catch (error) {
+      console.error("flow-admin bootstrap", error instanceof Error ? error.message : String(error));
+      return json({ error: "password setup unavailable" }, 502);
+    }
+  }
 
   if (action === "login") {
     if (req.method !== "POST") return json({ error: "POST required" }, 405);
