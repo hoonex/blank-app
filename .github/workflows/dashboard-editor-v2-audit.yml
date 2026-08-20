@@ -19,7 +19,9 @@ jobs:
           node-version: '24'
       - name: Validate widget editor source
         run: |
+          node --check university/dashboard.js
           node --check university/dashboard-editor-v2.js
+          node --check university/dashboard-editor-feedback.js
           node --check scripts/dashboard-editor-v2-audit.mjs
           test -f university/dashboard-editor-v2.css
           grep -q "dashboard-editor-v2.js" university/poi-icons.js
@@ -27,6 +29,11 @@ jobs:
           grep -q "dashboard-editor-v2.css" sw.js
           grep -q "widget-memo-input" university/dashboard-editor-v2.js
           grep -q "data-dashboard-columns" university/dashboard-editor-v2.js
+          grep -q "widget-direct-floating" university/dashboard-editor-v2.js
+          grep -q "widget-drag-placeholder" university/dashboard-editor-v2.css
+          grep -q "clock:{label:'현재 시각'" university/dashboard.js
+          grep -q "shortcuts:{label:'바로가기'" university/dashboard.js
+          grep -q "flow-school-brand-critical" index.html
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
