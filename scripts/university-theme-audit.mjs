@@ -22,7 +22,7 @@ for(const pref of ['light','dark','system']){
   await page.evaluate(pref=>localStorage.setItem('flow-university-theme-v1',pref),pref);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#setupView:not(.hidden)').waitFor({timeout:10000});
-  await page.locator('.flow-theme-cycle').waitFor({state:'visible',timeout:10000});
+  await page.locator('.setup-header .flow-theme-cycle').waitFor({state:'visible',timeout:10000});
   await page.waitForFunction(()=>document.querySelector('link[href*="ui-unify-v2.css"]'),{timeout:10000});
   await page.evaluate(()=>{
     let sample=document.querySelector('#themeSurfaceSample');
@@ -32,7 +32,7 @@ for(const pref of ['light','dark','system']){
   });
   await page.waitForTimeout(250);
   const state=await page.evaluate(()=>{
-    const root=document.documentElement,body=document.body,card=document.querySelector('.search-card'),sample=document.querySelector('#themeSurfaceSample'),cycle=document.querySelector('.flow-theme-cycle');
+    const root=document.documentElement,body=document.body,card=document.querySelector('.search-card'),sample=document.querySelector('#themeSurfaceSample'),cycle=document.querySelector('.setup-header .flow-theme-cycle');
     const cs=getComputedStyle(root);
     return{
       theme:root.dataset.theme||'',mode:root.dataset.themeMode||'',colorScheme:cs.colorScheme,
