@@ -25,10 +25,12 @@
     <section class="login-panel" id="loginPanel">
       <span class="eyebrow">PRIVATE CONTROL PLANE</span>
       <h1>관리자 인증</h1>
-      <p>Flow 관리자 allowlist에 등록된 계정만 접근할 수 있습니다. 이 기기에서는 최초 한 번만 이메일 링크로 인증하면 세션이 자동으로 유지·갱신됩니다.</p>
-      <form id="emailForm" class="auth-form">
+      <p>Flow 관리자 allowlist에 등록된 계정만 접근할 수 있습니다. 비밀번호로 한 번 로그인하면 이 기기에서는 세션이 자동으로 유지·갱신됩니다.</p>
+      <form id="passwordForm" class="auth-form">
         <label for="emailInput">관리자 이메일</label>
-        <div class="auth-row"><input id="emailInput" type="email" autocomplete="email" required placeholder="name@example.com"><button type="submit">이 기기 로그인</button></div>
+        <div class="auth-row"><input id="emailInput" type="email" autocomplete="username" required placeholder="name@example.com"></div>
+        <label for="passwordInput">비밀번호</label>
+        <div class="auth-row"><input id="passwordInput" type="password" autocomplete="current-password" required placeholder="비밀번호"><button type="submit">로그인</button></div>
       </form>
       <p class="auth-status" id="authStatus" role="status"></p>
     </section>
@@ -64,7 +66,7 @@
 
       <section class="security-note">
         <strong>Security boundary</strong>
-        <p>브라우저에는 publishable key와 이 기기의 Supabase 사용자 세션만 저장됩니다. secret/service-role key는 포함되지 않으며 관리자 판정·집계·health probe는 <code>flow-admin</code> Edge Function에서 처리합니다.</p>
+        <p>비밀번호는 HTTPS로 Supabase Auth에만 전달되고 Flow 저장소·Edge Function에는 저장되지 않습니다. 브라우저에는 publishable key와 사용자 세션만 저장되며 관리자 판정·집계·health probe는 <code>flow-admin</code> Edge Function에서 처리합니다.</p>
       </section>
     </section>
   </main>

@@ -3,8 +3,6 @@ const PUBLISHABLE_KEY='sb_publishable_-9Cf0yVjLWf88pcvAqQ-EQ_YN9v3Obz';
 const ADMIN_EDGE=`${SUPABASE_URL}/functions/v1/flow-admin`;
 const SESSION_KEY='flow-admin-session-v2';
 const LEGACY_SESSION_KEY='flow-admin-session-v1';
-const PENDING_EMAIL_KEY='flow-admin-pending-email';
-const LOGIN_REQUEST_KEY='flow-admin-login-requested-at-v1';
 const $=(s)=>document.querySelector(s);
 
 const state={token:'',refreshToken:'',expiresAt:0,email:'',overview:null,busy:false};
@@ -33,7 +31,6 @@ function saveSession(session,email=''){
   state.email=resolvedEmail;
   localStorage.setItem(SESSION_KEY,JSON.stringify({accessToken,refreshToken,expiresAt,email:resolvedEmail}));
   sessionStorage.removeItem(LEGACY_SESSION_KEY);
-  if(resolvedEmail)localStorage.removeItem(PENDING_EMAIL_KEY);
   return true;
 }
 function clearSession(){
@@ -63,7 +60,7 @@ function restoreSession(){
   }catch{}
   return false;
 }
-function consumeMagicLink(){
+function consumeAuthFragment(){
   const params=new URLSearchParams(location.hash.replace(/^#/,''));
   const error=params.get('error_description')||params.get('error')||'';
   const accessToken=params.get('access_token')||'';
@@ -73,7 +70,7 @@ function consumeMagicLink(){
       refresh_token:params.get('refresh_token')||'',
       expires_in:Number(params.get('expires_in')||0),
       expires_at:Number(params.get('expires_at')||0)
-    },localStorage.getItem(PENDING_EMAIL_KEY)||'');
+    });
     history.replaceState(null,'',location.pathname+location.search);
     return {authenticated:true,error:''};
   }
@@ -89,6 +86,17 @@ async function authFetch(path,init={}){
   headers.set('apikey',PUBLISHABLE_KEY);
   if(init.body)headers.set('content-type','application/json');
   return fetch(`${SUPABASE_URL}${path}`,{...init,headers,cache:'no-store'});
+}
+async function signInWithPassword(email,password){
+  const response=await authFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+  const body=await response.json().catch(()=>({}));
+  if(!response.ok||!body?.access_token){
+    if(response.status===400||response.status===401)throw new Error('이메일 또는 비밀번호가 맞지 않습니다.');
+    if(response.status===429)throw new Error('로그인 시도가 너무 많습니다. 잠시 뒤 다시 시도하세요.');
+    throw new Error(body?.msg||body?.message||body?.error_description||`로그인 실패 (HTTP ${response.status})`);
+  }
+  saveSession(body,email);
+  return true;
 }
 async function refreshSession(){
   if(!state.refreshToken)return false;
@@ -121,20 +129,6 @@ async function adminFetch(action='overview',init={},retry=true){
   return response;
 }
 
-async function requestLogin(email){
-  const recent=Number(localStorage.getItem(LOGIN_REQUEST_KEY)||0);
-  if(recent&&Date.now()-recent<60_000)throw new Error('방금 로그인 메일을 보냈습니다. 받은 메일을 사용하세요. 새로 요청할 필요가 없습니다.');
-  const redirect=`${location.origin}/admin/`;
-  const response=await authFetch(`/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`,{method:'POST',body:JSON.stringify({email,create_user:false})});
-  if(!response.ok){
-    if(response.status===429)localStorage.setItem(LOGIN_REQUEST_KEY,String(Date.now()));
-    throw new Error(response.status===429?'Supabase 메일 요청 제한에 걸렸습니다. 잠시 뒤 딱 한 번만 다시 요청하면 됩니다.':'등록된 관리자 계정인지 확인하세요.');
-  }
-  state.email=email;
-  localStorage.setItem(PENDING_EMAIL_KEY,email);
-  localStorage.setItem(LOGIN_REQUEST_KEY,String(Date.now()));
-}
-
 function showLogin(message=''){
   $('#loginPanel').classList.remove('hidden');
   $('#dashboard').classList.add('hidden');
@@ -160,7 +154,6 @@ function renderTimeline(items=[]){
     el.append(bar);
   }
 }
-
 function renderTop(items=[]){const el=$('#topEvents');if(!items.length){el.innerHTML='<div class="empty">집계된 이벤트가 없습니다.</div>';return}el.innerHTML=items.map(x=>`<div class="rank-row"><span title="${escapeHtml(x.name)}">${escapeHtml(x.name)}</span><strong>${number(x.count)}</strong></div>`).join('')}
 function healthClass(status){if(status>=200&&status<400)return'status-good';if(status===429||status===599)return'status-warn';return'status-bad'}
 function renderProbes(items=[]){
@@ -170,7 +163,6 @@ function renderProbes(items=[]){
   $('#probeMeta').textContent=`최근 ${items.length}건`;
   el.innerHTML=items.slice(0,12).map(p=>`<div class="health-row"><span class="service">${escapeHtml(p.service)}</span><span class="health-action">${escapeHtml(p.action)}</span><strong class="${healthClass(Number(p.status))}">${Number(p.status)===599?'TIMEOUT':escapeHtml(p.status)}</strong><span class="health-time">${duration(p.durationMs)} · ${when(p.checkedAt)}</span></div>`).join('');
 }
-
 function render(body){
   const o=body?.overview||{};state.overview=o;showDashboard(body?.admin||{});const a=o.activity||{};
   $('#generatedAt').textContent=`생성 ${when(o.generatedAt)}`;$('#totalEvents').textContent=number(a.totalEvents);$('#uniqueAnonymous').textContent=number(a.uniqueAnonymous);$('#registeredProfiles').textContent=number(a.registeredProfiles);$('#windowLabel').textContent=`최근 ${o.windowHours||24}시간`;$('#activityMeta').textContent=`${number(a.totalEvents)} events`;
@@ -182,16 +174,15 @@ async function loadOverview(){
   try{
     const response=await adminFetch('overview');
     const body=await response.json().catch(()=>({}));
-    if(response.status===401){clearSession();return showLogin('관리자 세션이 종료되었습니다. 다시 한 번만 로그인해 주세요.')}
+    if(response.status===401){clearSession();return showLogin('관리자 세션이 종료되었습니다. 다시 로그인해 주세요.')}
     if(response.status===403){clearSession();return showLogin('이 계정은 Flow 관리자 allowlist에 없습니다.')}
     if(!response.ok)throw new Error(body?.error||`HTTP ${response.status}`);
     render(body);
   }catch(error){
-    if(error?.message==='AUTH_REQUIRED')return showLogin('관리자 세션이 종료되었습니다. 다시 한 번만 로그인해 주세요.');
+    if(error?.message==='AUTH_REQUIRED')return showLogin('관리자 세션이 종료되었습니다. 다시 로그인해 주세요.');
     showLogin(`관리자 데이터를 불러오지 못했습니다: ${error.message||error}`);
   }
 }
-
 async function runProbe(){
   if(state.busy)return;state.busy=true;const btn=$('#probeBtn');btn.disabled=true;btn.textContent='검사 중';
   try{const response=await adminFetch('probe',{method:'POST'});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body?.error||`HTTP ${response.status}`);render({admin:{email:state.email||'Authorized'},overview:body.overview})}catch(error){alert(`API 상태 검사를 완료하지 못했습니다: ${error.message||error}`)}finally{state.busy=false;btn.disabled=false;btn.textContent='API 상태 검사'}
@@ -202,27 +193,36 @@ async function signOut(){
   clearSession();showLogin();setStatus('이 기기의 관리자 세션을 종료했습니다.');
 }
 
-$('#emailForm').addEventListener('submit',async e=>{
+$('#passwordForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const email=$('#emailInput').value.trim();if(!email)return;
-  const btn=e.submitter||$('#emailForm button[type="submit"]');
-  btn.disabled=true;setStatus('로그인 메일을 요청하는 중…');
-  try{await requestLogin(email);setStatus('메일을 보냈습니다. 이 기기에서는 이번 한 번만 링크를 누르면 이후 자동 로그인됩니다.')}
-  catch(error){setStatus(error.message||String(error),true)}
-  finally{btn.disabled=false}
+  const email=$('#emailInput').value.trim();
+  const password=$('#passwordInput').value;
+  if(!email||!password)return;
+  const btn=e.submitter||$('#passwordForm button[type="submit"]');
+  btn.disabled=true;setStatus('로그인 중…');
+  try{
+    await signInWithPassword(email,password);
+    $('#passwordInput').value='';
+    setStatus('');
+    await loadOverview();
+  }catch(error){
+    setStatus(error.message||String(error),true);
+  }finally{
+    btn.disabled=false;
+  }
 });
 $('#refreshBtn').addEventListener('click',loadOverview);
 $('#windowSelect').addEventListener('change',loadOverview);
 $('#probeBtn').addEventListener('click',runProbe);
 $('#signOutBtn').addEventListener('click',signOut);
 window.addEventListener('hashchange',()=>{
-  const result=consumeMagicLink();
+  const result=consumeAuthFragment();
   if(result.authenticated)loadOverview();
-  else if(result.error)showLogin('로그인 링크가 만료되었거나 이미 사용되었습니다. 새 링크는 한 번만 요청해 주세요.');
+  else if(result.error)showLogin('인증 링크가 만료되었거나 이미 사용되었습니다.');
 });
 
-const linkResult=consumeMagicLink();
+const linkResult=consumeAuthFragment();
 restoreSession();
 if(state.email)$('#emailInput').value=state.email;
 if(state.token)loadOverview();
-else showLogin(linkResult.error?'로그인 링크가 만료되었거나 이미 사용되었습니다. 새 링크는 한 번만 요청해 주세요.':'');
+else showLogin(linkResult.error?'인증 링크가 만료되었거나 이미 사용되었습니다.':'');
