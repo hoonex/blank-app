@@ -33,6 +33,7 @@ jobs:
           grep -q 'flow:campus-current-route' university/campus.js
           grep -q 'flow:campus-current-route' university/campus-interactive.js
           grep -q 'currentRouteData' university/campus-interactive.js
+          grep -Fq '&quot;' university/campus.js
           grep -q 'flow-campus-current-location' university/campus-interactive.css
           grep -q 'dashboard-editor-feedback.js' sw.js
           grep -q 'ui-unify.js' sw.js
