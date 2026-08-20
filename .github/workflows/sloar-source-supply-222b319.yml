@@ -3,6 +3,8 @@ name: Sloar source supply 222b319
 on:
   push:
     branches: [supply/flow-source-222b319-20260821]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
