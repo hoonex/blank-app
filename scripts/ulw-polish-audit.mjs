@@ -14,8 +14,8 @@ await page.addInitScript(()=>{
   localStorage.setItem('flow-university-theme-v1','light');
 });
 await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
-await page.locator('.flow-brand-mode').first().waitFor({timeout:10000});
-const brand=(await page.locator('.brand').first().innerText()).replace(/\s+/g,' ').trim();if(!brand.includes('Flow')||!brand.includes('University'))throw new Error(`University wordmark not unified: ${brand}`);
+await page.locator('#appView:not(.hidden) .flow-brand-mode').first().waitFor({timeout:10000});
+const brand=(await page.locator('#appView:not(.hidden) .brand').first().innerText()).replace(/\s+/g,' ').trim();if(!brand.includes('Flow')||!brand.includes('University'))throw new Error(`University wordmark not unified: ${brand}`);
 await page.locator('.flow-theme-segment [data-university-theme="dark"]').click();let theme=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,mode:document.documentElement.dataset.themeMode,saved:localStorage.getItem('flow-university-theme-v1')}));if(theme.theme!=='dark'||theme.mode!=='dark'||theme.saved!=='dark')throw new Error(`Dark theme failed: ${JSON.stringify(theme)}`);
 await page.locator('.flow-theme-segment [data-university-theme="system"]').click();theme=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,mode:document.documentElement.dataset.themeMode,saved:localStorage.getItem('flow-university-theme-v1')}));if(theme.mode!=='system'||theme.saved!=='system')throw new Error(`System theme failed: ${JSON.stringify(theme)}`);
 await page.locator('#widgetDashboard').waitFor({timeout:10000});await page.locator('#dashboardEditBtn').click();
