@@ -1,7 +1,9 @@
 const THEME_KEY='flow-university-theme-v1';
-const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css'];
+const UI_BUILD='20260820-4';
+const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css'].map(x=>`${x}?v=${UI_BUILD}`);
 const media=matchMedia('(prefers-color-scheme: dark)');
 function ensureStyles(){for(const href of STYLES){if(document.querySelector(`link[href="${href}"]`))continue;const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.append(l)}}
+function refreshServiceWorker(){navigator.serviceWorker?.getRegistration?.().then(r=>r?.update()).catch(()=>{})}
 function pref(){const v=localStorage.getItem(THEME_KEY)||'light';return['light','system','dark'].includes(v)?v:'light'}
 function effective(value){return value==='system'?(media.matches?'dark':'light'):value}
 function label(value){return value==='light'?'Light':value==='dark'?'Dark':'System'}
@@ -20,6 +22,6 @@ function installControls(){
   const bottom=document.querySelector('.sidebar-bottom');if(bottom&&!bottom.querySelector('.flow-theme-segment')){const seg=document.createElement('div');seg.className='flow-theme-segment';seg.setAttribute('aria-label','화면 테마');seg.innerHTML='<button type="button" data-university-theme="light">Light</button><button type="button" data-university-theme="system">System</button><button type="button" data-university-theme="dark">Dark</button>';seg.addEventListener('click',e=>{const b=e.target.closest('[data-university-theme]');if(b)apply(b.dataset.universityTheme)});bottom.prepend(seg)}
   apply(pref())
 }
-function init(){ensureStyles();installControls()}
+function init(){ensureStyles();installControls();refreshServiceWorker()}
 media.addEventListener?.('change',()=>{if(pref()==='system')apply('system')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
