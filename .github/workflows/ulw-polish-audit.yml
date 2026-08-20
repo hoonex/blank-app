@@ -24,17 +24,21 @@ jobs:
           test -s .github/pull_request_template.md
           node --check university/ui-unify.js
           node --check university/dashboard-editor-feedback.js
-          node --check university/campus-geolocation-bridge.js
+          node --input-type=module --check < university/campus.js
           node --input-type=module --check < university/campus-interactive.js
           node --check scripts/ulw-polish-audit.mjs
           grep -q 'Never edit `main` directly' AGENTS.md
           grep -q 'dashboard-editor-feedback.js' university/campus-interactive.js
           grep -q 'ui-unify.js' university/campus-interactive.js
-          grep -q 'campus-geolocation-bridge.js' university/campus-interactive.js
+          grep -q 'flow:campus-current-route' university/campus.js
+          grep -q 'flow:campus-current-route' university/campus-interactive.js
+          grep -q 'currentRouteData' university/campus-interactive.js
           grep -q 'flow-campus-current-location' university/campus-interactive.css
           grep -q 'dashboard-editor-feedback.js' sw.js
           grep -q 'ui-unify.js' sw.js
-          grep -q 'campus-geolocation-bridge.js' sw.js
+          ! test -e university/campus-geolocation-bridge.js
+          ! grep -q 'campus-geolocation-bridge.js' university/campus-interactive.js
+          ! grep -q 'campus-geolocation-bridge.js' sw.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
