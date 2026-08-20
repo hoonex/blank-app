@@ -93,7 +93,7 @@ const dragSettled=await page.evaluate(()=>({floating:document.querySelectorAll('
 if(orderBefore.join('|')===orderAfter.join('|')||dragSettled.floating||dragSettled.placeholder)throw new Error(`Long-press drag did not reorder and settle: ${JSON.stringify({orderBefore,orderAfter,dragSettled})}`);
 
 /* Picker should expose the expanded widget library with meaningful options. */
-await page.locator('#widgetAddBtn').click();await page.locator('#widgetPicker').waitFor({state:'visible'});
+await page.locator('#widgetAddBtn').click();await page.locator('#widgetPicker').waitFor({state:'visible'});await page.locator('[data-v2-picker-id="memo"]').waitFor({timeout:3000});
 const picker=await page.evaluate(()=>({count:document.querySelectorAll('#widgetPickerList .widget-picker-item').length,labels:[...document.querySelectorAll('#widgetPickerList .widget-picker-item strong')].map(x=>x.textContent.trim())}));
 for(const label of ['현재 시각','수업 진행률','남은 수업','내일 첫 수업','이번 학기 학점','바로가기','메모'])if(!picker.labels.includes(label))throw new Error(`Widget picker missing ${label}: ${JSON.stringify(picker)}`);
 if(picker.count<15)throw new Error(`Too few widget choices: ${JSON.stringify(picker)}`);
