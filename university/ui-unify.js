@@ -13,7 +13,6 @@ function apply(value=pref()){
   document.querySelectorAll('.flow-theme-cycle').forEach(b=>b.textContent=label(p));
 }
 function cycle(){const order=['light','system','dark'],p=pref();apply(order[(order.indexOf(p)+1)%order.length])}
-function decorateBrand(){document.querySelectorAll('.brand').forEach(brand=>{if(brand.querySelector('.flow-brand-mode'))return;const word=brand.querySelector('.brand-word');if(!word)return;const mode=document.createElement('span');mode.className='flow-brand-mode';mode.textContent='University';word.after(mode)})}
 function makeCycle(){const b=document.createElement('button');b.className='flow-theme-cycle';b.type='button';b.setAttribute('aria-label','테마 변경');b.addEventListener('click',cycle);return b}
 function installControls(){
   const setup=document.querySelector('.setup-header');if(setup&&!setup.querySelector('.setup-header-actions')){const quiet=setup.querySelector('.quiet-link');const actions=document.createElement('div');actions.className='setup-header-actions';actions.append(makeCycle());if(quiet)actions.append(quiet);setup.append(actions)}
@@ -21,6 +20,6 @@ function installControls(){
   const bottom=document.querySelector('.sidebar-bottom');if(bottom&&!bottom.querySelector('.flow-theme-segment')){const seg=document.createElement('div');seg.className='flow-theme-segment';seg.setAttribute('aria-label','화면 테마');seg.innerHTML='<button type="button" data-university-theme="light">Light</button><button type="button" data-university-theme="system">System</button><button type="button" data-university-theme="dark">Dark</button>';seg.addEventListener('click',e=>{const b=e.target.closest('[data-university-theme]');if(b)apply(b.dataset.universityTheme)});bottom.prepend(seg)}
   apply(pref())
 }
-function init(){ensureStyle();decorateBrand();installControls()}
+function init(){ensureStyle();installControls()}
 media.addEventListener?.('change',()=>{if(pref()==='system')apply('system')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
