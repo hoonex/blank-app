@@ -1,9 +1,9 @@
 /* Shared visual language between Flow School and Flow University. */
 .brand{display:inline-flex!important;align-items:baseline!important;gap:7px!important}
 .brand-word{display:inline-block!important;font-size:1.32rem!important;font-weight:820!important;letter-spacing:-.055em!important;line-height:1!important;color:var(--text)!important}
-.flow-brand-mode{font-size:.66rem;color:var(--muted);font-weight:760;letter-spacing:.015em;line-height:1}
+.brand-mode{font-size:.66rem!important;color:var(--muted)!important;font-weight:760!important;letter-spacing:.015em!important;line-height:1!important}
 .mobile-header .brand-word{font-size:1.24rem!important}
-.mobile-header .flow-brand-mode{font-size:.61rem}
+.mobile-header .brand-mode{font-size:.61rem!important}
 
 .flow-theme-cycle{min-width:58px;height:36px;padding:0 11px;border:0;border-radius:12px;background:var(--surface);color:var(--text);font-size:.66rem;font-weight:800;box-shadow:0 5px 16px rgba(31,42,68,.07);cursor:pointer;transition:transform .13s ease,box-shadow .13s ease,background .13s ease}
 .flow-theme-cycle:active{transform:translateY(1px) scale(.98);box-shadow:0 2px 7px rgba(31,42,68,.07)}
@@ -45,6 +45,6 @@ html[data-theme='dark'] .flow-theme-cycle,html[data-theme='dark'] .flow-theme-se
 }
 @media(max-width:430px){
   .mobile-header .flow-theme-cycle{min-width:44px;padding:0 6px;font-size:.55rem}
-  .mobile-header .flow-brand-mode{display:none}
+  .mobile-header .brand-mode{display:none!important}
 }
 @media(prefers-reduced-motion:reduce){.flow-theme-cycle{transition:none}}
