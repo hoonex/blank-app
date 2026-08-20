@@ -77,6 +77,19 @@ function applyKakaoMapUrl(context, url, resolved = false) {
   return true;
 }
 
+function settleResolvedKakaoMapUrl(context, url) {
+  const applied = applyKakaoMapUrl(context, url, true);
+  if (!applied) return false;
+  for (const delay of [120, 650]) {
+    setTimeout(() => {
+      const link = liveMapLink(context);
+      if (!link || (link.dataset.mapResolved === 'true' && link.href === url)) return;
+      applyKakaoMapUrl(context, url, true);
+    }, delay);
+  }
+  return true;
+}
+
 async function hydrateKakaoMapLink() {
   const context = schoolMapContext();
   const link = document.querySelector('#mapLink');
@@ -88,7 +101,7 @@ async function hydrateKakaoMapLink() {
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached?.url && Date.now() - Number(cached.savedAt || 0) < 7 * 86400000) {
-      return applyKakaoMapUrl(context, String(cached.url).replace(/^http:/, 'https:'), true);
+      return settleResolvedKakaoMapUrl(context, String(cached.url).replace(/^http:/, 'https:'));
     }
   } catch {}
 
@@ -104,7 +117,7 @@ async function hydrateKakaoMapLink() {
     if (typeof placeUrl === 'string' && /^(?:https?:\/\/)?place\.map\.kakao\.com\//.test(placeUrl.replace(/^https?:\/\//, ''))) {
       const normalized = placeUrl.startsWith('http') ? placeUrl.replace(/^http:/, 'https:') : `https://${placeUrl}`;
       localStorage.setItem(cacheKey, JSON.stringify({ url: normalized, savedAt: Date.now() }));
-      return applyKakaoMapUrl(context, normalized, true);
+      return settleResolvedKakaoMapUrl(context, normalized);
     }
   } catch {}
   return true;
