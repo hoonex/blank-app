@@ -8,7 +8,7 @@ let campusData=null,campusLoading=null,campusDay=Math.max(0,Math.min(6,(new Date
 const routeCache=new Map();
 
 function cRead(key,fallback=null){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
-function cEsc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function cEsc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function cProfile(){return cRead(PROFILE_KEY,null)}
 function cTimetable(){return cRead(TIMETABLE_KEY,null)}
 function cToday(){return (new Date().getDay()+6)%7}
