@@ -11,6 +11,7 @@ function rgb(value=''){
   return m?m.slice(1,4).map(Number):[NaN,NaN,NaN];
 }
 function bright([r,g,b]){return (r+g+b)/3}
+function isOnlyLight(value){return String(value).trim().split(/\s+/).sort().join(' ')==='light only'}
 
 for(const pref of ['light','dark','system']){
   const context=await browser.newContext({viewport:{width:1280,height:800},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'dark'});
@@ -43,7 +44,8 @@ for(const pref of ['light','dark','system']){
   });
   const expected=pref==='system'?'dark':pref,expectedLabel=pref==='system'?'System':pref==='dark'?'Dark':'Light';
   if(state.theme!==expected||state.mode!==pref||state.cycleText!==expectedLabel)throw new Error(`Theme state mismatch for ${pref}: ${JSON.stringify(state)}`);
-  if(state.metaColorScheme!=='light dark')throw new Error(`University color-scheme metadata was not synchronized: ${JSON.stringify(state)}`);
+  const expectedColorScheme=expected==='dark'?'dark':'only light';
+  if(state.metaColorScheme!==expectedColorScheme)throw new Error(`University color-scheme metadata was not synchronized: ${JSON.stringify({expectedColorScheme,state})}`);
   if(expected==='light'&&!state.colorScheme.includes('light'))throw new Error(`Explicit Light did not force a light color scheme: ${JSON.stringify(state)}`);
   if(expected==='dark'&&!state.colorScheme.includes('dark'))throw new Error(`Dark/System did not expose a dark color scheme: ${JSON.stringify(state)}`);
   const b=bright(rgb(state.bg)),c=bright(rgb(state.cardBg)),p=bright(rgb(state.sampleBg)),t=bright(rgb(state.text));
@@ -51,7 +53,19 @@ for(const pref of ['light','dark','system']){
   if(expected==='dark'&&(b>90||c>110||p>110||t<180))throw new Error(`Flow Dark palette is inconsistent: ${JSON.stringify({state,b,c,p,t})}`);
   if(consoleErrors.length||pageErrors.length)throw new Error(`Browser errors for ${pref}: ${JSON.stringify({consoleErrors,pageErrors})}`);
   await page.screenshot({path:`university-audit/theme-${pref}.png`,fullPage:true});
-  results.push({pref,expected,state,brightness:{body:b,card:c,panel:p,text:t}});
+  const result={pref,expected,state,brightness:{body:b,card:c,panel:p,text:t}};
+  if(pref==='dark'){
+    await page.locator('.setup-header .flow-theme-cycle').click();
+    await page.waitForTimeout(120);
+    const live=await page.evaluate(()=>{
+      const root=document.documentElement,body=document.body,card=document.querySelector('.search-card'),cycle=document.querySelector('.setup-header .flow-theme-cycle'),cs=getComputedStyle(root);
+      return{theme:root.dataset.theme||'',mode:root.dataset.themeMode||'',saved:localStorage.getItem('flow-university-theme-v1')||'',colorScheme:cs.colorScheme,inlineColorScheme:root.style.colorScheme,metaColorScheme:document.querySelector('meta[name="color-scheme"]')?.content||'',bg:getComputedStyle(body).backgroundColor,cardBg:getComputedStyle(card).backgroundColor,cycleText:cycle?.textContent?.trim()||''};
+    });
+    if(live.theme!=='light'||live.mode!=='light'||live.saved!=='light'||!isOnlyLight(live.inlineColorScheme)||live.metaColorScheme!=='only light'||!live.colorScheme.includes('light')||bright(rgb(live.bg))<225||bright(rgb(live.cardBg))<220)throw new Error(`University Dark -> Light live transition stayed dark: ${JSON.stringify(live)}`);
+    await page.screenshot({path:'university-audit/theme-dark-to-light-live.png',fullPage:true});
+    result.liveDarkToLight=live;
+  }
+  results.push(result);
   await context.close();
 }
 await browser.close();
