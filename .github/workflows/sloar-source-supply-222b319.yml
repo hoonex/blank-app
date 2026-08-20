@@ -1,0 +1,45 @@
+name: Sloar source supply 222b319
+
+on:
+  push:
+    branches: [supply/flow-source-222b319-20260821]
+
+permissions:
+  contents: read
+
+jobs:
+  source-supply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 222b319413a7395c7774a28baed285750c012e59
+          fetch-depth: 0
+      - name: Verify immutable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "222b319413a7395c7774a28baed285750c012e59"
+          test "$(git rev-parse 'HEAD^{tree}')" = "5a9eaf7e801eb258350038181b9860c7d43dbc5d"
+      - name: Package exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git bundle create flow-source.bundle HEAD
+          sha256sum flow-source.bundle > flow-source.bundle.sha256
+          {
+            echo 'repository=hoonex/blank-app'
+            echo 'commit=222b319413a7395c7774a28baed285750c012e59'
+            echo 'tree=5a9eaf7e801eb258350038181b9860c7d43dbc5d'
+            echo 'mission=source-supply'
+          } > provenance.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flow-source-222b319
+          path: |
+            flow-source.bundle
+            flow-source.bundle.sha256
+            provenance.txt
+          if-no-files-found: error
+          retention-days: 1
