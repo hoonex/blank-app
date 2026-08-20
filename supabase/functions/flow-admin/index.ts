@@ -55,6 +55,37 @@ async function isAdmin(userId: string) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
+async function adminLoginTarget(loginName: string) {
+  const normalized = loginName.trim().toLowerCase();
+  if (!normalized) return null;
+  const response = await adminFetch(`/rest/v1/flow_admins?login_name=eq.${encodeURIComponent(normalized)}&select=user_id,login_name&limit=1`);
+  if (!response.ok) throw new Error(`admin login lookup ${response.status}`);
+  const rows = await response.json().catch(() => []);
+  const row = Array.isArray(rows) ? rows[0] : null;
+  if (!row?.user_id) return null;
+
+  const userResponse = await fetch(`${PROJECT_URL}/auth/v1/admin/users/${encodeURIComponent(row.user_id)}`, {
+    headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
+    signal: AbortSignal.timeout(7000),
+  }).catch(() => null);
+  if (!userResponse?.ok) throw new Error(`admin user lookup ${userResponse?.status || 599}`);
+  const user = await userResponse.json().catch(() => null);
+  if (!user?.email) return null;
+  return { userId: row.user_id as string, loginName: String(row.login_name || normalized), email: String(user.email) };
+}
+
+async function passwordSession(email: string, password: string) {
+  const response = await fetch(`${PROJECT_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: PUBLISHABLE_KEY, "content-type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    signal: AbortSignal.timeout(9000),
+  }).catch(() => null);
+  if (!response) return { status: 599, body: null as any };
+  const body = await response.json().catch(() => null);
+  return { status: response.status, body };
+}
+
 async function overview(hours: number) {
   const response = await adminFetch("/rest/v1/rpc/flow_admin_overview", {
     method: "POST",
@@ -129,17 +160,38 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (!PROJECT_URL || !PUBLISHABLE_KEY || !SECRET_KEY) return json({ error: "admin backend unavailable" }, 503);
 
+  const url = new URL(req.url);
+  const action = url.searchParams.get("action") || "overview";
+
+  if (action === "login") {
+    if (req.method !== "POST") return json({ error: "POST required" }, 405);
+    const body = await req.json().catch(() => ({}));
+    const username = String(body?.username || "").trim().toLowerCase();
+    const password = String(body?.password || "");
+    if (!username || !password || username.length > 64 || password.length > 256) return json({ error: "invalid credentials" }, 401);
+    try {
+      const target = await adminLoginTarget(username);
+      if (!target) return json({ error: "invalid credentials" }, 401);
+      const session = await passwordSession(target.email, password);
+      if (session.status === 429) return json({ error: "too many login attempts" }, 429);
+      if (session.status < 200 || session.status >= 300 || !session.body?.access_token || session.body?.user?.id !== target.userId) {
+        return json({ error: "invalid credentials" }, 401);
+      }
+      return json({ ...session.body, admin: { loginName: target.loginName } });
+    } catch (error) {
+      console.error("flow-admin login", error instanceof Error ? error.message : String(error));
+      return json({ error: "admin login unavailable" }, 502);
+    }
+  }
+
   const user = await verifyUser(req);
   if (!user) return json({ error: "authentication required" }, 401);
 
   try {
     if (!(await isAdmin(user.id))) return json({ error: "admin access denied" }, 403);
-
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "overview";
     if (action === "overview") {
       const hours = Number(url.searchParams.get("hours") || 24);
-      return json({ admin: { id: user.id, email: user.email || "" }, overview: await overview(hours) });
+      return json({ admin: { id: user.id, loginName: "flowadmin" }, overview: await overview(hours) });
     }
     if (action === "probe") {
       if (req.method !== "POST") return json({ error: "POST required" }, 405);
