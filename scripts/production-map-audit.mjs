@@ -2,21 +2,30 @@ import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const base=process.env.FLOW_PRODUCTION_URL||'https://flow-student-blush.vercel.app';
+const universityEdge='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data';
 const out='production-map-audit';
 await mkdir(out,{recursive:true});
+
+const searchUrl=new URL(universityEdge);searchUrl.searchParams.set('action','search');searchUrl.searchParams.set('q','경북대학교');
+const searchResponse=await fetch(searchUrl,{signal:AbortSignal.timeout(15000)});
+const searchBody=await searchResponse.json().catch(()=>({}));
+if(!searchResponse.ok)throw new Error(`University fixture search failed: ${searchResponse.status} ${searchBody?.error||''}`.trim());
+const profile=(searchBody.schools||[]).find(x=>x.name==='경북대학교')||searchBody.schools?.[0];
+if(!profile?.id||!profile?.name)throw new Error(`University fixture is missing a real id/name: ${JSON.stringify(profile||null)}`);
+
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light',geolocation:{latitude:35.8888,longitude:128.6103},permissions:['geolocation']});
 const page=await context.newPage();
-await page.clock.install({time:new Date('2026-08-20T09:20:00+09:00')});
-const consoleErrors=[],pageErrors=[],failed=[],routeRequests=[];
+await page.clock.setFixedTime(new Date('2026-08-20T09:20:00+09:00'));
+const consoleErrors=[],pageErrors=[],failed=[],routeRequests=[],httpErrors=[];
 page.on('console',msg=>{if(msg.type()==='error')consoleErrors.push(msg.text())});
 page.on('pageerror',err=>pageErrors.push(String(err)));
 page.on('requestfailed',req=>failed.push({url:req.url(),error:req.failure()?.errorText||''}));
+page.on('response',res=>{if(res.status()>=400)httpErrors.push({url:res.url(),status:res.status()})});
 page.on('request',req=>{if(req.method()==='POST'&&req.url().includes('/functions/v1/university-campus')&&req.url().includes('action=route'))routeRequests.push(req.url())});
 
-await page.addInitScript(()=>{
+await page.addInitScript(({profile})=>{
   const day=(new Date().getDay()+6)%7;
-  const profile={name:'경북대학교',address:'대구광역시 북구 대학로 80',foundation:'국립',kind:'대학교',campus:'본교',region:'대구'};
   const timetable={source:'production-map-audit',year:2026,semester:'2학기',subjects:[
     {id:'a',name:'소프트웨어설계',professor:'테스트',credit:3,place:'IT대학 2호관',times:[{day,startMinutes:540,endMinutes:615,start:'09:00',end:'10:15',place:'IT대학 2호관'}]},
     {id:'b',name:'자료구조',professor:'테스트',credit:3,place:'공대9호관',times:[{day,startMinutes:630,endMinutes:705,start:'10:30',end:'11:45',place:'공대9호관'}]},
@@ -25,14 +34,25 @@ await page.addInitScript(()=>{
   localStorage.setItem('flow-university-profile-v1',JSON.stringify(profile));
   localStorage.setItem('flow-university-timetable-v1',JSON.stringify(timetable));
   localStorage.setItem('flow-university-theme-v1','light');
-});
+},{profile});
 
-await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeout:30000});
-await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
-await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000});
+async function openCampus(){
+  await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
+  try{
+    await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000});
+  }catch(firstError){
+    await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+    await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
+    await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000}).catch(()=>{throw firstError});
+  }
+}
+
+await openCampus();
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-class-pin').length>=2,{timeout:20000});
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-route-time').length>=1,{timeout:25000});
 await page.locator('#campusRouteList .campus-route').first().waitFor({timeout:20000});
+await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('.campus-interactive-map')).opacity)>=.9,{timeout:4000});
 
 const initial=await page.evaluate(()=>({
   path:location.pathname,
@@ -68,29 +88,18 @@ await page.locator('#campusFilter [data-nearby="stores"]').click();
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-poi').length>=1,{timeout:15000});
 await page.waitForFunction(()=>document.querySelectorAll('#campusNearbyList .campus-poi-badge').length>=1,{timeout:15000});
 const poiUi=await page.evaluate(()=>({
-  map:[...document.querySelectorAll('.flow-campus-poi')].map(x=>({
-    brand:x.dataset.poiBrand||'',
-    kind:x.dataset.poiKind||'',
-    hasSvg:Boolean(x.querySelector('svg')),
-    text:x.textContent.trim(),
-    label:x.getAttribute('aria-label')||''
-  })),
-  list:[...document.querySelectorAll('#campusNearbyList .campus-poi-badge')].map(x=>({
-    brand:x.dataset.poiBrand||'',
-    kind:x.dataset.poiKind||'',
-    hasSvg:Boolean(x.querySelector('svg')),
-    text:x.textContent.trim()
-  })),
+  map:[...document.querySelectorAll('.flow-campus-poi')].map(x=>({brand:x.dataset.poiBrand||'',kind:x.dataset.poiKind||'',hasSvg:Boolean(x.querySelector('svg')),text:x.textContent.trim(),label:x.getAttribute('aria-label')||''})),
+  list:[...document.querySelectorAll('#campusNearbyList .campus-poi-badge')].map(x=>({brand:x.dataset.poiBrand||'',kind:x.dataset.poiKind||'',hasSvg:Boolean(x.querySelector('svg')),text:x.textContent.trim()})),
   storeNames:[...document.querySelectorAll('#campusNearbyList .campus-nearby strong')].map(x=>x.textContent.trim())
 }));
 const poiCount=poiUi.map.length;
 await page.screenshot({path:`${out}/mobile-interactive-campus.png`,fullPage:true});
-
 await page.setViewportSize({width:1440,height:900});
 await page.waitForTimeout(500);
 await page.screenshot({path:`${out}/desktop-interactive-campus.png`,fullPage:true});
 
-const report={...initial,currentRoute,routeRequestsBeforeCurrent,routeRequestsAfterCurrent,currentRouteRequestDelta:routeRequestsAfterCurrent-routeRequestsBeforeCurrent,poiCount,poiUi,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
+const firstPartyHttpErrors=httpErrors.filter(x=>x.url.startsWith(base)||x.url.includes('.supabase.co/functions/v1/'));
+const report={fixtureProfile:{id:profile.id,name:profile.name,surveyYear:profile.surveyYear||searchBody.surveyYear||''},...initial,currentRoute,routeRequestsBeforeCurrent,routeRequestsAfterCurrent,currentRouteRequestDelta:routeRequestsAfterCurrent-routeRequestsBeforeCurrent,poiCount,poiUi,httpErrors,firstPartyHttpErrors,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
 await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 
@@ -111,6 +120,7 @@ if(routeRequestsAfterCurrent-routeRequestsBeforeCurrent!==1)throw new Error(`Cur
 if(poiCount<1)throw new Error('Nearby store markers were not rendered on the interactive map.');
 if(poiUi.map.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Map POI lost brand/category identity: ${JSON.stringify(poiUi.map)}`);
 if(!poiUi.list.length||poiUi.list.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Nearby list POI lost brand/category identity: ${JSON.stringify(poiUi.list)}`);
-if(consoleErrors.length||pageErrors.length)throw new Error(`Production browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
+if(firstPartyHttpErrors.length||pageErrors.length)throw new Error(`Production app HTTP/page errors: ${JSON.stringify({firstPartyHttpErrors,pageErrors,consoleErrors})}`);
+if(consoleErrors.length)throw new Error(`Production browser console errors: ${JSON.stringify(consoleErrors)}`);
 
 await browser.close();
