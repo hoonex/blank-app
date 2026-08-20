@@ -26,7 +26,7 @@ if (eyebrow) eyebrow.textContent = 'FLOW SCHOOL';
 const intro = document.querySelector('.onboarding-copy p');
 if (intro) intro.textContent = '시간표, 급식, 학사일정과 학교정보를 한곳에서 확인합니다.';
 const hints = document.querySelector('.search-hints');
-if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span><a class="text-button" href="/university">대학교 시간표</a>';
+if (hints) hints.innerHTML = '<span>시간표</span><span>급식</span><span>학사일정</span>';
 
 /*
  * Some schools publish the new term timetable to NEIS later than others.
@@ -255,13 +255,13 @@ for (const input of [schoolSearch, switchSearch].filter(Boolean)) {
   input.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
-      if (input.value.trim().length >= 2) track('school_search');
+      if (input.value.trim().length >= 2) track('search');
     }, 700);
   }, { passive: true });
 }
 
 document.addEventListener('click', (event) => {
-  if (event.target.closest?.('[data-result-index]')) track('school_select');
+  if (event.target.closest?.('[data-result-index]')) track('select');
   else if (event.target.closest?.('#setupSave')) track('setup_complete');
   else if (event.target.closest?.('[data-view]')) track('tab_view');
   else if (event.target.closest?.('#saveSubjectBtn')) track('subject_override');
@@ -269,6 +269,7 @@ document.addEventListener('click', (event) => {
   else if (event.target.closest?.('.calendar-day[data-calendar-date]')) track('calendar_date_select');
   else if (event.target.closest?.('.national-event')) track('national_schedule_open');
   else if (event.target.closest?.('#shareTimetableBtn')) track('timetable_share');
+  else if (event.target.closest?.('[data-flow-mode-switch="university"]')) track('mode_switch');
 
   if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) {
     scheduleKakaoMapHydration();
