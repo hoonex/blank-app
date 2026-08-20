@@ -90,9 +90,12 @@ function currentTheme(){return localStorage.getItem(THEME_KEY)||'light'}
 function applyTheme(value=currentTheme()){
   const pref=['light','system','dark'].includes(value)?value:'light';
   const effective=pref==='system'?(themeMedia.matches?'dark':'light'):pref;
+  const root=document.documentElement,colorScheme=effective==='dark'?'dark':'only light';
   localStorage.setItem(THEME_KEY,pref);
-  document.documentElement.dataset.theme=effective;
-  document.documentElement.dataset.themeMode=pref;
+  root.dataset.theme=effective;
+  root.dataset.themeMode=pref;
+  root.style.colorScheme=colorScheme;
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content',colorScheme);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',effective==='dark'?'#202833':'#edf2f7');
   $$('#themeSegment [data-theme-choice]').forEach(b=>b.classList.toggle('active',b.dataset.themeChoice===pref));
   if($('#landingThemeBtn'))$('#landingThemeBtn').textContent=pref==='light'?'Light':pref==='dark'?'Dark':'System';

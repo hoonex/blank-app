@@ -10,8 +10,9 @@ function label(value){return value==='light'?'Light':value==='dark'?'Dark':'Syst
 function apply(value=pref()){
   const p=['light','system','dark'].includes(value)?value:'light',e=effective(p),root=document.documentElement;
   localStorage.setItem(THEME_KEY,p);root.dataset.theme=e;root.dataset.themeMode=p;
-  root.style.colorScheme=e==='dark'?'dark':'only light';
-  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content','light dark');
+  const colorScheme=e==='dark'?'dark':'only light';
+  root.style.colorScheme=colorScheme;
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content',colorScheme);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',e==='dark'?'#202833':'#f5f7fa');
   document.querySelectorAll('[data-university-theme]').forEach(b=>b.classList.toggle('active',b.dataset.universityTheme===p));
   document.querySelectorAll('.flow-theme-cycle').forEach(b=>b.textContent=label(p));
