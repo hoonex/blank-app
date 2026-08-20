@@ -1,0 +1,43 @@
+name: Diagnostic university profile endpoint
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  profile-endpoint:
+    if: github.head_ref == 'diag/http-502-url-20260820'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compare real and synthetic university profile ids
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data'
+          curl -fsSL "$base?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90" > /tmp/search.json
+          python3 - <<'PY' > /tmp/urls.txt
+          import json, urllib.parse
+          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data'
+          data=json.load(open('/tmp/search.json'))
+          school=(data.get('schools') or [])[0]
+          print(base+'?'+urllib.parse.urlencode({'action':'profile','id':school.get('id',''),'name':school.get('name','')}))
+          print(base+'?'+urllib.parse.urlencode({'action':'profile','id':'knu','name':'경북대학교'}))
+          print(json.dumps({'id':school.get('id'),'name':school.get('name')},ensure_ascii=False))
+          PY
+          real_url="$(sed -n '1p' /tmp/urls.txt)"
+          fake_url="$(sed -n '2p' /tmp/urls.txt)"
+          echo "search school: $(sed -n '3p' /tmp/urls.txt)"
+          real_code="$(curl -sS -L -o /tmp/real-profile.json -w '%{http_code}' "$real_url")"
+          fake_code="$(curl -sS -L -o /tmp/fake-profile.json -w '%{http_code}' "$fake_url")"
+          echo "real profile status=$real_code url=$real_url"
+          echo "synthetic profile status=$fake_code url=$fake_url"
+          echo 'real profile body:'
+          head -c 1200 /tmp/real-profile.json || true
+          echo
+          echo 'synthetic profile body:'
+          head -c 1200 /tmp/fake-profile.json || true
+          echo
