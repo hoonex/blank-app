@@ -1,5 +1,5 @@
 const THEME_KEY='flow-university-theme-v1';
-const UI_BUILD='20260820-4';
+const UI_BUILD='20260820-5';
 const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css'].map(x=>`${x}?v=${UI_BUILD}`);
 const media=matchMedia('(prefers-color-scheme: dark)');
 function ensureStyles(){for(const href of STYLES){if(document.querySelector(`link[href="${href}"]`))continue;const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.append(l)}}
@@ -8,8 +8,10 @@ function pref(){const v=localStorage.getItem(THEME_KEY)||'light';return['light',
 function effective(value){return value==='system'?(media.matches?'dark':'light'):value}
 function label(value){return value==='light'?'Light':value==='dark'?'Dark':'System'}
 function apply(value=pref()){
-  const p=['light','system','dark'].includes(value)?value:'light',e=effective(p);
-  localStorage.setItem(THEME_KEY,p);document.documentElement.dataset.theme=e;document.documentElement.dataset.themeMode=p;
+  const p=['light','system','dark'].includes(value)?value:'light',e=effective(p),root=document.documentElement;
+  localStorage.setItem(THEME_KEY,p);root.dataset.theme=e;root.dataset.themeMode=p;
+  root.style.colorScheme=e==='dark'?'dark':'only light';
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content','light dark');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',e==='dark'?'#202833':'#f5f7fa');
   document.querySelectorAll('[data-university-theme]').forEach(b=>b.classList.toggle('active',b.dataset.universityTheme===p));
   document.querySelectorAll('.flow-theme-cycle').forEach(b=>b.textContent=label(p));
