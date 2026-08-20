@@ -22,6 +22,10 @@ jobs:
           node --check admin/admin.js
           node --check tests/admin-audit.mjs
           grep -q "flow_admins" supabase/migrations/20260820_flow_admin_observability.sql
+          grep -q "flow_school_events" supabase/migrations/20260821_flow_admin_activity_health_v2.sql
+          grep -q "probe_kind" supabase/migrations/20260821_flow_admin_activity_health_v2.sql
+          grep -q 'kind: "reachability"' supabase/functions/flow-admin/index.ts
+          test "$(grep -c 'service: ' supabase/functions/flow-admin/index.ts)" -ge 10
           grep -q "authentication required" supabase/functions/flow-admin/index.ts
           grep -q "url.pathname==='/admin'" sw.js
           ! grep -R -E 'sb_secret_[A-Za-z0-9_-]{10,}' admin supabase ADMIN.md

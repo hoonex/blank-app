@@ -20,8 +20,8 @@ function envJsonKey(name: string) {
 
 const PUBLISHABLE_KEY = envJsonKey("SUPABASE_PUBLISHABLE_KEYS") || Deno.env.get("SUPABASE_ANON_KEY") || "";
 const SECRET_KEY = envJsonKey("SUPABASE_SECRET_KEYS") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: CORS });
+
 const API_INVENTORY = [
   { id: "neis", name: "NEIS 교육정보 API", group: "Runtime", type: "Public data API", via: "school-data", purpose: "학교정보 · 반 · 시간표 · 급식 · 학사일정", state: "configured" },
   { id: "kakao-local", name: "Kakao Local REST", group: "Runtime", type: "REST API", via: "school-data · university-campus", purpose: "주소 검색 · 장소 검색 · 학교/캠퍼스 위치", state: "configured" },
@@ -39,8 +39,7 @@ const API_INVENTORY = [
 ];
 
 function bearer(req: Request) {
-  const match = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || "";
+  return (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || "";
 }
 
 async function verifyUser(req: Request) {
@@ -78,7 +77,6 @@ async function adminLoginTarget(loginName: string) {
   const rows = await response.json().catch(() => []);
   const row = Array.isArray(rows) ? rows[0] : null;
   if (!row?.user_id) return null;
-
   const userResponse = await fetch(`${PROJECT_URL}/auth/v1/admin/users/${encodeURIComponent(row.user_id)}`, {
     headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}` },
     signal: AbortSignal.timeout(7000),
@@ -97,8 +95,7 @@ async function passwordSession(email: string, password: string) {
     signal: AbortSignal.timeout(9000),
   }).catch(() => null);
   if (!response) return { status: 599, body: null as any };
-  const body = await response.json().catch(() => null);
-  return { status: response.status, body };
+  return { status: response.status, body: await response.json().catch(() => null) };
 }
 
 async function sha256Hex(value: string) {
@@ -115,7 +112,6 @@ async function bootstrapPassword(token: string, password: string) {
   const rows = await lookup.json().catch(() => []);
   const row = Array.isArray(rows) ? rows[0] : null;
   if (!row?.user_id || row.used_at || !row.expires_at || new Date(row.expires_at).getTime() <= Date.now()) return { status: 410, body: { error: "setup link expired" } };
-
   const updateUser = await fetch(`${PROJECT_URL}/auth/v1/admin/users/${encodeURIComponent(row.user_id)}`, {
     method: "PUT",
     headers: { apikey: SECRET_KEY, Authorization: `Bearer ${SECRET_KEY}`, "content-type": "application/json" },
@@ -123,9 +119,10 @@ async function bootstrapPassword(token: string, password: string) {
     signal: AbortSignal.timeout(9000),
   }).catch(() => null);
   if (!updateUser?.ok) throw new Error(`bootstrap user update ${updateUser?.status || 599}`);
-
   const consume = await adminFetch(`/rest/v1/flow_admin_bootstrap_tokens?token_hash=eq.${encodeURIComponent(tokenHash)}&used_at=is.null`, {
-    method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ used_at: new Date().toISOString() }),
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ used_at: new Date().toISOString() }),
   });
   if (!consume.ok) throw new Error(`bootstrap consume ${consume.status}`);
   return { status: 200, body: { ok: true, loginName: "flowadmin" } };
@@ -141,15 +138,32 @@ async function overview(hours: number) {
   return { ...data, inventory: API_INVENTORY };
 }
 
-type Probe = { service: string; action: string; url: string };
+type Probe = {
+  service: string;
+  action: string;
+  kind: "deep" | "reachability";
+  url: string;
+  method?: "GET" | "OPTIONS";
+  headers?: Record<string, string>;
+};
 
-async function saveProbe(result: { service: string; action: string; status: number; durationMs: number; ok: boolean }) {
+type ProbeResult = {
+  service: string;
+  action: string;
+  kind: "deep" | "reachability";
+  status: number;
+  durationMs: number;
+  ok: boolean;
+};
+
+async function saveProbe(result: ProbeResult) {
   const response = await adminFetch("/rest/v1/flow_admin_probe_log", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
       service: result.service,
       action: result.action,
+      probe_kind: result.kind,
       status: result.status,
       duration_ms: result.durationMs,
       ok: result.ok,
@@ -162,17 +176,24 @@ async function runProbe(probe: Probe) {
   const started = performance.now();
   let status = 599;
   try {
-    const response = await fetch(probe.url, { cache: "no-store", signal: AbortSignal.timeout(12000) });
+    const response = await fetch(probe.url, {
+      method: probe.method || "GET",
+      headers: probe.headers,
+      cache: "no-store",
+      signal: AbortSignal.timeout(probe.kind === "deep" ? 12000 : 6000),
+    });
     status = response.status;
   } catch {
     status = 599;
   }
-  const result = {
+  const ok = probe.kind === "deep" ? status >= 200 && status < 400 : status > 0 && status < 500;
+  const result: ProbeResult = {
     service: probe.service,
     action: probe.action,
+    kind: probe.kind,
     status,
     durationMs: Math.max(0, Math.round(performance.now() - started)),
-    ok: status >= 200 && status < 400,
+    ok,
   };
   await saveProbe(result);
   return result;
@@ -180,32 +201,27 @@ async function runProbe(probe: Probe) {
 
 async function probeServices() {
   const base = PROJECT_URL.replace(/\/$/, "");
+  const edge = (name: string) => `${base}/functions/v1/${name}`;
   const probes: Probe[] = [
-    {
-      service: "school-data",
-      action: "search",
-      url: `${base}/functions/v1/school-data?action=search&q=${encodeURIComponent("정동고등학교")}`,
-    },
-    {
-      service: "university-data",
-      action: "search",
-      url: `${base}/functions/v1/university-data?action=search&q=${encodeURIComponent("경북대학교")}`,
-    },
-    {
-      service: "university-campus",
-      action: "campus",
-      url: `${base}/functions/v1/university-campus?action=campus&schoolName=${encodeURIComponent("경북대학교")}&address=${encodeURIComponent("대구광역시 북구 대학로 80")}`,
-    },
+    { service: "school-data", action: "search", kind: "deep", url: `${edge("school-data")}?action=search&q=${encodeURIComponent("정동고등학교")}` },
+    { service: "university-data", action: "search", kind: "deep", url: `${edge("university-data")}?action=search&q=${encodeURIComponent("경북대학교")}` },
+    { service: "university-campus", action: "campus", kind: "deep", url: `${edge("university-campus")}?action=campus&schoolName=${encodeURIComponent("경북대학교")}&address=${encodeURIComponent("대구광역시 북구 대학로 80")}` },
+    { service: "flow-site", action: "edge", kind: "reachability", url: edge("flow-site"), method: "OPTIONS" },
+    { service: "flow-quest-event", action: "edge", kind: "reachability", url: edge("flow-quest-event"), method: "OPTIONS" },
+    { service: "quest-session", action: "edge", kind: "reachability", url: edge("quest-session"), method: "OPTIONS" },
+    { service: "school-logo", action: "edge", kind: "reachability", url: edge("school-logo"), method: "OPTIONS" },
+    { service: "flow-admin", action: "edge", kind: "reachability", url: edge("flow-admin"), method: "OPTIONS" },
+    { service: "supabase-auth", action: "health", kind: "reachability", url: `${base}/auth/v1/health`, headers: { apikey: PUBLISHABLE_KEY } },
+    { service: "supabase-rest", action: "gateway", kind: "reachability", url: `${base}/rest/v1/`, headers: { apikey: PUBLISHABLE_KEY } },
   ];
-  const results = [];
+  const results: ProbeResult[] = [];
   for (const item of probes) results.push(await runProbe(item));
   return results;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (!PROJECT_URL || !PUBLISHABLE_KEY || !SECRET_KEY) return json({ error: "admin backend unavailable" }, 503);
-
   const url = new URL(req.url);
   const action = url.searchParams.get("action") || "overview";
 
@@ -232,9 +248,7 @@ Deno.serve(async (req) => {
       if (!target) return json({ error: "invalid credentials" }, 401);
       const session = await passwordSession(target.email, password);
       if (session.status === 429) return json({ error: "too many login attempts" }, 429);
-      if (session.status < 200 || session.status >= 300 || !session.body?.access_token || session.body?.user?.id !== target.userId) {
-        return json({ error: "invalid credentials" }, 401);
-      }
+      if (session.status < 200 || session.status >= 300 || !session.body?.access_token || session.body?.user?.id !== target.userId) return json({ error: "invalid credentials" }, 401);
       return json({ ...session.body, admin: { loginName: target.loginName } });
     } catch (error) {
       console.error("flow-admin login", error instanceof Error ? error.message : String(error));
