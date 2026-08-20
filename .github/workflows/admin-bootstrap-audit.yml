@@ -1,0 +1,51 @@
+name: Admin bootstrap and inventory audit
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  admin-bootstrap-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate admin bootstrap sources
+        run: |
+          set -euo pipefail
+          node --check admin/admin.js
+          node --check tests/admin-bootstrap-inventory-audit.mjs
+          grep -q "flow_admin_bootstrap_tokens" supabase/migrations/20260821_flow_admin_bootstrap.sql
+          grep -q "bootstrap-password" supabase/functions/flow-admin/index.ts
+          grep -q "API_INVENTORY" supabase/functions/flow-admin/index.ts
+          ! grep -R -E 'sb_secret_[A-Za-z0-9_-]{10,}' admin supabase
+      - name: Verify deployed bootstrap boundary
+        run: |
+          set -euo pipefail
+          code="$(curl -sS -o /tmp/bootstrap.json -w '%{http_code}' -X POST -H 'content-type: application/json' --data '{"token":"bad","password":"1234567890"}' 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-admin?action=bootstrap-password')"
+          test "$code" = 400
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Start local Flow server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/flow-admin-bootstrap-server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/admin/ >/dev/null && exit 0; sleep .3; done
+          cat /tmp/flow-admin-bootstrap-server.log
+          exit 1
+      - name: Run bootstrap and inventory browser audit
+        run: node tests/admin-bootstrap-inventory-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-bootstrap-inventory-audit
+          path: admin-bootstrap-artifacts/
+          if-no-files-found: warn
+          retention-days: 5

@@ -28,10 +28,17 @@
       <p>Flow 전용 관리자 아이디와 비밀번호로 로그인합니다. 한 번 로그인하면 이 기기에서는 세션이 자동으로 유지·갱신됩니다.</p>
       <form id="passwordForm" class="auth-form">
         <label for="usernameInput">관리자 아이디</label>
-        <div class="auth-row"><input id="usernameInput" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="flowadmin"></div>
+        <div class="auth-row"><input id="usernameInput" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="flowadmin"></div>
         <label for="passwordInput">비밀번호</label>
         <div class="auth-row"><input id="passwordInput" type="password" autocomplete="current-password" required placeholder="비밀번호"><button type="submit">로그인</button></div>
       </form>
+      <form id="setupForm" class="auth-form hidden">
+        <label for="newPasswordInput">새 Flow 관리자 비밀번호</label>
+        <div class="auth-row"><input id="newPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="10자 이상"><button type="submit">비밀번호 설정</button></div>
+        <label for="confirmPasswordInput">비밀번호 확인</label>
+        <div class="auth-row"><input id="confirmPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="한 번 더 입력"></div>
+      </form>
+      <p class="setup-hint hidden" id="setupHint">이 링크는 1회용입니다. 여기서 비밀번호를 정하면 이후에는 <strong>flowadmin + 비밀번호</strong>만 사용합니다.</p>
       <p class="auth-status" id="authStatus" role="status"></p>
     </section>
 
@@ -59,6 +66,11 @@
         </article>
       </section>
 
+      <section class="panel inventory-panel">
+        <div class="panel-head"><div><span class="eyebrow">API &amp; INTEGRATIONS</span><h2>Flow 연결 서비스</h2><p>최근 호출 여부와 무관하게 Flow가 코드상 연결한 API·인프라·운영 서비스를 항상 표시합니다.</p></div><span class="panel-meta" id="inventoryMeta">—</span></div>
+        <div class="inventory-list" id="inventoryList"></div>
+      </section>
+
       <section class="panel health-panel">
         <div class="panel-head"><div><span class="eyebrow">API HEALTH</span><h2>최근 서버 상태 검사</h2><p>자동 polling 없이 관리자가 버튼을 눌렀을 때만 실제 upstream 경로를 검사합니다.</p></div><span class="panel-meta" id="probeMeta">—</span></div>
         <div class="health-table" id="probeList"></div>
@@ -66,7 +78,7 @@
 
       <section class="security-note">
         <strong>Security boundary</strong>
-        <p>관리자 아이디와 비밀번호는 HTTPS로 <code>flow-admin</code>에 전달되며 비밀번호는 저장되지 않습니다. 서버가 allowlist의 관리자 계정을 확인한 뒤 Supabase Auth에 검증을 위임합니다. 브라우저에는 관리자 세션만 저장됩니다.</p>
+        <p>관리자 로그인 비밀번호는 Supabase Auth가 해시·관리하며 Flow DB나 GitHub에는 평문으로 저장되지 않습니다. 최초 설정 링크는 1회 사용 후 폐기되고, 브라우저에는 관리자 세션만 저장됩니다.</p>
       </section>
     </section>
   </main>
