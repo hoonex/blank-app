@@ -5,12 +5,14 @@ const base=process.env.FLOW_PRODUCTION_URL||'https://flow-student-blush.vercel.a
 const out='production-map-audit';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',isMobile:true,hasTouch:true,colorScheme:'light'});
+const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light',geolocation:{latitude:35.8888,longitude:128.6103},permissions:['geolocation']});
 const page=await context.newPage();
-const consoleErrors=[],pageErrors=[],failed=[];
+await page.clock.install({time:new Date('2026-08-20T09:20:00+09:00')});
+const consoleErrors=[],pageErrors=[],failed=[],routeRequests=[];
 page.on('console',msg=>{if(msg.type()==='error')consoleErrors.push(msg.text())});
 page.on('pageerror',err=>pageErrors.push(String(err)));
 page.on('requestfailed',req=>failed.push({url:req.url(),error:req.failure()?.errorText||''}));
+page.on('request',req=>{if(req.method()==='POST'&&req.url().includes('/functions/v1/university-campus')&&req.url().includes('action=route'))routeRequests.push(req.url())});
 
 await page.addInitScript(()=>{
   const day=(new Date().getDay()+6)%7;
@@ -48,6 +50,20 @@ const initial=await page.evaluate(()=>({
   bodyBackground:getComputedStyle(document.body).backgroundColor
 }));
 
+const routeRequestsBeforeCurrent=routeRequests.length;
+await page.locator('#currentRouteBtn').click();
+await page.locator('#campusCurrentResult:not(.hidden)').filter({hasText:'현재 위치'}).waitFor({timeout:20000});
+await page.locator('.flow-campus-current-location').waitFor({timeout:15000});
+await page.locator('.flow-campus-route-time.is-current').waitFor({timeout:15000});
+await page.waitForTimeout(250);
+const currentRoute=await page.evaluate(()=>({
+  locationCount:document.querySelectorAll('.flow-campus-current-location').length,
+  locationLabel:document.querySelector('.flow-campus-current-location')?.textContent?.replace(/\s+/g,' ').trim()||'',
+  routeLabel:document.querySelector('.flow-campus-route-time.is-current')?.textContent?.replace(/\s+/g,' ').trim()||'',
+  result:document.querySelector('#campusCurrentResult')?.textContent?.replace(/\s+/g,' ').trim()||''
+}));
+const routeRequestsAfterCurrent=routeRequests.length;
+
 await page.locator('#campusFilter [data-nearby="stores"]').click();
 await page.waitForFunction(()=>document.querySelectorAll('.flow-campus-poi').length>=1,{timeout:15000});
 await page.waitForFunction(()=>document.querySelectorAll('#campusNearbyList .campus-poi-badge').length>=1,{timeout:15000});
@@ -74,7 +90,7 @@ await page.setViewportSize({width:1440,height:900});
 await page.waitForTimeout(500);
 await page.screenshot({path:`${out}/desktop-interactive-campus.png`,fullPage:true});
 
-const report={...initial,poiCount,poiUi,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
+const report={...initial,currentRoute,routeRequestsBeforeCurrent,routeRequestsAfterCurrent,currentRouteRequestDelta:routeRequestsAfterCurrent-routeRequestsBeforeCurrent,poiCount,poiUi,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
 await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 
@@ -88,6 +104,10 @@ if(initial.routeTimeLabels.length<1||!initial.routeTimeLabels.some(x=>x.includes
 if(initial.routeCount<1)throw new Error('No Kakao walking route was rendered for consecutive class buildings.');
 if(Number(initial.mapOpacity)<0.9)throw new Error(`Interactive map is not visible: opacity ${initial.mapOpacity}`);
 if(initial.fallbackOpacity!==null&&Number(initial.fallbackOpacity)>0.1)throw new Error(`Static fallback remained visible: opacity ${initial.fallbackOpacity}`);
+if(currentRoute.locationCount!==1||!currentRoute.locationLabel.includes('현재 위치'))throw new Error(`Current location marker missing: ${JSON.stringify(currentRoute)}`);
+if(!currentRoute.routeLabel.includes('현재')||!currentRoute.routeLabel.includes('분'))throw new Error(`Current walking route badge missing: ${JSON.stringify(currentRoute)}`);
+if(!currentRoute.result.includes('현재 위치')||!currentRoute.result.includes('출발 권장'))throw new Error(`Current route result missing: ${JSON.stringify(currentRoute)}`);
+if(routeRequestsAfterCurrent-routeRequestsBeforeCurrent!==1)throw new Error(`Current route should reuse one route response on the map, request delta=${routeRequestsAfterCurrent-routeRequestsBeforeCurrent}`);
 if(poiCount<1)throw new Error('Nearby store markers were not rendered on the interactive map.');
 if(poiUi.map.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Map POI lost brand/category identity: ${JSON.stringify(poiUi.map)}`);
 if(!poiUi.list.length||poiUi.list.some(x=>!x.brand&&!x.kind&&!x.hasSvg))throw new Error(`Nearby list POI lost brand/category identity: ${JSON.stringify(poiUi.list)}`);
