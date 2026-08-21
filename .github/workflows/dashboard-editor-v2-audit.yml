@@ -25,14 +25,17 @@ jobs:
           node --check university/dashboard-memo-panel.js
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
+          node --check scripts/widget-variant-audit.mjs
           node --check scripts/memo-panel-audit.mjs
           node --check scripts/mobile-stability-audit.mjs
           test -f university/dashboard-editor-v2.css
+          test -f university/dashboard-variants.css
           test -f university/dashboard-memo-panel.css
           test -f university/ui-unify-v2.css
           grep -q "dashboard-editor-v2.js" university/poi-icons.js
           grep -q "dashboard-editor-v2.js" sw.js
           grep -q "dashboard-editor-v2.css" sw.js
+          grep -q "dashboard-variants.css" sw.js
           grep -q "dashboard-memo-panel.js" university/dashboard-editor-feedback.js
           grep -q "dashboard-memo-panel.js" sw.js
           grep -q "dashboard-memo-panel.css" sw.js
@@ -46,6 +49,8 @@ jobs:
           grep -q "repeat(4,minmax(0,1fr))" university/ui-unify-v2.css
           grep -q "clock:{label:'현재 시각'" university/dashboard.js
           grep -q "shortcuts:{label:'바로가기'" university/dashboard.js
+          grep -q "dayflow:{label:'오늘 흐름'" university/dashboard.js
+          grep -q "weekload:{label:'주간 밀도'" university/dashboard.js
           grep -q "flow-school-brand-critical" index.html
       - name: Install Playwright Chromium
         run: |
@@ -59,6 +64,8 @@ jobs:
           exit 1
       - name: Run widget editor browser audit
         run: node scripts/dashboard-editor-v2-audit.mjs
+      - name: Run semantic widget variant audit
+        run: node scripts/widget-variant-audit.mjs
       - name: Run memo and visual unification audit
         run: node scripts/memo-panel-audit.mjs
       - name: Run mobile nav and widget stability audit
