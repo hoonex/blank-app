@@ -27,6 +27,8 @@ jobs:
           node --input-type=module --check < university/campus.js
           node --input-type=module --check < university/campus-interactive.js
           node --check scripts/ulw-polish-audit.mjs
+          node --check scripts/edge-secret-audit.mjs
+          node scripts/edge-secret-audit.mjs
           grep -q 'Never edit `main` directly' AGENTS.md
           grep -q 'dashboard-editor-feedback.js' university/campus-interactive.js
           grep -q 'ui-unify.js' university/campus-interactive.js
