@@ -60,6 +60,12 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/mobile-school-info-audit.mjs
 
+      - name: Verify school logo fallback request budget
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: node tests/school-logo-fallback-audit.mjs
+
       - name: Verify Kakao school map behavior with fixture
         if: success()
         env:
