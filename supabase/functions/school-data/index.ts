@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {discoverOfficialDgeMark,normalizeMedia} from "../_shared/school-media-parser.js";
 
 const NEIS_KEY = Deno.env.get("NEIS_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -51,48 +52,6 @@ function school(r:any){return{
   dayNight:clean(r.DGHT_SC_NM),founded:clean(r.FOND_YMD),anniversary:clean(r.FOAS_MEMRD),loadedAt:clean(r.LOAD_DTM)
 }}
 function variants(q:string){const s=q.replace(/\s+/g,"");const v=[q,s];if(s.endsWith("고"))v.push(s.slice(0,-1)+"고등학교");if(s.endsWith("중"))v.push(s.slice(0,-1)+"중학교");if(s.endsWith("초"))v.push(s.slice(0,-1)+"초등학교");return [...new Set(v)].filter(Boolean)}
-function normalizeMedia(src:string,base:string){try{const u=new URL(src,base);if(u.protocol==="http:")u.protocol="https:";return u.toString()}catch{return""}}
-function htmlText(v:string){return v.replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&#39;|&apos;/gi,"'").replace(/&quot;/gi,'"').replace(/\s+/g," ").trim()}
-function attr(attrs:string,name:string){const m=attrs.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*[\"']([^\"']+)[\"']`,`i`));return m?.[1]||""}
-function dgeSchoolHost(host:string){return /\.dge\.(?:hs|ms|es|kg)\.kr$/i.test(host)}
-function allowedDgeAsset(url:string,schoolHost:string){try{const h=new URL(url).hostname.toLowerCase().replace(/^www\./,"");return h===schoolHost||/\.dge\.(?:hs|ms|es|kg)\.kr$/i.test(h)}catch{return false}}
-function symbolLinks(html:string,base:string,schoolHost:string){
-  const found:string[]=[];
-  for(const m of html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)){
-    const href=attr(m[1],"href"),label=htmlText(m[2]);
-    if(!href||(!/schulSymbol|schoolSymbol/i.test(href)&&!/학교\s*상징|교표/.test(label)))continue;
-    const url=normalizeMedia(href,base);if(url&&allowedDgeAsset(url,schoolHost)&&!found.includes(url))found.push(url);
-  }
-  return found.slice(0,4);
-}
-function officialMarkFromHtml(html:string,base:string,schoolHost:string){
-  let best="",bestScore=-999;
-  for(const m of html.matchAll(/<img\b([^>]*)>/gi)){
-    const attrs=m[1],src=attr(attrs,"src")||attr(attrs,"data-src")||attr(attrs,"data-original");if(!src)continue;
-    const label=`${attr(attrs,"alt")} ${attr(attrs,"title")}`.trim(),path=src.toLowerCase();
-    let score=0;
-    if(/교표/.test(label))score+=180;
-    if(/학교\s*(?:로고|마크)|school\s*(?:logo|mark)|emblem/i.test(label))score+=120;
-    if(/logo|symbol|emblem|schoolmark/.test(path))score+=35;
-    if(/교기|교목|교화|교가|교훈|교복|급식|배너/.test(label))score-=180;
-    const url=normalizeMedia(src,base);if(!url||!allowedDgeAsset(url,schoolHost))continue;
-    if(score>bestScore){bestScore=score;best=url}
-  }
-  return bestScore>=100?best:"";
-}
-async function discoverOfficialDgeMark(homeHtml:string,homeUrl:string){
-  let home:URL;try{home=new URL(homeUrl)}catch{return""}
-  const host=home.hostname.toLowerCase().replace(/^www\./,"");if(!dgeSchoolHost(host))return"";
-  const direct=officialMarkFromHtml(homeHtml,homeUrl,host);if(direct)return direct;
-  for(const pageUrl of symbolLinks(homeHtml,homeUrl,host)){
-    try{
-      const r=await fetch(pageUrl,{redirect:"follow",signal:AbortSignal.timeout(3800),headers:{"user-agent":"Mozilla/5.0 FlowSchool/2.0","accept":"text/html,application/xhtml+xml"}});
-      if(!r.ok)continue;const type=r.headers.get("content-type")||"";if(type&&!type.includes("html"))continue;
-      const html=(await r.text()).slice(0,1_200_000),mark=officialMarkFromHtml(html,r.url||pageUrl,host);if(mark)return mark;
-    }catch{ }
-  }
-  return"";
-}
 async function discoverMedia(homepage:string){
   if(!homepage)return{hero:"",logo:"",logoSource:"none"};
   let base=homepage.trim();
