@@ -1,3 +1,5 @@
+import '/university/dashboard-editor-v2.js';
+import '/university/dashboard-campus.js';
 import '/university/dashboard-memo-panel.js';
 const STYLE='/university/dashboard-editor-feedback.css';
 const AUTO_SCROLL_EDGE=110;
