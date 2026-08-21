@@ -54,7 +54,7 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/mobile-school-info-audit.mjs
 
-      - name: Verify Kakao school place resolution
+      - name: Verify Kakao school map behavior with fixture
         if: success()
         env:
           FLOW_TEST_URL: http://127.0.0.1:4173/
