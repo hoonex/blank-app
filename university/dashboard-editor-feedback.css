@@ -6,6 +6,15 @@
   filter:brightness(.985);
   box-shadow:0 8px 22px rgba(31,42,68,.10)!important;
 }
+.dashboard-widget.widget-longpress-arming{
+  filter:brightness(.985);
+  box-shadow:0 10px 26px rgba(31,42,68,.12)!important;
+  transform:scale(.996);
+}
+.widget-direct-floating.widget-direct-drag{
+  transform:scale(1.012);
+  box-shadow:0 22px 48px rgba(31,42,68,.2)!important;
+}
 .dashboard-editing #widgetDashboard .dashboard-widget.widget-dragging{
   cursor:grabbing!important;
   z-index:30!important;
@@ -76,7 +85,7 @@
 @keyframes flow-widget-settle{0%{transform:scale(.985)}70%{transform:scale(1.008)}100%{transform:none}}
 @keyframes flow-widget-step{0%{filter:brightness(.98)}55%{filter:brightness(1.035)}100%{filter:none}}
 html[data-theme='dark'] .widget-v2-resize::after{background:rgba(7,10,15,.88)}
-html[data-theme='dark'] .dashboard-editing #widgetDashboard .dashboard-widget.widget-pressing{box-shadow:0 8px 22px rgba(0,0,0,.26)!important}
+html[data-theme='dark'] .dashboard-editing #widgetDashboard .dashboard-widget.widget-pressing,html[data-theme='dark'] .dashboard-widget.widget-longpress-arming{box-shadow:0 8px 22px rgba(0,0,0,.26)!important}
 @media(max-width:820px){
   .widget-v2-resize::after{right:27px;bottom:6px;font-size:.51rem}
   .dashboard-widget[data-resize-pressed='1'] .widget-v2-resize{transform:scale(1.13)}
