@@ -13,6 +13,7 @@ page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
 await page.goto(`${base}/university/`, { waitUntil: 'domcontentloaded' });
+await page.evaluate(()=>document.fonts?.ready);
 const landingTheme = await page.evaluate(() => {
   const header=document.querySelector('.setup-header'),copy=document.querySelector('.setup-copy'),card=document.querySelector('.search-card'),mode=document.querySelector('[data-flow-mode-switch="school"]');
   const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}:null};
@@ -37,6 +38,7 @@ await page.screenshot({ path: 'university-audit/mobile-landing.png', fullPage: t
 const mobileUniversityGeometry=await page.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};return{header:rect(document.querySelector('.setup-header')),main:rect(document.querySelector('.setup-main')),h1:rect(document.querySelector('.setup-copy h1')),card:rect(document.querySelector('.search-card')),field:rect(document.querySelector('.search-field')),copy:rect(document.querySelector('.setup-copy'))}});
 const mobileSchoolPage=await context.newPage();
 await mobileSchoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+await mobileSchoolPage.evaluate(()=>document.fonts?.ready);
 const mobileSchoolGeometry=await mobileSchoolPage.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};return{header:rect(document.querySelector('.landing-header')),main:rect(document.querySelector('.onboarding-main')),h1:rect(document.querySelector('.onboarding-copy h1')),card:rect(document.querySelector('.school-search-panel')),field:rect(document.querySelector('.school-search-panel .search-box')),copy:rect(document.querySelector('.onboarding-copy'))}});
 await mobileSchoolPage.screenshot({path:'university-audit/mobile-school-reference.png',fullPage:true});
 await mobileSchoolPage.close();
@@ -53,6 +55,7 @@ await page.screenshot({ path: 'university-audit/desktop-landing.png', fullPage: 
 const schoolPage=await context.newPage();
 await schoolPage.setViewportSize({width:1440,height:900});
 await schoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+await schoolPage.evaluate(()=>document.fonts?.ready);
 const schoolLanding=await schoolPage.evaluate(()=>{
   const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};
   const h1=document.querySelector('.onboarding-copy h1'),field=document.querySelector('.search-box'),mode=document.querySelector('.landing-header [data-flow-mode-switch]'),theme=document.querySelector('#landingThemeBtn');
