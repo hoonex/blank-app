@@ -13,16 +13,61 @@ page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
 await page.goto(`${base}/university/`, { waitUntil: 'domcontentloaded' });
-const landingTheme = await page.evaluate(() => ({
-  dataTheme: document.documentElement.dataset.theme,
-  bgVar: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
-  bodyBackground: getComputedStyle(document.body).backgroundColor,
-  colorScheme: getComputedStyle(document.documentElement).colorScheme,
-  brand: document.querySelector('.brand-word')?.textContent?.trim() || '',
-  brandMarks: document.querySelectorAll('.brand-mark').length,
-}));
+await page.evaluate(()=>document.fonts?.ready);
+const landingTheme = await page.evaluate(() => {
+  const header=document.querySelector('.setup-header'),copy=document.querySelector('.setup-copy'),card=document.querySelector('.search-card'),mode=document.querySelector('[data-flow-mode-switch="school"]');
+  const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}:null};
+  return {
+    dataTheme: document.documentElement.dataset.theme,
+    bgVar: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+    bodyBackground: getComputedStyle(document.body).backgroundColor,
+    colorScheme: getComputedStyle(document.documentElement).colorScheme,
+    brand: document.querySelector('.brand-word')?.textContent?.trim() || '',
+    brandMode: document.querySelector('.brand-mode')?.textContent?.trim() || '',
+    brandMarks: document.querySelectorAll('.brand-mark').length,
+    modeHref: mode?.getAttribute('href') || '',
+    themeControls: document.querySelectorAll('.setup-header .flow-theme-cycle').length,
+    header:rect(header),copy:rect(copy),card:rect(card),bodyWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+  };
+});
 if (landingTheme.dataTheme !== 'light' || landingTheme.bgVar.toLowerCase() !== '#f5f7fa') throw new Error(`University light theme was overridden: ${JSON.stringify(landingTheme)}`);
-if (landingTheme.brand !== 'Flow' || landingTheme.brandMarks !== 0) throw new Error(`Flow branding was not simplified: ${JSON.stringify(landingTheme)}`);
+if (landingTheme.brand !== 'Flow' || landingTheme.brandMode !== 'University' || landingTheme.brandMarks !== 0) throw new Error(`Flow University branding is inconsistent: ${JSON.stringify(landingTheme)}`);
+if (landingTheme.modeHref !== '/' || landingTheme.themeControls !== 1) throw new Error(`University mode/theme controls are incomplete: ${JSON.stringify(landingTheme)}`);
+if (landingTheme.scrollWidth > landingTheme.bodyWidth + 2 || !landingTheme.card || landingTheme.card.right > landingTheme.bodyWidth + 1) throw new Error(`University landing overflows mobile: ${JSON.stringify(landingTheme)}`);
+await page.screenshot({ path: 'university-audit/mobile-landing.png', fullPage: true });
+const mobileUniversityGeometry=await page.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};return{header:rect(document.querySelector('.setup-header')),main:rect(document.querySelector('.setup-main')),h1:rect(document.querySelector('.setup-copy h1')),card:rect(document.querySelector('.search-card')),field:rect(document.querySelector('.search-field')),copy:rect(document.querySelector('.setup-copy'))}});
+const mobileSchoolPage=await context.newPage();
+await mobileSchoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+await mobileSchoolPage.evaluate(()=>document.fonts?.ready);
+const mobileSchoolGeometry=await mobileSchoolPage.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};return{header:rect(document.querySelector('.landing-header')),main:rect(document.querySelector('.onboarding-main')),h1:rect(document.querySelector('.onboarding-copy h1')),card:rect(document.querySelector('.school-search-panel')),field:rect(document.querySelector('.school-search-panel .search-box')),copy:rect(document.querySelector('.onboarding-copy'))}});
+await mobileSchoolPage.screenshot({path:'university-audit/mobile-school-reference.png',fullPage:true});
+await mobileSchoolPage.close();
+for(const key of ['header','main','h1','card','field']){for(const prop of ['left','top','width','height']){const a=mobileUniversityGeometry[key]?.[prop],b=mobileSchoolGeometry[key]?.[prop];if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)>2)throw new Error(`Mobile School/University landing ${key}.${prop} drifted: ${a} vs ${b}`)}}
+await page.setViewportSize({ width: 1440, height: 900 });
+const desktopLanding=await page.evaluate(()=>{
+  const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};
+  const h1=document.querySelector('.setup-copy h1'),field=document.querySelector('.search-field'),mode=document.querySelector('.setup-header [data-flow-mode-switch]'),theme=document.querySelector('.setup-header .flow-theme-cycle');
+  return{main:rect(document.querySelector('.setup-main')),header:rect(document.querySelector('.setup-header')),card:rect(document.querySelector('.search-card')),copy:rect(document.querySelector('.setup-copy')),field:rect(field),mode:rect(mode),theme:rect(theme),h1Font:parseFloat(getComputedStyle(h1).fontSize),h1Line:parseFloat(getComputedStyle(h1).lineHeight),scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
+});
+if(desktopLanding.main?.width>1162||desktopLanding.card?.width>452||desktopLanding.card?.width<350||desktopLanding.scrollWidth>desktopLanding.clientWidth+2)throw new Error(`University desktop landing is outside shared Flow proportions: ${JSON.stringify(desktopLanding)}`);
+await page.screenshot({ path: 'university-audit/desktop-landing.png', fullPage: true });
+
+const schoolPage=await context.newPage();
+await schoolPage.setViewportSize({width:1440,height:900});
+await schoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+await schoolPage.evaluate(()=>document.fonts?.ready);
+const schoolLanding=await schoolPage.evaluate(()=>{
+  const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};
+  const h1=document.querySelector('.onboarding-copy h1'),field=document.querySelector('.search-box'),mode=document.querySelector('.landing-header [data-flow-mode-switch]'),theme=document.querySelector('#landingThemeBtn');
+  return{main:rect(document.querySelector('.onboarding-main')),header:rect(document.querySelector('.landing-header')),card:rect(document.querySelector('.school-search-panel')),copy:rect(document.querySelector('.onboarding-copy')),field:rect(field),mode:rect(mode),theme:rect(theme),h1Font:parseFloat(getComputedStyle(h1).fontSize),h1Line:parseFloat(getComputedStyle(h1).lineHeight),scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
+});
+await schoolPage.screenshot({path:'university-audit/desktop-school-reference.png',fullPage:true});
+await schoolPage.close();
+const parityKeys=['main','header','card','field'];
+for(const key of parityKeys){for(const prop of ['left','top','width','height']){const a=desktopLanding[key]?.[prop],b=schoolLanding[key]?.[prop];if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)>2)throw new Error(`School/University landing ${key}.${prop} drifted: ${a} vs ${b}`)}}
+if(Math.abs(desktopLanding.h1Font-schoolLanding.h1Font)>0.5||Math.abs(desktopLanding.h1Line-schoolLanding.h1Line)>1)throw new Error(`School/University title typography drifted: ${JSON.stringify({university:desktopLanding,school:schoolLanding})}`);
+if(!desktopLanding.mode||!schoolLanding.mode||Math.abs(desktopLanding.theme.height-schoolLanding.theme.height)>1||Math.abs(desktopLanding.mode.height-schoolLanding.mode.height)>1)throw new Error(`School/University header controls are not symmetric: ${JSON.stringify({university:desktopLanding,school:schoolLanding})}`);
+await page.setViewportSize({ width: 412, height: 915 });
 
 await page.locator('#universitySearch').fill('경북대학교');
 await page.locator('#searchBtn').click();
@@ -140,7 +185,7 @@ const report = {
   importedSubjectCount: imported.subjects.length,
   importedTimedBlockCount: imported.subjects.flatMap((s) => s.times || []).length,
   mobileWeek, desktopVisibleBlocks, desktopAllBlocks,
-  personalAddEditDelete:true, majorCount, metricState, landingTheme, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
+  personalAddEditDelete:true, majorCount, metricState, landingTheme, mobileUniversityGeometry, mobileSchoolGeometry, desktopLanding, schoolLanding, appTheme, consoleErrors, pageErrors, currentPath: new URL(page.url()).pathname,
 };
 await writeFile('university-audit/report.json', JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

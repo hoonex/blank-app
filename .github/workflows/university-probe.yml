@@ -28,6 +28,12 @@ jobs:
           node --check scripts/vercel-rest.mjs
           test -f university/index.html
           test -f university/campus.css
+          test -f supabase/functions/flow-quest-event/index.ts
+          test -f supabase/migrations/20260821_flow_university_telemetry.sql
+          grep -q 'UNIVERSITY_EVENT_MAP' supabase/functions/flow-quest-event/index.ts
+          grep -q 'flow_university_events' supabase/migrations/20260821_flow_university_telemetry.sql
+          grep -q "trackUniversity('page_view')" university/university.js
+          ! grep -E 'event_name.*(schoolName|universitySearch|everytimeUrl)' university/university.js
           test -f university/campus-interactive.css
           grep -q 'Flow University' university/index.html
           grep -q 'campus-interactive.js' university/index.html
