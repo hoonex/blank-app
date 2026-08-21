@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {discoverOfficialDgeMark,normalizeMedia} from "../_shared/school-media-parser.js";
 
 const NEIS_KEY = Deno.env.get("NEIS_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -51,15 +52,14 @@ function school(r:any){return{
   dayNight:clean(r.DGHT_SC_NM),founded:clean(r.FOND_YMD),anniversary:clean(r.FOAS_MEMRD),loadedAt:clean(r.LOAD_DTM)
 }}
 function variants(q:string){const s=q.replace(/\s+/g,"");const v=[q,s];if(s.endsWith("고"))v.push(s.slice(0,-1)+"고등학교");if(s.endsWith("중"))v.push(s.slice(0,-1)+"중학교");if(s.endsWith("초"))v.push(s.slice(0,-1)+"초등학교");return [...new Set(v)].filter(Boolean)}
-function normalizeMedia(src:string,base:string){try{const u=new URL(src,base);if(u.protocol==="http:")u.protocol="https:";return u.toString()}catch{return""}}
 async function discoverMedia(homepage:string){
-  if(!homepage)return{hero:"",logo:""};
+  if(!homepage)return{hero:"",logo:"",logoSource:"none"};
   let base=homepage.trim();
   if(!/^https?:\/\//i.test(base))base=`https://${base}`;
   try{
-    const r=await fetch(base,{redirect:"follow",signal:AbortSignal.timeout(4500),headers:{"user-agent":"Mozilla/5.0 FlowSchool/1.0"}});
-    if(!r.ok)return{hero:"",logo:""};
-    const html=await r.text();
+    const r=await fetch(base,{redirect:"follow",signal:AbortSignal.timeout(4500),headers:{"user-agent":"Mozilla/5.0 FlowSchool/2.0","accept":"text/html,application/xhtml+xml"}});
+    if(!r.ok)return{hero:"",logo:"",logoSource:"none"};
+    const html=(await r.text()).slice(0,1_200_000);
     const meta=(prop:string)=>{
       const a=html.match(new RegExp(`<meta[^>]+(?:property|name)=[\\"']${prop}[\\"'][^>]+content=[\\"']([^\\"']+)[\\"']`,`i`));
       const b=html.match(new RegExp(`<meta[^>]+content=[\\"']([^\\"']+)[\\"'][^>]+(?:property|name)=[\\"']${prop}[\\"']`,`i`));
@@ -67,9 +67,9 @@ async function discoverMedia(homepage:string){
     };
     const icon=html.match(/<link[^>]+rel=[\"'][^\"']*(?:icon|apple-touch-icon)[^\"']*[\"'][^>]+href=[\"']([^\"']+)[\"']/i)?.[1]
       || html.match(/<link[^>]+href=[\"']([^\"']+)[\"'][^>]+rel=[\"'][^\"']*(?:icon|apple-touch-icon)[^\"']*[\"']/i)?.[1]||"";
-    const finalBase=r.url||base;
-    return{hero:normalizeMedia(meta("og:image")||meta("twitter:image"),finalBase),logo:normalizeMedia(icon,finalBase)};
-  }catch{return{hero:"",logo:""}}
+    const finalBase=r.url||base,official=await discoverOfficialDgeMark(html,finalBase);
+    return{hero:normalizeMedia(meta("og:image")||meta("twitter:image"),finalBase),logo:official||normalizeMedia(icon,finalBase),logoSource:official?"official-dge-symbol":icon?"homepage-icon":"none"};
+  }catch{return{hero:"",logo:"",logoSource:"none"}}
 }
 function scheduleEvent(r:any){return{
   date:clean(r.AA_YMD),name:clean(r.EVENT_NM),content:clean(r.EVENT_CNTNT),
@@ -147,7 +147,7 @@ Deno.serve(async(req)=>{
       const si=await call("schoolInfo",{ATPT_OFCDC_SC_CODE:office,SD_SCHUL_CODE:code});
       const info=si[0]?school(si[0]):null;
       const media=await discoverMedia(info?.homepage||"");
-      return reply({media,homepage:info?.homepage||""},200,{"Cache-Control":"public, max-age=86400"});
+      return reply({media,homepage:info?.homepage||""},200,{"Cache-Control":"public, max-age=86400, s-maxage=604800"});
     }
     if(action==="place"){
       const name=(u.searchParams.get("name")||"").trim(),address=(u.searchParams.get("address")||"").trim();
