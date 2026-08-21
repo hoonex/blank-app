@@ -192,6 +192,14 @@ function renderTimeline(items=[]){
   }
 }
 function renderTop(items=[]){const el=$('#topEvents');if(!items.length){el.innerHTML='<div class="empty">집계된 이벤트가 없습니다.</div>';return}el.innerHTML=items.map(x=>`<div class="rank-row"><span title="${escapeHtml(x.name)}">${escapeHtml(x.name)}</span><strong>${number(x.count)}</strong></div>`).join('')}
+function renderActivityMeta(sources,total){
+  const el=$('#activityMeta');
+  if(!Array.isArray(sources)){el.textContent=`${number(total)} events`;el.removeAttribute('title');return}
+  const counts=new Map(sources.map(item=>[String(item?.source||''),Number(item?.count||0)]));
+  const parts=[['school','학교'],['university','대학'],['quest','Quest']].map(([key,label])=>`${label} ${number(counts.get(key)||0)}`);
+  el.textContent=parts.join(' · ');
+  el.title=`총 ${number(total)} · ${parts.join(' · ')}`;
+}
 function healthClass(status){if(status>=200&&status<400)return'status-good';if(status===429||status===599)return'status-warn';return'status-bad'}
 function inventoryStateClass(state){return state==='healthy'||state==='connected'||state==='configured'?'status-good':state==='degraded'?'status-warn':'status-good'}
 function renderInventory(items=[]){
@@ -213,7 +221,7 @@ function renderProbes(items=[]){
 }
 function render(body){
   const o=body?.overview||{};state.overview=o;showDashboard(body?.admin||{});const a=o.activity||{};
-  $('#generatedAt').textContent=`생성 ${when(o.generatedAt)}`;$('#totalEvents').textContent=number(a.totalEvents);$('#uniqueAnonymous').textContent=number(a.uniqueAnonymous);$('#registeredProfiles').textContent=number(a.registeredProfiles);$('#windowLabel').textContent=`최근 ${o.windowHours||24}시간`;$('#activityMeta').textContent=`${number(a.totalEvents)} events`;
+  $('#generatedAt').textContent=`생성 ${when(o.generatedAt)}`;$('#totalEvents').textContent=number(a.totalEvents);$('#uniqueAnonymous').textContent=number(a.uniqueAnonymous);$('#registeredProfiles').textContent=number(a.registeredProfiles);$('#windowLabel').textContent=`최근 ${o.windowHours||24}시간`;renderActivityMeta(a.sources,a.totalEvents);
   renderTimeline(a.hourly||[]);renderTop(a.topEvents||[]);renderInventory(o.inventory||[]);renderProbes(o.probes||[]);
 }
 
