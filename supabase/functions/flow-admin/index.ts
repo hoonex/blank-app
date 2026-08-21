@@ -24,14 +24,16 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 const API_INVENTORY = [
   { id: "neis", name: "NEIS 교육정보 API", group: "Runtime", type: "Public data API", via: "school-data", purpose: "학교정보 · 반 · 시간표 · 급식 · 학사일정", state: "configured" },
-  { id: "kakao-local", name: "Kakao Local REST", group: "Runtime", type: "REST API", via: "school-data · university-campus", purpose: "주소 검색 · 장소 검색 · 학교/캠퍼스 위치", state: "configured" },
+  { id: "kakao-rest", name: "Kakao REST APIs", group: "Runtime", type: "REST API", via: "school-data · university-campus · school-logo", purpose: "주소/장소 · 이미지 검색 · 보행 경로 · 정적 지도", state: "configured" },
   { id: "kakao-maps", name: "Kakao Maps JavaScript SDK", group: "Runtime", type: "Browser SDK", via: "university", purpose: "캠퍼스 지도 렌더링", state: "configured" },
   { id: "university-public", name: "대학 공시 공공데이터 API", group: "Runtime", type: "Public data API", via: "university-data", purpose: "대학 · 학과 · 등록금 · 장학금 · 기숙사 · 교육여건", state: "configured" },
   { id: "everytime", name: "Everytime 공개 시간표", group: "Runtime", type: "External API", via: "university-data", purpose: "공개 공유 시간표 import", state: "configured" },
   { id: "school-media", name: "학교 홈페이지 / Media", group: "Runtime", type: "External web", via: "school-data · school-logo", purpose: "학교 홈페이지 · 로고 · 대표 이미지 탐색", state: "configured" },
+  { id: "google-favicon", name: "Google Site Favicon", group: "External", type: "Image fallback", via: "school-logo", purpose: "학교 로고 검색 실패 시 사이트 아이콘 fallback", state: "connected" },
+  { id: "duckduckgo-icons", name: "DuckDuckGo Icons", group: "External", type: "Image fallback", via: "school-logo", purpose: "학교 로고 검색 실패 시 사이트 아이콘 fallback", state: "connected" },
   { id: "supabase-auth", name: "Supabase Auth", group: "Infrastructure", type: "Auth", via: "Flow accounts · Admin", purpose: "사용자/관리자 인증과 세션", state: "healthy" },
   { id: "supabase-db", name: "Supabase Postgres / PostgREST", group: "Infrastructure", type: "Database API", via: "Flow backend", purpose: "프로필 · 이벤트 · 관리자 집계 · 설정", state: "healthy" },
-  { id: "supabase-edge", name: "Supabase Edge Functions", group: "Infrastructure", type: "Serverless", via: "8 active functions", purpose: "school-data · university-data · campus · logo · quest · admin", state: "healthy" },
+  { id: "supabase-edge", name: "Supabase Edge Functions", group: "Infrastructure", type: "Serverless", via: "8 active functions", purpose: "flow-site · flow-quest-event · quest-session · school-data · university-data · university-campus · school-logo · flow-admin", state: "healthy" },
   { id: "github-api", name: "GitHub API", group: "Operations", type: "Repository API", via: "hoonex/blank-app", purpose: "소스 · commit · branch · PR 관리", state: "connected" },
   { id: "github-actions", name: "GitHub Actions", group: "Operations", type: "CI/CD", via: ".github/workflows", purpose: "브라우저 회귀 테스트 · 검증 · 배포 작업", state: "connected" },
   { id: "vercel-rest", name: "Vercel REST API", group: "Operations", type: "Deployment API", via: "vercel-rest-deploy", purpose: "Flow production 배포 · route health", state: "connected" },
@@ -199,6 +201,10 @@ async function runProbe(probe: Probe) {
   return result;
 }
 
+async function runProbeBatch(probes: Probe[]) {
+  return await Promise.all(probes.map((probe) => runProbe(probe)));
+}
+
 async function probeServices() {
   const base = PROJECT_URL.replace(/\/$/, "");
   const edge = (name: string) => `${base}/functions/v1/${name}`;
@@ -214,8 +220,11 @@ async function probeServices() {
     { service: "supabase-auth", action: "health", kind: "reachability", url: `${base}/auth/v1/health`, headers: { apikey: PUBLISHABLE_KEY } },
     { service: "supabase-rest", action: "gateway", kind: "reachability", url: `${base}/rest/v1/`, headers: { apikey: PUBLISHABLE_KEY } },
   ];
+  const deep = probes.filter((item) => item.kind === "deep");
+  const reachability = probes.filter((item) => item.kind === "reachability");
   const results: ProbeResult[] = [];
-  for (const item of probes) results.push(await runProbe(item));
+  results.push(...await runProbeBatch(deep));
+  results.push(...await runProbeBatch(reachability));
   return results;
 }
 
