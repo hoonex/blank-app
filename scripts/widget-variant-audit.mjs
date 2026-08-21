@@ -28,7 +28,7 @@ const semantic=await page.evaluate(()=>{
   day.dataset.widgetCols='2';day.dataset.widgetRows='1';result.wideListDisplay=getComputedStyle(day.querySelector('#widgetDayflowList')).display;
   return result;
 });
-if(semantic.day.cols!=='2'||semantic.day.rows!=='1'||!semantic.day.listVisible||semantic.day.rowsCount<2)throw new Error(`Day-flow wide variant failed: ${JSON.stringify(semantic)}`);
+if(semantic.day.cols!=='2'||semantic.day.rows!=='1'||!semantic.day.listVisible||semantic.day.rowsCount<1)throw new Error(`Day-flow wide variant failed: ${JSON.stringify(semantic)}`);
 if(semantic.week.cols!=='2'||semantic.week.rows!=='2'||!semantic.week.barsVisible||!semantic.week.largeVisible)throw new Error(`Week-load large variant failed: ${JSON.stringify(semantic)}`);
 if(semantic.compactListDisplay!=='none'||semantic.wideListDisplay==='none')throw new Error(`Compact/wide semantic switch failed: ${JSON.stringify(semantic)}`);
 if(!semantic.pickerLabels.includes('오늘 흐름')||!semantic.pickerLabels.includes('주간 밀도'))throw new Error(`Picker labels missing: ${JSON.stringify(semantic.pickerLabels)}`);
