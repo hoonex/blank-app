@@ -5,6 +5,13 @@ const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173/';
 const OUT=process.env.FLOW_TEST_OUT||'browser-audit-artifacts';
 await fs.mkdir(OUT,{recursive:true});
 
+const canaryResponse=await fetch('https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/?__edge_canary=1',{signal:AbortSignal.timeout(45000)});
+if(!canaryResponse.ok)throw new Error(`Edge canary failed: ${canaryResponse.status}`);
+const canary=await canaryResponse.json();
+console.log(`FLOW_EDGE_CANARY ${JSON.stringify(canary)}`);
+for(const [name,configured] of Object.entries(canary.configured||{}))if(!configured)throw new Error(`Missing Edge secret: ${name}`);
+for(const name of ['kakao','neis','schoolInfo','major','finances','educationCondition'])if(!canary?.[name]?.ok)throw new Error(`Edge upstream probe failed: ${name} ${JSON.stringify(canary?.[name])}`);
+
 const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청'},grade:2,className:'6'};
 const browser=await chromium.launch({headless:true,args:['--force-dark-mode','--enable-features=WebContentsForceDark']});
 const context=await browser.newContext({viewport:{width:412,height:915},deviceScaleFactor:1,isMobile:true,hasTouch:true,locale:'ko-KR',colorScheme:'dark'});
