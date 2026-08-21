@@ -19,66 +19,51 @@ jobs:
           set -euo pipefail
           CSV='https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId=FILE_000000003525863&fileDetailSn=1&insertDataPrcus=N'
           curl --fail --silent --show-error --location --max-time 30 "$CSV" -o /tmp/dge-symbols.csv
-          file /tmp/dge-symbols.csv
-          wc -c /tmp/dge-symbols.csv
           python3 - <<'PY'
           import csv
           from pathlib import Path
           raw=Path('/tmp/dge-symbols.csv').read_bytes()
           for enc in ('utf-8-sig','cp949','euc-kr'):
-              try:
-                  text=raw.decode(enc)
-                  break
-              except UnicodeDecodeError:
-                  pass
-          else:
-              raise SystemExit('cannot decode CSV')
+              try: text=raw.decode(enc); break
+              except UnicodeDecodeError: pass
+          else: raise SystemExit('cannot decode CSV')
           rows=list(csv.DictReader(text.splitlines()))
           print('columns=', list(rows[0]) if rows else [])
           print('row_count=', len(rows))
           for row in rows:
-              name=''.join(str(row.get(k,'')).strip() for k in row if '학교명' in k)
-              if '정동고등학교' in name:
-                  print('JEONGDONG_ROW=', row)
-          print('SAMPLE_MARK_ROWS=')
-          count=0
-          for row in rows:
-              title=' '.join(str(v) for k,v in row.items() if '상징제목' in k)
-              if '교표' in title:
-                  print(row)
-                  count+=1
-                  if count>=5: break
+              if row.get('학교명','').strip()=='정동고등학교': print('JEONGDONG_ROW=', row)
           PY
 
-      - name: Inspect common school CMS symbol markup
+      - name: Inspect accessible common-CMS resolved asset pattern
         shell: bash
         run: |
           set -euo pipefail
-          PAGE='https://goobong-p.gne.go.kr/goobong-p/ss/schulSymbol/selectSongSymbolInfo.do?mi=71849'
-          code=$(curl --silent --show-error --location --max-time 25 -A 'Mozilla/5.0 FlowResearch/1.0' -o /tmp/symbol.html -w '%{http_code}' "$PAGE" || true)
-          echo "HTTP=$code"
-          file /tmp/symbol.html || true
-          wc -c /tmp/symbol.html || true
+          PAGE='https://haan-m.goegm.kr/haan-m/ss/schulSymbol/selectSongSymbolInfo.do?mi=3944'
+          curl --fail --silent --show-error --location --max-time 25 -A 'Mozilla/5.0 FlowResearch/1.0' "$PAGE" -o /tmp/symbol.html
           python3 - <<'PY'
           from pathlib import Path
           import re
-          p=Path('/tmp/symbol.html')
-          if not p.exists(): raise SystemExit(0)
-          raw=p.read_bytes()
-          text=''
-          for enc in ('utf-8','cp949','euc-kr'):
-              try: text=raw.decode(enc); break
-              except UnicodeDecodeError: pass
-          if not text: text=raw.decode('utf-8','replace')
-          print('TITLE=', re.findall(r'<title[^>]*>(.*?)</title>',text,re.I|re.S)[:1])
-          imgs=[]
-          for m in re.finditer(r'<img\b[^>]*>',text,re.I):
-              tag=m.group(0)
-              if re.search(r'교표|상징|symbol|logo',tag,re.I): imgs.append(tag[:900])
-          print('MATCHING_IMG_TAGS=')
-          for x in imgs[:20]: print(x)
-          print('IMAGE_ID_CONTEXT=')
-          for m in re.finditer(r'(?:image|img|file|atch)[A-Za-z_\-]*[^\n]{0,180}',text,re.I):
-              s=m.group(0)
-              if re.search(r'id|download|view|src',s,re.I): print(s[:300])
+          text=Path('/tmp/symbol.html').read_text('utf-8','replace')
+          for tag in re.findall(r'<img\b[^>]*>',text,re.I):
+              if re.search(r'교표|symbol_logo',tag,re.I): print('RESOLVED_MARK_TAG=',tag[:1000])
+          for url in re.findall(r'["\']([^"\']*/upload/[^"\']+)["\']',text,re.I):
+              if '/ss/' in url: print('RESOLVED_ASSET=',url)
+          PY
+
+      - name: Inspect one bounded cached search fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-logo?host=jungdong.dge.hs.kr&name=%EC%A0%95%EB%8F%99%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90&meta=1'
+          curl --fail --silent --show-error --location --max-time 20 "$URL" -o /tmp/logo-meta.json
+          cat /tmp/logo-meta.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/logo-meta.json',encoding='utf-8'))
+          print('FALLBACK_FOUND=', bool(data.get('found')))
+          print('FALLBACK_SOURCE=', data.get('source'))
+          print('FALLBACK_SCORE=', data.get('score'))
+          print('FALLBACK_OFFICIAL=', data.get('official'))
+          print('FALLBACK_DOC_HOST=', data.get('docHost'))
+          print('FALLBACK_DOC_URL=', data.get('docUrl'))
           PY
