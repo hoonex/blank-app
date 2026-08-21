@@ -55,6 +55,8 @@ Required invariants:
 - Controls need immediate press/drag/resize feedback. A user should know when interaction has started.
 - Prefer clear information hierarchy over adding more cards/buttons.
 - Mobile, tablet, desktop, and wide-touch layouts all matter.
+- UI-affecting ULW work must be reviewed across the responsive visual matrix: mobile portrait `390x844`, mobile landscape `844x390`, tablet portrait `768x1024`, tablet landscape `1024x768`, desktop `1366x768`, and large desktop `1920x1080`.
+- Do not accept a UI because it looks correct in only one orientation or device class. Compare portrait/landscape and mobile/desktop screenshots for density, whitespace, hierarchy, clipping, and awkward stretching.
 
 ## 7. Testing before merge
 
@@ -62,7 +64,8 @@ For a feature PR:
 
 - Add or update a focused automated test for the new behavior when practical.
 - Run relevant existing audits, not only the new test.
-- Inspect at least one browser screenshot for visual changes.
+- For UI-affecting changes, generate the complete responsive visual matrix and inspect its screenshots before merge; key screens should include a viewport/first-fold capture and a full-page capture where practical.
+- Confirm horizontal overflow is absent across the responsive visual matrix unless a component explicitly requires horizontal scrolling.
 - Confirm console/page errors are zero in the relevant browser audit.
 - Confirm important persistence behavior after reload if localStorage/PWA state is involved.
 - Do not merge while relevant CI is red.
@@ -100,6 +103,6 @@ Before saying a task is finished, verify:
 - [ ] No unnecessary observer/hotfix/runtime layer was added.
 - [ ] New behavior was browser-tested where applicable.
 - [ ] Relevant existing CI passed.
-- [ ] Visual change was inspected.
+- [ ] Responsive portrait/landscape and mobile/desktop screenshots were inspected for UI-affecting work.
 - [ ] PR merged only after checks passed.
 - [ ] Production deploy/route health was checked when relevant.
