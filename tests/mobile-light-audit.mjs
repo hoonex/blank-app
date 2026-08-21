@@ -5,11 +5,6 @@ const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173/';
 const OUT=process.env.FLOW_TEST_OUT||'browser-audit-artifacts';
 await fs.mkdir(OUT,{recursive:true});
 
-const edgeConfigResponse=await fetch('https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-site/?__flow_config=1',{signal:AbortSignal.timeout(10000)});
-if(!edgeConfigResponse.ok)throw new Error(`Edge config probe failed: ${edgeConfigResponse.status}`);
-const edgeConfig=await edgeConfigResponse.json();
-console.log(`FLOW_EDGE_ENV_STATUS ${JSON.stringify(edgeConfig)}`);
-
 const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청'},grade:2,className:'6'};
 const browser=await chromium.launch({headless:true,args:['--force-dark-mode','--enable-features=WebContentsForceDark']});
 const context=await browser.newContext({viewport:{width:412,height:915},deviceScaleFactor:1,isMobile:true,hasTouch:true,locale:'ko-KR',colorScheme:'dark'});
