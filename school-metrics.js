@@ -6,6 +6,7 @@ const SEEN_KEY = 'flow-school-seen-v1';
 const KAKAO_PLACE_CACHE_PREFIX = 'flow-school-kakao-place-v1:';
 const SCHOOL_PROFILE_KEY = 'flow-school-profile-v3';
 const SCHOOL_LOGO_CACHE_PREFIX = 'flow-school-logo-fallback-v3:';
+const SCHOOL_LOGO_MISS_TTL = 24 * 86400000;
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
 for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
@@ -190,7 +191,8 @@ async function fetchSchoolLogoData(homepage) {
     const url = new URL(SCHOOL_LOGO_EDGE);
     url.searchParams.set('host', host);
     const response = await fetch(url, { cache: 'force-cache' });
-    if (!response.ok || response.status === 204) return null;
+    if (response.status === 204) return { miss: true };
+    if (!response.ok) return null;
     const type = response.headers.get('content-type') || '';
     if (!type.toLowerCase().startsWith('image/')) return null;
     const blob = await response.blob();
@@ -200,6 +202,9 @@ async function fetchSchoolLogoData(homepage) {
     return { dataUrl, source: response.headers.get('x-flow-logo-source') || 'logo-proxy' };
   } catch { return null; }
 }
+
+let schoolLogoRecoveryPromise = null;
+let schoolLogoRecoveryTimer = null;
 
 async function recoverSchoolLogo({ force = false } = {}) {
   const profile = schoolLogoProfile();
@@ -213,18 +218,31 @@ async function recoverSchoolLogo({ force = false } = {}) {
     if (cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
       return applySchoolLogo(cached.dataUrl, cached.source || 'cached-logo-proxy');
     }
+    if (!force && cached?.missAt && Date.now() - Number(cached.missAt || 0) < SCHOOL_LOGO_MISS_TTL) return false;
   } catch {}
 
-  const hit = await fetchSchoolLogoData(school.homepage);
-  if (!hit) return false;
-  try { localStorage.setItem(cacheKey, JSON.stringify({ ...hit, savedAt: Date.now() })); } catch {}
-  return applySchoolLogo(hit.dataUrl, hit.source);
+  if (!force && schoolLogoRecoveryPromise) return schoolLogoRecoveryPromise;
+  const run = (async () => {
+    const hit = await fetchSchoolLogoData(school.homepage);
+    if (hit?.miss) {
+      try { localStorage.setItem(cacheKey, JSON.stringify({ missAt: Date.now() })); } catch {}
+      return false;
+    }
+    if (!hit?.dataUrl) return false;
+    try { localStorage.setItem(cacheKey, JSON.stringify({ ...hit, savedAt: Date.now() })); } catch {}
+    return applySchoolLogo(hit.dataUrl, hit.source);
+  })();
+  if (!force) schoolLogoRecoveryPromise = run;
+  try { return await run; }
+  finally { if (!force && schoolLogoRecoveryPromise === run) schoolLogoRecoveryPromise = null; }
 }
 
-function scheduleSchoolLogoRecovery() {
-  for (const delay of [1400, 5200, 9000]) {
-    setTimeout(() => { if (!schoolLogoLoaded()) void recoverSchoolLogo(); }, delay);
-  }
+function scheduleSchoolLogoRecovery(delay = 5200) {
+  clearTimeout(schoolLogoRecoveryTimer);
+  schoolLogoRecoveryTimer = setTimeout(() => {
+    schoolLogoRecoveryTimer = null;
+    if (!schoolLogoLoaded()) void recoverSchoolLogo();
+  }, delay);
 }
 
 if (schoolLogoProfile()) scheduleSchoolLogoRecovery();
@@ -271,9 +289,6 @@ document.addEventListener('click', (event) => {
   else if (event.target.closest?.('#shareTimetableBtn')) track('timetable_share');
   else if (event.target.closest?.('[data-flow-mode-switch="university"]')) track('mode_switch');
 
-  if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) {
-    scheduleKakaoMapHydration();
-    setTimeout(() => void recoverSchoolLogo(), 650);
-  }
+  if (event.target.closest?.('[data-view="school"], [data-go-view="school"]')) scheduleKakaoMapHydration();
   if (event.target.closest?.('#setupSave')) setTimeout(scheduleSchoolLogoRecovery, 250);
 }, { passive: true });
