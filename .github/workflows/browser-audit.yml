@@ -21,6 +21,12 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Verify official school media parser
+        run: |
+          node --check supabase/functions/_shared/school-media-parser.js
+          node --check tests/school-media-parser-audit.mjs
+          node tests/school-media-parser-audit.mjs
+
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
