@@ -31,6 +31,9 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
   .landing-header-actions .neo-button.compact{min-height:34px;padding:0 9px;font-size:.61rem}
 }
 
+/* The visible 58px search field is also the actual input hit area. */
+.search-box input{align-self:stretch!important;height:auto!important}
+
 /* Search results belong below the field; they should never cover the input itself. */
 .school-search-panel>.search-results{
   position:relative!important;
