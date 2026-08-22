@@ -37,6 +37,10 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 .backup-actions .soft-button{box-shadow:none;background:var(--surface)}
 .danger-quiet{color:#a34750;background:#fff2f3;box-shadow:none}
 
+@media (hover:none) and (pointer:coarse){
+  .brand{min-height:40px;align-items:center!important}
+}
+
 @media(max-width:820px){
   html[data-theme="light"] .mobile-header{background:rgba(245,246,248,.985)!important}
   html[data-theme="light"] .bottom-nav{background:rgba(255,255,255,.985)!important}
