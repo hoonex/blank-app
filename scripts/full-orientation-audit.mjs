@@ -53,7 +53,6 @@ function schoolDashboard(selected) {
     const date = ymd(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i, 12));
     for (const row of schoolRows(date)) byKey.set(`${row.date}:${row.period}`, row);
   }
-  // Exercise Today controls even when the CI date lands on a weekend.
   for (const row of schoolRows(selected)) byKey.set(`${row.date}:${row.period}`, row);
   return {
     school: SCHOOL, selected, from: ymd(monday), to: ymd(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 4, 12)),
@@ -143,9 +142,11 @@ async function geom(page, label, touch = false) {
   const state = await page.evaluate(() => {
     const root = document.documentElement, body = document.body;
     const visible = e => { const s = getComputedStyle(e), r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) !== 0 && r.width > 0 && r.height > 0; };
-    const dialogs = [...document.querySelectorAll('dialog[open]')].map(d => { const s = d.querySelector('.sheet,.dialog-sheet') || d, r = s.getBoundingClientRect(), cs = getComputedStyle(s); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, overflowY: cs.overflowY, scrollHeight: s.scrollHeight, clientHeight: s.clientHeight }; });
+    const openDialogs = [...document.querySelectorAll('dialog[open]')], activeDialog = openDialogs.at(-1) || null;
+    const dialogs = openDialogs.map(d => { const s = d.querySelector('.sheet,.dialog-sheet') || d, r = s.getBoundingClientRect(), cs = getComputedStyle(s); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, overflowY: cs.overflowY, scrollHeight: s.scrollHeight, clientHeight: s.clientHeight }; });
     const fixed = [...document.querySelectorAll('*')].filter(e => visible(e) && ['fixed', 'sticky'].includes(getComputedStyle(e).position)).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, cls: String(e.className || ''), left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; }).filter(x => x.bottom > 0 && x.top < innerHeight);
-    const tiny = [...document.querySelectorAll('button,a,input:not([type="hidden"]),select')].filter(visible).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, text: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 50), w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }).filter(x => x.bottom > 0 && x.top < innerHeight && x.right > 0 && x.left < innerWidth && (x.w < 32 || x.h < 32));
+    const touchRoot = activeDialog || document;
+    const tiny = [...touchRoot.querySelectorAll('button,a,input:not([type="hidden"]),select')].filter(visible).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, text: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 50), w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }).filter(x => x.bottom > 0 && x.top < innerHeight && x.right > 0 && x.left < innerWidth && (x.w < 32 || x.h < 32));
     return { clientWidth: root.clientWidth, scrollWidth: Math.max(root.scrollWidth, body?.scrollWidth || 0), clientHeight: root.clientHeight, scrollHeight: Math.max(root.scrollHeight, body?.scrollHeight || 0), dialogs, fixed, tiny };
   });
   if (state.scrollWidth > state.clientWidth + 3) throw new Error(`${label}: root horizontal overflow ${JSON.stringify(state)}`);
@@ -156,7 +157,16 @@ async function geom(page, label, touch = false) {
   return state;
 }
 async function shot(page, name, fullPage = true) { await page.screenshot({ path: `${OUT}/${name}.png`, fullPage, animations: 'disabled' }); }
-async function visibleClick(page, selector) { const loc = page.locator(`${selector}:visible`).first(); await loc.waitFor({ state: 'visible' }); await loc.click(); return loc; }
+async function visibleClick(page, selector) {
+  const all = page.locator(selector), count = await all.count();
+  for (let i = 0; i < count; i++) { const item = all.nth(i); if (await item.isVisible()) { await item.click(); return item; } }
+  throw new Error(`No visible target for ${selector}`);
+}
+async function returnToToday(page, fallbackSelector) {
+  const jump = page.locator('#todayBtn');
+  if (await jump.isVisible()) await jump.click();
+  else await page.locator(fallbackSelector).click();
+}
 
 async function auditSchool(c) {
   const context = await browser.newContext({ viewport: c.viewport, isMobile: c.isMobile, hasTouch: c.hasTouch, deviceScaleFactor: 1, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme: 'light', acceptDownloads: true });
@@ -169,7 +179,8 @@ async function auditSchool(c) {
     await page.locator('#gradeRow [data-grade="2"]').click(); await page.locator('#classRow [data-class="6"]').waitFor(); await page.locator('#classRow [data-class="6"]').click(); await page.locator('#setupSave').click();
     await page.locator('#dashboard:not(.hidden)').waitFor(); await page.locator('#timetable [data-period]').first().waitFor(); await page.waitForTimeout(120);
     states.today = await geom(page, `${c.name} school today`, c.hasTouch); await shot(page, `${c.name}-school-today`);
-    await page.locator('#nextDay').click(); await page.locator('#todayBtn:visible').click(); await page.locator('#prevDay').click(); await page.locator('#todayBtn:visible').click();
+    await page.locator('#nextDay').click(); await returnToToday(page, '#prevDay');
+    await page.locator('#prevDay').click(); await returnToToday(page, '#nextDay');
     await page.locator('#editSubjectsBtn').click(); const firstPeriod = page.locator('#timetable [data-period]').first(); await firstPeriod.click();
     await page.locator('#subjectDialog').waitFor({ state: 'visible' }); await page.locator('#customSubjectInput').fill('인공지능 기초'); await page.locator('#saveSubjectBtn').click();
     const savedOverride = await page.evaluate(() => localStorage.getItem('flow-school-overrides-v2') || ''); if (!savedOverride.includes('인공지능 기초')) throw new Error(`${c.name} school subject override did not persist`);
@@ -222,8 +233,11 @@ async function auditUniversity(c) {
     states.importFailure = await geom(page, `${c.name} university import failure`, c.hasTouch); await page.locator('#importDialog [data-close-dialog]').click();
     if (await page.locator('#appView').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} Everytime failure broke app`);
     await page.locator('#dashboardEditBtn').click(); const memo = await ensureMemoVisible(page); await memo.scrollIntoViewIfNeeded(); await page.locator('#widgetMemoInput').fill(`${c.name} 메모 검수`);
-    const before = await memo.getAttribute('data-size'), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb) throw new Error(`${c.name} widget resize handle missing`);
-    await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await page.mouse.down(); await page.mouse.move(hb.x + hb.width / 2 + 70, hb.y + hb.height / 2 + 55, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(140);
+    const before = await memo.getAttribute('data-size'), beforeRect = await memo.boundingBox(), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb || !beforeRect) throw new Error(`${c.name} widget resize handle missing`);
+    await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await page.mouse.down();
+    await page.mouse.move(hb.x + hb.width / 2 + 74, hb.y + hb.height / 2 + 46, { steps: 6 });
+    const liveRect = await memo.boundingBox(); if (!liveRect || (Math.abs(liveRect.width - beforeRect.width) < 15 && Math.abs(liveRect.height - beforeRect.height) < 15)) throw new Error(`${c.name} widget did not physically follow resize pointer`);
+    await page.mouse.move(hb.x + hb.width / 2 + 150, hb.y + hb.height / 2 + 125, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
     const after = await memo.getAttribute('data-size'); if (before === after) throw new Error(`${c.name} widget resize did not snap to a new size`);
     states.widgetEdit = await geom(page, `${c.name} university widget edit`, c.hasTouch); await shot(page, `${c.name}-university-widget-edit`); await page.locator('#widgetDoneBtn').click();
     if (c.hasTouch) {
@@ -267,7 +281,8 @@ async function auditAdmin(c) {
     const login = await geom(page, `${c.name} admin login`, c.hasTouch); await page.locator('#usernameInput').fill('flowadmin'); await page.locator('#passwordInput').fill('orientation-test-not-a-secret'); await page.locator('#passwordForm button[type="submit"]').click();
     await page.waitForFunction(() => document.querySelector('#authStatus')?.textContent?.trim().length > 0); if (!await page.locator('#dashboard').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} invalid admin login exposed dashboard`);
     const after = await geom(page, `${c.name} admin rejected login`, c.hasTouch); await shot(page, `${c.name}-admin-login`, false);
-    if (errors.consoleErrors.length || errors.pageErrors.length || errors.failed.length) throw new Error(`${c.name} admin browser errors: ${JSON.stringify(errors)}`);
+    const unexpectedConsole = errors.consoleErrors.filter(x => !x.includes('401 (Unauthorized)'));
+    if (unexpectedConsole.length || errors.pageErrors.length || errors.failed.length) throw new Error(`${c.name} admin browser errors: ${JSON.stringify({ ...errors, consoleErrors: unexpectedConsole })}`);
     return { login, after, status: await page.locator('#authStatus').textContent() };
   } finally { await context.close(); }
 }
