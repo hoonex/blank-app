@@ -40,9 +40,9 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 .backup-actions .soft-button{box-shadow:none;background:var(--surface)}
 .danger-quiet{color:#a34750;background:#fff2f3;box-shadow:none}
 
-/* School and University share the same wide landing baseline. */
+/* School and University share the same wide landing header baseline. */
 @media(min-width:821px){
-  .setup-main{position:relative;top:4px}
+  .setup-header{min-height:40px!important}
 }
 
 @media (hover:none) and (pointer:coarse){
