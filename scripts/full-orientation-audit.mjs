@@ -311,7 +311,7 @@ async function auditUniversity(c) {
     const backup = await page.evaluate(() => ({ type: 'flow-university-backup', version: 1, profile: JSON.parse(localStorage.getItem('flow-university-profile-v1')), timetable: JSON.parse(localStorage.getItem('flow-university-timetable-v1')), major: JSON.parse(localStorage.getItem('flow-university-major-v1')), theme: 'light' }));
     await page.locator('#backupFileInput').setInputFiles({ name: 'flow-orientation-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) }); await page.waitForFunction(() => document.querySelector('#toast')?.textContent?.includes('백업'));
     if ((await page.locator('[data-flow-mode-switch="school"]').first().getAttribute('href')) !== '/') throw new Error(`${c.name} university mode switch href is wrong`);
-    if (await page.locator('#changeDialog').evaluate(d => d.open)) await page.locator('#changeDialog [data-close-dialog]').click();
+    await page.locator('#changeDialog').evaluate(d => { if (d.open) d.close(); });
     await visibleClick(page, '#changeUniversityBtn,#mobileSchoolBtn'); await page.locator('#clearUniversityBtn').click(); await page.locator('#setupView:not(.hidden)').waitFor();
     assertNoBrowserErrors(`${c.name} university`, errors, ['502 (Bad Gateway)']);
     return { states, errors, widgetResize: { before, after, settled: resizeSettled }, scrollState };
