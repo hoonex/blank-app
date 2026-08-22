@@ -270,7 +270,9 @@ async function auditUniversity(c) {
     const before = await memo.getAttribute('data-size'), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb) throw new Error(`${c.name} widget resize handle missing`);
     const cx = hb.x + hb.width / 2, cy = hb.y + hb.height / 2, dx = Math.max(120, Math.min(340, c.viewport.width - cx - 8)), dy = Math.max(100, Math.min(240, c.viewport.height - cy - 8));
     await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + Math.min(90, dx), cy + Math.min(60, dy), { steps: 6 }); await page.mouse.move(cx + dx, cy + dy, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
-    const after = await memo.getAttribute('data-size'); if (before === after) throw new Error(`${c.name} widget resize did not snap to a new size`);
+    const after = await memo.getAttribute('data-size');
+    const resizeSettled = await page.evaluate(() => { const e = document.querySelector('[data-widget-id="memo"]'); return { position: e ? getComputedStyle(e).position : '', placeholders: document.querySelectorAll('.widget-resize-placeholder').length, resizing: e?.hasAttribute('data-direct-resizing') || false }; });
+    if (resizeSettled.position === 'fixed' || resizeSettled.placeholders || resizeSettled.resizing) throw new Error(`${c.name} widget resize did not settle: ${JSON.stringify(resizeSettled)}`);
     states.widgetEdit = await geom(page, `${c.name} university widget edit`, c.hasTouch); await shot(page, `${c.name}-university-widget-edit`); await page.locator('#widgetDoneBtn').click();
     if (c.hasTouch) {
       const campusWidget = page.locator('[data-widget-id="campus"]');
@@ -309,9 +311,10 @@ async function auditUniversity(c) {
     const backup = await page.evaluate(() => ({ type: 'flow-university-backup', version: 1, profile: JSON.parse(localStorage.getItem('flow-university-profile-v1')), timetable: JSON.parse(localStorage.getItem('flow-university-timetable-v1')), major: JSON.parse(localStorage.getItem('flow-university-major-v1')), theme: 'light' }));
     await page.locator('#backupFileInput').setInputFiles({ name: 'flow-orientation-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) }); await page.waitForFunction(() => document.querySelector('#toast')?.textContent?.includes('백업'));
     if ((await page.locator('[data-flow-mode-switch="school"]').first().getAttribute('href')) !== '/') throw new Error(`${c.name} university mode switch href is wrong`);
-    await page.locator('#changeDialog [data-close-dialog]').click(); await visibleClick(page, '#changeUniversityBtn,#mobileSchoolBtn'); await page.locator('#clearUniversityBtn').click(); await page.locator('#setupView:not(.hidden)').waitFor();
+    if (await page.locator('#changeDialog').evaluate(d => d.open)) await page.locator('#changeDialog [data-close-dialog]').click();
+    await visibleClick(page, '#changeUniversityBtn,#mobileSchoolBtn'); await page.locator('#clearUniversityBtn').click(); await page.locator('#setupView:not(.hidden)').waitFor();
     assertNoBrowserErrors(`${c.name} university`, errors, ['502 (Bad Gateway)']);
-    return { states, errors, widgetResize: { before, after }, scrollState };
+    return { states, errors, widgetResize: { before, after, settled: resizeSettled }, scrollState };
   } finally { await context.close(); }
 }
 
