@@ -14,6 +14,9 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 .sidebar>.brand{margin:5px 4px 27px}
 .mobile-header .brand-word{font-size:1.24rem}
 
+/* The visible search control should expose its full height as the input hit area. */
+.search-field input{align-self:stretch!important;height:auto!important}
+
 .schedule-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .schedule-actions .soft-button{white-space:nowrap}
 .personal-button{background:#e8edfb;color:#3159b7}
