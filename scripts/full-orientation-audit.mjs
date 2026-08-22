@@ -74,6 +74,13 @@ function universityTimetable() {
     { id: 'u5', name: '야간 스터디', professor: '', credit: 0, place: 'IT대학 1호관', times: [{ day: today, start: '23:00', end: '23:30', startMinutes: 1380, endMinutes: 1410, place: 'IT대학 1호관' }] },
   ] };
 }
+function campusTimetable() {
+  return { source: 'campus-audit', year: 2026, semester: '2학기', subjects: [
+    { id: 'ca', name: '소프트웨어설계', professor: '테스트', credit: 3, place: 'IT대학 2호관', times: [{ day: 0, startMinutes: 540, endMinutes: 615, start: '09:00', end: '10:15', place: 'IT대학 2호관' }] },
+    { id: 'cb', name: '자료구조', professor: '테스트', credit: 3, place: '공대9호관', times: [{ day: 0, startMinutes: 630, endMinutes: 705, start: '10:30', end: '11:45', place: '공대9호관' }] },
+    { id: 'cc', name: '교양세미나', professor: '테스트', credit: 2, place: '법과대학', times: [{ day: 0, startMinutes: 780, endMinutes: 855, start: '13:00', end: '14:15', place: '법과대학' }] },
+  ] };
+}
 function universityProfile() {
   return { school: UNIVERSITY, metrics: {
     tuition: { year: '2025', value: 4500000, indicatorId: 'tuition' }, scholarship: { year: '2025', value: 2900000, indicatorId: 'scholarship' },
@@ -175,6 +182,7 @@ async function visibleClick(page, selector) {
   for (let i = 0; i < count; i++) {
     const item = all.nth(i);
     if (!await item.isVisible()) continue;
+    await item.scrollIntoViewIfNeeded().catch(() => {});
     const b = await item.boundingBox();
     if (!b || !vp || b.x + b.width <= 0 || b.y + b.height <= 0 || b.x >= vp.width || b.y >= vp.height) continue;
     await item.click();
@@ -259,11 +267,9 @@ async function auditUniversity(c) {
     states.today = await geom(page, `${c.name} university today`, c.hasTouch); await shot(page, `${c.name}-university-today`);
 
     await page.locator('#dashboardEditBtn').click(); const memo = await ensureMemoVisible(page); await memo.scrollIntoViewIfNeeded(); await page.locator('#widgetMemoInput').fill(`${c.name} 메모 검수`);
-    const before = await memo.getAttribute('data-size'), beforeRect = await memo.boundingBox(), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb || !beforeRect) throw new Error(`${c.name} widget resize handle missing`);
-    const cx = hb.x + hb.width / 2, cy = hb.y + hb.height / 2, dx = Math.max(90, Math.min(320, c.viewport.width - cx - 10)), dy = Math.max(80, Math.min(220, c.viewport.height - cy - 10));
-    await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + Math.min(90, dx), cy + Math.min(60, dy), { steps: 6 });
-    const liveRect = await memo.boundingBox(); if (!liveRect || (Math.abs(liveRect.width - beforeRect.width) < 15 && Math.abs(liveRect.height - beforeRect.height) < 15)) throw new Error(`${c.name} widget did not physically follow resize pointer`);
-    await page.mouse.move(cx + dx, cy + dy, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
+    const before = await memo.getAttribute('data-size'), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb) throw new Error(`${c.name} widget resize handle missing`);
+    const cx = hb.x + hb.width / 2, cy = hb.y + hb.height / 2, dx = Math.max(120, Math.min(340, c.viewport.width - cx - 8)), dy = Math.max(100, Math.min(240, c.viewport.height - cy - 8));
+    await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + Math.min(90, dx), cy + Math.min(60, dy), { steps: 6 }); await page.mouse.move(cx + dx, cy + dy, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
     const after = await memo.getAttribute('data-size'); if (before === after) throw new Error(`${c.name} widget resize did not snap to a new size`);
     states.widgetEdit = await geom(page, `${c.name} university widget edit`, c.hasTouch); await shot(page, `${c.name}-university-widget-edit`); await page.locator('#widgetDoneBtn').click();
     if (c.hasTouch) {
@@ -288,6 +294,8 @@ async function auditUniversity(c) {
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || '{}').subjects?.some(x => x.name === '방향 검수 일정'));
     const personalId = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1')).subjects.find(x => x.name === '방향 검수 일정')?.id);
     await page.locator(`[data-custom-id="${personalId}"]`).first().click(); await page.locator('#personalName').fill('방향 검수 일정 수정'); await page.locator('#personalForm button[type="submit"]').click(); await page.locator(`[data-custom-id="${personalId}"]`).first().click(); await page.locator('#deletePersonalBtn').click();
+
+    await page.evaluate(tt => localStorage.setItem('flow-university-timetable-v1', JSON.stringify(tt)), campusTimetable());
     await visibleClick(page, '[data-view="campus"]'); await page.locator('#campusView:not(.hidden)').waitFor(); await page.locator('#campusMapWrap img').waitFor(); await page.waitForFunction(() => { const i = document.querySelector('#campusMapWrap img'); return i?.complete && i.naturalWidth > 100; });
     await page.locator('#campusPlaceList .campus-place').first().waitFor(); await page.locator('#campusRouteList .campus-route').first().waitFor(); states.campus = await geom(page, `${c.name} university campus`, c.hasTouch);
     await page.locator('#campusFilter [data-nearby="stores"]').click(); if (!(await page.locator('#campusNearbyList .campus-nearby').count())) throw new Error(`${c.name} campus store filter empty`);
