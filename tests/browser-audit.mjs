@@ -57,9 +57,19 @@ for(const testCase of cases){
   try{
     await page.addInitScript(({profile})=>{
       localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.removeItem('flow-school-profile-v2');
-      window.__flowAudit={longTasks:[],mutations:0};
+      window.__flowAudit={longTasks:[],mutations:0,unexpectedMutations:0};
       try{new PerformanceObserver(list=>{for(const entry of list.getEntries())window.__flowAudit.longTasks.push({start:entry.startTime,duration:entry.duration})}).observe({type:'longtask',buffered:true})}catch{}
-      addEventListener('DOMContentLoaded',()=>{const root=document.querySelector('#dashboard');if(root)new MutationObserver(records=>{window.__flowAudit.mutations+=records.length}).observe(root,{childList:true,subtree:true,attributes:true})},{once:true});
+      addEventListener('DOMContentLoaded',()=>{
+        const root=document.querySelector('#dashboard');
+        if(!root)return;
+        new MutationObserver(records=>{
+          window.__flowAudit.mutations+=records.length;
+          window.__flowAudit.unexpectedMutations+=records.filter(record=>{
+            const target=record.target?.nodeType===1?record.target:record.target?.parentElement;
+            return !target?.closest?.('.clock-card,#csatPill');
+          }).length;
+        }).observe(root,{childList:true,subtree:true,attributes:true});
+      },{once:true});
     },{profile});
 
     const started=Date.now();await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});await page.waitForTimeout(2500);result.loadMs=Date.now()-started;
@@ -88,9 +98,9 @@ for(const testCase of cases){
     if(await dotted.count()){await dotted.click();await page.waitForTimeout(350)}
     result.scheduleState=await page.evaluate(()=>({path:location.pathname,selectedDays:document.querySelectorAll('.calendar-day.selected').length,selectedPanel:document.querySelector('#selectedDayPanel')?.textContent?.trim()||'',scheduleVisible:!document.querySelector('[data-view-panel="schedule"]')?.classList.contains('hidden')}));
 
-    await selectTab('today');const idleStart=await page.evaluate(()=>window.__flowAudit?.mutations||0);await page.waitForTimeout(2000);const idleEnd=await page.evaluate(()=>window.__flowAudit?.mutations||0);result.idleMutations2s=idleEnd-idleStart;
+    await selectTab('today');const idleStart=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);await page.waitForTimeout(2000);const idleEnd=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);result.idleMutations2s=idleEnd-idleStart;
 
-    result.metrics=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,domNodes:document.getElementsByTagName('*').length,stylesheets:document.styleSheets.length,scripts:document.scripts.length,longTasks:window.__flowAudit?.longTasks||[],mutationCount:window.__flowAudit?.mutations||0,navCount:document.querySelectorAll('[data-view]').length}));
+    result.metrics=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,domNodes:document.getElementsByTagName('*').length,stylesheets:document.styleSheets.length,scripts:document.scripts.length,longTasks:window.__flowAudit?.longTasks||[],mutationCount:window.__flowAudit?.mutations||0,unexpectedMutationCount:window.__flowAudit?.unexpectedMutations||0,navCount:document.querySelectorAll('[data-view]').length}));
     await page.screenshot({path:`${OUT}/${testCase.name}-today.png`,fullPage:true});await selectTab('week');await page.screenshot({path:`${OUT}/${testCase.name}-week.png`,fullPage:true});await selectTab('schedule');await page.screenshot({path:`${OUT}/${testCase.name}-schedule.png`,fullPage:true});
 
     const latencies=result.tabLatencies.map(x=>x.ms).filter(Number.isFinite).sort((a,b)=>a-b);result.tabP95Ms=latencies.length?latencies[Math.max(0,Math.ceil(latencies.length*.95)-1)]:null;
