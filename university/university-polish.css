@@ -40,6 +40,11 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 .backup-actions .soft-button{box-shadow:none;background:var(--surface)}
 .danger-quiet{color:#a34750;background:#fff2f3;box-shadow:none}
 
+/* School and University share the same wide landing baseline. */
+@media(min-width:821px){
+  .setup-main{position:relative;top:4px}
+}
+
 @media (hover:none) and (pointer:coarse){
   .brand{min-height:40px;align-items:center!important}
 }
@@ -50,6 +55,7 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 
   /* Keep School / University landing header geometry identical on mobile. */
   .setup-header{height:44px!important;min-height:44px!important}
+  .mobile-header .brand{min-height:40px!important;align-items:center!important}
 
   .main{padding-top:76px!important}
   .view-header{margin:8px 3px 16px!important;gap:10px!important}
