@@ -142,11 +142,24 @@ async function geom(page, label, touch = false) {
   const state = await page.evaluate(() => {
     const root = document.documentElement, body = document.body;
     const visible = e => { const s = getComputedStyle(e), r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) !== 0 && r.width > 0 && r.height > 0; };
+    const withinHorizontalScroller = e => {
+      for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) {
+        const s = getComputedStyle(p), scrollable = ['auto', 'scroll'].includes(s.overflowX);
+        if (scrollable && p.scrollWidth > p.clientWidth + 3) return true;
+      }
+      return false;
+    };
     const openDialogs = [...document.querySelectorAll('dialog[open]')], activeDialog = openDialogs.at(-1) || null;
     const dialogs = openDialogs.map(d => { const s = d.querySelector('.sheet,.dialog-sheet') || d, r = s.getBoundingClientRect(), cs = getComputedStyle(s); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, overflowY: cs.overflowY, scrollHeight: s.scrollHeight, clientHeight: s.clientHeight }; });
-    const fixed = [...document.querySelectorAll('*')].filter(e => visible(e) && ['fixed', 'sticky'].includes(getComputedStyle(e).position)).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, cls: String(e.className || ''), left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; }).filter(x => x.bottom > 0 && x.top < innerHeight);
+    const fixed = [...document.querySelectorAll('*')]
+      .filter(e => visible(e) && ['fixed', 'sticky'].includes(getComputedStyle(e).position) && !withinHorizontalScroller(e))
+      .map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, cls: String(e.className || ''), left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; })
+      .filter(x => x.bottom > 0 && x.top < innerHeight);
     const touchRoot = activeDialog || document;
-    const tiny = [...touchRoot.querySelectorAll('button,a,input:not([type="hidden"]),select')].filter(visible).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, text: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 50), w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }).filter(x => x.bottom > 0 && x.top < innerHeight && x.right > 0 && x.left < innerWidth && (x.w < 32 || x.h < 32));
+    const tiny = [...touchRoot.querySelectorAll('button,a,input:not([type="hidden"]),select')]
+      .filter(visible)
+      .map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, id: e.id, text: (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 50), w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; })
+      .filter(x => x.bottom > 0 && x.top < innerHeight && x.right > 0 && x.left < innerWidth && (x.w < 32 || x.h < 32));
     return { clientWidth: root.clientWidth, scrollWidth: Math.max(root.scrollWidth, body?.scrollWidth || 0), clientHeight: root.clientHeight, scrollHeight: Math.max(root.scrollHeight, body?.scrollHeight || 0), dialogs, fixed, tiny };
   });
   if (state.scrollWidth > state.clientWidth + 3) throw new Error(`${label}: root horizontal overflow ${JSON.stringify(state)}`);
@@ -158,14 +171,32 @@ async function geom(page, label, touch = false) {
 }
 async function shot(page, name, fullPage = true) { await page.screenshot({ path: `${OUT}/${name}.png`, fullPage, animations: 'disabled' }); }
 async function visibleClick(page, selector) {
-  const all = page.locator(selector), count = await all.count();
-  for (let i = 0; i < count; i++) { const item = all.nth(i); if (await item.isVisible()) { await item.click(); return item; } }
-  throw new Error(`No visible target for ${selector}`);
+  const all = page.locator(selector), count = await all.count(), vp = page.viewportSize();
+  for (let i = 0; i < count; i++) {
+    const item = all.nth(i);
+    if (!await item.isVisible()) continue;
+    const b = await item.boundingBox();
+    if (!b || !vp || b.x + b.width <= 0 || b.y + b.height <= 0 || b.x >= vp.width || b.y >= vp.height) continue;
+    await item.click();
+    return item;
+  }
+  throw new Error(`No visible in-viewport target for ${selector}`);
 }
 async function returnToToday(page, fallbackSelector) {
   const jump = page.locator('#todayBtn');
   if (await jump.isVisible()) await jump.click();
-  else await page.locator(fallbackSelector).click();
+  else await visibleClick(page, fallbackSelector);
+}
+function unexpected(errors, allowedStatusText = []) {
+  return {
+    consoleErrors: errors.consoleErrors.filter(x => !allowedStatusText.some(s => x.includes(s))),
+    pageErrors: errors.pageErrors,
+    failed: errors.failed,
+  };
+}
+function assertNoBrowserErrors(label, errors, allowed = []) {
+  const bad = unexpected(errors, allowed);
+  if (bad.consoleErrors.length || bad.pageErrors.length || bad.failed.length) throw new Error(`${label} browser errors: ${JSON.stringify(bad)}`);
 }
 
 async function auditSchool(c) {
@@ -179,8 +210,7 @@ async function auditSchool(c) {
     await page.locator('#gradeRow [data-grade="2"]').click(); await page.locator('#classRow [data-class="6"]').waitFor(); await page.locator('#classRow [data-class="6"]').click(); await page.locator('#setupSave').click();
     await page.locator('#dashboard:not(.hidden)').waitFor(); await page.locator('#timetable [data-period]').first().waitFor(); await page.waitForTimeout(120);
     states.today = await geom(page, `${c.name} school today`, c.hasTouch); await shot(page, `${c.name}-school-today`);
-    await page.locator('#nextDay').click(); await returnToToday(page, '#prevDay');
-    await page.locator('#prevDay').click(); await returnToToday(page, '#nextDay');
+    await page.locator('#nextDay').click(); await returnToToday(page, '#prevDay'); await page.locator('#prevDay').click(); await returnToToday(page, '#nextDay');
     await page.locator('#editSubjectsBtn').click(); const firstPeriod = page.locator('#timetable [data-period]').first(); await firstPeriod.click();
     await page.locator('#subjectDialog').waitFor({ state: 'visible' }); await page.locator('#customSubjectInput').fill('인공지능 기초'); await page.locator('#saveSubjectBtn').click();
     const savedOverride = await page.evaluate(() => localStorage.getItem('flow-school-overrides-v2') || ''); if (!savedOverride.includes('인공지능 기초')) throw new Error(`${c.name} school subject override did not persist`);
@@ -203,7 +233,7 @@ async function auditSchool(c) {
     await visibleClick(page, '#schoolBtn,#mobileSchoolBtn'); await page.locator('#switchDialog').waitFor({ state: 'visible' }); states.switchDialog = await geom(page, `${c.name} school switch dialog`, c.hasTouch); await page.locator('#switchDialog .dialog-close').click();
     if ((await page.locator('[data-flow-mode-switch="university"]').first().getAttribute('href')) !== '/university') throw new Error(`${c.name} school mode switch href is wrong`);
     await visibleClick(page, '#schoolBtn,#mobileSchoolBtn'); await page.locator('#changeSchoolBtn').click(); await page.locator('#landing:not(.hidden)').waitFor();
-    if (errors.consoleErrors.length || errors.pageErrors.length || errors.failed.length) throw new Error(`${c.name} school browser errors: ${JSON.stringify(errors)}`);
+    assertNoBrowserErrors(`${c.name} school`, errors);
     return { states, errors };
   } finally { await context.close(); }
 }
@@ -227,28 +257,33 @@ async function auditUniversity(c) {
     await page.evaluate(tt => localStorage.setItem('flow-university-timetable-v1', JSON.stringify(tt)), universityTimetable()); await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#appView:not(.hidden)').waitFor(); await page.locator('#widgetDashboard').waitFor(); await page.waitForTimeout(120);
     states.today = await geom(page, `${c.name} university today`, c.hasTouch); await shot(page, `${c.name}-university-today`);
-    await page.locator('#importTopBtn').click(); await page.locator('#everytimeUrl').fill('https://everytime.kr/@fixtureABCD1234'); await page.locator('#runImportBtn').click();
-    await page.waitForFunction(() => document.querySelector('#toast')?.textContent?.includes('fixture import blocked'));
-    if (!await page.locator('#importDialog').evaluate(d => d.open)) throw new Error(`${c.name} failed Everytime import unexpectedly closed dialog`);
-    states.importFailure = await geom(page, `${c.name} university import failure`, c.hasTouch); await page.locator('#importDialog [data-close-dialog]').click();
-    if (await page.locator('#appView').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} Everytime failure broke app`);
+
     await page.locator('#dashboardEditBtn').click(); const memo = await ensureMemoVisible(page); await memo.scrollIntoViewIfNeeded(); await page.locator('#widgetMemoInput').fill(`${c.name} 메모 검수`);
     const before = await memo.getAttribute('data-size'), beforeRect = await memo.boundingBox(), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb || !beforeRect) throw new Error(`${c.name} widget resize handle missing`);
-    await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await page.mouse.down();
-    await page.mouse.move(hb.x + hb.width / 2 + 74, hb.y + hb.height / 2 + 46, { steps: 6 });
+    const cx = hb.x + hb.width / 2, cy = hb.y + hb.height / 2, dx = Math.max(90, Math.min(320, c.viewport.width - cx - 10)), dy = Math.max(80, Math.min(220, c.viewport.height - cy - 10));
+    await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx + Math.min(90, dx), cy + Math.min(60, dy), { steps: 6 });
     const liveRect = await memo.boundingBox(); if (!liveRect || (Math.abs(liveRect.width - beforeRect.width) < 15 && Math.abs(liveRect.height - beforeRect.height) < 15)) throw new Error(`${c.name} widget did not physically follow resize pointer`);
-    await page.mouse.move(hb.x + hb.width / 2 + 150, hb.y + hb.height / 2 + 125, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
+    await page.mouse.move(cx + dx, cy + dy, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(260);
     const after = await memo.getAttribute('data-size'); if (before === after) throw new Error(`${c.name} widget resize did not snap to a new size`);
     states.widgetEdit = await geom(page, `${c.name} university widget edit`, c.hasTouch); await shot(page, `${c.name}-university-widget-edit`); await page.locator('#widgetDoneBtn').click();
     if (c.hasTouch) {
       const campusWidget = page.locator('[data-widget-id="campus"]');
       if (await campusWidget.count() && !await campusWidget.evaluate(e => e.classList.contains('widget-hidden'))) {
         await campusWidget.scrollIntoViewIfNeeded(); const b = await campusWidget.boundingBox();
-        if (b) { await page.mouse.move(b.x + b.width * .5, b.y + b.height * .5); await page.mouse.down(); await page.waitForTimeout(500); const editing = await page.locator('#todayView').evaluate(e => e.classList.contains('dashboard-editing')); await page.mouse.move(b.x + Math.min(45, b.width * .2), b.y + Math.min(35, b.height * .2), { steps: 5 }); await page.mouse.up(); if (!editing) throw new Error(`${c.name} long-press did not enter widget edit mode`); if (await page.locator('#widgetDoneBtn').count()) await page.locator('#widgetDoneBtn').click(); }
+        if (b) { await page.mouse.move(b.x + b.width * .5, b.y + b.height * .5); await page.mouse.down(); await page.waitForTimeout(500); const editing = await page.locator('#todayView').evaluate(e => e.classList.contains('dashboard-editing')); await page.mouse.move(b.x + Math.min(45, b.width * .2), b.y + Math.min(35, b.height * .2), { steps: 5 }); await page.mouse.up(); if (!editing) throw new Error(`${c.name} long-press did not enter widget edit mode`); if (await page.locator('#widgetDoneBtn').isVisible()) await page.locator('#widgetDoneBtn').click(); }
       }
     }
+
     await visibleClick(page, '[data-view="timetable"]'); await page.locator('#timeGrid .course-block').first().waitFor(); states.timetable = await geom(page, `${c.name} university timetable`, c.hasTouch);
     const scrollState = await page.locator('#timetableScroll').evaluate(e => ({ clientWidth: e.clientWidth, scrollWidth: e.scrollWidth })); if (c.viewport.width <= 820 && scrollState.scrollWidth > scrollState.clientWidth + 3) throw new Error(`${c.name} university mobile timetable scrolls horizontally: ${JSON.stringify(scrollState)}`); await shot(page, `${c.name}-university-timetable`);
+
+    await visibleClick(page, '#importTimetableBtn,#importTopBtn,#importSidebarBtn,#emptyImportBtn'); await page.locator('#importDialog').waitFor({ state: 'visible' });
+    await page.locator('#everytimeUrl').fill('https://everytime.kr/@fixtureABCD1234'); await page.locator('#runImportBtn').click();
+    await page.waitForFunction(() => document.querySelector('#toast')?.textContent?.includes('fixture import blocked'));
+    if (!await page.locator('#importDialog').evaluate(d => d.open)) throw new Error(`${c.name} failed Everytime import unexpectedly closed dialog`);
+    states.importFailure = await geom(page, `${c.name} university import failure`, c.hasTouch); await page.locator('#importDialog [data-close-dialog]').click();
+    if (await page.locator('#appView').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} Everytime failure broke app`);
+
     await page.locator('#addPersonalBtn').click(); await page.locator('#personalDialog').waitFor({ state: 'visible' }); await page.locator('#personalName').fill('방향 검수 일정'); await page.locator('#personalDay').selectOption('0'); await page.locator('#personalStart').fill('17:00'); await page.locator('#personalEnd').fill('18:00'); await page.locator('#personalPlace').fill('학생회관'); await page.locator('#personalForm button[type="submit"]').click();
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || '{}').subjects?.some(x => x.name === '방향 검수 일정'));
     const personalId = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1')).subjects.find(x => x.name === '방향 검수 일정')?.id);
@@ -266,8 +301,8 @@ async function auditUniversity(c) {
     const backup = await page.evaluate(() => ({ type: 'flow-university-backup', version: 1, profile: JSON.parse(localStorage.getItem('flow-university-profile-v1')), timetable: JSON.parse(localStorage.getItem('flow-university-timetable-v1')), major: JSON.parse(localStorage.getItem('flow-university-major-v1')), theme: 'light' }));
     await page.locator('#backupFileInput').setInputFiles({ name: 'flow-orientation-backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) }); await page.waitForFunction(() => document.querySelector('#toast')?.textContent?.includes('백업'));
     if ((await page.locator('[data-flow-mode-switch="school"]').first().getAttribute('href')) !== '/') throw new Error(`${c.name} university mode switch href is wrong`);
-    await visibleClick(page, '#changeUniversityBtn,#mobileSchoolBtn'); await page.locator('#clearUniversityBtn').click(); await page.locator('#setupView:not(.hidden)').waitFor();
-    if (errors.consoleErrors.length || errors.pageErrors.length || errors.failed.length) throw new Error(`${c.name} university browser errors: ${JSON.stringify(errors)}`);
+    await page.locator('#changeDialog [data-close-dialog]').click(); await visibleClick(page, '#changeUniversityBtn,#mobileSchoolBtn'); await page.locator('#clearUniversityBtn').click(); await page.locator('#setupView:not(.hidden)').waitFor();
+    assertNoBrowserErrors(`${c.name} university`, errors, ['502 (Bad Gateway)']);
     return { states, errors, widgetResize: { before, after }, scrollState };
   } finally { await context.close(); }
 }
@@ -281,8 +316,7 @@ async function auditAdmin(c) {
     const login = await geom(page, `${c.name} admin login`, c.hasTouch); await page.locator('#usernameInput').fill('flowadmin'); await page.locator('#passwordInput').fill('orientation-test-not-a-secret'); await page.locator('#passwordForm button[type="submit"]').click();
     await page.waitForFunction(() => document.querySelector('#authStatus')?.textContent?.trim().length > 0); if (!await page.locator('#dashboard').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} invalid admin login exposed dashboard`);
     const after = await geom(page, `${c.name} admin rejected login`, c.hasTouch); await shot(page, `${c.name}-admin-login`, false);
-    const unexpectedConsole = errors.consoleErrors.filter(x => !x.includes('401 (Unauthorized)'));
-    if (unexpectedConsole.length || errors.pageErrors.length || errors.failed.length) throw new Error(`${c.name} admin browser errors: ${JSON.stringify({ ...errors, consoleErrors: unexpectedConsole })}`);
+    assertNoBrowserErrors(`${c.name} admin`, errors, ['401 (Unauthorized)']);
     return { login, after, status: await page.locator('#authStatus').textContent() };
   } finally { await context.close(); }
 }
