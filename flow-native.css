@@ -73,6 +73,15 @@ dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
     backdrop-filter:blur(26px) saturate(170%)!important;
     -webkit-backdrop-filter:blur(26px) saturate(170%)!important;
   }
+  /* Explicit rgba keeps computed colors compatible with existing 0-255 light-theme guards. */
+  html[data-theme="light"] body .mobile-topbar,
+  html[data-theme="light"] body .mobile-header{background:rgba(250,251,253,.82)!important}
+  html[data-theme="light"] body .mobile-bottom-nav,
+  html[data-theme="light"] body .bottom-nav{background:rgba(255,255,255,.82)!important}
+  html[data-theme="dark"] body .mobile-topbar,
+  html[data-theme="dark"] body .mobile-header{background:rgba(30,38,49,.84)!important}
+  html[data-theme="dark"] body .mobile-bottom-nav,
+  html[data-theme="dark"] body .bottom-nav{background:rgba(39,49,61,.84)!important}
   dialog[open] .sheet,dialog[open] .dialog-sheet{
     background:color-mix(in srgb,var(--surface) 91%,transparent)!important;
     border:1px solid color-mix(in srgb,var(--text) 8%,transparent)!important;
