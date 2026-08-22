@@ -106,6 +106,7 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
 @media(max-width:820px){
   html[data-theme="light"] .mobile-topbar{background:rgba(245,247,250,.985)!important}
   html[data-theme="light"] .mobile-bottom-nav{background:rgba(255,255,255,.98)!important}
+  .mobile-topbar .flow-logo{min-height:40px!important;align-items:center!important}
 
   /* Mobile uses its own two-line metric because the text size/line-height changes. */
   .onboarding-copy p{min-height:3.3em!important}
