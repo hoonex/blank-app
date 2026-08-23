@@ -35,6 +35,10 @@ jobs:
           done
           cat /tmp/flow-orientation-server.log
           exit 1
+      - name: Diagnose and verify one Liquid Glass lens travels between tabs
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/liquid-glass-tab-lens-audit.mjs
       - name: Exercise School, University, Campus, widgets, and Admin in six viewports
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -43,10 +47,6 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/native-feel-audit.mjs
-      - name: Verify one Liquid Glass lens travels between tabs
-        env:
-          FLOW_BASE_URL: http://127.0.0.1:4173
-        run: node tests/liquid-glass-tab-lens-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
