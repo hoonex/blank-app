@@ -81,12 +81,12 @@ html[data-theme] body :where(.search-field,.search-box,.dialog-field input,.dial
 }
 html[data-theme] body :where(
   .neo-button,.primary-button,.soft-button,.search-field button,.search-box>button,.dialog-close,
-  .nav-item,.mobile-school,.mobile-school-button,.university-chip,.school-identity,.calendar-head button
+  .nav-item,.mobile-school,.mobile-school-button,.university-chip,.school-identity,.calendar-head button,.flow-mobile-settings
 ){
   border-radius:var(--flow-radius-control)!important;
   corner-shape:round!important;
 }
-html[data-theme] body :where(.neo-button,.soft-button,.dialog-close,.mobile-school,.mobile-school-button,.university-chip,.school-identity){
+html[data-theme] body :where(.neo-button,.soft-button,.dialog-close,.mobile-school,.mobile-school-button,.university-chip,.school-identity,.flow-mobile-settings){
   box-shadow:none!important;
   border:1px solid var(--flow-separator)!important;
 }
@@ -179,7 +179,7 @@ html[data-theme="dark"] body :where(.course-block){box-shadow:0 2px 7px rgba(0,0
   html[data-theme="dark"] body :where(.mobile-topbar,.mobile-header){background:rgba(15,18,23,.66)!important}
 }
 
-/* Liquid Glass: only the floating navigation layer and transient sheets. */
+/* Standard glass is the default. It is stable and does not run displacement filters. */
 html[data-theme] body :where(.mobile-bottom-nav,.bottom-nav){
   border-radius:var(--flow-radius-capsule)!important;
   corner-shape:round!important;
@@ -219,16 +219,16 @@ html[data-theme="dark"] body .bottom-nav::before{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(0,0,0,.2),0 7px 18px rgba(0,0,0,.24)!important;
 }
 
-/* Chromium progressive enhancement: a real displacement pass bends the live backdrop. */
+/* Optical Glass: opt-in + runtime-gated live backdrop displacement on supported Chromium. */
 html[data-flow-glass-refraction="true"][data-theme] body .mobile-bottom-nav::before,
 html[data-flow-glass-refraction="true"][data-theme] body .bottom-nav::before{
-  backdrop-filter:url(#flow-liquid-refraction) blur(8px) saturate(166%) contrast(1.035)!important;
-  -webkit-backdrop-filter:url(#flow-liquid-refraction) blur(8px) saturate(166%) contrast(1.035)!important;
+  backdrop-filter:url(#flow-liquid-nav-refraction) blur(7px) saturate(170%) contrast(1.045)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-nav-refraction) blur(7px) saturate(170%) contrast(1.045)!important;
 }
 html[data-flow-glass-refraction="true"][data-theme="dark"] body .mobile-bottom-nav::before,
 html[data-flow-glass-refraction="true"][data-theme="dark"] body .bottom-nav::before{
-  backdrop-filter:url(#flow-liquid-refraction) blur(8px) saturate(138%) brightness(.96) contrast(1.04)!important;
-  -webkit-backdrop-filter:url(#flow-liquid-refraction) blur(8px) saturate(138%) brightness(.96) contrast(1.04)!important;
+  backdrop-filter:url(#flow-liquid-nav-refraction) blur(7px) saturate(140%) brightness(.96) contrast(1.05)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-nav-refraction) blur(7px) saturate(140%) brightness(.96) contrast(1.05)!important;
 }
 html[data-theme] body .mobile-bottom-nav[data-flow-lens-pressed="true"]::before,
 html[data-theme] body .bottom-nav[data-flow-lens-pressed="true"]::before,
@@ -238,7 +238,7 @@ html[data-theme] body .bottom-nav[data-flow-lens-dragging="true"]::before{
   box-shadow:inset 0 1px 0 var(--flow-glass-rim),inset 0 -1px 0 rgba(20,31,48,.07),0 9px 24px var(--flow-glass-depth)!important;
 }
 
-/* Sheets use regular glass: enough tint for text, no theatrical white halo. */
+/* Sheets use regular glass by default: enough tint for text, no theatrical white halo. */
 html[data-theme] body dialog[open] :where(.sheet,.dialog-sheet){
   border-radius:var(--flow-radius-sheet)!important;
   corner-shape:round!important;
@@ -254,6 +254,20 @@ html[data-theme="dark"] body dialog[open] :where(.sheet,.dialog-sheet){
   box-shadow:0 26px 74px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.09)!important;
   backdrop-filter:blur(26px) saturate(128%) brightness(.96)!important;
   -webkit-backdrop-filter:blur(26px) saturate(128%) brightness(.96)!important;
+}
+html[data-flow-glass-refraction="true"][data-theme] body dialog[open] :where(.sheet,.dialog-sheet){
+  background:rgba(248,250,253,.64)!important;
+  border-color:rgba(255,255,255,.68)!important;
+  box-shadow:0 26px 76px rgba(17,25,39,.20),inset 0 1px 0 rgba(255,255,255,.72),inset 0 -1px 0 rgba(36,54,82,.06)!important;
+  backdrop-filter:url(#flow-liquid-sheet-refraction) blur(11px) saturate(154%) contrast(1.025)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-sheet-refraction) blur(11px) saturate(154%) contrast(1.025)!important;
+}
+html[data-flow-glass-refraction="true"][data-theme="dark"] body dialog[open] :where(.sheet,.dialog-sheet){
+  background:rgba(22,27,34,.64)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:0 28px 78px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.13),inset 0 -1px 0 rgba(0,0,0,.16)!important;
+  backdrop-filter:url(#flow-liquid-sheet-refraction) blur(11px) saturate(132%) brightness(.96) contrast(1.035)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-sheet-refraction) blur(11px) saturate(132%) brightness(.96) contrast(1.035)!important;
 }
 html[data-theme] body dialog[open]::backdrop{
   background:rgba(12,16,22,.30)!important;
