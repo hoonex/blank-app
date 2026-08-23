@@ -20,20 +20,16 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-them
 }
 
 /*
- * The refraction aperture is a DOM child of the grid nav. Chromium can use an
- * absolutely positioned grid child's static grid position when auto-placing
- * later items, which made the first real tab start in column 2 and wrapped
- * Settings onto a second row. Give both the aperture and every real tab an
- * explicit first-row placement. The Selectors-4 `of` clause counts only real
- * tab controls, so the optical helper never changes tab numbering.
+ * The refraction aperture is a DOM child of the grid nav. Keep the aperture's
+ * absolute coordinate frame untouched, but explicitly place every real tab in
+ * row 1. The Selectors-4 `of` clause counts only tab controls, so the optical
+ * helper can never consume a tab slot or push Settings onto an implicit row.
  */
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>.flow-refraction-copy-lens{
   display:block;
   position:absolute;
   box-sizing:border-box;
   pointer-events:none;
-  grid-row:1;
-  grid-column:1/-1;
   top:5px;
   bottom:5px;
   left:5px;
