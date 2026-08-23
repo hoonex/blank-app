@@ -107,7 +107,6 @@ dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
 html[data-theme] body .mobile-bottom-nav,
 html[data-theme] body .bottom-nav{
   --flow-tab-index:0;
-  position:relative;
   isolation:isolate;
   overflow:hidden;
 }
