@@ -140,7 +140,7 @@ function releaseSheetGesture(event,cancelled=false){
   if(cancelled||!state.dragging){settleSheet(state,false);return true}
   const y=Math.max(0,state.currentY),threshold=clamp(state.rect.height*.22,92,162);
   const projected=y+Math.max(0,state.velocity)*SHEET_PROJECT_MS;
-  const dismiss=y>=threshold||(y>28&&state.velocity>.82)||projected>threshold*1.18;
+  const dismiss=y>=threshold||(y>72&&state.velocity>.9)||(y>72&&projected>threshold*1.18);
   settleSheet(state,dismiss);
   return true;
 }
