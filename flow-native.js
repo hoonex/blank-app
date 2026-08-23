@@ -162,12 +162,15 @@ function installUniversitySettings(){
 function settingsIcon(){return'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h4m4 0h8"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'}
 function installMobileSettingsControl(){
   const header=document.querySelector('.mobile-topbar, .mobile-header');if(!header||header.querySelector('.flow-mobile-settings'))return;
-  const button=document.createElement('button');button.className='flow-mobile-settings';button.type='button';button.setAttribute('aria-label','설정');button.innerHTML=settingsIcon();
   const schoolTrigger=document.querySelector('#mobileSettingsBtn'),universityDialog=document.querySelector('#flowUniversitySettingsDialog');
-  button.addEventListener('click',()=>{
-    if(schoolTrigger){schoolTrigger.click();return}
-    if(universityDialog){syncUniversityThemeControls();syncGlassControls();universityDialog.showModal()}
-  });
+  let button=schoolTrigger;
+  if(button){
+    button.classList.remove('mobile-tab');button.classList.add('flow-mobile-settings');button.removeAttribute('data-view');
+    button.setAttribute('aria-label','설정');button.innerHTML=settingsIcon();
+  }else{
+    button=document.createElement('button');button.className='flow-mobile-settings';button.type='button';button.setAttribute('aria-label','설정');button.innerHTML=settingsIcon();
+    button.addEventListener('click',()=>{if(universityDialog){syncUniversityThemeControls();syncGlassControls();universityDialog.showModal()}});
+  }
   const identity=header.querySelector('.mobile-school-button, .mobile-school');header.insertBefore(button,identity||null);
 }
 function sheetFor(dialog){return dialog?.querySelector?.(':scope > .sheet, :scope > .dialog-sheet')||null}
