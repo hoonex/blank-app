@@ -19,6 +19,7 @@ jobs:
           node-version: '22'
       - name: Validate audit source
         run: |
+          node --check flow-native.js
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
@@ -35,7 +36,7 @@ jobs:
           done
           cat /tmp/flow-orientation-server.log
           exit 1
-      - name: Diagnose and verify one Liquid Glass lens travels between tabs
+      - name: Verify Liquid Glass lens tap, hold, drag, momentum, and overflow
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/liquid-glass-tab-lens-audit.mjs

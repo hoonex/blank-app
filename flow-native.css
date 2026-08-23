@@ -14,11 +14,13 @@
 @keyframes flow-view-enter{
   0%{opacity:0;transform:translate3d(0,8px,0) scale(.997)}
   55%{opacity:1}
+  82%{opacity:1;transform:translate3d(0,-1px,0) scale(1.001)}
   100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 @keyframes flow-sheet-enter{
   0%{opacity:0;transform:translate3d(0,14px,0) scale(.982)}
   60%{opacity:1}
+  86%{opacity:1;transform:translate3d(0,-1px,0) scale(1.002)}
   100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 @keyframes flow-backdrop-enter{from{opacity:0}to{opacity:1}}
@@ -109,6 +111,9 @@ html[data-theme] body .bottom-nav{
   --flow-tab-index:0;
   isolation:isolate;
   overflow:hidden;
+  touch-action:pan-y;
+  user-select:none;
+  -webkit-user-select:none;
 }
 html[data-theme] body .mobile-bottom-nav{--flow-tab-count:5}
 html[data-theme] body .bottom-nav{--flow-tab-count:4}
@@ -136,17 +141,35 @@ html[data-theme] body .bottom-nav::before{
   width:calc((100% - 10px)/var(--flow-tab-count));
   border-radius:13px;
   background:
-    radial-gradient(120% 95% at 34% 0%,rgba(255,255,255,.68) 0%,rgba(255,255,255,.18) 35%,transparent 62%),
+    radial-gradient(120% 95% at var(--flow-lens-light-x,34%) 0%,rgba(255,255,255,.72) 0%,rgba(255,255,255,.2) 34%,transparent 63%),
     linear-gradient(180deg,color-mix(in srgb,var(--accent) 13%,var(--surface)),color-mix(in srgb,var(--accent) 7%,var(--surface)));
   border:1px solid color-mix(in srgb,var(--accent) 15%,rgba(255,255,255,.5));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.72),inset 0 -1px 0 rgba(35,56,94,.06),0 5px 16px rgba(44,73,146,.09);
   backdrop-filter:blur(18px) saturate(190%);
   -webkit-backdrop-filter:blur(18px) saturate(190%);
-  transform:translate3d(calc(var(--flow-tab-index)*100%),0,0);
+  transform:translate3d(var(--flow-lens-x,calc(var(--flow-tab-index)*100%)),0,0) scaleX(var(--flow-lens-scale-x,1)) scaleY(var(--flow-lens-scale-y,1));
   transform-origin:center;
-  transition:transform 420ms cubic-bezier(.18,1.18,.28,1),box-shadow 180ms ease;
+  transition:transform var(--flow-lens-duration,420ms) var(--flow-lens-ease,cubic-bezier(.18,1.18,.28,1)),box-shadow 180ms ease,border-radius 180ms ease,background-position 120ms linear;
   will-change:transform;
 }
+html[data-theme] body .mobile-bottom-nav[data-flow-lens-pressed="true"],
+html[data-theme] body .bottom-nav[data-flow-lens-pressed="true"]{
+  --flow-lens-scale-x:1.065;
+  --flow-lens-scale-y:1.09;
+  --flow-lens-duration:150ms;
+  --flow-lens-ease:cubic-bezier(.16,1,.3,1);
+}
+html[data-theme] body .mobile-bottom-nav[data-flow-lens-pressed="true"]::before,
+html[data-theme] body .bottom-nav[data-flow-lens-pressed="true"]::before{
+  border-radius:15px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.84),inset 0 -1px 0 rgba(35,56,94,.05),0 8px 22px rgba(44,73,146,.14);
+}
+html[data-theme] body .mobile-bottom-nav[data-flow-lens-dragging="true"]::before,
+html[data-theme] body .bottom-nav[data-flow-lens-dragging="true"]::before{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.88),inset 0 -1px 0 rgba(35,56,94,.05),0 10px 26px rgba(44,73,146,.16);
+}
+html[data-theme] body .mobile-bottom-nav .mobile-tab.active:active,
+html[data-theme] body .bottom-nav .bottom-item.active:active{transform:none!important}
 
 html[data-theme] body .mobile-tab,
 html[data-theme] body .bottom-item{
@@ -205,4 +228,6 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
     transition-duration:.001ms!important;
   }
   :where(.neo-button,.primary-button,.soft-button,.nav-item,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.university-chip,.mobile-school,.mobile-school-button,.dialog-close,.text-button,.course-block[data-custom-id],.today-row.editable-row):active:not(:disabled){transform:none!important}
+  html[data-theme] body .mobile-bottom-nav[data-flow-lens-pressed="true"],
+  html[data-theme] body .bottom-nav[data-flow-lens-pressed="true"]{--flow-lens-scale-x:1;--flow-lens-scale-y:1}
 }
