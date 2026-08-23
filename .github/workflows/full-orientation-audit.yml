@@ -23,6 +23,8 @@ jobs:
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
+          node --check tests/apple-material-audit.mjs
+          test -f flow-material.css
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -36,6 +38,10 @@ jobs:
           done
           cat /tmp/flow-orientation-server.log
           exit 1
+      - name: Verify semantic shapes, dark materials, and optical glass
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/apple-material-audit.mjs
       - name: Verify Liquid Glass lens tap, hold, drag, momentum, and overflow
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
