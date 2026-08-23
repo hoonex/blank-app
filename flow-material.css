@@ -290,6 +290,37 @@ html[data-theme] body .toast{border-radius:var(--flow-radius-capsule)!important;
   html[data-theme] body dialog[open] :where(.sheet,.dialog-sheet){border-radius:22px!important}
 }
 
+/* A backdrop-filter on the nav makes it a backdrop root. The nested moving lens
+   then sees only the nav's already-frosted substrate instead of the live page.
+   In Optical mode the shell stays translucent but does not filter; the lens is
+   the single backdrop-filter and can therefore bend text/lines behind it. */
+html[data-flow-glass-refraction="true"][data-theme] body :where(.mobile-bottom-nav,.bottom-nav){
+  background:rgba(248,250,253,.46)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-flow-glass-refraction="true"][data-theme="dark"] body :where(.mobile-bottom-nav,.bottom-nav){
+  background:rgba(22,27,34,.44)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-flow-glass-refraction="true"][data-theme] body .mobile-bottom-nav::before,
+html[data-flow-glass-refraction="true"][data-theme] body .bottom-nav::before{
+  background:
+    radial-gradient(130% 115% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.48) 0%,rgba(255,255,255,.07) 32%,transparent 60%),
+    linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.018))!important;
+  backdrop-filter:url(#flow-liquid-nav-refraction) blur(1.25px) saturate(168%) contrast(1.055)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-nav-refraction) blur(1.25px) saturate(168%) contrast(1.055)!important;
+}
+html[data-flow-glass-refraction="true"][data-theme="dark"] body .mobile-bottom-nav::before,
+html[data-flow-glass-refraction="true"][data-theme="dark"] body .bottom-nav::before{
+  background:
+    radial-gradient(130% 115% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.20) 0%,rgba(255,255,255,.045) 31%,transparent 60%),
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012))!important;
+  backdrop-filter:url(#flow-liquid-nav-refraction) blur(1.25px) saturate(142%) brightness(.97) contrast(1.06)!important;
+  -webkit-backdrop-filter:url(#flow-liquid-nav-refraction) blur(1.25px) saturate(142%) brightness(.97) contrast(1.06)!important;
+}
+
 @media(prefers-reduced-transparency:reduce){
   html[data-theme] body :where(.mobile-topbar,.mobile-header,.mobile-bottom-nav,.bottom-nav,.desktop-sidebar,.sidebar),
   html[data-theme] body dialog[open] :where(.sheet,.dialog-sheet){
