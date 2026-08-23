@@ -25,6 +25,7 @@ jobs:
           node --check tests/liquid-glass-tab-lens-audit.mjs
           node --check tests/apple-material-audit.mjs
           node --check tests/native-sheet-drag-audit.mjs
+          node --check tests/optical-glass-settings-audit.mjs
           test -f flow-material.css
       - name: Install Playwright Chromium
         run: |
@@ -39,10 +40,14 @@ jobs:
           done
           cat /tmp/flow-orientation-server.log
           exit 1
-      - name: Verify semantic shapes, dark materials, and optical glass
+      - name: Verify semantic shapes and standard glass default
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/apple-material-audit.mjs
+      - name: Verify unified settings and opt-in optical refraction
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/optical-glass-settings-audit.mjs
       - name: Verify transient sheet direct drag and dismiss
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
