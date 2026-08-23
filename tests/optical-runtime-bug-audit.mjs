@@ -44,7 +44,7 @@ const fidelity=await page.evaluate(()=>{
 if(!fidelity.originalLookup||fidelity.color[0]!==fidelity.color[1]||fidelity.fontSize[0]!==fidelity.fontSize[1])throw new Error(`Optical copy lost ID-scoped visual fidelity or stole the source lookup: ${JSON.stringify(fidelity)}`);
 
 // School switching is a full destination surface. The lens must sample it, not the page behind it.
-await page.locator('.product-main #mobileSchoolBtn').click();
+await page.locator('.product-main:not(.flow-refraction-source-copy) #mobileSchoolBtn').click();
 await page.locator('body > #switchDialog[open][data-flow-dedicated="true"]').waitFor();
 await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-copy[data-flow-refraction-source="school-switch"] #switchSearch'));
 const sourceState=await page.evaluate(()=>({source:document.querySelector('.flow-refraction-source-copy')?.dataset.flowRefractionSource,hasSwitch:!!document.querySelector('.flow-refraction-source-copy #switchSearch'),hasHero:!!document.querySelector('.flow-refraction-source-copy #heroSchoolName')}));
