@@ -2,6 +2,8 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const SHEET_SELECTOR='.sheet, .dialog-sheet';
 const SHEET_HANDLE='.flow-sheet-grab-handle';
+const GLASS_KEY='flow-glass-mode-v2';
+const UNIVERSITY_THEME_KEY='flow-university-theme-v1';
 const DRAG_THRESHOLD=7;
 const PROJECT_MS=100;
 const SHEET_PROJECT_MS=90;
@@ -12,6 +14,7 @@ let syntheticClick=false;
 let suppressClickUntil=0;
 let settleTimer=0;
 let sheetTimer=0;
+let glassSupport=null;
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const now=()=>performance.now();
@@ -23,29 +26,152 @@ function installMaterialLayer(){
   document.head.append(link);
 }
 
+function roundedRectSdf(x,y,halfW,halfH,radius){
+  const qx=Math.abs(x)-(halfW-radius),qy=Math.abs(y)-(halfH-radius);
+  const ox=Math.max(qx,0),oy=Math.max(qy,0);
+  return Math.hypot(ox,oy)+Math.min(Math.max(qx,qy),0)-radius;
+}
+function roundedRectNormal(x,y,halfW,halfH,radius){
+  const sx=x<0?-1:1,sy=y<0?-1:1,ix=halfW-radius,iy=halfH-radius;
+  const qx=Math.abs(x)-ix,qy=Math.abs(y)-iy;
+  if(qx>0&&qy>0){const length=Math.max(.001,Math.hypot(qx,qy));return[sx*qx/length,sy*qy/length]}
+  return qx>qy?[sx,0]:[0,sy]
+}
+function displacementMap(width,height,{radiusRatio=.24,bezelRatio=.22}={}){
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const context=canvas.getContext('2d',{alpha:true});if(!context)return'';
+  const image=context.createImageData(width,height),pixels=image.data;
+  const halfW=width/2-.5,halfH=height/2-.5,min=Math.min(width,height),radius=Math.min(min*.49,min*radiusRatio),bezel=Math.max(8,min*bezelRatio);
+  for(let py=0;py<height;py++)for(let px=0;px<width;px++){
+    const i=(py*width+px)*4,x=px-halfW,y=py-halfH,sdf=roundedRectSdf(x,y,halfW,halfH,radius);
+    let dx=0,dy=0,weight=0;
+    if(sdf<=0){
+      const edge=-sdf,t=1-clamp(edge/bezel,0,1),smooth=t*t*(3-2*t);
+      weight=Math.pow(smooth,.86);
+      const [nx,ny]=roundedRectNormal(x,y,halfW,halfH,radius);
+      dx=-nx*weight;dy=-ny*weight;
+    }
+    pixels[i]=Math.round(clamp(128+dx*126,0,255));
+    pixels[i+1]=Math.round(clamp(128+dy*126,0,255));
+    pixels[i+2]=Math.round(clamp(128+weight*112,0,255));
+    pixels[i+3]=255;
+  }
+  context.putImageData(image,0,0);return canvas.toDataURL('image/png');
+}
+
 /*
- * Real Liquid Glass is defined by lensing, not blur alone. On browsers that
- * actually retain an SVG URL filter in backdrop-filter, use a subtle live
- * displacement pass. Other engines keep the optical frost/specular fallback.
+ * Optical Glass is explicit progressive enhancement. The default material is
+ * stable frost/specular glass. When the user opts in and the browser retains
+ * an SVG URL inside backdrop-filter, a shape-adapted displacement map bends
+ * the live backdrop itself. No screenshot/canvas copy of page content is used.
  */
 function installLiquidGlassOptics(){
-  if(document.querySelector('#flow-liquid-optics'))return;
+  if(glassSupport!==null)return glassSupport;
+  if(document.querySelector('#flow-liquid-optics'))return document.documentElement.dataset.flowGlassRefraction==='true';
+  const navMap=displacementMap(320,112,{radiusRatio:.49,bezelRatio:.26});
+  const sheetMap=displacementMap(288,288,{radiusRatio:.12,bezelRatio:.18});
+  if(!navMap||!sheetMap){glassSupport=false;return false}
   const host=document.createElement('div');
   host.id='flow-liquid-optics';
   host.setAttribute('aria-hidden','true');
   host.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;contain:strict';
-  host.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" focusable="false" aria-hidden="true"><defs><filter id="flow-liquid-refraction" x="-15%" y="-30%" width="130%" height="160%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.032" numOctaves="1" seed="11" result="flowNoise"/><feGaussianBlur in="flowNoise" stdDeviation="0.42" result="flowSoftNoise"/><feDisplacementMap in="SourceGraphic" in2="flowSoftNoise" scale="5" xChannelSelector="R" yChannelSelector="G" result="flowRefracted"/><feColorMatrix in="flowRefracted" type="saturate" values="1.08"/></filter></defs></svg>`;
+  host.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" focusable="false" aria-hidden="true"><defs>
+    <filter id="flow-liquid-nav-refraction" x="-16%" y="-42%" width="132%" height="184%" color-interpolation-filters="sRGB">
+      <feImage href="${navMap}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="flowNavMap"/>
+      <feDisplacementMap in="SourceGraphic" in2="flowNavMap" scale="18" xChannelSelector="R" yChannelSelector="G" result="flowNavRefracted"/>
+      <feGaussianBlur in="flowNavRefracted" stdDeviation="0.22" result="flowNavSoft"/>
+      <feColorMatrix in="flowNavSoft" type="saturate" values="1.1"/>
+    </filter>
+    <filter id="flow-liquid-sheet-refraction" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+      <feImage href="${sheetMap}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="flowSheetMap"/>
+      <feDisplacementMap in="SourceGraphic" in2="flowSheetMap" scale="22" xChannelSelector="R" yChannelSelector="G" result="flowSheetRefracted"/>
+      <feGaussianBlur in="flowSheetRefracted" stdDeviation="0.28" result="flowSheetSoft"/>
+      <feColorMatrix in="flowSheetSoft" type="saturate" values="1.08"/>
+    </filter>
+  </defs></svg>`;
   (document.body||document.documentElement).prepend(host);
 
   const probe=document.createElement('i');
   probe.setAttribute('aria-hidden','true');
-  probe.style.cssText='position:fixed;left:-9999px;top:-9999px;width:8px;height:8px;pointer-events:none;backdrop-filter:url(#flow-liquid-refraction) blur(1px);-webkit-backdrop-filter:url(#flow-liquid-refraction) blur(1px)';
+  probe.style.cssText='position:fixed;left:-9999px;top:-9999px;width:8px;height:8px;pointer-events:none;backdrop-filter:url(#flow-liquid-nav-refraction) blur(1px);-webkit-backdrop-filter:url(#flow-liquid-nav-refraction) blur(1px)';
   (document.body||document.documentElement).append(probe);
-  const style=getComputedStyle(probe);
-  const computed=style.backdropFilter||style.webkitBackdropFilter||'';
-  const supported=/url\(/i.test(computed);
-  probe.remove();
-  document.documentElement.dataset.flowGlassRefraction=supported?'true':'fallback';
+  const style=getComputedStyle(probe),computed=style.backdropFilter||style.webkitBackdropFilter||'';
+  glassSupport=/url\(/i.test(computed);probe.remove();return glassSupport;
+}
+function glassMode(){return localStorage.getItem(GLASS_KEY)==='optical'?'optical':'standard'}
+function syncGlassControls(){
+  const mode=glassMode(),refraction=document.documentElement.dataset.flowGlassRefraction||'off';
+  document.querySelectorAll('[data-flow-glass-choice]').forEach(button=>{
+    const active=button.dataset.flowGlassChoice===mode;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+  });
+  const status=mode==='standard'?'기본 유리 · 안정성과 가독성 우선':refraction==='true'?'Optical Glass 활성화 · 실제 배경 굴절 사용':'Optical Glass 선택됨 · 이 브라우저에서는 기본 유리로 대체됨';
+  document.querySelectorAll('[data-flow-glass-status]').forEach(node=>node.textContent=status);
+}
+function applyGlassMode(mode=glassMode(),{persist=false}={}){
+  const normalized=mode==='optical'?'optical':'standard',root=document.documentElement;
+  if(persist)localStorage.setItem(GLASS_KEY,normalized);
+  root.dataset.flowGlassMode=normalized;
+  root.dataset.flowGlassRefraction=normalized==='optical'?(installLiquidGlassOptics()?'true':'fallback'):'off';
+  syncGlassControls();
+  window.dispatchEvent(new CustomEvent('flow:glass-mode-changed',{detail:{mode:normalized,refraction:root.dataset.flowGlassRefraction}}));
+}
+function wireGlassChoices(root=document){
+  root.querySelectorAll('[data-flow-glass-choice]').forEach(button=>{
+    if(button.dataset.flowGlassWired)return;button.dataset.flowGlassWired='true';
+    button.addEventListener('click',()=>applyGlassMode(button.dataset.flowGlassChoice,{persist:true}));
+  });
+}
+function glassSettingsMarkup(){return`<h3>유리 효과</h3><p>기본은 안정적인 유리 재질입니다. Optical Glass는 지원되는 Chromium에서 뒤 콘텐츠 자체를 굴절시킵니다.</p><div class="segmented flow-glass-segment" aria-label="유리 효과"><button type="button" data-flow-glass-choice="standard">기본</button><button type="button" data-flow-glass-choice="optical">Optical</button></div><small class="flow-glass-status" data-flow-glass-status></small>`}
+function installSchoolGlassSettings(){
+  const sheet=document.querySelector('#settingsDialog .settings-sheet');if(!sheet||sheet.querySelector('.flow-glass-settings'))return;
+  const group=document.createElement('div');group.className='settings-group flow-glass-settings';group.innerHTML=glassSettingsMarkup();
+  const anchor=sheet.querySelector('#installBtn')?.closest('.settings-group')||sheet.querySelector('#saveSettingsBtn');
+  if(anchor)anchor.before(group);else sheet.append(group);
+  wireGlassChoices(group);
+}
+function universityTheme(){const value=localStorage.getItem(UNIVERSITY_THEME_KEY)||'light';return['light','system','dark'].includes(value)?value:'light'}
+function syncUniversityThemeControls(){
+  const value=universityTheme();
+  document.querySelectorAll('[data-flow-university-theme-choice]').forEach(button=>{
+    const active=button.dataset.flowUniversityThemeChoice===value;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+  });
+}
+function setUniversityTheme(value){
+  if(!['light','system','dark'].includes(value))return;
+  const relay=document.querySelector(`.flow-theme-segment [data-university-theme="${value}"]`);
+  if(relay)relay.click();
+  else{
+    localStorage.setItem(UNIVERSITY_THEME_KEY,value);
+    const effective=value==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):value;
+    document.documentElement.dataset.theme=effective;document.documentElement.dataset.themeMode=value;
+  }
+  queueMicrotask(syncUniversityThemeControls);
+}
+function installUniversitySettings(){
+  if(!document.querySelector('.mobile-header')||document.querySelector('#flowUniversitySettingsDialog'))return;
+  const dialog=document.createElement('dialog');dialog.id='flowUniversitySettingsDialog';
+  dialog.innerHTML=`<div class="dialog-sheet flow-settings-sheet"><button class="dialog-close" data-flow-settings-close type="button" aria-label="닫기">×</button><span class="kicker">SETTINGS</span><h2>화면 설정</h2><section class="flow-setting-section"><h3>화면</h3><div class="flow-setting-segment flow-theme-settings-segment" aria-label="화면 테마"><button type="button" data-flow-university-theme-choice="light">밝게</button><button type="button" data-flow-university-theme-choice="system">기기 설정</button><button type="button" data-flow-university-theme-choice="dark">어둡게</button></div></section><section class="flow-setting-section flow-glass-settings">${glassSettingsMarkup()}</section></div>`;
+  document.body.append(dialog);
+  dialog.querySelector('[data-flow-settings-close]')?.addEventListener('click',()=>dialog.close());
+  dialog.querySelectorAll('[data-flow-university-theme-choice]').forEach(button=>button.addEventListener('click',()=>setUniversityTheme(button.dataset.flowUniversityThemeChoice)));
+  wireGlassChoices(dialog);syncUniversityThemeControls();
+  const bottom=document.querySelector('.sidebar-bottom');if(bottom&&!bottom.querySelector('.flow-university-settings-button')){
+    const button=document.createElement('button');button.className='soft-button full flow-university-settings-button';button.type='button';button.textContent='설정';button.addEventListener('click',()=>{syncUniversityThemeControls();syncGlassControls();dialog.showModal()});bottom.prepend(button);
+  }
+}
+function settingsIcon(){return'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h4m4 0h8"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'}
+function installMobileSettingsControl(){
+  const header=document.querySelector('.mobile-topbar, .mobile-header');if(!header||header.querySelector('.flow-mobile-settings'))return;
+  const schoolTrigger=document.querySelector('#mobileSettingsBtn'),universityDialog=document.querySelector('#flowUniversitySettingsDialog');
+  let button=schoolTrigger;
+  if(button){
+    button.classList.remove('mobile-tab');button.classList.add('flow-mobile-settings');button.removeAttribute('data-view');
+    button.setAttribute('aria-label','설정');button.innerHTML=settingsIcon();
+  }else{
+    button=document.createElement('button');button.className='flow-mobile-settings';button.type='button';button.setAttribute('aria-label','설정');button.innerHTML=settingsIcon();
+    button.addEventListener('click',()=>{if(universityDialog){syncUniversityThemeControls();syncGlassControls();universityDialog.showModal()}});
+  }
+  const identity=header.querySelector('.mobile-school-button, .mobile-school');header.insertBefore(button,identity||null);
 }
 function sheetFor(dialog){return dialog?.querySelector?.(':scope > .sheet, :scope > .dialog-sheet')||null}
 function resetSheetMotion(dialog,{resting=false}={}){
@@ -69,8 +195,11 @@ function installSheetHandles(){
   }
 }
 function installVisualSystem(){
-  installLiquidGlassOptics();
+  installSchoolGlassSettings();
+  installUniversitySettings();
+  installMobileSettingsControl();
   installSheetHandles();
+  applyGlassMode();
   /* Existing School/University polish links finish synchronously on startup. Move this one last. */
   setTimeout(installMaterialLayer,0);
 }
@@ -167,7 +296,7 @@ document.addEventListener('pointermove',event=>{
 document.addEventListener('pointerup',event=>{releaseSheetGesture(event,false)},{capture:true});
 document.addEventListener('pointercancel',event=>{releaseSheetGesture(event,true)},{capture:true});
 
-function buttons(nav){return [...nav.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)]}
+function buttons(nav){return [...nav.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)].filter(button=>!button.hidden&&getComputedStyle(button).display!=='none')}
 function activeIndex(list){return Math.max(0,list.findIndex(button=>button.classList.contains('active')))}
 function geometry(nav,list,index){
   const rect=nav.getBoundingClientRect();
