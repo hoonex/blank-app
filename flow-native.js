@@ -1,7 +1,7 @@
 const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const DRAG_THRESHOLD=7;
-const PROJECT_MS=115;
+const PROJECT_MS=100;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let gesture=null;
 let syntheticClick=false;
@@ -64,7 +64,7 @@ function releaseGesture(event,cancelled=false){
   const {nav,list,geo}=state;
   try{nav.releasePointerCapture?.(event.pointerId)}catch{}
   if(!state.dragging||cancelled){settle(nav,activeIndex(list),geo,state.currentX,state.velocity);return}
-  const projection=clamp(state.velocity*PROJECT_MS,-geo.slot*.82,geo.slot*.82);
+  const projection=clamp(state.velocity*PROJECT_MS,-geo.slot*.42,geo.slot*.42);
   const projected=clamp(state.currentX+projection,0,geo.max);
   const targetIndex=clamp(Math.round(projected/geo.slot),0,list.length-1);
   const target=list[targetIndex];
