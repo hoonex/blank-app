@@ -90,9 +90,7 @@ html[data-theme] body :where(.neo-button,.soft-button,.dialog-close,.mobile-scho
   box-shadow:none!important;
   border:1px solid var(--flow-separator)!important;
 }
-html[data-theme] body :where(.primary-button,.search-field button,.search-box>button){
-  box-shadow:0 5px 14px rgba(72,105,218,.16)!important;
-}
+html[data-theme] body :where(.primary-button,.search-field button,.search-box>button){box-shadow:0 5px 14px rgba(72,105,218,.16)!important}
 html[data-theme="dark"] body :where(.primary-button,.search-field button,.search-box>button){box-shadow:0 5px 15px rgba(0,0,0,.22)!important}
 
 /* Capsules are used only for semantically compact choices/chips. */
@@ -112,7 +110,21 @@ html[data-theme] body :where(.landing-header-actions,.setup-header-actions) :whe
   box-shadow:none!important;
   color:var(--text)!important;
 }
-html[data-theme] body :where(.landing-header-actions,.setup-header-actions) :where(.neo-button.compact,.landing-mode-switch,.quiet-link,.flow-theme-cycle):active{
+/* University's legacy polish uses a two-class important selector; beat it explicitly. */
+html[data-theme] body .setup-header .quiet-link,
+html[data-theme] body .setup-header .flow-theme-cycle,
+html[data-theme] body .landing-header .neo-button.compact,
+html[data-theme] body .landing-header .landing-mode-switch{
+  border-radius:var(--flow-radius-control)!important;
+  corner-shape:round!important;
+  background:var(--surface-2)!important;
+  border:1px solid var(--flow-separator)!important;
+  box-shadow:none!important;
+  color:var(--text)!important;
+}
+html[data-theme] body :where(.landing-header-actions,.setup-header-actions) :where(.neo-button.compact,.landing-mode-switch,.quiet-link,.flow-theme-cycle):active,
+html[data-theme] body .setup-header .quiet-link:active,
+html[data-theme] body .setup-header .flow-theme-cycle:active{
   box-shadow:none!important;
   background:color-mix(in srgb,var(--surface-2) 76%,var(--accent) 24%)!important;
 }
@@ -122,9 +134,7 @@ html[data-theme="dark"] body :where(
   .search-card,.school-search-panel,.panel,.content-card,.summary-card:not(.next-card),.status-card,
   .metric-card,.profile-card,.basic-item,.backup-box,.profile-data-status
 ){background:var(--surface)!important;color:var(--text)!important}
-html[data-theme="dark"] body :where(.search-field,.search-box,.dialog-field input,.dialog-field select,.setting-fields input,.month-picker,.major-button){
-  background:var(--surface-2)!important;color:var(--text)!important
-}
+html[data-theme="dark"] body :where(.search-field,.search-box,.dialog-field input,.dialog-field select,.setting-fields input,.month-picker,.major-button){background:var(--surface-2)!important;color:var(--text)!important}
 html[data-theme="dark"] body .privacy-note{
   background:var(--surface-2)!important;
   color:var(--text)!important;
