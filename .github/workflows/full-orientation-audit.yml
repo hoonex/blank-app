@@ -29,6 +29,7 @@ jobs:
           node --check tests/optical-glass-settings-audit.mjs
           node --check tests/optical-refraction-visual-audit.mjs
           node --check tests/optical-runtime-bug-audit.mjs
+          node --check tests/optical-nav-layout-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
@@ -61,6 +62,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-runtime-bug-audit.mjs
+      - name: Verify Optical nav stays one row and aligned
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/optical-nav-layout-audit.mjs
       - name: Verify transient sheet direct drag and dismiss
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -90,4 +95,5 @@ jobs:
             native-feel-audit/
             settings-navigation-visual-audit/
             optical-refraction-audit/
+            optical-nav-layout-audit/
           retention-days: 7
