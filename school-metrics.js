@@ -1,3 +1,5 @@
+import '/flow-native.js';
+
 const EVENT_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event';
 const SCHOOL_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data';
 const SCHOOL_LOGO_EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-logo';
