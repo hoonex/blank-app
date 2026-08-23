@@ -164,8 +164,13 @@ function sanitizeClone(copy){
 function cloneSource(){
   if(!source||!scene)return;
   ensureIdStyleAliases();
-  const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=sourceKind(source);copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
+  const kind=sourceKind(source),copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=kind;copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
   copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
+  /* The School mobile header is sticky viewport chrome. A DOM clone inside the
+     bottom lens would make that sticky header re-stick inside the aperture and
+     visually refract the Flow wordmark instead of the content actually behind
+     the bottom navigation. It is never physically behind the bottom bar. */
+  if(kind==='school-main')copy.querySelector('.mobile-topbar')?.remove();
   sanitizeClone(copy);
   scene.replaceChildren(copy);
   syncGeometry();
