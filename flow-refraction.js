@@ -2,7 +2,7 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
-let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='',stylePromise=null;
+let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapData='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
@@ -17,7 +17,20 @@ function ensureStyles(){
   return stylePromise;
 }
 function activeNav(){return [...document.querySelectorAll(NAV_SELECTOR)].find(visible)||null}
-function sourceFor(node){return node?.classList.contains('mobile-bottom-nav')?document.querySelector('.product-main'):document.querySelector('.main')}
+function sourceFor(node){
+  if(node?.classList.contains('mobile-bottom-nav')){
+    const dedicated=document.querySelector('#switchDialog[open][data-flow-dedicated="true"]');
+    if(dedicated&&visible(dedicated))return dedicated;
+    return document.querySelector('.product-main');
+  }
+  return document.querySelector('.main');
+}
+function sourceKind(node){
+  if(node?.matches?.('#switchDialog[open][data-flow-dedicated="true"]'))return'school-switch';
+  if(node?.classList?.contains('product-main'))return'school-main';
+  if(node?.classList?.contains('main'))return'university-main';
+  return'unknown';
+}
 function tabs(node){return node?[...node.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)].filter(button=>!button.hidden&&getComputedStyle(button).display!=='none'):[]}
 function targetX(node){
   const list=tabs(node);if(!node||!list.length)return 0;
@@ -38,8 +51,7 @@ function syncSceneMotion({animate=false}={}){
 
 /* Kube-style convex refraction profile: a squircle surface supplies the slope,
    Snell's law converts that slope to a refracted ray, and the resulting
-   magnitude is normalized into the R/G displacement field. The outer edge and
-   flat interior both resolve to neutral, concentrating the bend in the bezel. */
+   magnitude is normalized into the R/G displacement field. */
 function roundedRectSdf(x,y,halfW,halfH,radius){
   const qx=Math.abs(x)-(halfW-radius),qy=Math.abs(y)-(halfH-radius),ox=Math.max(qx,0),oy=Math.max(qy,0);
   return Math.hypot(ox,oy)+Math.min(Math.max(qx,qy),0)-radius;
@@ -83,14 +95,27 @@ function supportsSvgFilter(){
 }
 async function prepareFilter(){
   const filter=document.querySelector('#flow-liquid-nav-refraction');if(!filter)return false;
+  /* feImage percentages only fit the filtered element when filter primitives use
+     objectBoundingBox coordinates. The previous userSpaceOnUse default placed
+     the displacement raster outside a bottom-positioned HTML lens, leaving in2
+     transparent black and producing a uniform half-scale diagonal shift. */
+  const host=document.querySelector('#flow-liquid-optics'),svg=host?.querySelector('svg');
+  if(host)host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:1px;height:1px;overflow:visible;pointer-events:none';
+  if(svg){svg.setAttribute('width','1');svg.setAttribute('height','1')}
+  filter.setAttribute('filterUnits','objectBoundingBox');
+  filter.setAttribute('primitiveUnits','objectBoundingBox');
   filter.setAttribute('color-interpolation-filters','sRGB');
-  filter.querySelector('feDisplacementMap')?.setAttribute('scale','20');
-  filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.10');
+  const displacement=filter.querySelector('feDisplacementMap'),blur=filter.querySelector('feGaussianBlur'),image=filter.querySelector('feImage');
+  if(image){image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','1');image.setAttribute('height','1');image.setAttribute('preserveAspectRatio','none')}
+  /* Object-bbox units make .18 roughly 16px horizontally and 8px vertically on
+     the 89.5x46 mobile lens: strong enough to see the bevel without moving the
+     flat center. */
+  displacement?.setAttribute('scale','.18');
+  blur?.setAttribute('stdDeviation','.001');
   filter.querySelector('feColorMatrix')?.setAttribute('values','1.04');
-  const image=filter.querySelector('feImage');
-  if(image&&!mapUrl){
-    const href=snellDisplacementMap(320,112,{radiusRatio:.49,bezelRatio:.28,refractiveIndex:1.5,oversample:2});
-    if(href)try{const blob=await fetch(href).then(response=>response.blob());mapUrl=URL.createObjectURL(blob);image.setAttribute('href',mapUrl)}catch{image.setAttribute('href',href)}
+  if(image&&!mapData){
+    mapData=snellDisplacementMap(320,112,{radiusRatio:.49,bezelRatio:.28,refractiveIndex:1.5,oversample:2});
+    if(mapData)image.setAttribute('href',mapData);
   }
   return supportsSvgFilter();
 }
@@ -104,9 +129,30 @@ function ensureLens(){
   sample.append(scene);lens.append(sample);nav.prepend(lens);
   return true;
 }
+
+function rewriteIdSelector(selector){
+  return selector.replace(/#([A-Za-z_][\w-]*)/g,(_,id)=>`:is([data-flow-refraction-id="${id}"],#flow-refraction-specificity-sentinel)`);
+}
+function collectIdAliasRules(rules){
+  let output='';
+  for(const rule of rules){
+    if(rule.selectorText&&rule.selectorText.includes('#')&&rule.style){output+=`${rewriteIdSelector(rule.selectorText)}{${rule.style.cssText}}`;continue}
+    if(!rule.cssRules?.length)continue;
+    const inner=collectIdAliasRules(rule.cssRules);if(!inner)continue;
+    const text=rule.cssText||'',brace=text.indexOf('{');if(brace>0)output+=`${text.slice(0,brace)}{${inner}}`;
+  }
+  return output;
+}
+function ensureIdStyleAliases(){
+  const sheets=[...document.styleSheets],signature=sheets.map(sheet=>{try{return`${sheet.href||'inline'}:${sheet.cssRules.length}`}catch{return`${sheet.href||'external'}:x`}}).join('|');
+  if(signature===idAliasSignature&&idAliasStyle?.isConnected)return;
+  let css='';for(const sheet of sheets)try{css+=collectIdAliasRules(sheet.cssRules)}catch{}
+  if(!idAliasStyle){idAliasStyle=document.createElement('style');idAliasStyle.id='flow-refraction-id-aliases';document.head.append(idAliasStyle)}
+  idAliasStyle.textContent=css;idAliasSignature=signature;
+}
 function sanitizeClone(copy){
-  copy.removeAttribute('id');
-  copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  const idNodes=[];if(copy.id)idNodes.push(copy);copy.querySelectorAll('[id]').forEach(node=>idNodes.push(node));
+  idNodes.forEach(node=>{node.dataset.flowRefractionId=node.id;node.removeAttribute('id')});
   copy.querySelectorAll('label[for]').forEach(node=>node.removeAttribute('for'));
   copy.querySelectorAll('[aria-controls],[aria-labelledby],[aria-describedby]').forEach(node=>{node.removeAttribute('aria-controls');node.removeAttribute('aria-labelledby');node.removeAttribute('aria-describedby')});
   copy.querySelectorAll('button,a,input,select,textarea,[tabindex]').forEach(node=>{
@@ -117,18 +163,24 @@ function sanitizeClone(copy){
 }
 function cloneSource(){
   if(!source||!scene)return;
-  const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
+  ensureIdStyleAliases();
+  const kind=sourceKind(source),copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=kind;copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
   copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
+  /* The School mobile header is sticky viewport chrome. A DOM clone inside the
+     bottom lens would make that sticky header re-stick inside the aperture and
+     visually refract the Flow wordmark instead of the content actually behind
+     the bottom navigation. It is never physically behind the bottom bar. */
+  if(kind==='school-main')copy.querySelector('.mobile-topbar')?.remove();
   sanitizeClone(copy);
   scene.replaceChildren(copy);
   syncGeometry();
 }
 function syncGeometry({animateScene=false}={}){
   if(!ensureLens()||!visible(nav)||!visible(source))return;
-  const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild;
+  const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild,isDedicated=source.matches?.('#switchDialog[open][data-flow-dedicated="true"]'),localScrollLeft=isDedicated?source.scrollLeft:0,localScrollTop=isDedicated?source.scrollTop:0;
   nav.style.setProperty('--flow-refraction-rest-x',`${targetX(nav).toFixed(2)}px`);
-  nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-(navRect.left+INSET)).toFixed(2)}px`);
-  nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-(navRect.top+INSET)).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-localScrollLeft-(navRect.left+INSET)).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-localScrollTop-(navRect.top+INSET)).toFixed(2)}px`);
   if(copy){
     copy.style.setProperty('position','absolute','important');copy.style.setProperty('left','0','important');copy.style.setProperty('top','0','important');
     copy.style.setProperty('width',`${sourceRect.width.toFixed(2)}px`,'important');copy.style.setProperty('height',`${Math.max(sourceRect.height,source.scrollHeight).toFixed(2)}px`,'important');
@@ -158,14 +210,13 @@ window.addEventListener('flow:refraction-refresh',()=>scheduleRefresh(0),{passiv
 window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passive:true});
 window.addEventListener('scroll',onScroll,{passive:true,capture:true});
 window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
-window.addEventListener('pageshow',()=>scheduleRefresh(40),{passive:true});
-window.addEventListener('pagehide',()=>{if(mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
+window.addEventListener('pageshow',event=>{if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
 
+document.addEventListener('focusin',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(0)},{capture:true,passive:true});
+document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(520)},{capture:true,passive:true});
+document.addEventListener('close',event=>{if(event.target?.matches?.('#switchDialog'))scheduleRefresh(0)},true);
 document.addEventListener('pointermove',event=>{
   if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
-  /* flow-native.js is registered first and has already written --flow-lens-x.
-     Mirror that exact translation with the inverse transform so the visual
-     copy stays registered to the real page while the glass aperture moves. */
   syncSceneMotion({animate:false});
 },{capture:true,passive:true});
 document.addEventListener('pointerup',event=>{
@@ -181,6 +232,7 @@ document.addEventListener('transitionend',event=>{
   syncSceneMotion({animate:false});
 },{passive:true});
 document.addEventListener('click',event=>{
+  if(event.target.closest?.('#mobileSchoolBtn,#schoolBtn')){queueMicrotask(()=>scheduleRefresh(0));return}
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
   queueMicrotask(()=>syncGeometry({animateScene:true}));scheduleRefresh(460);
 },{passive:true});
