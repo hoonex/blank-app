@@ -231,15 +231,16 @@ async function auditSchool(c) {
     await page.locator('#flowSchoolSettingsView [data-flow-bell="start"]').fill('08:20'); await page.locator('#flowSchoolSettingsView [data-flow-bell="lesson"]').fill('50'); await page.locator('#flowSchoolSettingsView [data-flow-bell="break"]').fill('10'); await page.locator('#flowSchoolSettingsView [data-flow-bell="meal"]').fill('12:10');
     states.settings = await geom(page, `${c.name} school settings`, c.hasTouch); await shot(page, `${c.name}-school-settings`, false); await page.locator('#flowSchoolSettingsView [data-flow-save-school]').click();
     const bell = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-school-bell-v1') || '{}')); if (bell.start !== '08:20' || bell.meal !== '12:10') throw new Error(`${c.name} school settings did not persist: ${JSON.stringify(bell)}`);
-    await visibleClick(page, '[data-view="week"]'); await page.waitForFunction(() => !document.querySelector('#weekView')?.classList.contains('hidden'));
-    states.week = await geom(page, `${c.name} school week`, c.hasTouch); await page.locator('#nextWeek').click(); await page.waitForTimeout(80); await page.locator('#thisWeekBtn').click(); await shot(page, `${c.name}-school-week`);
+    await visibleClick(page, '[data-view="today"]'); await page.locator('#todayView:not(.hidden)').waitFor();
+    const inlineWeekToggle = page.locator('.timetable-mode-toggle [data-view="week"]'); await inlineWeekToggle.scrollIntoViewIfNeeded(); await inlineWeekToggle.click(); await page.locator('#inlineWeekTimetable:not(.hidden)').waitFor();
+    states.week = await geom(page, `${c.name} school inline week`, c.hasTouch); await page.locator('#nextWeek').click(); await page.waitForTimeout(80); await page.locator('#thisWeekBtn').click(); await shot(page, `${c.name}-school-week`);
     await visibleClick(page, '[data-view="schedule"]'); await page.waitForFunction(() => !document.querySelector('#scheduleView')?.classList.contains('hidden'));
     states.schedule = await geom(page, `${c.name} school schedule`, c.hasTouch); await page.locator('#nextMonth').click(); await page.waitForTimeout(80); await page.locator('#prevMonth').click(); if (!(await page.locator('#calendarGrid .calendar-day').count())) throw new Error(`${c.name} school calendar missing`); await shot(page, `${c.name}-school-schedule`);
     await visibleClick(page, '[data-view="school"]'); await page.waitForFunction(() => !document.querySelector('#schoolView')?.classList.contains('hidden')); await page.locator('#schoolInfoGrid .info-tile').first().waitFor();
     await page.waitForFunction(() => document.querySelector('#mapLink')?.dataset.mapResolved === 'true'); states.school = await geom(page, `${c.name} school info`, c.hasTouch);
     if (!(await page.locator('#mapLink').getAttribute('href'))?.includes('place.map.kakao.com')) throw new Error(`${c.name} school map did not resolve`);
     await page.locator('#rankTotal').fill('240'); await page.locator('#rankValue').fill('23'); if ((await page.locator('#rankMain').textContent())?.includes('값을 입력')) throw new Error(`${c.name} rank calculator did not update`); await shot(page, `${c.name}-school-info`);
-    await visibleClick(page, '#schoolBtn,#mobileSchoolBtn'); await page.locator('#switchDialog').waitFor({ state: 'visible' }); states.switchDialog = await geom(page, `${c.name} school switch dialog`, c.hasTouch); await page.locator('#switchDialog .dialog-close').click();
+    await visibleClick(page, '#schoolBtn,#mobileSchoolBtn'); await page.locator('#switchDialog').waitFor({ state: 'visible' }); states.switchDialog = await geom(page, `${c.name} school switch surface`, c.hasTouch); await shot(page, `${c.name}-school-switch`, false); await page.locator('#switchDialog .dialog-close').click();
     if ((await page.locator('[data-flow-mode-switch="university"]').first().getAttribute('href')) !== '/university') throw new Error(`${c.name} school mode switch href is wrong`);
     await visibleClick(page, '#schoolBtn,#mobileSchoolBtn'); await page.locator('#changeSchoolBtn').click(); await page.locator('#landing:not(.hidden)').waitFor();
     assertNoBrowserErrors(`${c.name} school`, errors);
@@ -254,6 +255,17 @@ async function ensureMemoVisible(page) {
     await page.locator('[data-v2-picker-id="memo"],[data-picker-id="memo"]').first().click(); await page.locator('[data-widget-picker-close]').click();
   }
   return memo;
+}
+async function clickVisiblePersonal(page, personalId) {
+  const matches = page.locator(`[data-custom-id="${personalId}"]`), count = await matches.count();
+  for (let i = 0; i < count; i++) {
+    const item = matches.nth(i);
+    if (!await item.isVisible()) continue;
+    await item.scrollIntoViewIfNeeded();
+    await item.click();
+    return;
+  }
+  throw new Error(`No visible personal schedule target for ${personalId}`);
 }
 async function auditUniversity(c) {
   const context = await browser.newContext({ viewport: c.viewport, isMobile: c.isMobile, hasTouch: c.hasTouch, deviceScaleFactor: 1, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme: 'light', acceptDownloads: true });
@@ -303,7 +315,7 @@ async function auditUniversity(c) {
     await page.locator('#addPersonalBtn').click(); await page.locator('#personalDialog').waitFor({ state: 'visible' }); await page.locator('#personalName').fill('방향 검수 일정'); await page.locator('#personalDay').selectOption('0'); await page.locator('#personalStart').fill('17:00'); await page.locator('#personalEnd').fill('18:00'); await page.locator('#personalPlace').fill('학생회관'); await page.locator('#personalForm button[type="submit"]').click();
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1') || '{}').subjects?.some(x => x.name === '방향 검수 일정'));
     const personalId = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-university-timetable-v1')).subjects.find(x => x.name === '방향 검수 일정')?.id);
-    await page.locator(`[data-custom-id="${personalId}"]`).first().click(); await page.locator('#personalName').fill('방향 검수 일정 수정'); await page.locator('#personalForm button[type="submit"]').click(); await page.locator(`[data-custom-id="${personalId}"]`).first().click(); await page.locator('#deletePersonalBtn').click();
+    await clickVisiblePersonal(page, personalId); await page.locator('#personalName').fill('방향 검수 일정 수정'); await page.locator('#personalForm button[type="submit"]').click(); await clickVisiblePersonal(page, personalId); await page.locator('#deletePersonalBtn').click();
 
     await page.evaluate(tt => localStorage.setItem('flow-university-timetable-v1', JSON.stringify(tt)), campusTimetable());
     await visibleClick(page, '[data-view="campus"]'); await page.locator('#campusView:not(.hidden)').waitFor(); await page.locator('#campusMapWrap img').waitFor(); await page.waitForFunction(() => { const i = document.querySelector('#campusMapWrap img'); return i?.complete && i.naturalWidth > 100; });

@@ -100,8 +100,8 @@ async function school(){
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.addInitScript(({school})=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light')},{school});
   await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();
-  const travel=await assertTravel(page,{nav:'#bottomNav',item:'.mobile-tab',tabs:['.mobile-tab[data-view="today"]:visible','.mobile-tab[data-view="week"]:visible','.mobile-tab[data-view="schedule"]:visible','.mobile-tab[data-view="school"]:visible'],label:'school'});
-  const drag=await assertDirectDrag(page,{nav:'#bottomNav',item:'.mobile-tab',from:'.mobile-tab[data-view="today"]:visible',target:'.mobile-tab[data-view="schedule"]:visible',label:'school'});
+  const travel=await assertTravel(page,{nav:'#bottomNav',item:'.mobile-tab',tabs:['#bottomNav>.mobile-tab[data-view="today"]:visible','#bottomNav>.mobile-tab[data-view="schedule"]:visible','#bottomNav>.mobile-tab[data-view="school"]:visible','#mobileSettingsBtn:visible'],label:'school'});
+  const drag=await assertDirectDrag(page,{nav:'#bottomNav',item:'.mobile-tab',from:'#bottomNav>.mobile-tab[data-view="today"]:visible',target:'#bottomNav>.mobile-tab[data-view="schedule"]:visible',label:'school'});
   await page.screenshot({path:`${OUT}/liquid-lens-school.png`,fullPage:false});await context.close();return{travel,drag};
 }
 async function university(){
