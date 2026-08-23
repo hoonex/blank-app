@@ -72,17 +72,17 @@ await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-c
 await page.evaluate(()=>document.querySelector('body > #switchDialog')?.close());
 await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-copy[data-flow-refraction-source="school-main"] [data-flow-refraction-id="flowRefractionFidelityProbe"]'));
 
-// BFCache pagehide must not revoke the live displacement-map blob used on restore.
+// The displacement map is an inline data URI, so BFCache transitions cannot revoke it.
 const lifecycle=await page.evaluate(async()=>{
   const image=document.querySelector('#flow-liquid-nav-refraction feImage'),href=image?.getAttribute('href')||'';
   const probe=async()=>{try{return (await fetch(href)).ok}catch{return false}};
   const before=await probe();
   const make=(type,persisted)=>{try{return new PageTransitionEvent(type,{persisted})}catch{const event=new Event(type);Object.defineProperty(event,'persisted',{value:persisted});return event}};
-  window.dispatchEvent(make('pagehide',true));const afterHide=await probe();window.dispatchEvent(make('pageshow',true));await new Promise(resolve=>setTimeout(resolve,80));const afterShow=await probe();
-  return{href,before,afterHide,afterShow,source:document.querySelector('.flow-refraction-source-copy')?.dataset.flowRefractionSource};
+  window.dispatchEvent(make('pagehide',true));const afterHideHref=image?.getAttribute('href')||'',afterHide=await probe();window.dispatchEvent(make('pageshow',true));await new Promise(resolve=>setTimeout(resolve,80));const afterShowHref=image?.getAttribute('href')||'',afterShow=await probe();
+  return{href,afterHideHref,afterShowHref,before,afterHide,afterShow,source:document.querySelector('.flow-refraction-source-copy')?.dataset.flowRefractionSource};
 });
-if(!lifecycle.href.startsWith('blob:')||!lifecycle.before||!lifecycle.afterHide||!lifecycle.afterShow||lifecycle.source!=='school-main')throw new Error(`Optical BFCache lifecycle broke the displacement map or source: ${JSON.stringify(lifecycle)}`);
+if(!lifecycle.href.startsWith('data:image/png')||lifecycle.afterHideHref!==lifecycle.href||lifecycle.afterShowHref!==lifecycle.href||!lifecycle.before||!lifecycle.afterHide||!lifecycle.afterShow||lifecycle.source!=='school-main')throw new Error(`Optical BFCache lifecycle broke the inline displacement map or source: ${JSON.stringify(lifecycle)}`);
 if(pageErrors.length)throw new Error(`Page errors during Optical runtime audit: ${JSON.stringify(pageErrors)}`);
 
-console.log(JSON.stringify({fidelity,sourceState,scrollState,lifecycle},null,2));
+console.log(JSON.stringify({fidelity,sourceState,scrollState,lifecycle:{...lifecycle,href:`${lifecycle.href.slice(0,32)}...`}},null,2));
 await context.close();await browser.close();
