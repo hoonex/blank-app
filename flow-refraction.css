@@ -52,10 +52,10 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
 }
 .flow-refraction-scene{
   position:absolute;
-  left:calc(var(--flow-refraction-scene-left,0px) - var(--flow-lens-x,var(--flow-refraction-rest-x,0px)));
+  left:var(--flow-refraction-scene-left,0px);
   top:var(--flow-refraction-scene-top,0px);
   pointer-events:none;
-  transform:none!important;
+  transform:translate3d(calc(0px - var(--flow-lens-x,var(--flow-refraction-rest-x,0px))),0,0)!important;
   transform-origin:0 0;
 }
 .flow-refraction-source-copy,
