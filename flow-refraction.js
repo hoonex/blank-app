@@ -95,6 +95,12 @@ function supportsSvgFilter(){
 }
 async function prepareFilter(){
   const filter=document.querySelector('#flow-liquid-nav-refraction');if(!filter)return false;
+  /* Chromium resolves raster filter inputs more reliably when the defining SVG
+     owns a non-zero viewport and is not trapped by strict containment. Keep it
+     offscreen rather than collapsing it to 0x0 or display:none. */
+  const host=document.querySelector('#flow-liquid-optics'),svg=host?.querySelector('svg');
+  if(host)host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:1px;height:1px;overflow:visible;pointer-events:none';
+  if(svg){svg.setAttribute('width','1');svg.setAttribute('height','1')}
   filter.setAttribute('color-interpolation-filters','sRGB');
   filter.querySelector('feDisplacementMap')?.setAttribute('scale','20');
   filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.10');
