@@ -32,7 +32,12 @@ function ensureStyles(){
 .flow-settings-view .flow-settings-meta{display:block;margin-top:10px;color:var(--muted);font-size:.68rem;line-height:1.5}
 html[data-theme] body .mobile-bottom-nav:has(> .mobile-tab.active:nth-child(5)),html[data-theme] body .bottom-nav:has(> .bottom-item.active:nth-child(5)){--flow-tab-index:4}
 html[data-theme] body :is(.mobile-bottom-nav,.bottom-nav)>.flow-mobile-settings{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important}
-@media(max-width:900px){.flow-settings-view{padding-top:4px}.flow-settings-view .flow-settings-stack{gap:12px}.flow-settings-view .flow-settings-card{padding:18px;border-radius:18px}.flow-settings-view .flow-settings-fields{grid-template-columns:1fr}.flow-settings-view .flow-settings-fields.one{grid-template-columns:1fr}.flow-settings-view .flow-settings-header h1{font-size:2.15rem}.flow-settings-view .flow-settings-header p{font-size:.8rem}}
+@media(max-width:900px){
+  .flow-settings-view{padding-top:4px}
+  #flowSchoolSettingsView:not(.hidden),#flowUniversitySettingsView:not(.hidden){position:fixed;z-index:35;inset:64px 0 0;overflow-y:auto;overscroll-behavior:contain;background:var(--bg);padding:18px 11px 112px}
+  .flow-settings-view .flow-settings-stack{gap:12px}.flow-settings-view .flow-settings-card{padding:18px;border-radius:18px}.flow-settings-view .flow-settings-fields{grid-template-columns:1fr}.flow-settings-view .flow-settings-fields.one{grid-template-columns:1fr}.flow-settings-view .flow-settings-header h1{font-size:2.15rem}.flow-settings-view .flow-settings-header p{font-size:.8rem}
+}
+@media(max-width:900px) and (max-height:520px){#flowSchoolSettingsView:not(.hidden),#flowUniversitySettingsView:not(.hidden){inset:54px 0 0;padding-top:10px}}
 @media(max-width:430px){.flow-settings-view .flow-settings-card{padding:16px}.flow-settings-view .flow-settings-segment{gap:6px}.flow-settings-view .flow-settings-segment button{font-size:.78rem}}
 `;
   document.head.append(style);
