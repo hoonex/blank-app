@@ -61,27 +61,38 @@ await page.addInitScript(({school})=>{
   localStorage.setItem('flow-glass-mode-v2','optical');
 },{school:SCHOOL});
 await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();
-await page.waitForFunction(()=>document.documentElement.dataset.flowGlassRefraction==='true');
+await page.waitForFunction(()=>document.documentElement.dataset.flowRefractionCopy==='true'&&document.querySelector('.flow-refraction-copy-lens'));
+
 await page.evaluate(()=>{
-  const pattern=document.createElement('div');pattern.id='flowRefractionCalibration';pattern.setAttribute('aria-hidden','true');
+  const source=document.querySelector('.product-main'),nav=document.querySelector('#bottomNav');
+  const sr=source.getBoundingClientRect(),nr=nav.getBoundingClientRect();source.style.position='relative';
+  const pattern=document.createElement('div');pattern.dataset.flowRefractionCalibration='true';pattern.setAttribute('aria-hidden','true');
   pattern.innerHTML='<strong>REFRACTION 0123456789</strong>';
-  pattern.style.cssText='position:fixed;z-index:0;left:0;right:0;bottom:0;height:150px;pointer-events:none;background-color:#f8fbff;background-image:linear-gradient(rgba(5,14,30,.95) 2px,transparent 2px),linear-gradient(90deg,rgba(5,14,30,.95) 2px,transparent 2px);background-size:12px 12px;color:#061126;font:900 22px/1 system-ui;letter-spacing:1px;padding:38px 4px 0;white-space:nowrap';
-  document.body.append(pattern);
-  const neutral=document.createElement('style');neutral.id='flowRefractionNeutral';neutral.textContent='html[data-flow-glass-refraction="true"] body :where(.mobile-bottom-nav,.bottom-nav){box-shadow:none!important;border-color:transparent!important} html[data-flow-glass-refraction="true"] body .mobile-bottom-nav::before,html[data-flow-glass-refraction="true"] body .bottom-nav::before{background:rgba(255,255,255,.025)!important;border:0!important;box-shadow:none!important}';document.head.append(neutral);
+  pattern.style.cssText=`position:absolute;z-index:8;left:0;right:0;top:${Math.max(0,nr.top-sr.top-22)}px;height:100px;pointer-events:none;background-color:#f8fbff;background-image:linear-gradient(rgba(5,14,30,.95) 2px,transparent 2px),linear-gradient(90deg,rgba(5,14,30,.95) 2px,transparent 2px);background-size:12px 12px;color:#061126;font:900 22px/1 system-ui;letter-spacing:1px;padding:35px 4px 0;white-space:nowrap`;
+  source.append(pattern);window.dispatchEvent(new CustomEvent('flow:refraction-refresh'));
+  const neutral=document.createElement('style');neutral.id='flowRefractionNeutral';neutral.textContent='html[data-flow-refraction-copy="true"] body :where(.mobile-bottom-nav,.bottom-nav){box-shadow:none!important;border-color:transparent!important;background:rgba(255,255,255,.14)!important} html[data-flow-refraction-copy="true"] body .mobile-bottom-nav::before,html[data-flow-refraction-copy="true"] body .bottom-nav::before{background:rgba(255,255,255,.025)!important;border:0!important;box-shadow:none!important}';document.head.append(neutral);
 });
-await page.waitForTimeout(120);
-const state=await page.evaluate(()=>{
-  const nav=document.querySelector('#bottomNav'),ns=getComputedStyle(nav),ps=getComputedStyle(nav,'::before'),r=nav.getBoundingClientRect();
-  const matrix=new DOMMatrixReadOnly(ps.transform==='none'?undefined:ps.transform),left=r.left+parseFloat(ps.left||0)+matrix.m41,top=r.top+parseFloat(ps.top||0),width=parseFloat(ps.width),height=r.height-parseFloat(ps.top||0)-parseFloat(ps.bottom||0);
-  return{navBackdrop:ns.backdropFilter||ns.webkitBackdropFilter||'',lensBackdrop:ps.backdropFilter||ps.webkitBackdropFilter||'',navRect:{left:r.left,top:r.top,width:r.width,height:r.height},lensRect:{left,top,width,height},root:{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}};
+await page.waitForFunction(()=>document.querySelector('.flow-refraction-copy-lens [data-flow-refraction-calibration="true"]'));
+await page.waitForTimeout(140);
+
+const state=await page.evaluate(async()=>{
+  const nav=document.querySelector('#bottomNav'),lens=document.querySelector('.flow-refraction-copy-lens'),sample=document.querySelector('.flow-refraction-sample'),original=document.querySelector('.product-main>[data-flow-refraction-calibration="true"]'),copy=lens.querySelector('[data-flow-refraction-calibration="true"]');
+  const ns=getComputedStyle(nav),ps=getComputedStyle(nav,'::before'),ss=getComputedStyle(sample),lr=lens.getBoundingClientRect(),or=original.getBoundingClientRect(),cr=copy.getBoundingClientRect();
+  const initialAlignment={x:Math.abs(or.left-cr.left),y:Math.abs(or.top-cr.top)};
+  nav.style.setProperty('--flow-lens-x','73px');await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
+  const moved=copy.getBoundingClientRect(),movedOriginal=original.getBoundingClientRect(),movedAlignment={x:Math.abs(movedOriginal.left-moved.left),y:Math.abs(movedOriginal.top-moved.top)};
+  nav.style.removeProperty('--flow-lens-x');await new Promise(requestAnimationFrame);
+  return{navBackdrop:ns.backdropFilter||ns.webkitBackdropFilter||'',pseudoBackdrop:ps.backdropFilter||ps.webkitBackdropFilter||'',sampleFilter:ss.filter||'',lensRect:{left:lr.left,top:lr.top,width:lr.width,height:lr.height},initialAlignment,movedAlignment,root:{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}};
 });
-if(state.navBackdrop!=='none')throw new Error(`Optical nav still creates a nested backdrop root: ${JSON.stringify(state)}`);
-if(!/url\([^)]*flow-liquid-nav-refraction/i.test(state.lensBackdrop))throw new Error(`Optical lens filter is missing: ${JSON.stringify(state)}`);
+if(!/url\([^)]*flow-liquid-nav-refraction/i.test(state.sampleFilter))throw new Error(`Ordinary SVG refraction filter is missing: ${JSON.stringify(state)}`);
+if(state.pseudoBackdrop!=='none')throw new Error(`Legacy backdrop refraction still owns the lens: ${JSON.stringify(state)}`);
+if(Math.max(state.initialAlignment.x,state.initialAlignment.y,state.movedAlignment.x,state.movedAlignment.y)>2)throw new Error(`Counter-positioned source copy drifted from the real surface: ${JSON.stringify(state)}`);
 if(state.root.scrollWidth>state.root.clientWidth+3)throw new Error(`Optical calibration overflowed: ${JSON.stringify(state)}`);
 const clip={x:Math.max(0,state.lensRect.left),y:Math.max(0,state.lensRect.top),width:Math.min(390,state.lensRect.width),height:Math.min(844,state.lensRect.height)};
-const controlStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionControl';s.textContent='html[data-flow-glass-refraction="true"] body .mobile-bottom-nav::before,html[data-flow-glass-refraction="true"] body .bottom-nav::before{backdrop-filter:blur(1.25px) saturate(168%) contrast(1.055)!important;-webkit-backdrop-filter:blur(1.25px) saturate(168%) contrast(1.055)!important}';document.head.append(s);return s.id});
-await page.waitForTimeout(80);const control=await page.screenshot({path:`${OUT}/control-no-displacement.png`,clip,animations:'disabled'});
-await page.evaluate(id=>document.getElementById(id)?.remove(),controlStyle);await page.waitForTimeout(100);const optical=await page.screenshot({path:`${OUT}/optical-displacement.png`,clip,animations:'disabled'});
+
+const controlStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionControl';s.textContent='.flow-refraction-sample{filter:none!important}';document.head.append(s);return s.id});
+await page.waitForTimeout(100);const control=await page.screenshot({path:`${OUT}/control-no-displacement.png`,clip,animations:'disabled'});
+await page.evaluate(id=>document.getElementById(id)?.remove(),controlStyle);await page.waitForTimeout(120);const optical=await page.screenshot({path:`${OUT}/optical-displacement.png`,clip,animations:'disabled'});
 await page.screenshot({path:`${OUT}/optical-calibration-full.png`,fullPage:false,animations:'disabled'});
 const a=decodePng(control),b=decodePng(optical);
 const edge=regionDiff(a,b,(x,y,w,h)=>x<w*.27||x>w*.73||y<h*.27||y>h*.73);
