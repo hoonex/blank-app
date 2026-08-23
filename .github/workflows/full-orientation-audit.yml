@@ -28,6 +28,7 @@ jobs:
           node --check tests/native-sheet-drag-audit.mjs
           node --check tests/optical-glass-settings-audit.mjs
           node --check tests/optical-refraction-visual-audit.mjs
+          node --check tests/optical-runtime-bug-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
@@ -56,6 +57,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-refraction-visual-audit.mjs
+      - name: Verify Optical runtime source, scroll, and lifecycle stability
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/optical-runtime-bug-audit.mjs
       - name: Verify transient sheet direct drag and dismiss
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
