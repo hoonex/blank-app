@@ -35,7 +35,7 @@ async function mockSchool(page){
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.addInitScript(({school})=>{
     localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));
-    localStorage.setItem('flow-school-theme-v3','light');localStorage.removeItem('flow-glass-mode-v2');
+    localStorage.setItem('flow-school-theme-v3','light');
   },{school});
 }
 async function mockUniversity(page){
@@ -45,7 +45,7 @@ async function mockUniversity(page){
   await page.addInitScript(({university})=>{
     localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));
     localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));
-    localStorage.setItem('flow-university-theme-v1','light');localStorage.removeItem('flow-glass-mode-v2');
+    localStorage.setItem('flow-university-theme-v1','light');
   },{university});
 }
 
