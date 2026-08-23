@@ -16,14 +16,41 @@ async function lens(page,navSelector,itemSelector){
   return page.evaluate(({navSelector,itemSelector})=>{
     const nav=document.querySelector(navSelector),item=document.querySelector(itemSelector);
     const lens=nav?getComputedStyle(nav,'::before'):null,old=item?getComputedStyle(item,'::before'):null;
+    const rect=nav?.getBoundingClientRect();
     return{
-      content:lens?.content||'',transform:lens?.transform||'none',width:lens?.width||'',
+      content:lens?.content||'',transform:lens?.transform||'none',width:lens?.width||'',left:lens?.left||'',right:lens?.right||'',
       transitionDuration:lens?.transitionDuration||'',backdrop:lens?.backdropFilter||lens?.webkitBackdropFilter||'',
-      oldItemContent:old?.content||''
+      oldItemContent:old?.content||'',navRect:rect&&{left:rect.left,right:rect.right,width:rect.width},
+      root:{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}
     };
   },{navSelector,itemSelector});
 }
+async function overflowDiagnosis(page,navSelector){
+  return page.evaluate(navSelector=>{
+    const nav=document.querySelector(navSelector);
+    const measure=label=>{
+      void document.documentElement.offsetWidth;
+      const nr=nav?.getBoundingClientRect(),ps=nav?getComputedStyle(nav,'::before'):null;
+      return{label,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,innerWidth,
+        nav:nr&&{left:nr.left,right:nr.right,width:nr.width,overflow:getComputedStyle(nav).overflow},
+        pseudo:ps&&{content:ps.content,width:ps.width,left:ps.left,right:ps.right,transform:ps.transform,filter:ps.backdropFilter||ps.webkitBackdropFilter||'',boxShadow:ps.boxShadow}};
+    };
+    const rows=[measure('initial')];
+    const style=document.createElement('style');document.head.append(style);
+    const probe=(label,rule)=>{style.textContent=`${navSelector}::before{${rule}}`;rows.push(measure(label))};
+    probe('no-pseudo','content:none!important');
+    probe('no-transform','transform:none!important;transition:none!important');
+    probe('no-filter','backdrop-filter:none!important;-webkit-backdrop-filter:none!important');
+    probe('no-shadow','box-shadow:none!important');
+    probe('zero-width','width:0!important;border:0!important');
+    style.remove();
+    const oldDisplay=nav?.style.display;if(nav)nav.style.setProperty('display','none','important');rows.push(measure('nav-hidden'));if(nav){nav.style.display=oldDisplay||''}
+    return rows;
+  },navSelector);
+}
 async function assertTravel(page,{nav,item,tabs,label}){
+  const diagnosis=await overflowDiagnosis(page,nav);
+  console.log(`${label} overflow diagnosis: ${JSON.stringify(diagnosis)}`);
   const states=[];
   for(let i=0;i<tabs.length;i++){
     const selector=tabs[i];
@@ -36,7 +63,7 @@ async function assertTravel(page,{nav,item,tabs,label}){
   if(states.some(s=>s.content==='none'||s.content==='normal'||!s.backdrop.includes('blur')))throw new Error(`${label}: shared glass lens missing ${JSON.stringify(states)}`);
   if(states.some(s=>s.oldItemContent!=='none'))throw new Error(`${label}: per-button pill still exists ${JSON.stringify(states)}`);
   for(let i=1;i<xs.length;i++)if(!(xs[i]>xs[i-1]+8))throw new Error(`${label}: lens did not travel forward ${JSON.stringify({xs,states})}`);
-  return{xs,states};
+  return{diagnosis,xs,states};
 }
 
 async function school(){
