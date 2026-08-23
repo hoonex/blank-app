@@ -11,6 +11,13 @@ let settleTimer=0;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const now=()=>performance.now();
 
+function installMaterialLayer(){
+  const href='/flow-material.css';
+  let link=[...document.querySelectorAll('link[rel="stylesheet"]')].find(node=>{try{return new URL(node.href,location.href).pathname===href}catch{return false}});
+  if(!link){link=document.createElement('link');link.rel='stylesheet';link.href=href}
+  document.head.append(link);
+}
+
 /*
  * Real Liquid Glass is defined by lensing, not blur alone. On browsers that
  * actually retain an SVG URL filter in backdrop-filter, use a subtle live
@@ -35,8 +42,13 @@ function installLiquidGlassOptics(){
   probe.remove();
   document.documentElement.dataset.flowGlassRefraction=supported?'true':'fallback';
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLiquidGlassOptics,{once:true});
-else installLiquidGlassOptics();
+function installVisualSystem(){
+  installLiquidGlassOptics();
+  /* Existing School/University polish links finish synchronously on startup. Move this one last. */
+  setTimeout(installMaterialLayer,0);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installVisualSystem,{once:true});
+else installVisualSystem();
 
 function buttons(nav){return [...nav.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)]}
 function activeIndex(list){return Math.max(0,list.findIndex(button=>button.classList.contains('active')))}
