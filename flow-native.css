@@ -27,7 +27,6 @@
   to{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 
-/* A newly selected view should feel attached to the navigation action rather than blink in. */
 [data-view-panel]:not(.hidden),[data-panel]:not(.hidden){
   animation:flow-view-enter var(--flow-motion-medium) var(--flow-motion-spring) both;
   transform-origin:50% 18%;
@@ -37,14 +36,12 @@
   transform-origin:50% 0;
 }
 
-/* Native dialog entrance. Native <dialog> still owns focus trapping, Escape and semantics. */
 dialog[open] .sheet,dialog[open] .dialog-sheet{
   animation:flow-sheet-enter var(--flow-motion-sheet) var(--flow-motion-spring) both;
   transform-origin:50% 80%;
 }
 dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
 
-/* Press feedback is immediate and restrained; existing drag/resize surfaces are deliberately excluded. */
 :where(.neo-button,.primary-button,.soft-button,.nav-item,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.university-chip,.mobile-school,.mobile-school-button,.dialog-close,.text-button,.course-block[data-custom-id],.today-row.editable-row){
   touch-action:manipulation;
   transform-origin:center;
@@ -55,7 +52,6 @@ dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
   transition-duration:70ms!important;
 }
 
-/* Functional chrome gets the optical material; content cards stay flat/readable. */
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   html[data-theme] body .mobile-topbar,
   html[data-theme] body .mobile-header{
@@ -73,7 +69,6 @@ dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
     backdrop-filter:blur(26px) saturate(170%)!important;
     -webkit-backdrop-filter:blur(26px) saturate(170%)!important;
   }
-  /* Explicit rgba keeps computed colors compatible with existing 0-255 light-theme guards. */
   html[data-theme="light"] body .mobile-topbar,
   html[data-theme="light"] body .mobile-header{background:rgba(250,251,253,.82)!important}
   html[data-theme="light"] body .mobile-bottom-nav,
@@ -132,6 +127,7 @@ html[data-theme] body .mobile-bottom-nav::before,
 html[data-theme] body .bottom-nav::before{
   content:"";
   position:absolute;
+  box-sizing:border-box;
   z-index:0;
   pointer-events:none;
   top:5px;
@@ -157,7 +153,7 @@ html[data-theme] body .bottom-item{
   position:relative;
   z-index:1;
   isolation:isolate;
-  overflow:visible;
+  overflow:hidden;
   background:transparent!important;
 }
 html[data-theme] body .mobile-tab::before,
@@ -165,7 +161,6 @@ html[data-theme] body .bottom-item::before{content:none!important}
 html[data-theme] body .mobile-tab.active,
 html[data-theme] body .bottom-item.active{background:transparent!important}
 
-/* Installed/fullscreen web apps need real safe-area geometry, especially after rotation. */
 @media(max-width:900px){
   html[data-theme] body .mobile-topbar{
     height:calc(64px + env(safe-area-inset-top))!important;
@@ -198,7 +193,6 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
   html[data-theme] body .main{padding-top:calc(62px + env(safe-area-inset-top))!important}
 }
 
-/* Respect the OS accessibility contract. The UI stays fully usable with motion removed. */
 @media(prefers-reduced-motion:reduce){
   [data-view-panel]:not(.hidden),[data-panel]:not(.hidden),
   .search-results:not(.hidden),.major-results:not(:empty),.widget-picker[open],
