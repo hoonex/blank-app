@@ -273,9 +273,9 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
     position:absolute;
     z-index:3;
     top:calc(12px + env(safe-area-inset-top));
-    width:38px;
+    width:40px;
     height:40px;
-    flex-basis:38px;
+    flex-basis:40px;
     border:0;
     border-left:1px solid color-mix(in srgb,var(--text) 8%,transparent);
     border-radius:0 12px 12px 0;
