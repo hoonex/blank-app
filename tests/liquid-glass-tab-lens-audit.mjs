@@ -7,10 +7,11 @@ await mkdir(OUT,{recursive:true});
 const browser=await chromium.launch({headless:true});
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-function xOf(transform='none'){
-  if(transform==='none')return 0;
-  const m=transform.match(/matrix(?:3d)?\(([^)]+)\)/);if(!m)return NaN;
-  const values=m[1].split(',').map(Number);return values.length===16?values[12]:values[4];
+function matrix(transform='none'){
+  if(transform==='none')return{x:0,scaleX:1,scaleY:1};
+  const m=transform.match(/matrix(?:3d)?\(([^)]+)\)/);if(!m)return{x:NaN,scaleX:NaN,scaleY:NaN};
+  const values=m[1].split(',').map(Number);
+  return values.length===16?{x:values[12],scaleX:values[0],scaleY:values[5]}:{x:values[4],scaleX:values[0],scaleY:values[3]};
 }
 async function lens(page,navSelector,itemSelector){
   return page.evaluate(({navSelector,itemSelector})=>{
@@ -19,8 +20,10 @@ async function lens(page,navSelector,itemSelector){
     const rect=nav?.getBoundingClientRect();
     return{
       content:lens?.content||'',transform:lens?.transform||'none',width:lens?.width||'',left:lens?.left||'',right:lens?.right||'',
-      transitionDuration:lens?.transitionDuration||'',backdrop:lens?.backdropFilter||lens?.webkitBackdropFilter||'',
+      transitionDuration:lens?.transitionDuration||'',transitionTimingFunction:lens?.transitionTimingFunction||'',backdrop:lens?.backdropFilter||lens?.webkitBackdropFilter||'',
       oldItemContent:old?.content||'',navRect:rect&&{left:rect.left,right:rect.right,width:rect.width},
+      pressed:nav?.dataset.flowLensPressed||'',dragging:nav?.dataset.flowLensDragging||'',settling:nav?.dataset.flowLensSettling||'',
+      inlineX:nav?.style.getPropertyValue('--flow-lens-x')||'',inlineDuration:nav?.style.getPropertyValue('--flow-lens-duration')||'',inlineEase:nav?.style.getPropertyValue('--flow-lens-ease')||'',
       root:{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}
     };
   },{navSelector,itemSelector});
@@ -60,12 +63,34 @@ async function assertTravel(page,{nav,item,tabs,label}){
     await page.waitForTimeout(480);
     states.push(await lens(page,nav,`${item}.active`));
   }
-  const xs=states.map(s=>xOf(s.transform));
+  const xs=states.map(s=>matrix(s.transform).x);
   if(states.some(s=>s.root.scrollWidth>s.root.clientWidth+3))throw new Error(`${label}: tab lens caused horizontal overflow ${JSON.stringify(states)}`);
   if(states.some(s=>s.content==='none'||s.content==='normal'||!s.backdrop.includes('blur')))throw new Error(`${label}: shared glass lens missing ${JSON.stringify(states)}`);
   if(states.some(s=>s.oldItemContent!=='none'))throw new Error(`${label}: per-button pill still exists ${JSON.stringify(states)}`);
   for(let i=1;i<xs.length;i++)if(!(xs[i]>xs[i-1]+8))throw new Error(`${label}: lens did not travel forward ${JSON.stringify({xs,states})}`);
   return{diagnosis,xs,states};
+}
+async function assertDirectDrag(page,{nav,item,from,target,label}){
+  const source=page.locator(from),destination=page.locator(target);
+  await source.click();await page.waitForTimeout(460);
+  const a=await source.boundingBox(),b=await destination.boundingBox();
+  if(!a||!b)throw new Error(`${label}: drag target geometry missing`);
+  const start={x:a.x+a.width/2,y:a.y+a.height/2},end={x:b.x+b.width/2,y:b.y+b.height/2};
+  await page.mouse.move(start.x,start.y);await page.mouse.down();await page.waitForTimeout(90);
+  const pressed=await lens(page,nav,`${item}.active`),pm=matrix(pressed.transform);
+  if(pressed.pressed!=='true'||pm.scaleX<1.035||pm.scaleY<1.045)throw new Error(`${label}: press did not inflate glass ${JSON.stringify({pressed,pm})}`);
+  await page.mouse.move(end.x,end.y,{steps:8});await page.waitForTimeout(35);
+  const dragging=await lens(page,nav,`${item}.active`),dm=matrix(dragging.transform);
+  if(dragging.dragging!=='true'||!dragging.inlineX||dm.scaleX<1.055)throw new Error(`${label}: lens did not directly follow drag ${JSON.stringify({dragging,dm})}`);
+  if(dragging.root.scrollWidth>dragging.root.clientWidth+3)throw new Error(`${label}: drag created page overflow ${JSON.stringify(dragging)}`);
+  await page.mouse.up();await page.waitForTimeout(35);
+  const settling=await lens(page,nav,`${item}.active`);
+  if(settling.settling!=='true'||!settling.inlineDuration||!settling.inlineEase.includes('1.18'))throw new Error(`${label}: momentum settle state missing ${JSON.stringify(settling)}`);
+  await page.waitForTimeout(430);
+  if(!await destination.evaluate(el=>el.classList.contains('active')))throw new Error(`${label}: drag release did not select destination`);
+  const settled=await lens(page,nav,`${item}.active`),sm=matrix(settled.transform);
+  if(settled.pressed||settled.dragging||settled.root.scrollWidth>settled.root.clientWidth+3)throw new Error(`${label}: lens failed to settle cleanly ${JSON.stringify(settled)}`);
+  return{pressed:{...pressed,matrix:pm},dragging:{...dragging,matrix:dm},settling,settled:{...settled,matrix:sm}};
 }
 
 async function school(){
@@ -75,8 +100,9 @@ async function school(){
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.addInitScript(({school})=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light')},{school});
   await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();
-  const result=await assertTravel(page,{nav:'#bottomNav',item:'.mobile-tab',tabs:['.mobile-tab[data-view="today"]:visible','.mobile-tab[data-view="week"]:visible','.mobile-tab[data-view="schedule"]:visible','.mobile-tab[data-view="school"]:visible'],label:'school'});
-  await page.screenshot({path:`${OUT}/liquid-lens-school.png`,fullPage:false});await context.close();return result;
+  const travel=await assertTravel(page,{nav:'#bottomNav',item:'.mobile-tab',tabs:['.mobile-tab[data-view="today"]:visible','.mobile-tab[data-view="week"]:visible','.mobile-tab[data-view="schedule"]:visible','.mobile-tab[data-view="school"]:visible'],label:'school'});
+  const drag=await assertDirectDrag(page,{nav:'#bottomNav',item:'.mobile-tab',from:'.mobile-tab[data-view="today"]:visible',target:'.mobile-tab[data-view="schedule"]:visible',label:'school'});
+  await page.screenshot({path:`${OUT}/liquid-lens-school.png`,fullPage:false});await context.close();return{travel,drag};
 }
 async function university(){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR'});const page=await context.newPage();
@@ -85,8 +111,9 @@ async function university(){
   await page.route('**/functions/v1/university-campus**',route=>json(route,{center:null,places:[],nearby:{dining:[],stores:[],cafes:[],food:[]}}));
   await page.addInitScript(({university})=>{localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));localStorage.setItem('flow-university-theme-v1',JSON.stringify('light'))},{university});
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();
-  const result=await assertTravel(page,{nav:'.bottom-nav',item:'.bottom-item',tabs:['.bottom-item[data-view="today"]:visible','.bottom-item[data-view="timetable"]:visible','.bottom-item[data-view="school"]:visible'],label:'university'});
-  await page.screenshot({path:`${OUT}/liquid-lens-university.png`,fullPage:false});await context.close();return result;
+  const travel=await assertTravel(page,{nav:'.bottom-nav',item:'.bottom-item',tabs:['.bottom-item[data-view="today"]:visible','.bottom-item[data-view="timetable"]:visible','.bottom-item[data-view="school"]:visible'],label:'university'});
+  const drag=await assertDirectDrag(page,{nav:'.bottom-nav',item:'.bottom-item',from:'.bottom-item[data-view="today"]:visible',target:'.bottom-item[data-view="school"]:visible',label:'university'});
+  await page.screenshot({path:`${OUT}/liquid-lens-university.png`,fullPage:false});await context.close();return{travel,drag};
 }
 
 const result={school:await school(),university:await university()};
