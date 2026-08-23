@@ -10,7 +10,7 @@ html[data-theme="light"],html[data-theme="light"] body,html[data-theme="light"] 
 html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgba(89,132,240,.11),transparent 31%),radial-gradient(circle at 18% 86%,rgba(62,194,172,.07),transparent 25%),#f5f6f8!important}
 
 /* Brand: keep only the word Flow. No generated-looking badge or gradient mark. */
-.brand{gap:0!important}
+.brand{gap:0!important;min-height:34px;align-items:center!important}
 .brand>span:last-child{display:block!important}
 .brand-word{display:block;font-size:1.32rem;font-weight:820;letter-spacing:-.055em;line-height:1;color:var(--text)}
 .sidebar>.brand{margin:5px 4px 27px}
@@ -21,6 +21,7 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 
 /* Text-only utility controls keep a real tap surface without changing typography. */
 .sidebar-bottom .flow-mode-switch{display:flex;align-items:center;justify-content:center;min-height:36px}
+.today-list-panel .text-button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding-top:0!important;padding-bottom:0!important}
 
 .schedule-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .schedule-actions .soft-button{white-space:nowrap}
