@@ -20,14 +20,17 @@ jobs:
       - name: Validate audit source
         run: |
           node --check flow-native.js
+          node --check flow-refraction.js
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
           node --check tests/apple-material-audit.mjs
           node --check tests/native-sheet-drag-audit.mjs
           node --check tests/optical-glass-settings-audit.mjs
+          node --check tests/optical-refraction-visual-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
           test -f flow-material.css
+          test -f flow-refraction.css
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -49,6 +52,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-glass-settings-audit.mjs
+      - name: Prove rendered Optical Glass edge displacement
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/optical-refraction-visual-audit.mjs
       - name: Verify transient sheet direct drag and dismiss
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -77,4 +84,5 @@ jobs:
             full-orientation-audit/
             native-feel-audit/
             settings-navigation-visual-audit/
+            optical-refraction-audit/
           retention-days: 7

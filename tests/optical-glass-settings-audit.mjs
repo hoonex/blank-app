@@ -13,8 +13,8 @@ async function waitMaterial(page){
 }
 async function glassState(page,nav){
   return page.evaluate((selector)=>{
-    const root=document.documentElement,n=document.querySelector(selector),ns=n?getComputedStyle(n,'::before'):null;
-    return{mode:root.dataset.flowGlassMode||'',refraction:root.dataset.flowGlassRefraction||'',stored:localStorage.getItem('flow-glass-mode-v2'),navBackdrop:ns?.backdropFilter||ns?.webkitBackdropFilter||'',navFilter:Boolean(document.querySelector('#flow-liquid-nav-refraction')),rootWidth:root.clientWidth,scrollWidth:root.scrollWidth};
+    const root=document.documentElement,n=document.querySelector(selector),ns=n?getComputedStyle(n,'::before'):null,sample=n?.querySelector('.flow-refraction-sample'),ss=sample?getComputedStyle(sample):null;
+    return{mode:root.dataset.flowGlassMode||'',refraction:root.dataset.flowGlassRefraction||'',copy:root.dataset.flowRefractionCopy||'',stored:localStorage.getItem('flow-glass-mode-v2'),navBackdrop:ns?.backdropFilter||ns?.webkitBackdropFilter||'',sampleFilter:ss?.filter||'',navFilter:Boolean(document.querySelector('#flow-liquid-nav-refraction')),copyLens:Boolean(n?.querySelector('.flow-refraction-copy-lens')),rootWidth:root.clientWidth,scrollWidth:root.scrollWidth};
   },nav);
 }
 async function mockSchool(page){
@@ -36,14 +36,14 @@ async function schoolMobile(){
   const trigger=page.locator('#bottomNav > #mobileSettingsBtn.flow-mobile-settings');await trigger.waitFor({state:'visible'});
   const shell=await page.evaluate(()=>{const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn'),items=[...nav.querySelectorAll(':scope > .mobile-tab')].filter(x=>getComputedStyle(x).display!=='none'),week=document.querySelector('.timetable-mode-toggle > .mobile-tab[data-view="week"]');return{count:items.length,settingsLast:settings===items.at(-1),weekInBottom:Boolean(nav.querySelector(':scope > [data-view="week"]')),weekInline:Boolean(week),grid:getComputedStyle(nav).gridTemplateColumns,width:settings.getBoundingClientRect().width,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}});
   if(shell.count!==4||!shell.settingsLast||shell.weekInBottom||!shell.weekInline||shell.grid.trim().split(/\s+/).length!==4||shell.width<44||shell.scrollWidth>shell.clientWidth+3)throw new Error(`school four-slot navigation / inline Week failed ${JSON.stringify(shell)}`);
-  let g=await glassState(page,'#bottomNav');if(g.mode!=='standard'||g.refraction!=='off'||g.stored!==null||/url\(/i.test(g.navBackdrop)||g.navFilter)throw new Error(`standard glass must remain default ${JSON.stringify(g)}`);
+  let g=await glassState(page,'#bottomNav');if(g.mode!=='standard'||g.refraction!=='off'||g.copy||g.stored!==null||/url\(/i.test(g.navBackdrop)||g.navFilter||g.copyLens)throw new Error(`standard glass must remain default ${JSON.stringify(g)}`);
   await trigger.click();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
   const modal=await page.locator('#settingsDialog').evaluate(el=>el.open);if(modal)throw new Error('School Settings still opened as a dialog');
   const selected=await page.evaluate(()=>({active:[...document.querySelectorAll('#bottomNav>.mobile-tab')].findIndex(x=>x.classList.contains('active')),index:getComputedStyle(document.querySelector('#bottomNav')).getPropertyValue('--flow-tab-index').trim()}));
   if(selected.active!==3||selected.index!=='3')throw new Error(`school Settings lens did not reach fourth slot ${JSON.stringify(selected)}`);
-  await page.locator('#flowSchoolSettingsView [data-flow-settings-glass="optical"]').click();await page.waitForTimeout(180);g=await glassState(page,'#bottomNav');if(g.mode!=='optical'||g.stored!=='optical'||g.refraction!=='true'||!g.navFilter||!/url\([^)]*flow-liquid-nav-refraction/i.test(g.navBackdrop))throw new Error(`school optical glass failed ${JSON.stringify(g)}`);
+  await page.locator('#flowSchoolSettingsView [data-flow-settings-glass="optical"]').click();await page.waitForFunction(()=>document.documentElement.dataset.flowRefractionCopy==='true');await page.waitForTimeout(120);g=await glassState(page,'#bottomNav');if(g.mode!=='optical'||g.stored!=='optical'||g.refraction!=='true'||g.copy!=='true'||!g.navFilter||!g.copyLens||!/url\([^)]*flow-liquid-nav-refraction/i.test(g.sampleFilter))throw new Error(`school optical glass failed ${JSON.stringify(g)}`);
   await page.screenshot({path:`${OUT}/settings-school-dedicated.png`,fullPage:false});
-  await page.locator('#flowSchoolSettingsView [data-flow-settings-glass="standard"]').click();await page.waitForTimeout(100);g=await glassState(page,'#bottomNav');if(g.mode!=='standard'||g.stored!=='standard'||g.refraction!=='off'||/url\(/i.test(g.navBackdrop))throw new Error(`school standard restore failed ${JSON.stringify(g)}`);
+  await page.locator('#flowSchoolSettingsView [data-flow-settings-glass="standard"]').click();await page.waitForTimeout(100);g=await glassState(page,'#bottomNav');if(g.mode!=='standard'||g.stored!=='standard'||g.refraction!=='off'||g.copy||g.copyLens||/url\(/i.test(g.navBackdrop))throw new Error(`school standard restore failed ${JSON.stringify(g)}`);
   await context.close();return{shell,selected};
 }
 

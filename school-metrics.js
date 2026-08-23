@@ -1,5 +1,6 @@
 import './school-metrics-core.js';
 import '/flow-settings-view.js';
+import '/flow-refraction.js';
 import './school-ia.js';
 
 /* Source-contract anchors retained for existing production audits:
