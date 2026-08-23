@@ -91,15 +91,18 @@ for (const c of CASES) {
     const focusedAfterSave = await page.evaluate(() => document.activeElement?.matches?.('#flowSchoolSettingsView input') || false);
     if (focusedAfterSave) throw new Error(`${c.name} kept a settings input focused after save`);
 
-    await page.locator('.mobile-tab[data-view="week"]:visible').click();
-    await page.locator('#weekView:not(.hidden)').waitFor();
+    await page.locator('.timetable-mode-toggle .mobile-tab[data-view="week"]:visible').click();
+    await page.locator('#todayView:not(.hidden) #inlineWeekTimetable:not(.hidden)').waitFor();
     await page.waitForTimeout(40);
     const navState = await page.evaluate(() => ({
       toastVisible: document.querySelector('#toast')?.classList.contains('show') || false,
       settingsVisible: !document.querySelector('#flowSchoolSettingsView')?.classList.contains('hidden'),
-      weekActive: document.querySelector('.mobile-tab[data-view="week"]')?.classList.contains('active') || false,
+      weekActive: document.querySelector('.timetable-mode-toggle [data-view="week"]')?.classList.contains('active') || false,
+      weekInBottom: Boolean(document.querySelector('#bottomNav > [data-view="week"]')),
+      bottomCount: [...document.querySelectorAll('#bottomNav > .mobile-tab')].filter(x => getComputedStyle(x).display !== 'none').length,
+      inlineVisible: Boolean(document.querySelector('#inlineWeekTimetable:not(.hidden)')),
     }));
-    if (navState.toastVisible || navState.settingsVisible || !navState.weekActive) throw new Error(`${c.name} destination navigation carried settings UI across: ${JSON.stringify(navState)}`);
+    if (navState.toastVisible || navState.settingsVisible || !navState.weekActive || navState.weekInBottom || navState.bottomCount !== 4 || !navState.inlineVisible) throw new Error(`${c.name} inline Week navigation carried settings UI across: ${JSON.stringify(navState)}`);
     await page.screenshot({ path: `${OUT}/${c.name}-week-after-settings.png`, fullPage: false, animations: 'disabled' });
 
     if (consoleErrors.length || pageErrors.length) throw new Error(`${c.name} browser errors: ${JSON.stringify({ consoleErrors, pageErrors })}`);
