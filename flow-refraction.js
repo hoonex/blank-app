@@ -95,17 +95,24 @@ function supportsSvgFilter(){
 }
 async function prepareFilter(){
   const filter=document.querySelector('#flow-liquid-nav-refraction');if(!filter)return false;
-  /* Chromium resolves raster filter inputs more reliably when the defining SVG
-     owns a non-zero viewport and is not trapped by strict containment. Keep it
-     offscreen rather than collapsing it to 0x0 or display:none. */
+  /* feImage percentages only fit the filtered element when filter primitives use
+     objectBoundingBox coordinates. The previous userSpaceOnUse default placed
+     the displacement raster outside a bottom-positioned HTML lens, leaving in2
+     transparent black and producing a uniform half-scale diagonal shift. */
   const host=document.querySelector('#flow-liquid-optics'),svg=host?.querySelector('svg');
   if(host)host.style.cssText='position:fixed;left:-10000px;top:-10000px;width:1px;height:1px;overflow:visible;pointer-events:none';
   if(svg){svg.setAttribute('width','1');svg.setAttribute('height','1')}
+  filter.setAttribute('filterUnits','objectBoundingBox');
+  filter.setAttribute('primitiveUnits','objectBoundingBox');
   filter.setAttribute('color-interpolation-filters','sRGB');
-  filter.querySelector('feDisplacementMap')?.setAttribute('scale','20');
-  filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.10');
+  const displacement=filter.querySelector('feDisplacementMap'),blur=filter.querySelector('feGaussianBlur'),image=filter.querySelector('feImage');
+  if(image){image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','1');image.setAttribute('height','1');image.setAttribute('preserveAspectRatio','none')}
+  /* Object-bbox units make .18 roughly 16px horizontally and 8px vertically on
+     the 89.5x46 mobile lens: strong enough to see the bevel without moving the
+     flat center. */
+  displacement?.setAttribute('scale','.18');
+  blur?.setAttribute('stdDeviation','.001');
   filter.querySelector('feColorMatrix')?.setAttribute('values','1.04');
-  const image=filter.querySelector('feImage');
   if(image&&!mapData){
     mapData=snellDisplacementMap(320,112,{radiusRatio:.49,bezelRatio:.28,refractiveIndex:1.5,oversample:2});
     if(mapData)image.setAttribute('href',mapData);
