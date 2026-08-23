@@ -31,7 +31,10 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   overflow:hidden;
   border-radius:var(--flow-radius-capsule,999px);
   z-index:0;
-  transform:translate3d(var(--flow-lens-x,var(--flow-refraction-rest-x,0px)),0,0) scaleX(var(--flow-lens-scale-x,1)) scaleY(var(--flow-lens-scale-y,1));
+  /* Keep the sampled scene itself at 1:1 scale. The visible rim pseudo-element
+     still stretches during press/drag, but scaling the copied page would make
+     text swim under the lens instead of staying registered to the backdrop. */
+  transform:translate3d(var(--flow-lens-x,var(--flow-refraction-rest-x,0px)),0,0);
   transform-origin:center;
   transition:transform var(--flow-lens-duration,420ms) var(--flow-lens-ease,cubic-bezier(.18,1.18,.28,1));
   will-change:transform;
@@ -55,7 +58,7 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   left:var(--flow-refraction-scene-left,0px);
   top:var(--flow-refraction-scene-top,0px);
   pointer-events:none;
-  transform:translate3d(calc(0px - var(--flow-lens-x,var(--flow-refraction-rest-x,0px))),0,0)!important;
+  transform:none;
   transform-origin:0 0;
 }
 .flow-refraction-source-copy,
