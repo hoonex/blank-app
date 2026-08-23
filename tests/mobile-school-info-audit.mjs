@@ -35,8 +35,10 @@ for(const expected of ['공립','일반고','남녀공학','대구광역시교�
 if(layout.infoTiles<8)throw new Error(`Too few school info tiles: ${JSON.stringify(layout)}`);
 
 await page.locator('#mobileSettingsBtn').click();
-await page.locator('#mealStart').fill('12:35');
-await page.locator('#saveSettingsBtn').click();
+await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
+if(await page.locator('#settingsDialog').evaluate(el=>el.open))throw new Error('School Settings unexpectedly opened as a dialog.');
+await page.locator('#flowSchoolSettingsView [data-flow-bell="meal"]').fill('12:35');
+await page.locator('#flowSchoolSettingsView [data-flow-save-school]').click();
 const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('flow-school-bell-v1')||'{}'));
 if(saved.meal!=='12:35')throw new Error(`Meal time was not persisted: ${JSON.stringify(saved)}`);
 await page.locator('[data-view="today"]:visible').first().click();
