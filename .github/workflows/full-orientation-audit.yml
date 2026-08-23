@@ -78,6 +78,16 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node scripts/full-orientation-audit.mjs
+      - name: Enforce zero undersized interactive targets
+        run: |
+          node --input-type=module - <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const report = JSON.parse(await readFile('full-orientation-audit/full-orientation-report.json', 'utf8'));
+          const warnings = Number(report?.summary?.warnings);
+          if (!Number.isFinite(warnings)) throw new Error('Full orientation report is missing summary.warnings');
+          if (warnings !== 0) throw new Error(`Full orientation audit found ${warnings} undersized interactive target warning(s)`);
+          console.log('Undersized interactive target warnings: 0');
+          NODE
       - name: Verify Settings first-fold and destination feedback
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
