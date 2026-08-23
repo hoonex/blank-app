@@ -2,15 +2,18 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
-let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='';
+let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='',stylePromise=null;
 
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
 
 function ensureStyles(){
+  if(stylePromise)return stylePromise;
   const href='/flow-refraction.css';
   let link=[...document.querySelectorAll('link[rel="stylesheet"]')].find(node=>{try{return new URL(node.href,location.href).pathname===href}catch{return false}});
-  if(!link){link=document.createElement('link');link.rel='stylesheet';link.href=href}
-  document.head.append(link);
+  if(link?.sheet)return stylePromise=Promise.resolve();
+  if(!link){link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link)}
+  stylePromise=new Promise(resolve=>{link.addEventListener('load',resolve,{once:true});link.addEventListener('error',resolve,{once:true});setTimeout(resolve,1200)});
+  return stylePromise;
 }
 function activeNav(){return [...document.querySelectorAll(NAV_SELECTOR)].find(visible)||null}
 function sourceFor(node){return node?.classList.contains('mobile-bottom-nav')?document.querySelector('.product-main'):document.querySelector('.main')}
@@ -27,10 +30,13 @@ function supportsSvgFilter(){
 }
 async function prepareFilter(){
   const filter=document.querySelector('#flow-liquid-nav-refraction');if(!filter)return false;
-  filter.querySelector('feDisplacementMap')?.setAttribute('scale','32');
-  filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.08');
-  filter.querySelector('feColorMatrix')?.setAttribute('values','1');
+  filter.setAttribute('color-interpolation-filters','sRGB');
+  filter.querySelector('feDisplacementMap')?.setAttribute('scale','20');
+  filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.10');
+  filter.querySelector('feColorMatrix')?.setAttribute('values','1.04');
   const image=filter.querySelector('feImage'),href=image?.getAttribute('href')||image?.getAttribute('xlink:href')||'';
+  /* WebKit can silently reject data: URLs in feImage. A blob URL keeps the
+     same generated map while making ordinary SVG filter rendering portable. */
   if(image&&href.startsWith('data:')&&!mapUrl){
     try{const blob=await fetch(href).then(response=>response.blob());mapUrl=URL.createObjectURL(blob);image.setAttribute('href',mapUrl)}catch{}
   }
@@ -40,7 +46,7 @@ function ensureLens(){
   const nextNav=activeNav(),nextSource=sourceFor(nextNav);if(!nextNav||!nextSource)return false;
   if(nav===nextNav&&source===nextSource&&lens?.isConnected)return true;
   lens?.remove();nav=nextNav;source=nextSource;
-  lens=document.createElement('div');lens.className='flow-refraction-copy-lens';lens.setAttribute('aria-hidden','true');
+  lens=document.createElement('div');lens.className='flow-refraction-copy-lens';lens.dataset.flowRefractionLens='true';lens.setAttribute('aria-hidden','true');
   sample=document.createElement('div');sample.className='flow-refraction-sample';
   scene=document.createElement('div');scene.className='flow-refraction-scene';
   sample.append(scene);lens.append(sample);nav.prepend(lens);
@@ -57,7 +63,7 @@ function cloneSource(){
 function syncGeometry(){
   if(!ensureLens()||!visible(nav)||!visible(source))return;
   const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild;
-  nav.style.setProperty('--flow-copy-lens-x',`${targetX(nav).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-rest-x',`${targetX(nav).toFixed(2)}px`);
   nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-(navRect.left+INSET)).toFixed(2)}px`);
   nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-(navRect.top+INSET)).toFixed(2)}px`);
   if(copy){
@@ -69,24 +75,30 @@ function syncGeometry(){
 }
 function scheduleRefresh(delay=80){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(document.documentElement.dataset.flowGlassMode!=='optical')return;ensureLens();cloneSource()},delay)}
 function onScroll(){if(scrollFrame)return;scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncGeometry()})}
-function disable(){lens?.remove();lens=sample=scene=null;nav?.style.removeProperty('--flow-copy-lens-x');nav?.style.removeProperty('--flow-refraction-scene-left');nav?.style.removeProperty('--flow-refraction-scene-top');nav=source=null}
+function disable(){
+  lens?.remove();lens=sample=scene=null;
+  if(nav){for(const name of ['--flow-refraction-rest-x','--flow-refraction-scene-left','--flow-refraction-scene-top'])nav.style.removeProperty(name)}
+  nav=source=null;document.documentElement.removeAttribute('data-flow-refraction-copy');
+}
 async function syncMode(){
-  if((localStorage.getItem(GLASS_KEY)||'standard')!=='optical'&&document.documentElement.dataset.flowGlassMode!=='optical'){disable();return}
-  ensureStyles();
-  const ok=await prepareFilter();if(!ok){document.documentElement.dataset.flowGlassRefraction='fallback';disable();return}
+  const root=document.documentElement;
+  if((localStorage.getItem(GLASS_KEY)||'standard')!=='optical'&&root.dataset.flowGlassMode!=='optical'){disable();return}
+  await ensureStyles();
+  const ok=await prepareFilter();if(!ok){root.dataset.flowGlassRefraction='fallback';disable();return}
   if(!ensureLens())return;
-  document.documentElement.dataset.flowGlassRefraction='true';cloneSource();
+  root.dataset.flowGlassRefraction='true';root.dataset.flowRefractionCopy='true';cloneSource();
 }
 
 window.addEventListener('flow:glass-mode-changed',()=>void syncMode(),{passive:true});
 window.addEventListener('flow:refraction-refresh',()=>scheduleRefresh(0),{passive:true});
 window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passive:true});
-window.addEventListener('scroll',onScroll,{passive:true});
+window.addEventListener('scroll',onScroll,{passive:true,capture:true});
 window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
 window.addEventListener('pageshow',()=>scheduleRefresh(40),{passive:true});
+window.addEventListener('pagehide',()=>{if(mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
 document.addEventListener('click',event=>{
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
   queueMicrotask(syncGeometry);scheduleRefresh(180);
 },{passive:true});
 
-setTimeout(()=>{ensureStyles();void syncMode();scheduleRefresh(700)},24);
+setTimeout(()=>{void syncMode();scheduleRefresh(700)},24);
