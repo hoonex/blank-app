@@ -24,6 +24,7 @@ jobs:
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
           node --check tests/apple-material-audit.mjs
+          node --check tests/native-sheet-drag-audit.mjs
           test -f flow-material.css
       - name: Install Playwright Chromium
         run: |
@@ -42,6 +43,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/apple-material-audit.mjs
+      - name: Verify transient sheet direct drag and dismiss
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/native-sheet-drag-audit.mjs
       - name: Verify Liquid Glass lens tap, hold, drag, momentum, and overflow
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
