@@ -7,6 +7,7 @@ let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollF
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
+const opticalEnabled=()=>document.documentElement.dataset.flowGlassMode==='optical';
 
 /*
  * The mobile nav is assembled by feature modules: School reparents Week into
@@ -222,7 +223,7 @@ function cloneSource(){
   syncGeometry();
 }
 function syncGeometry({animateScene=false}={}){
-  if(!ensureLens()||!visible(nav)||!visible(source))return;
+  if(!opticalEnabled()||!ensureLens()||!visible(nav)||!visible(source))return;
   const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild,isDedicated=source.matches?.('#switchDialog[open][data-flow-dedicated="true"]'),localScrollLeft=isDedicated?source.scrollLeft:0,localScrollTop=isDedicated?source.scrollTop:0;
   nav.style.setProperty('--flow-refraction-rest-x',`${targetX(nav).toFixed(2)}px`);
   nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-localScrollLeft-(navRect.left+INSET)).toFixed(2)}px`);
@@ -235,8 +236,8 @@ function syncGeometry({animateScene=false}={}){
   }
   syncSceneMotion({animate:animateScene});
 }
-function scheduleRefresh(delay=80){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(document.documentElement.dataset.flowGlassMode!=='optical')return;ensureLens();cloneSource()},delay)}
-function onScroll(){if(scrollFrame)return;scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncGeometry()})}
+function scheduleRefresh(delay=80){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!opticalEnabled())return;ensureLens();cloneSource()},delay)}
+function onScroll(){if(!opticalEnabled()||scrollFrame)return;scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncGeometry()})}
 function disable(){
   lens?.remove();lens=sample=scene=null;
   if(nav){for(const name of ['--flow-refraction-rest-x','--flow-refraction-scene-left','--flow-refraction-scene-top'])nav.style.removeProperty(name)}
@@ -255,22 +256,22 @@ window.addEventListener('flow:glass-mode-changed',()=>void syncMode(),{passive:t
 window.addEventListener('flow:refraction-refresh',()=>scheduleRefresh(0),{passive:true});
 window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passive:true});
 window.addEventListener('scroll',onScroll,{passive:true,capture:true});
-window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
+window.addEventListener('resize',()=>{if(!opticalEnabled())return;syncGeometry();scheduleRefresh(120)},{passive:true});
 window.addEventListener('pageshow',event=>{if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
 
 document.addEventListener('focusin',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(0)},{capture:true,passive:true});
 document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(520)},{capture:true,passive:true});
 document.addEventListener('close',event=>{if(event.target?.matches?.('#switchDialog'))scheduleRefresh(0)},true);
 document.addEventListener('pointermove',event=>{
-  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  if(!nav||!opticalEnabled()||!event.target.closest?.(NAV_SELECTOR))return;
   syncSceneMotion({animate:false});
 },{capture:true,passive:true});
 document.addEventListener('pointerup',event=>{
-  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  if(!nav||!opticalEnabled()||!event.target.closest?.(NAV_SELECTOR))return;
   syncSceneMotion({animate:true});
 },{capture:true,passive:true});
 document.addEventListener('pointercancel',event=>{
-  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  if(!nav||!opticalEnabled()||!event.target.closest?.(NAV_SELECTOR))return;
   syncSceneMotion({animate:true});
 },{capture:true,passive:true});
 document.addEventListener('transitionend',event=>{
@@ -278,6 +279,7 @@ document.addEventListener('transitionend',event=>{
   syncSceneMotion({animate:false});
 },{passive:true});
 document.addEventListener('click',event=>{
+  if(!opticalEnabled())return;
   if(event.target.closest?.('#mobileSchoolBtn,#schoolBtn')){queueMicrotask(()=>scheduleRefresh(0));return}
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
   queueMicrotask(()=>{syncGeometry({animateScene:true});scheduleRefresh(0)});
