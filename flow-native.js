@@ -11,6 +11,33 @@ let settleTimer=0;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const now=()=>performance.now();
 
+/*
+ * Real Liquid Glass is defined by lensing, not blur alone. On browsers that
+ * actually retain an SVG URL filter in backdrop-filter, use a subtle live
+ * displacement pass. Other engines keep the optical frost/specular fallback.
+ */
+function installLiquidGlassOptics(){
+  if(document.querySelector('#flow-liquid-optics'))return;
+  const host=document.createElement('div');
+  host.id='flow-liquid-optics';
+  host.setAttribute('aria-hidden','true');
+  host.style.cssText='position:fixed;width:0;height:0;overflow:hidden;pointer-events:none;contain:strict';
+  host.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" focusable="false" aria-hidden="true"><defs><filter id="flow-liquid-refraction" x="-15%" y="-30%" width="130%" height="160%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.032" numOctaves="1" seed="11" result="flowNoise"/><feGaussianBlur in="flowNoise" stdDeviation="0.42" result="flowSoftNoise"/><feDisplacementMap in="SourceGraphic" in2="flowSoftNoise" scale="5" xChannelSelector="R" yChannelSelector="G" result="flowRefracted"/><feColorMatrix in="flowRefracted" type="saturate" values="1.08"/></filter></defs></svg>`;
+  (document.body||document.documentElement).prepend(host);
+
+  const probe=document.createElement('i');
+  probe.setAttribute('aria-hidden','true');
+  probe.style.cssText='position:fixed;left:-9999px;top:-9999px;width:8px;height:8px;pointer-events:none;backdrop-filter:url(#flow-liquid-refraction) blur(1px);-webkit-backdrop-filter:url(#flow-liquid-refraction) blur(1px)';
+  (document.body||document.documentElement).append(probe);
+  const style=getComputedStyle(probe);
+  const computed=style.backdropFilter||style.webkitBackdropFilter||'';
+  const supported=/url\(/i.test(computed);
+  probe.remove();
+  document.documentElement.dataset.flowGlassRefraction=supported?'true':'fallback';
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLiquidGlassOptics,{once:true});
+else installLiquidGlassOptics();
+
 function buttons(nav){return [...nav.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)]}
 function activeIndex(list){return Math.max(0,list.findIndex(button=>button.classList.contains('active')))}
 function geometry(nav,list,index){
