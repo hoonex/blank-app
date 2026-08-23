@@ -2,7 +2,7 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
-let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
+let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapData='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
@@ -100,9 +100,9 @@ async function prepareFilter(){
   filter.querySelector('feGaussianBlur')?.setAttribute('stdDeviation','0.10');
   filter.querySelector('feColorMatrix')?.setAttribute('values','1.04');
   const image=filter.querySelector('feImage');
-  if(image&&!mapUrl){
-    const href=snellDisplacementMap(320,112,{radiusRatio:.49,bezelRatio:.28,refractiveIndex:1.5,oversample:2});
-    if(href)try{const blob=await fetch(href).then(response=>response.blob());mapUrl=URL.createObjectURL(blob);image.setAttribute('href',mapUrl)}catch{image.setAttribute('href',href)}
+  if(image&&!mapData){
+    mapData=snellDisplacementMap(320,112,{radiusRatio:.49,bezelRatio:.28,refractiveIndex:1.5,oversample:2});
+    if(mapData)image.setAttribute('href',mapData);
   }
   return supportsSvgFilter();
 }
@@ -193,7 +193,6 @@ window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passiv
 window.addEventListener('scroll',onScroll,{passive:true,capture:true});
 window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
 window.addEventListener('pageshow',event=>{if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
-window.addEventListener('pagehide',event=>{if(!event.persisted&&mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
 
 document.addEventListener('focusin',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(0)},{capture:true,passive:true});
 document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(520)},{capture:true,passive:true});
