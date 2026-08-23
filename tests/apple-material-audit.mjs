@@ -27,7 +27,7 @@ function noBackdrop(label,style){if(style&&style.backdrop!=='none'&&style.backdr
 
 async function schoolLanding(){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',colorScheme:'dark'});const page=await context.newPage();
-  await page.addInitScript(()=>{localStorage.removeItem('flow-school-profile-v3');localStorage.setItem('flow-school-theme-v3','dark')});
+  await page.addInitScript(()=>{localStorage.removeItem('flow-school-profile-v3');localStorage.removeItem('flow-glass-mode-v2');localStorage.setItem('flow-school-theme-v3','dark')});
   await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#landing:not(.hidden)').waitFor();await waitMaterial(page);
   const card=await computed(page,'.school-search-panel'),field=await computed(page,'.search-box'),mode=await computed(page,'.landing-mode-switch');
   noSquircle('school search card',card);noSquircle('school search field',field);noBackdrop('school search card',card);
@@ -40,7 +40,7 @@ async function schoolLanding(){
 
 async function universityLanding(){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',colorScheme:'dark'});const page=await context.newPage();
-  await page.addInitScript(()=>{localStorage.removeItem('flow-university-profile-v1');localStorage.setItem('flow-university-theme-v1','dark')});
+  await page.addInitScript(()=>{localStorage.removeItem('flow-university-profile-v1');localStorage.removeItem('flow-glass-mode-v2');localStorage.setItem('flow-university-theme-v1','dark')});
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#setupView:not(.hidden)').waitFor();await waitMaterial(page);
   const card=await computed(page,'.search-card'),field=await computed(page,'.search-field'),mode=await computed(page,'.setup-header .quiet-link'),theme=await computed(page,'.setup-header .flow-theme-cycle');
   noSquircle('university search card',card);noSquircle('university search field',field);noBackdrop('university search card',card);
@@ -56,18 +56,18 @@ async function universityApp(){
   const university={id:'knu',name:'경북대학교',kind:'대학교',address:'대구광역시 북구 대학로 80',homepage:'https://www.knu.ac.kr'};
   await page.route('**/functions/v1/university-data**',route=>json(route,{school:university,metrics:{},partial:false,unavailable:[]}));
   await page.route('**/functions/v1/university-campus**',route=>json(route,{center:null,places:[],nearby:{dining:[],stores:[],cafes:[],food:[]}}));
-  await page.addInitScript(({university})=>{localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));localStorage.setItem('flow-university-theme-v1','dark')},{university});
+  await page.addInitScript(({university})=>{localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));localStorage.setItem('flow-university-theme-v1','dark');localStorage.removeItem('flow-glass-mode-v2')},{university});
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();await waitMaterial(page);
   const nav=await computed(page,'.bottom-nav'),lens=await computed(page,'.bottom-nav','::before'),card=await computed(page,'.summary-card:not(.next-card)');
   const optics=await page.evaluate(()=>{
     const sheets=[...document.querySelectorAll('link[rel="stylesheet"]')].map(node=>{try{return new URL(node.href,location.href).pathname}catch{return''}});
-    return{mode:document.documentElement.dataset.flowGlassRefraction||'',filter:Boolean(document.querySelector('#flow-liquid-refraction')),sheets,materialIndex:sheets.lastIndexOf('/flow-material.css'),globalThemeIndex:sheets.lastIndexOf('/university/ui-unify-v2.css')};
+    return{glassMode:document.documentElement.dataset.flowGlassMode||'',refraction:document.documentElement.dataset.flowGlassRefraction||'',filterHost:Boolean(document.querySelector('#flow-liquid-optics')),sheets,materialIndex:sheets.lastIndexOf('/flow-material.css'),globalThemeIndex:sheets.lastIndexOf('/university/ui-unify-v2.css')};
   });
   noSquircle('university summary card',card);noBackdrop('university summary card',card);
-  if(nav?.backdrop==='none'||!nav?.backdrop.includes('blur'))throw new Error(`tab bar is not glass ${JSON.stringify(nav)}`);
-  if(lens?.backdrop==='none'||!lens?.backdrop.includes('blur'))throw new Error(`selection lens is not optical glass ${JSON.stringify(lens)}`);
-  if(!optics.filter)throw new Error(`SVG refraction filter missing ${JSON.stringify(optics)}`);
-  if(optics.mode==='true'&&!/url\(/i.test(lens.backdrop))throw new Error(`refraction capability enabled without URL filter ${JSON.stringify({optics,lens})}`);
+  if(nav?.backdrop==='none'||!nav?.backdrop.includes('blur'))throw new Error(`tab bar is not standard glass ${JSON.stringify(nav)}`);
+  if(lens?.backdrop==='none'||!lens?.backdrop.includes('blur'))throw new Error(`selection lens is not standard glass ${JSON.stringify(lens)}`);
+  if(/url\(/i.test(lens?.backdrop||''))throw new Error(`default lens unexpectedly runs displacement ${JSON.stringify(lens)}`);
+  if(optics.glassMode!=='standard'||optics.refraction!=='off'||optics.filterHost)throw new Error(`optical refraction must be lazy and opt-in ${JSON.stringify(optics)}`);
   if(optics.materialIndex<0||optics.materialIndex<optics.globalThemeIndex)throw new Error(`material stylesheet does not override global theme styles ${JSON.stringify(optics)}`);
   if(parseFloat(nav.radius)<30)throw new Error(`tab bar is not capsule-shaped ${JSON.stringify(nav)}`);
   await page.screenshot({path:`${OUT}/apple-material-university-dashboard-dark.png`,fullPage:false});
@@ -75,7 +75,7 @@ async function universityApp(){
   await page.evaluate(()=>{const d=document.querySelector('#importDialog');if(d&&!d.open)d.showModal()});await page.locator('#importDialog[open]').waitFor();await page.waitForTimeout(120);
   const sheet=await computed(page,'#importDialog .dialog-sheet'),privacy=await computed(page,'#importDialog .privacy-note'),input=await computed(page,'#importDialog .dialog-field input');
   noSquircle('university import sheet',sheet);noSquircle('university import input',input);
-  if(sheet?.backdrop==='none'||!sheet?.backdrop.includes('blur'))throw new Error(`dialog sheet is not regular glass ${JSON.stringify(sheet)}`);
+  if(sheet?.backdrop==='none'||!sheet?.backdrop.includes('blur')||/url\(/i.test(sheet.backdrop))throw new Error(`default dialog sheet must use stable regular glass ${JSON.stringify(sheet)}`);
   if(rgbMax(privacy.background)>90)throw new Error(`dark privacy note is glaringly bright ${JSON.stringify(privacy)}`);
   if(!(parseFloat(sheet.radius)>parseFloat(input.radius)))throw new Error(`shape hierarchy missing between sheet and input ${JSON.stringify({sheet,input})}`);
   await page.screenshot({path:`${OUT}/apple-material-university-import-dark.png`,fullPage:false});await context.close();
