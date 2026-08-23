@@ -31,7 +31,8 @@ html[data-theme] body .mobile-bottom-nav{--flow-tab-count:4!important;grid-templ
 .timetable-card .week-subject{font-size:.56rem!important;line-height:1.22!important;overflow-wrap:anywhere;word-break:keep-all;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .timetable-card .week-cell.is-today-column{background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important}
 .timetable-card .week-head.is-today-column{background:color-mix(in srgb,var(--accent) 15%,var(--surface-2))!important;color:var(--accent)!important}
-.flow-inline-week-active #weekView{display:none!important}
+/* The old route host stays rendered off-canvas so route/motion contracts remain intact; all visible Week UI lives inside Today. */
+.flow-inline-week-active #weekView{position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;min-height:1px!important;margin:0!important;padding:0!important;overflow:hidden!important;pointer-events:none!important}
 .flow-inline-week-active .timetable-card #dayStrip,.flow-inline-week-active .timetable-card #timetable{display:none!important}
 .flow-inline-week-active .timetable-card .inline-week-timetable{display:grid!important}
 #scheduleView>.view-header p,#schoolView>.view-header p,#flowSchoolSettingsView .flow-settings-header p{max-width:28rem}
@@ -116,6 +117,7 @@ function buildInlineWeek(){
   toggle.append(today,mobileWeek);actions.prepend(toggle);
   const shell=document.createElement('div');shell.id='inlineWeekTimetable';shell.className='inline-week-timetable hidden';
   const toolbar=document.createElement('div');toolbar.className='inline-week-toolbar';toolbar.append(range,controls);shell.append(toolbar,wrap);card.append(shell);inlineWeek=shell;
+  const legacyHost=$('#weekView');if(legacyHost)legacyHost.setAttribute('aria-hidden','true');
   const desktopWeek=$('.side-nav>[data-view="week"]');if(desktopWeek){desktopWeek.hidden=true;desktopWeek.setAttribute('aria-hidden','true');desktopWeek.tabIndex=-1}
   today.addEventListener('click',()=>setTimetableMode('today',{drive:true}));
   mobileWeek.addEventListener('click',()=>activateInlineWeek());
