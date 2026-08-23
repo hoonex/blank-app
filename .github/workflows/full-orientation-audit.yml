@@ -20,6 +20,7 @@ jobs:
       - name: Validate audit source
         run: |
           node --check flow-native.js
+          node --check flow-refraction.js
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
@@ -29,6 +30,7 @@ jobs:
           node --check tests/optical-refraction-visual-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
           test -f flow-material.css
+          test -f flow-refraction.css
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
