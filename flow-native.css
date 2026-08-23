@@ -270,7 +270,7 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
   }
   html[data-theme] body .flow-mobile-settings{display:grid}
   html[data-theme] body .mobile-header>.flow-theme-cycle{display:none!important}
-  html[data-theme] body #mobileSettingsBtn{display:none!important}
+  html[data-theme] body .mobile-bottom-nav>#mobileSettingsBtn{display:none!important}
   html[data-theme] body .mobile-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
   html[data-theme] body .main{padding-top:calc(76px + env(safe-area-inset-top))!important}
   html[data-theme] body .mobile-bottom-nav,
