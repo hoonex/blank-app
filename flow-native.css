@@ -268,7 +268,26 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
     padding-left:max(13px,env(safe-area-inset-left))!important;
     padding-right:max(13px,env(safe-area-inset-right))!important;
   }
-  html[data-theme] body .flow-mobile-settings{display:grid}
+  html[data-theme] body .flow-mobile-settings{
+    display:grid;
+    position:absolute;
+    z-index:3;
+    top:calc(12px + env(safe-area-inset-top));
+    width:38px;
+    height:40px;
+    flex-basis:38px;
+    border:0;
+    border-left:1px solid color-mix(in srgb,var(--text) 8%,transparent);
+    border-radius:0 12px 12px 0;
+    background:transparent;
+    box-shadow:none;
+  }
+  html[data-theme] body .mobile-topbar>.flow-mobile-settings{right:max(11px,env(safe-area-inset-right))}
+  html[data-theme] body .mobile-header>.flow-mobile-settings{right:max(13px,env(safe-area-inset-right))}
+  html[data-theme] body :is(.mobile-school-button,.mobile-school){
+    position:relative;
+    padding-right:48px!important;
+  }
   html[data-theme] body .mobile-header>.flow-theme-cycle{display:none!important}
   html[data-theme] body .mobile-bottom-nav>#mobileSettingsBtn{display:none!important}
   html[data-theme] body .mobile-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
