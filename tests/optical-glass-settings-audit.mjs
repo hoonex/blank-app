@@ -3,7 +3,6 @@ import { mkdir } from 'node:fs/promises';
 
 const BASE=process.env.FLOW_BASE_URL||'http://127.0.0.1:4173';
 const OUT='native-feel-audit';
-const GLASS_KEY='flow-glass-mode-v2';
 await mkdir(OUT,{recursive:true});
 const browser=await chromium.launch({headless:true});
 
@@ -53,13 +52,13 @@ async function mockUniversity(page){
 async function schoolMobile(){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR'});const page=await context.newPage();
   await mockSchool(page);await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await waitMaterial(page);
-  await page.locator('.flow-mobile-settings').waitFor({state:'visible'});
+  await page.locator('#mobileSettingsBtn.flow-mobile-settings').waitFor({state:'visible'});
   const shell=await page.evaluate(()=>{
-    const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn'),top=document.querySelector('.flow-mobile-settings');
+    const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn');
     const visible=[...nav.querySelectorAll(':scope > .mobile-tab')].filter(x=>getComputedStyle(x).display!=='none');
-    return{visibleTabs:visible.length,settingsDisplay:getComputedStyle(settings).display,topWidth:top.getBoundingClientRect().width,grid:getComputedStyle(nav).gridTemplateColumns,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
+    return{visibleTabs:visible.length,settingsInNav:settings.parentElement===nav,settingsParent:settings.parentElement?.className||'',settingsDisplay:getComputedStyle(settings).display,topWidth:settings.getBoundingClientRect().width,grid:getComputedStyle(nav).gridTemplateColumns,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
   });
-  if(shell.visibleTabs!==4||shell.settingsDisplay!=='none')throw new Error(`school settings still behaves like a bottom destination ${JSON.stringify(shell)}`);
+  if(shell.visibleTabs!==4||shell.settingsInNav||shell.settingsDisplay==='none')throw new Error(`school settings did not move from nav to top bar ${JSON.stringify(shell)}`);
   if(shell.topWidth<40||shell.grid.trim().split(/\s+/).length!==4)throw new Error(`school mobile settings/nav geometry is wrong ${JSON.stringify(shell)}`);
   if(shell.scrollWidth>shell.clientWidth+3)throw new Error(`school settings layout caused overflow ${JSON.stringify(shell)}`);
 
@@ -67,7 +66,7 @@ async function schoolMobile(){
   if(g.mode!=='standard'||g.refraction!=='off'||g.stored!==null||/url\(/i.test(g.navBackdrop)||g.navFilter)throw new Error(`standard glass must be the lazy default ${JSON.stringify(g)}`);
   await page.screenshot({path:`${OUT}/settings-school-standard.png`,fullPage:false});
 
-  await page.locator('.flow-mobile-settings').click();await page.locator('#settingsDialog[open]').waitFor();
+  await page.locator('#mobileSettingsBtn.flow-mobile-settings').click();await page.locator('#settingsDialog[open]').waitFor();
   await page.locator('#settingsDialog [data-flow-glass-choice="standard"]').waitFor({state:'visible'});
   const status=await page.locator('#settingsDialog [data-flow-glass-status]').textContent();
   if(!status?.includes('기본 유리'))throw new Error(`school standard glass status missing: ${status}`);
@@ -80,7 +79,7 @@ async function schoolMobile(){
   await page.reload({waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await waitMaterial(page);await page.waitForTimeout(120);
   g=await glassState(page,{nav:'#bottomNav'});
   if(g.mode!=='optical'||g.stored!=='optical'||g.refraction!=='true'||!/url\(/i.test(g.navBackdrop))throw new Error(`optical glass preference did not survive reload ${JSON.stringify(g)}`);
-  await page.locator('.flow-mobile-settings').click();await page.locator('#settingsDialog[open]').waitFor();await page.locator('#settingsDialog [data-flow-glass-choice="standard"]').click();await page.waitForTimeout(100);
+  await page.locator('#mobileSettingsBtn.flow-mobile-settings').click();await page.locator('#settingsDialog[open]').waitFor();await page.locator('#settingsDialog [data-flow-glass-choice="standard"]').click();await page.waitForTimeout(100);
   g=await glassState(page,{nav:'#bottomNav',sheet:'#settingsDialog .settings-sheet'});
   if(g.mode!=='standard'||g.stored!=='standard'||g.refraction!=='off'||/url\(/i.test(g.navBackdrop)||/url\(/i.test(g.sheetBackdrop))throw new Error(`returning to standard glass did not remove displacement ${JSON.stringify(g)}`);
   await context.close();return{shell,opticalPersistence:true};
