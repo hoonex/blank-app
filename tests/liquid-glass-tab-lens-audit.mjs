@@ -30,9 +30,9 @@ async function overflowDiagnosis(page,navSelector){
     const nav=document.querySelector(navSelector);
     const measure=label=>{
       void document.documentElement.offsetWidth;
-      const nr=nav?.getBoundingClientRect(),ps=nav?getComputedStyle(nav,'::before'):null;
+      const nr=nav?.getBoundingClientRect(),ps=nav?getComputedStyle(nav,'::before'):null,ns=nav?getComputedStyle(nav):null;
       return{label,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,innerWidth,
-        nav:nr&&{left:nr.left,right:nr.right,width:nr.width,overflow:getComputedStyle(nav).overflow},
+        nav:nr&&{left:nr.left,right:nr.right,width:nr.width,position:ns?.position,leftCss:ns?.left,rightCss:ns?.right,overflow:ns?.overflow},
         pseudo:ps&&{content:ps.content,width:ps.width,left:ps.left,right:ps.right,transform:ps.transform,filter:ps.backdropFilter||ps.webkitBackdropFilter||'',boxShadow:ps.boxShadow}};
     };
     const rows=[measure('initial')];
@@ -53,13 +53,15 @@ async function assertTravel(page,{nav,item,tabs,label}){
   console.log(`${label} overflow diagnosis: ${JSON.stringify(diagnosis)}`);
   const states=[];
   for(let i=0;i<tabs.length;i++){
-    const selector=tabs[i];
-    if(i)await page.locator(selector).click();
-    await page.waitForFunction(sel=>document.querySelector(sel)?.classList.contains('active'),selector);
+    const target=page.locator(tabs[i]);
+    await target.waitFor({state:'visible'});
+    if(i)await target.click();
+    if(!await target.evaluate(el=>el.classList.contains('active')))throw new Error(`${label}: tab did not become active: ${tabs[i]}`);
     await page.waitForTimeout(480);
     states.push(await lens(page,nav,`${item}.active`));
   }
   const xs=states.map(s=>xOf(s.transform));
+  if(states.some(s=>s.root.scrollWidth>s.root.clientWidth+3))throw new Error(`${label}: tab lens caused horizontal overflow ${JSON.stringify(states)}`);
   if(states.some(s=>s.content==='none'||s.content==='normal'||!s.backdrop.includes('blur')))throw new Error(`${label}: shared glass lens missing ${JSON.stringify(states)}`);
   if(states.some(s=>s.oldItemContent!=='none'))throw new Error(`${label}: per-button pill still exists ${JSON.stringify(states)}`);
   for(let i=1;i<xs.length;i++)if(!(xs[i]>xs[i-1]+8))throw new Error(`${label}: lens did not travel forward ${JSON.stringify({xs,states})}`);
