@@ -26,6 +26,7 @@ jobs:
           node --check tests/apple-material-audit.mjs
           node --check tests/native-sheet-drag-audit.mjs
           node --check tests/optical-glass-settings-audit.mjs
+          node --check tests/settings-navigation-visual-audit.mjs
           test -f flow-material.css
       - name: Install Playwright Chromium
         run: |
@@ -60,6 +61,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node scripts/full-orientation-audit.mjs
+      - name: Verify Settings first-fold and destination feedback
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/settings-navigation-visual-audit.mjs
       - name: Verify native-feel motion and reduced-motion behavior
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -71,4 +76,5 @@ jobs:
           path: |
             full-orientation-audit/
             native-feel-audit/
+            settings-navigation-visual-audit/
           retention-days: 7
