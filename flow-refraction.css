@@ -19,11 +19,21 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-them
   -webkit-backdrop-filter:blur(18px) saturate(132%) brightness(.97)!important;
 }
 
+/*
+ * The refraction aperture is a DOM child of the grid nav. Chromium can use an
+ * absolutely positioned grid child's static grid position when auto-placing
+ * later items, which made the first real tab start in column 2 and wrapped
+ * Settings onto a second row. Give both the aperture and every real tab an
+ * explicit first-row placement. The Selectors-4 `of` clause counts only real
+ * tab controls, so the optical helper never changes tab numbering.
+ */
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>.flow-refraction-copy-lens{
   display:block;
   position:absolute;
   box-sizing:border-box;
   pointer-events:none;
+  grid-row:1;
+  grid-column:1/-1;
   top:5px;
   bottom:5px;
   left:5px;
@@ -40,6 +50,11 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   will-change:transform;
   contain:paint;
 }
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(1 of .mobile-tab,.bottom-item){grid-row:1;grid-column:1}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(2 of .mobile-tab,.bottom-item){grid-row:1;grid-column:2}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(3 of .mobile-tab,.bottom-item){grid-row:1;grid-column:3}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(4 of .mobile-tab,.bottom-item){grid-row:1;grid-column:4}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(5 of .mobile-tab,.bottom-item){grid-row:1;grid-column:5}
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)[data-flow-lens-dragging="true"]>.flow-refraction-copy-lens{
   transition:none;
 }
@@ -81,6 +96,9 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body .bot
   background:
     radial-gradient(130% 115% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.58) 0%,rgba(255,255,255,.10) 34%,transparent 61%),
     linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.025))!important;
+  /* The helper lens is prepended to the nav, so legacy :nth-child selectors
+     see shifted child indexes. Use the JS geometry calculated from real tabs. */
+  transform:translate3d(var(--flow-lens-x,var(--flow-refraction-rest-x,0px)),0,0) scaleX(var(--flow-lens-scale-x,1)) scaleY(var(--flow-lens-scale-y,1))!important;
 }
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .mobile-bottom-nav::before,
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .bottom-nav::before{
