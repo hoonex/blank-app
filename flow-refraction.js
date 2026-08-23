@@ -17,7 +17,20 @@ function ensureStyles(){
   return stylePromise;
 }
 function activeNav(){return [...document.querySelectorAll(NAV_SELECTOR)].find(visible)||null}
-function sourceFor(node){return node?.classList.contains('mobile-bottom-nav')?document.querySelector('.product-main'):document.querySelector('.main')}
+function sourceFor(node){
+  if(node?.classList.contains('mobile-bottom-nav')){
+    const dedicated=document.querySelector('#switchDialog[open][data-flow-dedicated="true"]');
+    if(dedicated&&visible(dedicated))return dedicated;
+    return document.querySelector('.product-main');
+  }
+  return document.querySelector('.main');
+}
+function sourceKind(node){
+  if(node?.matches?.('#switchDialog[open][data-flow-dedicated="true"]'))return'school-switch';
+  if(node?.classList?.contains('product-main'))return'school-main';
+  if(node?.classList?.contains('main'))return'university-main';
+  return'unknown';
+}
 function tabs(node){return node?[...node.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)].filter(button=>!button.hidden&&getComputedStyle(button).display!=='none'):[]}
 function targetX(node){
   const list=tabs(node);if(!node||!list.length)return 0;
@@ -105,8 +118,10 @@ function ensureLens(){
   return true;
 }
 function sanitizeClone(copy){
-  copy.removeAttribute('id');
-  copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  /* Preserve ids so the inert visual copy keeps the exact ID-scoped CSS of
+     the real page. The source DOM is earlier in document order, and regression
+     coverage verifies normal getElementById/querySelector calls still resolve
+     to the interactive source rather than this pointer-inert copy. */
   copy.querySelectorAll('label[for]').forEach(node=>node.removeAttribute('for'));
   copy.querySelectorAll('[aria-controls],[aria-labelledby],[aria-describedby]').forEach(node=>{node.removeAttribute('aria-controls');node.removeAttribute('aria-labelledby');node.removeAttribute('aria-describedby')});
   copy.querySelectorAll('button,a,input,select,textarea,[tabindex]').forEach(node=>{
@@ -117,7 +132,7 @@ function sanitizeClone(copy){
 }
 function cloneSource(){
   if(!source||!scene)return;
-  const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
+  const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=sourceKind(source);copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
   copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
   sanitizeClone(copy);
   scene.replaceChildren(copy);
@@ -125,10 +140,10 @@ function cloneSource(){
 }
 function syncGeometry({animateScene=false}={}){
   if(!ensureLens()||!visible(nav)||!visible(source))return;
-  const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild;
+  const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild,isDedicated=source.matches?.('#switchDialog[open][data-flow-dedicated="true"]'),localScrollLeft=isDedicated?source.scrollLeft:0,localScrollTop=isDedicated?source.scrollTop:0;
   nav.style.setProperty('--flow-refraction-rest-x',`${targetX(nav).toFixed(2)}px`);
-  nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-(navRect.left+INSET)).toFixed(2)}px`);
-  nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-(navRect.top+INSET)).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-localScrollLeft-(navRect.left+INSET)).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-localScrollTop-(navRect.top+INSET)).toFixed(2)}px`);
   if(copy){
     copy.style.setProperty('position','absolute','important');copy.style.setProperty('left','0','important');copy.style.setProperty('top','0','important');
     copy.style.setProperty('width',`${sourceRect.width.toFixed(2)}px`,'important');copy.style.setProperty('height',`${Math.max(sourceRect.height,source.scrollHeight).toFixed(2)}px`,'important');
@@ -158,9 +173,12 @@ window.addEventListener('flow:refraction-refresh',()=>scheduleRefresh(0),{passiv
 window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passive:true});
 window.addEventListener('scroll',onScroll,{passive:true,capture:true});
 window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
-window.addEventListener('pageshow',()=>scheduleRefresh(40),{passive:true});
-window.addEventListener('pagehide',()=>{if(mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
+window.addEventListener('pageshow',event=>{if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
+window.addEventListener('pagehide',event=>{if(!event.persisted&&mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
 
+document.addEventListener('focusin',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(0)},{capture:true,passive:true});
+document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(520)},{capture:true,passive:true});
+document.addEventListener('close',event=>{if(event.target?.matches?.('#switchDialog'))scheduleRefresh(0)},true);
 document.addEventListener('pointermove',event=>{
   if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
   /* flow-native.js is registered first and has already written --flow-lens-x.
