@@ -15,7 +15,7 @@ html[data-theme="light"]{
 html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!important}
 
 /* Shared Flow wordmark: University had the cleaner brand treatment, so School follows it. */
-.flow-logo{display:inline-flex!important;align-items:baseline!important;gap:7px!important}
+.flow-logo{display:inline-flex!important;align-items:baseline!important;gap:7px!important;min-height:34px}
 .flow-logo-mark{display:none!important}
 .flow-logo-copy{display:inline-flex!important;align-items:baseline!important;gap:6px!important}
 .flow-logo-copy strong{font-size:1.32rem!important;font-weight:820!important;letter-spacing:-.055em!important;line-height:1!important;color:var(--text)!important}
@@ -36,6 +36,10 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
 /* The visible search/month controls should expose real input-sized hit areas. */
 .search-box input{align-self:stretch!important;height:auto!important}
 .month-picker input{min-height:36px!important;padding:0 5px!important;border-radius:9px!important}
+
+/* Compact text utilities still need a reliable pointer/touch surface. */
+#todayBtn,.meal-tab,#mealDetailBtn,.upcoming-card .text-button,#changeSchoolBtn{min-height:34px}
+#mealDetailBtn,.upcoming-card .text-button,#changeSchoolBtn{display:inline-flex;align-items:center;justify-content:center}
 
 /* Search results belong below the field; they should never cover the input itself. */
 .school-search-panel>.search-results{
