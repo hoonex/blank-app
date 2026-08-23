@@ -1,3 +1,4 @@
+import '/flow-native.js';
 import '/university/dashboard.js';
 import '/university/ui-unify.js';
 import '/university/dashboard-editor-feedback.js';
