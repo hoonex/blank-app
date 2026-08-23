@@ -44,15 +44,15 @@ const fidelity=await page.evaluate(()=>{
 if(!fidelity.originalLookup||fidelity.color[0]!==fidelity.color[1]||fidelity.fontSize[0]!==fidelity.fontSize[1])throw new Error(`Optical copy lost ID-scoped visual fidelity or stole the source lookup: ${JSON.stringify(fidelity)}`);
 
 // School switching is a full destination surface. The lens must sample it, not the page behind it.
-await page.locator('#mobileSchoolBtn').click();
-await page.locator('#switchDialog[open][data-flow-dedicated="true"]').waitFor();
+await page.locator('.product-main #mobileSchoolBtn').click();
+await page.locator('body > #switchDialog[open][data-flow-dedicated="true"]').waitFor();
 await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-copy[data-flow-refraction-source="school-switch"] #switchSearch'));
 const sourceState=await page.evaluate(()=>({source:document.querySelector('.flow-refraction-source-copy')?.dataset.flowRefractionSource,hasSwitch:!!document.querySelector('.flow-refraction-source-copy #switchSearch'),hasHero:!!document.querySelector('.flow-refraction-source-copy #heroSchoolName')}));
 if(sourceState.source!=='school-switch'||!sourceState.hasSwitch||sourceState.hasHero)throw new Error(`Optical lens sampled the wrong School surface: ${JSON.stringify(sourceState)}`);
 
 // Internal scrolling of the dedicated destination must stay registered to the sampled copy.
 const scrollState=await page.evaluate(async()=>{
-  const dialog=document.querySelector('#switchDialog');
+  const dialog=document.querySelector('body > #switchDialog');
   const filler=document.createElement('div');filler.style.height='420px';filler.setAttribute('aria-hidden','true');dialog.querySelector('.sheet').append(filler);
   dialog.scrollTop=Math.min(120,Math.max(0,dialog.scrollHeight-dialog.clientHeight));window.dispatchEvent(new Event('scroll'));await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
   const nav=document.querySelector('#bottomNav'),dr=dialog.getBoundingClientRect(),nr=nav.getBoundingClientRect(),expected=dr.top-dialog.scrollTop-(nr.top+5),actual=Number.parseFloat(nav.style.getPropertyValue('--flow-refraction-scene-top'));
@@ -61,12 +61,12 @@ const scrollState=await page.evaluate(async()=>{
 if(scrollState.scrollTop>0&&scrollState.error>2)throw new Error(`Dedicated School surface scroll drifted inside Optical lens: ${JSON.stringify(scrollState)}`);
 
 // Async search content should refresh into the active refraction source.
-await page.locator('#switchSearch').fill('동부고');
-await page.locator('#switchResults [data-result-index]').waitFor();
+await page.locator('body > #switchDialog #switchSearch').fill('동부고');
+await page.locator('body > #switchDialog #switchResults [data-result-index]').waitFor();
 await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-copy[data-flow-refraction-source="school-switch"] #switchResults [data-result-index]'));
 
 // Closing the destination must switch the lens source back to the School page.
-await page.evaluate(()=>document.querySelector('#switchDialog:not(.flow-refraction-source-copy)')?.close());
+await page.evaluate(()=>document.querySelector('body > #switchDialog')?.close());
 await page.waitForFunction(()=>document.querySelector('.flow-refraction-source-copy[data-flow-refraction-source="school-main"] #flowRefractionFidelityProbe'));
 
 // BFCache pagehide must not revoke the live displacement-map blob used on restore.
