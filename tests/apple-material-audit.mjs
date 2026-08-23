@@ -59,13 +59,16 @@ async function universityApp(){
   await page.addInitScript(({university})=>{localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));localStorage.setItem('flow-university-theme-v1','dark')},{university});
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();await waitMaterial(page);
   const nav=await computed(page,'.bottom-nav'),lens=await computed(page,'.bottom-nav','::before'),card=await computed(page,'.summary-card:not(.next-card)');
-  const optics=await page.evaluate(()=>({mode:document.documentElement.dataset.flowGlassRefraction||'',filter:Boolean(document.querySelector('#flow-liquid-refraction')),materialLast:[...document.querySelectorAll('link[rel="stylesheet"]')].at(-1)?.href||''}));
+  const optics=await page.evaluate(()=>{
+    const sheets=[...document.querySelectorAll('link[rel="stylesheet"]')].map(node=>{try{return new URL(node.href,location.href).pathname}catch{return''}});
+    return{mode:document.documentElement.dataset.flowGlassRefraction||'',filter:Boolean(document.querySelector('#flow-liquid-refraction')),sheets,materialIndex:sheets.lastIndexOf('/flow-material.css'),globalThemeIndex:sheets.lastIndexOf('/university/ui-unify-v2.css')};
+  });
   noSquircle('university summary card',card);noBackdrop('university summary card',card);
   if(nav?.backdrop==='none'||!nav?.backdrop.includes('blur'))throw new Error(`tab bar is not glass ${JSON.stringify(nav)}`);
   if(lens?.backdrop==='none'||!lens?.backdrop.includes('blur'))throw new Error(`selection lens is not optical glass ${JSON.stringify(lens)}`);
   if(!optics.filter)throw new Error(`SVG refraction filter missing ${JSON.stringify(optics)}`);
   if(optics.mode==='true'&&!/url\(/i.test(lens.backdrop))throw new Error(`refraction capability enabled without URL filter ${JSON.stringify({optics,lens})}`);
-  if(!optics.materialLast.includes('/flow-material.css'))throw new Error(`material stylesheet is not last ${JSON.stringify(optics)}`);
+  if(optics.materialIndex<0||optics.materialIndex<optics.globalThemeIndex)throw new Error(`material stylesheet does not override global theme styles ${JSON.stringify(optics)}`);
   if(parseFloat(nav.radius)<30)throw new Error(`tab bar is not capsule-shaped ${JSON.stringify(nav)}`);
   await page.screenshot({path:`${OUT}/apple-material-university-dashboard-dark.png`,fullPage:false});
 
