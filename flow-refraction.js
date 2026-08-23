@@ -2,18 +2,64 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
+const RUNTIME_STYLE_ID='flow-liquid-glass-runtime-style';
 let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapData='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
 
+/*
+ * The mobile nav is assembled by feature modules: School reparents Week into
+ * the Today surface, University injects Campus, and Settings is appended by the
+ * shared native layer. Keep the settled geometry semantic instead of deriving
+ * it from raw child indexes; the Optical helper is also a direct nav child.
+ * This contract is active in Standard and Optical modes and adds no observer or
+ * render loop.
+ */
+function installRuntimeStyles(){
+  let style=document.querySelector(`#${RUNTIME_STYLE_ID}`);
+  if(style)return style;
+  style=document.createElement('style');style.id=RUNTIME_STYLE_ID;style.textContent=`
+html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html[data-theme] body .bottom-nav{--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
+html[data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
+html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
+html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
+html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
+html[data-theme] body .bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
+html[data-theme] body .bottom-nav:has(> [data-view="timetable"].active){--flow-tab-index:1!important}
+html[data-theme] body .bottom-nav:has(> [data-view="campus"].active){--flow-tab-index:2!important}
+html[data-theme] body .bottom-nav:has(> [data-view="school"].active){--flow-tab-index:3!important}
+html[data-theme] body .bottom-nav:has(> .flow-mobile-settings.active){--flow-tab-index:4!important}
+html[data-theme] body :where(.mobile-bottom-nav,.bottom-nav)::before{transition:transform var(--flow-lens-duration,210ms) var(--flow-lens-ease,cubic-bezier(.18,1.08,.28,1)),box-shadow 150ms ease,border-radius 150ms ease,background-position 90ms linear!important}
+html[data-theme] body :where(.mobile-bottom-nav,.bottom-nav)[data-flow-lens-pressed="true"]{--flow-lens-duration:90ms;--flow-lens-ease:cubic-bezier(.16,1,.3,1)}
+@media(max-width:900px){
+  html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
+  html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
+  html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="school"]{grid-row:1!important;grid-column:3!important}
+  html[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>.flow-mobile-settings{grid-row:1!important;grid-column:4!important}
+  html[data-theme] body .bottom-nav>[data-view="today"]{grid-row:1!important;grid-column:1!important}
+  html[data-theme] body .bottom-nav>[data-view="timetable"]{grid-row:1!important;grid-column:2!important}
+  html[data-theme] body .bottom-nav>[data-view="campus"]{grid-row:1!important;grid-column:3!important}
+  html[data-theme] body .bottom-nav>[data-view="school"]{grid-row:1!important;grid-column:4!important}
+  html[data-theme] body .bottom-nav>.flow-mobile-settings{grid-row:1!important;grid-column:5!important}
+}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme] body :where(.mobile-bottom-nav,.bottom-nav)>.flow-refraction-copy-lens{transition:transform var(--flow-lens-duration,210ms) var(--flow-lens-ease,cubic-bezier(.18,1.08,.28,1))!important}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme] body :where(.mobile-bottom-nav,.bottom-nav)::before{background-color:color-mix(in srgb,var(--surface) 30%,transparent)!important}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body :where(.mobile-bottom-nav,.bottom-nav)::before{background-color:color-mix(in srgb,var(--surface) 36%,transparent)!important}
+`;
+  document.head.append(style);return style;
+}
+function raiseRuntimeStyles(){const style=installRuntimeStyles();if(style.parentElement===document.head)document.head.append(style)}
+installRuntimeStyles();
+
 function ensureStyles(){
-  if(stylePromise)return stylePromise;
+  if(stylePromise)return stylePromise.then(()=>{raiseRuntimeStyles()});
   const href='/flow-refraction.css';
   let link=[...document.querySelectorAll('link[rel="stylesheet"]')].find(node=>{try{return new URL(node.href,location.href).pathname===href}catch{return false}});
-  if(link?.sheet)return stylePromise=Promise.resolve();
+  if(link?.sheet){raiseRuntimeStyles();return stylePromise=Promise.resolve()}
   if(!link){link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link)}
-  stylePromise=new Promise(resolve=>{link.addEventListener('load',resolve,{once:true});link.addEventListener('error',resolve,{once:true});setTimeout(resolve,1200)});
+  stylePromise=new Promise(resolve=>{const done=()=>{raiseRuntimeStyles();resolve()};link.addEventListener('load',done,{once:true});link.addEventListener('error',done,{once:true});setTimeout(done,1200)});
   return stylePromise;
 }
 function activeNav(){return [...document.querySelectorAll(NAV_SELECTOR)].find(visible)||null}
@@ -44,7 +90,7 @@ function currentLensX(){
 }
 function syncSceneMotion({animate=false}={}){
   if(!scene||!nav)return;
-  const x=currentLensX(),duration=animate?(Number.parseFloat(nav.style.getPropertyValue('--flow-lens-duration'))||420):0,ease=nav.style.getPropertyValue('--flow-lens-ease').trim()||'cubic-bezier(.18,1.18,.28,1)';
+  const x=currentLensX(),duration=animate?(Number.parseFloat(nav.style.getPropertyValue('--flow-lens-duration'))||210):0,ease=nav.style.getPropertyValue('--flow-lens-ease').trim()||'cubic-bezier(.18,1.08,.28,1)';
   scene.style.setProperty('transition',duration>0?`transform ${duration}ms ${ease}`:'none','important');
   scene.style.setProperty('transform',`translate3d(${-x.toFixed(2)}px,0,0)`,'important');
 }
@@ -234,7 +280,7 @@ document.addEventListener('transitionend',event=>{
 document.addEventListener('click',event=>{
   if(event.target.closest?.('#mobileSchoolBtn,#schoolBtn')){queueMicrotask(()=>scheduleRefresh(0));return}
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
-  queueMicrotask(()=>syncGeometry({animateScene:true}));scheduleRefresh(460);
+  queueMicrotask(()=>{syncGeometry({animateScene:true});scheduleRefresh(0)});
 },{passive:true});
 
 setTimeout(()=>{void syncMode();scheduleRefresh(700)},24);
