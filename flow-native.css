@@ -72,22 +72,19 @@ dialog[open][data-flow-sheet-settling="true"]::backdrop{
 dialog[open][data-flow-sheet-dragging="true"]::backdrop{transition:none!important}
 dialog[open][data-flow-sheet-settling="true"]::backdrop{transition:opacity var(--flow-sheet-duration,240ms) ease-out!important}
 
-/* Settings are a transient control surface, not a bottom-navigation destination. */
+/* Settings use the final mobile navigation slot; desktop keeps its sidebar entry. */
 .flow-mobile-settings,.flow-university-settings-button{display:none}
 .flow-mobile-settings{
-  flex:0 0 42px;
-  width:42px;
-  height:42px;
+  min-width:0;
   padding:0;
-  border:1px solid color-mix(in srgb,var(--text) 8%,transparent);
-  border-radius:12px;
-  background:var(--surface);
+  border:0;
+  background:transparent;
   color:var(--muted);
   box-shadow:none;
   place-items:center;
   cursor:pointer;
 }
-.flow-mobile-settings svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.flow-mobile-settings svg{display:none}
 .flow-settings-sheet{width:min(540px,calc(100vw - 24px))}
 .flow-setting-section{padding:18px 0;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
 .flow-setting-section:first-of-type{margin-top:18px}
@@ -183,8 +180,8 @@ html[data-theme] body .bottom-nav{
   user-select:none;
   -webkit-user-select:none;
 }
-html[data-theme] body .mobile-bottom-nav{--flow-tab-count:4}
-html[data-theme] body .bottom-nav{--flow-tab-count:4}
+html[data-theme] body .mobile-bottom-nav{--flow-tab-count:5}
+html[data-theme] body .bottom-nav{--flow-tab-count:5}
 
 html[data-theme] body .mobile-bottom-nav:has(> .mobile-tab.active:nth-child(1)),
 html[data-theme] body .bottom-nav:has(> .bottom-item.active:nth-child(1)){--flow-tab-index:0}
@@ -270,27 +267,20 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
   }
   html[data-theme] body .flow-mobile-settings{
     display:grid;
-    position:absolute;
-    z-index:3;
-    top:calc(12px + env(safe-area-inset-top));
-    width:40px;
-    height:40px;
-    flex-basis:40px;
+    min-height:44px;
+    width:auto;
+    height:auto;
     border:0;
-    border-left:1px solid color-mix(in srgb,var(--text) 8%,transparent);
-    border-radius:0 12px 12px 0;
-    background:transparent;
+    border-radius:15px;
+    background:transparent!important;
+    color:var(--muted);
     box-shadow:none;
-  }
-  html[data-theme] body .mobile-topbar>.flow-mobile-settings{right:max(11px,env(safe-area-inset-right))}
-  html[data-theme] body .mobile-header>.flow-mobile-settings{right:max(13px,env(safe-area-inset-right))}
-  html[data-theme] body :is(.mobile-school-button,.mobile-school){
-    position:relative;
-    padding-right:48px!important;
+    font-size:.73rem;
+    font-weight:800;
   }
   html[data-theme] body .mobile-header>.flow-theme-cycle{display:none!important}
-  html[data-theme] body .mobile-bottom-nav>#mobileSettingsBtn{display:none!important}
-  html[data-theme] body .mobile-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  html[data-theme] body .mobile-bottom-nav,
+  html[data-theme] body .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}
   html[data-theme] body .main{padding-top:calc(76px + env(safe-area-inset-top))!important}
   html[data-theme] body .mobile-bottom-nav,
   html[data-theme] body .bottom-nav{

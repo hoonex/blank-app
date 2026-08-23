@@ -26,7 +26,7 @@ const nav=await page.evaluate(()=>{
   const rects=items.map(el=>{const q=el.getBoundingClientRect();return{left:q.left,top:q.top,width:q.width,height:q.height,right:q.right,bottom:q.bottom,text:el.textContent.trim()}});
   return{count:items.length,height:r?.height||0,width:r?.width||0,grid:getComputedStyle(bar).gridTemplateColumns,rows:getComputedStyle(bar).gridTemplateRows,rects};
 });
-if(nav.count!==4)throw new Error(`Expected four mobile nav items: ${JSON.stringify(nav)}`);
+if(nav.count!==5||nav.rects.at(-1)?.text!=='설정')throw new Error(`Expected five mobile nav items ending in Settings: ${JSON.stringify(nav)}`);
 if(nav.height>58||nav.height<50)throw new Error(`Mobile nav height regressed: ${JSON.stringify(nav)}`);
 if(new Set(nav.rects.map(x=>Math.round(x.top))).size!==1)throw new Error(`Mobile nav wrapped to multiple rows: ${JSON.stringify(nav)}`);
 if(nav.rects.some(x=>x.width<70||x.height<40))throw new Error(`Mobile nav items collapsed: ${JSON.stringify(nav)}`);
