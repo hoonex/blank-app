@@ -2,7 +2,7 @@ const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
-let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='',stylePromise=null;
+let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapUrl='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
@@ -51,8 +51,7 @@ function syncSceneMotion({animate=false}={}){
 
 /* Kube-style convex refraction profile: a squircle surface supplies the slope,
    Snell's law converts that slope to a refracted ray, and the resulting
-   magnitude is normalized into the R/G displacement field. The outer edge and
-   flat interior both resolve to neutral, concentrating the bend in the bezel. */
+   magnitude is normalized into the R/G displacement field. */
 function roundedRectSdf(x,y,halfW,halfH,radius){
   const qx=Math.abs(x)-(halfW-radius),qy=Math.abs(y)-(halfH-radius),ox=Math.max(qx,0),oy=Math.max(qy,0);
   return Math.hypot(ox,oy)+Math.min(Math.max(qx,qy),0)-radius;
@@ -117,11 +116,30 @@ function ensureLens(){
   sample.append(scene);lens.append(sample);nav.prepend(lens);
   return true;
 }
+
+function rewriteIdSelector(selector){
+  return selector.replace(/#([A-Za-z_][\w-]*)/g,(_,id)=>`:is([data-flow-refraction-id="${id}"],#flow-refraction-specificity-sentinel)`);
+}
+function collectIdAliasRules(rules){
+  let output='';
+  for(const rule of rules){
+    if(rule.selectorText&&rule.selectorText.includes('#')&&rule.style){output+=`${rewriteIdSelector(rule.selectorText)}{${rule.style.cssText}}`;continue}
+    if(!rule.cssRules?.length)continue;
+    const inner=collectIdAliasRules(rule.cssRules);if(!inner)continue;
+    const text=rule.cssText||'',brace=text.indexOf('{');if(brace>0)output+=`${text.slice(0,brace)}{${inner}}`;
+  }
+  return output;
+}
+function ensureIdStyleAliases(){
+  const sheets=[...document.styleSheets],signature=sheets.map(sheet=>{try{return`${sheet.href||'inline'}:${sheet.cssRules.length}`}catch{return`${sheet.href||'external'}:x`}}).join('|');
+  if(signature===idAliasSignature&&idAliasStyle?.isConnected)return;
+  let css='';for(const sheet of sheets)try{css+=collectIdAliasRules(sheet.cssRules)}catch{}
+  if(!idAliasStyle){idAliasStyle=document.createElement('style');idAliasStyle.id='flow-refraction-id-aliases';document.head.append(idAliasStyle)}
+  idAliasStyle.textContent=css;idAliasSignature=signature;
+}
 function sanitizeClone(copy){
-  /* Preserve ids so the inert visual copy keeps the exact ID-scoped CSS of
-     the real page. The source DOM is earlier in document order, and regression
-     coverage verifies normal getElementById/querySelector calls still resolve
-     to the interactive source rather than this pointer-inert copy. */
+  const idNodes=[];if(copy.id)idNodes.push(copy);copy.querySelectorAll('[id]').forEach(node=>idNodes.push(node));
+  idNodes.forEach(node=>{node.dataset.flowRefractionId=node.id;node.removeAttribute('id')});
   copy.querySelectorAll('label[for]').forEach(node=>node.removeAttribute('for'));
   copy.querySelectorAll('[aria-controls],[aria-labelledby],[aria-describedby]').forEach(node=>{node.removeAttribute('aria-controls');node.removeAttribute('aria-labelledby');node.removeAttribute('aria-describedby')});
   copy.querySelectorAll('button,a,input,select,textarea,[tabindex]').forEach(node=>{
@@ -132,6 +150,7 @@ function sanitizeClone(copy){
 }
 function cloneSource(){
   if(!source||!scene)return;
+  ensureIdStyleAliases();
   const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=sourceKind(source);copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
   copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
   sanitizeClone(copy);
@@ -181,9 +200,6 @@ document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSea
 document.addEventListener('close',event=>{if(event.target?.matches?.('#switchDialog'))scheduleRefresh(0)},true);
 document.addEventListener('pointermove',event=>{
   if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
-  /* flow-native.js is registered first and has already written --flow-lens-x.
-     Mirror that exact translation with the inverse transform so the visual
-     copy stays registered to the real page while the glass aperture moves. */
   syncSceneMotion({animate:false});
 },{capture:true,passive:true});
 document.addEventListener('pointerup',event=>{
@@ -199,6 +215,7 @@ document.addEventListener('transitionend',event=>{
   syncSceneMotion({animate:false});
 },{passive:true});
 document.addEventListener('click',event=>{
+  if(event.target.closest?.('#mobileSchoolBtn,#schoolBtn')){queueMicrotask(()=>scheduleRefresh(0));return}
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
   queueMicrotask(()=>syncGeometry({animateScene:true}));scheduleRefresh(460);
 },{passive:true});
