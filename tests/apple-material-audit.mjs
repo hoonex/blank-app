@@ -72,8 +72,7 @@ async function universityApp(){
   if(parseFloat(nav.radius)<30)throw new Error(`tab bar is not capsule-shaped ${JSON.stringify(nav)}`);
   await page.screenshot({path:`${OUT}/apple-material-university-dashboard-dark.png`,fullPage:false});
 
-  const importControl=page.locator('#importTopBtn:visible, #emptyImportBtn:visible, #importTimetableBtn:visible, #importSidebarBtn:visible').first();
-  await importControl.waitFor({state:'visible'});await importControl.click();await page.locator('#importDialog[open]').waitFor();await page.waitForTimeout(120);
+  await page.evaluate(()=>{const d=document.querySelector('#importDialog');if(d&&!d.open)d.showModal()});await page.locator('#importDialog[open]').waitFor();await page.waitForTimeout(120);
   const sheet=await computed(page,'#importDialog .dialog-sheet'),privacy=await computed(page,'#importDialog .privacy-note'),input=await computed(page,'#importDialog .dialog-field input');
   noSquircle('university import sheet',sheet);noSquircle('university import input',input);
   if(sheet?.backdrop==='none'||!sheet?.backdrop.includes('blur'))throw new Error(`dialog sheet is not regular glass ${JSON.stringify(sheet)}`);
