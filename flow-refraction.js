@@ -52,11 +52,22 @@ function ensureLens(){
   sample.append(scene);lens.append(sample);nav.prepend(lens);
   return true;
 }
+function sanitizeClone(copy){
+  copy.removeAttribute('id');
+  copy.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  copy.querySelectorAll('label[for]').forEach(node=>node.removeAttribute('for'));
+  copy.querySelectorAll('[aria-controls],[aria-labelledby],[aria-describedby]').forEach(node=>{node.removeAttribute('aria-controls');node.removeAttribute('aria-labelledby');node.removeAttribute('aria-describedby')});
+  copy.querySelectorAll('button,a,input,select,textarea,[tabindex]').forEach(node=>{
+    node.setAttribute('tabindex','-1');node.setAttribute('aria-hidden','true');
+    for(const attr of ['data-flow-settings-glass','data-flow-settings-theme','data-theme-choice','data-view','data-go','data-go-view','data-close-dialog'])node.removeAttribute(attr);
+    if(node.matches('a'))node.removeAttribute('href');
+  });
+}
 function cloneSource(){
   if(!source||!scene)return;
   const copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
   copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
-  copy.querySelectorAll('button,a,input,select,textarea,[tabindex]').forEach(node=>{node.setAttribute('tabindex','-1');node.setAttribute('aria-hidden','true')});
+  sanitizeClone(copy);
   scene.replaceChildren(copy);
   syncGeometry();
 }
