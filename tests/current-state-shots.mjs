@@ -95,11 +95,11 @@ for(const c of cases){
   await shot(page,`${c.name}-today-fold.png`,false);
   await shot(page,`${c.name}-today-full.png`,true);
 
-  await page.locator('[data-view="week"]:visible').first().click();
-  await page.waitForFunction(()=>!document.querySelector('[data-view-panel="week"]')?.classList.contains('hidden'));
+  await page.locator('.timetable-mode-button:visible').first().click();
+  await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&!document.querySelector('#inlineWeekTimetable')?.classList.contains('hidden'));
   await page.waitForTimeout(250);
-  const week=await measure(page,'[data-view-panel="week"]:not(.hidden)');
-  assertLayout(`${c.name} dashboard week`,week);
+  const week=await measure(page,'#inlineWeekTimetable:not(.hidden)');
+  assertLayout(`${c.name} dashboard inline week`,week);
   await shot(page,`${c.name}-week-full.png`,true);
 
   await page.locator('[data-view="schedule"]:visible').first().click();
