@@ -44,6 +44,34 @@ dialog[open] .sheet,dialog[open] .dialog-sheet{
 }
 dialog[open]::backdrop{animation:flow-backdrop-enter 180ms ease-out both}
 
+/* A dedicated grab region makes transient sheets directly manipulable without stealing scroll gestures. */
+.flow-sheet-grab-handle{display:none}
+dialog[open][data-flow-sheet-resting="true"] :where(.sheet,.dialog-sheet){
+  animation:none!important;
+  transform:none!important;
+}
+dialog[open][data-flow-sheet-grabbed="true"] :where(.sheet,.dialog-sheet),
+dialog[open][data-flow-sheet-dragging="true"] :where(.sheet,.dialog-sheet),
+dialog[open][data-flow-sheet-settling="true"] :where(.sheet,.dialog-sheet){
+  animation:none!important;
+  transform:translate3d(0,var(--flow-sheet-y,0px),0) scale(var(--flow-sheet-scale,1))!important;
+  transform-origin:50% 100%!important;
+  opacity:var(--flow-sheet-opacity,1)!important;
+  will-change:transform,opacity;
+}
+dialog[open][data-flow-sheet-dragging="true"] :where(.sheet,.dialog-sheet){transition:none!important}
+dialog[open][data-flow-sheet-settling="true"] :where(.sheet,.dialog-sheet){
+  transition:transform var(--flow-sheet-duration,240ms) var(--flow-motion-spring),opacity var(--flow-sheet-duration,240ms) ease-out!important;
+}
+dialog[open][data-flow-sheet-grabbed="true"]::backdrop,
+dialog[open][data-flow-sheet-dragging="true"]::backdrop,
+dialog[open][data-flow-sheet-settling="true"]::backdrop{
+  animation:none!important;
+  opacity:var(--flow-sheet-backdrop-opacity,1)!important;
+}
+dialog[open][data-flow-sheet-dragging="true"]::backdrop{transition:none!important}
+dialog[open][data-flow-sheet-settling="true"]::backdrop{transition:opacity var(--flow-sheet-duration,240ms) ease-out!important}
+
 :where(.neo-button,.primary-button,.soft-button,.nav-item,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.university-chip,.mobile-school,.mobile-school-button,.dialog-close,.text-button,.course-block[data-custom-id],.today-row.editable-row){
   touch-action:manipulation;
   transform-origin:center;
@@ -205,7 +233,41 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
     bottom:max(9px,calc(env(safe-area-inset-bottom) + 5px))!important;
   }
   html[data-theme] body .mobile-tab,
-  html[data-theme] body .bottom-item{min-height:42px}
+  html[data-theme] body .bottom-item{min-height:44px}
+}
+@media(max-width:900px) and (pointer:coarse){
+  dialog[open] :where(.sheet,.dialog-sheet){position:relative}
+  dialog[open] .flow-sheet-grab-handle{
+    display:block;
+    position:absolute;
+    z-index:5;
+    top:0;
+    left:50%;
+    width:92px;
+    height:44px;
+    transform:translateX(-50%);
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    cursor:grab;
+  }
+  dialog[open] .flow-sheet-grab-handle::before{
+    content:"";
+    position:absolute;
+    top:9px;
+    left:50%;
+    width:36px;
+    height:4px;
+    transform:translateX(-50%);
+    border-radius:999px;
+    background:color-mix(in srgb,var(--text) 22%,transparent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    transition:width 140ms var(--flow-motion-spring),opacity 140ms ease;
+    opacity:.72;
+  }
+  dialog[open][data-flow-sheet-grabbed="true"] .flow-sheet-grab-handle::before,
+  dialog[open][data-flow-sheet-dragging="true"] .flow-sheet-grab-handle::before{width:44px;opacity:.9}
+  html[data-theme] body .dialog-close{min-width:44px;min-height:44px}
 }
 @media(max-width:900px) and (max-height:520px){
   html[data-theme] body .mobile-topbar,
@@ -217,6 +279,7 @@ html[data-theme] body .bottom-item.active{background:transparent!important}
 }
 
 @media(prefers-reduced-motion:reduce){
+  .flow-sheet-grab-handle{display:none!important}
   [data-view-panel]:not(.hidden),[data-panel]:not(.hidden),
   .search-results:not(.hidden),.major-results:not(:empty),.widget-picker[open],
   dialog[open] .sheet,dialog[open] .dialog-sheet,dialog[open]::backdrop{
