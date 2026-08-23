@@ -139,26 +139,48 @@ async function runSchool(reducedMotion) {
     await page.locator('.mobile-tab[data-view="week"]:visible').dispatchEvent('click');
     await page.locator('#weekView:not(.hidden)').waitFor(); await page.waitForTimeout(40);
     const viewAnimations = await animationNames(page);
+
     await clearAnimationLog(page);
     await page.locator('#mobileSettingsBtn:visible').dispatchEvent('click');
-    await page.locator('#settingsDialog').waitFor({ state: 'visible' }); await page.waitForTimeout(40);
-    const sheetAnimations = await animationNames(page);
+    await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor(); await page.waitForTimeout(40);
+    const settingsAnimations = await animationNames(page);
     const material = await materialState(page, '#bottomNav', '.mobile-tab.active');
-    const dialogOpen = await page.locator('#settingsDialog').evaluate(d => d.open);
+    const settingsState = await page.evaluate(() => {
+      const panel = document.querySelector('#flowSchoolSettingsView'), legacy = document.querySelector('#settingsDialog');
+      const style = panel ? getComputedStyle(panel) : null;
+      return {
+        legacyOpen: Boolean(legacy?.open),
+        visible: Boolean(panel && !panel.classList.contains('hidden')),
+        position: style?.position || '',
+        top: panel?.getBoundingClientRect().top ?? -1,
+        scrollTop: panel?.scrollTop ?? -1,
+      };
+    });
     await page.screenshot({ path: `${OUT}/${label}.png`, fullPage: false });
-    await page.locator('#settingsDialog .dialog-close').click();
-    const flowNames = [...viewAnimations, ...sheetAnimations].filter(name => name.startsWith('flow-'));
+
+    await clearAnimationLog(page);
+    await page.locator('.mobile-tab[data-view="today"]:visible').dispatchEvent('click');
+    await page.locator('#todayView:not(.hidden)').waitFor();
+    await page.locator('#allergyBtn').dispatchEvent('click');
+    await page.locator('#allergyDialog').waitFor({ state: 'visible' }); await page.waitForTimeout(40);
+    const sheetAnimations = await animationNames(page);
+    const dialogOpen = await page.locator('#allergyDialog').evaluate(d => d.open);
+    await page.locator('#allergyDialog .dialog-close').click();
+
+    const flowNames = [...viewAnimations, ...settingsAnimations, ...sheetAnimations].filter(name => name.startsWith('flow-'));
     if (reducedMotion === 'reduce') {
       if (flowNames.includes('flow-view-enter') || flowNames.includes('flow-sheet-enter')) throw new Error(`${label} still emitted motion animations: ${JSON.stringify(flowNames)}`);
     } else {
       if (!viewAnimations.includes('flow-view-enter')) throw new Error(`${label} missing view-enter animation: ${JSON.stringify(viewAnimations)}`);
-      if (!sheetAnimations.includes('flow-sheet-enter')) throw new Error(`${label} missing sheet-enter animation: ${JSON.stringify(sheetAnimations)}`);
+      if (!settingsAnimations.includes('flow-view-enter')) throw new Error(`${label} settings is not using view-enter motion: ${JSON.stringify(settingsAnimations)}`);
+      if (!sheetAnimations.includes('flow-sheet-enter')) throw new Error(`${label} missing transient sheet-enter animation: ${JSON.stringify(sheetAnimations)}`);
       if (!material.navBackdrop.includes('blur')) throw new Error(`${label} bottom navigation is missing glass blur: ${JSON.stringify(material)}`);
       if (material.activeIndicatorOpacity < .9) throw new Error(`${label} active material indicator is not visible: ${JSON.stringify(material)}`);
     }
-    if (!dialogOpen || material.motionMedium !== '240ms') throw new Error(`${label} shared layer/functionality missing: ${JSON.stringify({ dialogOpen, material })}`);
+    if (settingsState.legacyOpen || !settingsState.visible || !dialogOpen || material.motionMedium !== '240ms') throw new Error(`${label} shared layer/functionality missing: ${JSON.stringify({ settingsState, dialogOpen, material })}`);
+    if (settingsState.position !== 'fixed' || settingsState.top < 50 || settingsState.scrollTop !== 0) throw new Error(`${label} settings did not open as an independent first-fold page: ${JSON.stringify(settingsState)}`);
     assertClean(label, errors);
-    return { label, viewAnimations, sheetAnimations, material, dialogOpen, errors };
+    return { label, viewAnimations, settingsAnimations, sheetAnimations, material, settingsState, dialogOpen, errors };
   } finally { await context.close(); }
 }
 

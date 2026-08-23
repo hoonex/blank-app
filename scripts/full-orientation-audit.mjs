@@ -226,9 +226,10 @@ async function auditSchool(c) {
     await page.locator('#allergyBtn').click(); await page.locator('#allergyDialog').waitFor({ state: 'visible' }); const allergyChoice = page.locator('#allergyGrid input,#allergyGrid button').first(); if (await allergyChoice.count()) await allergyChoice.click(); await page.locator('#saveAllergyBtn').click();
     if (await page.locator('#mealDetailBtn').isVisible()) { await page.locator('#mealDetailBtn').click(); if (await page.locator('#mealDetails').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} meal detail did not open`); }
     if (await page.locator('#shareTimetableBtn').count()) { await page.locator('#shareTimetableBtn').click(); const shared = await page.evaluate(() => window.__flowShare?.text || ''); if (!shared.includes(SCHOOL.name)) throw new Error(`${c.name} school share did not include school name`); }
-    await visibleClick(page, '#settingsBtn,#mobileSettingsBtn'); await page.locator('#settingsDialog').waitFor({ state: 'visible' });
-    await page.locator('#bellStart').fill('08:20'); await page.locator('#lessonMinutes').fill('50'); await page.locator('#breakMinutes').fill('10'); await page.locator('#mealStart').fill('12:10');
-    states.settings = await geom(page, `${c.name} school settings`, c.hasTouch); await page.locator('#saveSettingsBtn').click();
+    await visibleClick(page, '#settingsBtn,#mobileSettingsBtn'); await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
+    if (await page.locator('#settingsDialog').evaluate(d => d.open)) throw new Error(`${c.name} school settings reopened the legacy dialog`);
+    await page.locator('#flowSchoolSettingsView [data-flow-bell="start"]').fill('08:20'); await page.locator('#flowSchoolSettingsView [data-flow-bell="lesson"]').fill('50'); await page.locator('#flowSchoolSettingsView [data-flow-bell="break"]').fill('10'); await page.locator('#flowSchoolSettingsView [data-flow-bell="meal"]').fill('12:10');
+    states.settings = await geom(page, `${c.name} school settings`, c.hasTouch); await shot(page, `${c.name}-school-settings`, false); await page.locator('#flowSchoolSettingsView [data-flow-save-school]').click();
     const bell = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-school-bell-v1') || '{}')); if (bell.start !== '08:20' || bell.meal !== '12:10') throw new Error(`${c.name} school settings did not persist: ${JSON.stringify(bell)}`);
     await visibleClick(page, '[data-view="week"]'); await page.waitForFunction(() => !document.querySelector('#weekView')?.classList.contains('hidden'));
     states.week = await geom(page, `${c.name} school week`, c.hasTouch); await page.locator('#nextWeek').click(); await page.waitForTimeout(80); await page.locator('#thisWeekBtn').click(); await shot(page, `${c.name}-school-week`);
@@ -265,6 +266,13 @@ async function auditUniversity(c) {
     await page.evaluate(tt => localStorage.setItem('flow-university-timetable-v1', JSON.stringify(tt)), universityTimetable()); await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#appView:not(.hidden)').waitFor(); await page.locator('#widgetDashboard').waitFor(); await page.waitForTimeout(120);
     states.today = await geom(page, `${c.name} university today`, c.hasTouch); await shot(page, `${c.name}-university-today`);
+
+    await visibleClick(page, '.flow-mobile-settings,.flow-university-settings-button'); await page.locator('#flowUniversitySettingsView:not(.hidden)').waitFor();
+    if (await page.locator('#flowUniversitySettingsDialog').evaluate(d => d.open)) throw new Error(`${c.name} university settings reopened the legacy dialog`);
+    states.settings = await geom(page, `${c.name} university settings`, c.hasTouch); await shot(page, `${c.name}-university-settings`, false);
+    await page.locator('#flowUniversitySettingsView [data-flow-settings-theme="dark"]').click(); await page.waitForFunction(() => document.documentElement.dataset.themeMode === 'dark');
+    await page.locator('#flowUniversitySettingsView [data-flow-settings-theme="light"]').click(); await page.waitForFunction(() => document.documentElement.dataset.themeMode === 'light');
+    await visibleClick(page, '[data-view="today"]'); await page.locator('#todayView:not(.hidden)').waitFor();
 
     await page.locator('#dashboardEditBtn').click(); const memo = await ensureMemoVisible(page); await memo.scrollIntoViewIfNeeded(); await page.locator('#widgetMemoInput').fill(`${c.name} 메모 검수`);
     const before = await memo.getAttribute('data-size'), handle = memo.locator('.widget-v2-resize'); await handle.scrollIntoViewIfNeeded(); const hb = await handle.boundingBox(); if (!hb) throw new Error(`${c.name} widget resize handle missing`);

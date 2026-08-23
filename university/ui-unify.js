@@ -1,3 +1,4 @@
+import '/flow-settings-view.js';
 const THEME_KEY='flow-university-theme-v1';
 const UI_BUILD='20260821-1';
 const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css'].map(x=>`${x}?v=${UI_BUILD}`);

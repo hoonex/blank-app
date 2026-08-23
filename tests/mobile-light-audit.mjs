@@ -59,16 +59,18 @@ const initial=await readTheme();
 assertLight(initial,'Initial');
 
 await page.locator('#mobileSettingsBtn').click();
-await page.locator('#themeSegment [data-theme-choice="dark"]').click();
+await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
+if(await page.locator('#settingsDialog').evaluate(el=>el.open))throw new Error('School Settings unexpectedly opened as a dialog.');
+await page.locator('#flowSchoolSettingsView [data-flow-settings-theme="dark"]').click();
 await page.waitForTimeout(120);
 const dark=await readTheme();
 if(dark.dataTheme!=='dark'||dark.themeMode!=='dark'||dark.saved!=='dark'||dark.inlineColorScheme!=='dark'||dark.metaColorScheme!=='dark'||!dark.colorScheme.includes('dark'))throw new Error(`Dark transition failed before light regression check: ${JSON.stringify(dark)}`);
 
-await page.locator('#themeSegment [data-theme-choice="light"]').click();
+await page.locator('#flowSchoolSettingsView [data-flow-settings-theme="light"]').click();
 await page.waitForTimeout(120);
 const liveLight=await readTheme();
 assertLight(liveLight,'Dark-to-light live transition');
-await page.locator('#settingsDialog .dialog-close').click();
+await page.locator('#bottomNav [data-view="today"]').click();
 await page.waitForTimeout(100);
 
 await page.screenshot({path:`${OUT}/mobile-light-after-live-dark.png`,fullPage:true});
