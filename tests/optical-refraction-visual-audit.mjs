@@ -63,9 +63,14 @@ if(Math.max(state.initialAlignment.x,state.initialAlignment.y)>2)throw new Error
 if(Math.max(state.movedAlignment.x,state.movedAlignment.y)>2)throw new Error(`Counter-positioned source copy drifted while the lens moved: ${JSON.stringify(state)}`);
 if(state.root.scrollWidth>state.root.clientWidth+3)throw new Error(`Optical calibration overflowed: ${JSON.stringify(state)}`);
 const clip={x:Math.max(0,state.lensRect.left),y:Math.max(0,state.lensRect.top),width:Math.min(390,state.lensRect.width),height:Math.min(844,state.lensRect.height)};
+/* Real nav labels sit above the optical sample. Their correct placement must not
+   change a displacement-only pixel metric, so hide only those foreground
+   controls for the paired control/filtered captures. The separate nav layout
+   audit verifies their real geometry and remains fully visible. */
+const measurementStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionMeasurement';s.textContent='#bottomNav > :where(.mobile-tab,.bottom-item){visibility:hidden!important}';document.head.append(s);return s.id});
 const controlStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionControl';s.textContent='.flow-refraction-sample{filter:none!important}';document.head.append(s);return s.id});
 await page.waitForTimeout(100);const control=await page.screenshot({path:`${OUT}/control-no-displacement.png`,clip,animations:'disabled'});
-await page.evaluate(id=>document.getElementById(id)?.remove(),controlStyle);await page.waitForTimeout(120);const optical=await page.screenshot({path:`${OUT}/optical-displacement.png`,clip,animations:'disabled'});await page.screenshot({path:`${OUT}/optical-calibration-full.png`,fullPage:false,animations:'disabled'});
+await page.evaluate(id=>document.getElementById(id)?.remove(),controlStyle);await page.waitForTimeout(120);const optical=await page.screenshot({path:`${OUT}/optical-displacement.png`,clip,animations:'disabled'});await page.evaluate(id=>document.getElementById(id)?.remove(),measurementStyle);await page.screenshot({path:`${OUT}/optical-calibration-full.png`,fullPage:false,animations:'disabled'});
 const a=decodePng(control),b=decodePng(optical),edge=regionDiff(a,b,(x,y,w,h)=>x<w*.27||x>w*.73||y<h*.27||y>h*.73),center=regionDiff(a,b,(x,y,w,h)=>x>w*.32&&x<w*.68&&y>h*.30&&y<h*.70),all=regionDiff(a,b,()=>true),ratio=edge/Math.max(.01,center),report={state,clip,metrics:{edgeMeanAbsDiff:edge,centerMeanAbsDiff:center,allMeanAbsDiff:all,edgeToCenterRatio:ratio}};
 await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 if(all<1.0||edge<1.4||ratio<1.08)throw new Error(`Rendered Optical Glass does not show edge-weighted displacement: ${JSON.stringify(report.metrics)}`);
