@@ -1,12 +1,17 @@
 const NAV_SELECTOR='.mobile-bottom-nav, .bottom-nav';
 const TAB_SELECTOR='.mobile-tab, .bottom-item';
+const SHEET_SELECTOR='.sheet, .dialog-sheet';
+const SHEET_HANDLE='.flow-sheet-grab-handle';
 const DRAG_THRESHOLD=7;
 const PROJECT_MS=100;
+const SHEET_PROJECT_MS=90;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let gesture=null;
+let sheetGesture=null;
 let syntheticClick=false;
 let suppressClickUntil=0;
 let settleTimer=0;
+let sheetTimer=0;
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const now=()=>performance.now();
@@ -42,13 +47,125 @@ function installLiquidGlassOptics(){
   probe.remove();
   document.documentElement.dataset.flowGlassRefraction=supported?'true':'fallback';
 }
+function sheetFor(dialog){return dialog?.querySelector?.(':scope > .sheet, :scope > .dialog-sheet')||null}
+function resetSheetMotion(dialog,{resting=false}={}){
+  if(!dialog)return;
+  for(const name of ['data-flow-sheet-grabbed','data-flow-sheet-dragging','data-flow-sheet-settling','data-flow-sheet-dismissing','data-flow-sheet-resting'])dialog.removeAttribute(name);
+  if(resting)dialog.dataset.flowSheetResting='true';
+  for(const name of ['--flow-sheet-y','--flow-sheet-scale','--flow-sheet-duration','--flow-sheet-opacity','--flow-sheet-backdrop-opacity'])dialog.style.removeProperty(name);
+}
+function installSheetHandles(){
+  for(const dialog of document.querySelectorAll('dialog')){
+    const sheet=sheetFor(dialog);if(!sheet||sheet.querySelector(`:scope > ${SHEET_HANDLE}`))continue;
+    const handle=document.createElement('div');
+    handle.className=SHEET_HANDLE.slice(1);
+    handle.setAttribute('aria-hidden','true');
+    sheet.prepend(handle);
+    dialog.addEventListener('close',()=>{
+      if(sheetGesture?.dialog===dialog)sheetGesture=null;
+      clearTimeout(sheetTimer);
+      resetSheetMotion(dialog);
+    },{passive:true});
+  }
+}
 function installVisualSystem(){
   installLiquidGlassOptics();
+  installSheetHandles();
   /* Existing School/University polish links finish synchronously on startup. Move this one last. */
   setTimeout(installMaterialLayer,0);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installVisualSystem,{once:true});
 else installVisualSystem();
+
+function setSheetMotion(state,y){
+  const progress=clamp(Math.max(0,y)/Math.min(360,Math.max(160,state.rect.height*.65)),0,1);
+  const scale=1-Math.min(.018,progress*.018);
+  state.currentY=y;
+  state.dialog.style.setProperty('--flow-sheet-y',`${y.toFixed(2)}px`);
+  state.dialog.style.setProperty('--flow-sheet-scale',scale.toFixed(4));
+  state.dialog.style.setProperty('--flow-sheet-opacity','1');
+  state.dialog.style.setProperty('--flow-sheet-backdrop-opacity',(1-progress*.58).toFixed(3));
+}
+function beginSheetGesture(event){
+  if(reducedMotion.matches||!event.isPrimary||(event.pointerType==='mouse'&&event.button!==0))return false;
+  const handle=event.target.closest?.(SHEET_HANDLE);const sheet=handle?.closest?.(SHEET_SELECTOR);const dialog=sheet?.closest?.('dialog[open]');
+  if(!handle||!sheet||!dialog||sheetFor(dialog)!==sheet)return false;
+  clearTimeout(sheetTimer);
+  const t=now(),rect=sheet.getBoundingClientRect();
+  sheetGesture={dialog,sheet,handle,pointerId:event.pointerId,startY:event.clientY,lastY:event.clientY,lastT:t,velocity:0,currentY:0,rect,dragging:false};
+  dialog.dataset.flowSheetGrabbed='true';
+  dialog.style.setProperty('--flow-sheet-y','0px');
+  dialog.style.setProperty('--flow-sheet-scale','1');
+  dialog.style.setProperty('--flow-sheet-opacity','1');
+  dialog.style.setProperty('--flow-sheet-backdrop-opacity','1');
+  try{handle.setPointerCapture?.(event.pointerId)}catch{}
+  event.preventDefault();
+  return true;
+}
+function settleSheet(state,dismiss=false){
+  const {dialog,handle,pointerId,rect}=state;
+  try{handle.releasePointerCapture?.(pointerId)}catch{}
+  dialog.removeAttribute('data-flow-sheet-grabbed');
+  dialog.removeAttribute('data-flow-sheet-dragging');
+  dialog.dataset.flowSheetSettling='true';
+  const speed=Math.max(0,state.velocity);
+  const duration=dismiss?clamp(205-speed*45,145,215):clamp(250-Math.min(speed,1.4)*28,210,260);
+  dialog.style.setProperty('--flow-sheet-duration',`${Math.round(duration)}ms`);
+  if(dismiss){
+    dialog.dataset.flowSheetDismissing='true';
+    const target=Math.max(window.innerHeight*.78,rect.height+90);
+    dialog.style.setProperty('--flow-sheet-y',`${Math.round(target)}px`);
+    dialog.style.setProperty('--flow-sheet-scale','.985');
+    dialog.style.setProperty('--flow-sheet-opacity','0');
+    dialog.style.setProperty('--flow-sheet-backdrop-opacity','0');
+  }else{
+    dialog.style.setProperty('--flow-sheet-y','0px');
+    dialog.style.setProperty('--flow-sheet-scale','1');
+    dialog.style.setProperty('--flow-sheet-opacity','1');
+    dialog.style.setProperty('--flow-sheet-backdrop-opacity','1');
+  }
+  clearTimeout(sheetTimer);
+  sheetTimer=setTimeout(()=>{
+    if(dismiss){
+      if(dialog.open)dialog.close();
+      resetSheetMotion(dialog);
+      return;
+    }
+    resetSheetMotion(dialog,{resting:true});
+  },duration+45);
+}
+function releaseSheetGesture(event,cancelled=false){
+  if(!sheetGesture||event.pointerId!==sheetGesture.pointerId)return false;
+  const state=sheetGesture;sheetGesture=null;
+  if(cancelled||!state.dragging){settleSheet(state,false);return true}
+  const y=Math.max(0,state.currentY),threshold=clamp(state.rect.height*.22,92,162);
+  const projected=y+Math.max(0,state.velocity)*SHEET_PROJECT_MS;
+  const dismiss=y>=threshold||(y>72&&state.velocity>.9)||(y>72&&projected>threshold*1.18);
+  settleSheet(state,dismiss);
+  return true;
+}
+function cancelSheetGesture(){
+  if(!sheetGesture)return;
+  const {dialog,handle,pointerId}=sheetGesture;sheetGesture=null;
+  try{handle.releasePointerCapture?.(pointerId)}catch{}
+  clearTimeout(sheetTimer);
+  resetSheetMotion(dialog,{resting:true});
+}
+
+document.addEventListener('pointerdown',event=>{beginSheetGesture(event)},{capture:true,passive:false});
+document.addEventListener('pointermove',event=>{
+  const state=sheetGesture;if(!state||event.pointerId!==state.pointerId)return;
+  const dy=event.clientY-state.startY;
+  if(!state.dragging&&Math.abs(dy)>=2){state.dragging=true;state.dialog.dataset.flowSheetDragging='true'}
+  if(!state.dragging)return;
+  event.preventDefault();
+  const t=now(),dt=Math.max(1,t-state.lastT),instant=(event.clientY-state.lastY)/dt;
+  state.velocity=state.velocity*.56+instant*.44;state.lastY=event.clientY;state.lastT=t;
+  const y=dy>=0?(dy<=180?dy:180+(dy-180)*.48):Math.max(-10,dy*.12);
+  setSheetMotion(state,y);
+},{capture:true,passive:false});
+document.addEventListener('pointerup',event=>{releaseSheetGesture(event,false)},{capture:true});
+document.addEventListener('pointercancel',event=>{releaseSheetGesture(event,true)},{capture:true});
 
 function buttons(nav){return [...nav.querySelectorAll(`:scope > ${TAB_SELECTOR.split(', ').join(', :scope > ')}`)]}
 function activeIndex(list){return Math.max(0,list.findIndex(button=>button.classList.contains('active')))}
@@ -160,6 +277,6 @@ document.addEventListener('click',event=>{
   if(syntheticClick||now()>suppressClickUntil)return;
   if(event.target.closest?.(NAV_SELECTOR)){event.preventDefault();event.stopImmediatePropagation()}
 },{capture:true});
-window.addEventListener('blur',cancelGesture,{passive:true});
-window.addEventListener('resize',cancelGesture,{passive:true});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelGesture()},{passive:true});
+window.addEventListener('blur',()=>{cancelGesture();cancelSheetGesture()},{passive:true});
+window.addEventListener('resize',()=>{cancelGesture();cancelSheetGesture()},{passive:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelGesture();cancelSheetGesture()}},{passive:true});
