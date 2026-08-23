@@ -21,6 +21,7 @@ jobs:
         run: |
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
+          node --check tests/liquid-glass-tab-lens-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -34,6 +35,10 @@ jobs:
           done
           cat /tmp/flow-orientation-server.log
           exit 1
+      - name: Diagnose and verify one Liquid Glass lens travels between tabs
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/liquid-glass-tab-lens-audit.mjs
       - name: Exercise School, University, Campus, widgets, and Admin in six viewports
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
