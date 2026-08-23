@@ -23,6 +23,17 @@ function targetX(node){
   const rect=node.getBoundingClientRect(),slot=Math.max(1,rect.width-INSET*2)/list.length,index=Math.max(0,list.findIndex(button=>button.classList.contains('active')));
   return slot*index;
 }
+function currentLensX(){
+  if(!nav)return 0;
+  const inline=Number.parseFloat(nav.style.getPropertyValue('--flow-lens-x'));
+  return Number.isFinite(inline)?inline:targetX(nav);
+}
+function syncSceneMotion({animate=false}={}){
+  if(!scene||!nav)return;
+  const x=currentLensX(),duration=animate?(Number.parseFloat(nav.style.getPropertyValue('--flow-lens-duration'))||420):0,ease=nav.style.getPropertyValue('--flow-lens-ease').trim()||'cubic-bezier(.18,1.18,.28,1)';
+  scene.style.setProperty('transition',duration>0?`transform ${duration}ms ${ease}`:'none','important');
+  scene.style.setProperty('transform',`translate3d(${-x.toFixed(2)}px,0,0)`,'important');
+}
 function supportsSvgFilter(){
   const probe=document.createElement('i');probe.setAttribute('aria-hidden','true');
   probe.style.cssText='position:fixed;left:-9999px;top:-9999px;width:8px;height:8px;pointer-events:none;filter:url(#flow-liquid-nav-refraction)';
@@ -71,7 +82,7 @@ function cloneSource(){
   scene.replaceChildren(copy);
   syncGeometry();
 }
-function syncGeometry(){
+function syncGeometry({animateScene=false}={}){
   if(!ensureLens()||!visible(nav)||!visible(source))return;
   const navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect(),copy=scene.firstElementChild;
   nav.style.setProperty('--flow-refraction-rest-x',`${targetX(nav).toFixed(2)}px`);
@@ -83,6 +94,7 @@ function syncGeometry(){
     copy.style.setProperty('margin','0','important');copy.style.setProperty('max-width','none','important');copy.style.setProperty('pointer-events','none','important');
     copy.style.setProperty('transform','none','important');copy.style.setProperty('animation','none','important');
   }
+  syncSceneMotion({animate:animateScene});
 }
 function scheduleRefresh(delay=80){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(document.documentElement.dataset.flowGlassMode!=='optical')return;ensureLens();cloneSource()},delay)}
 function onScroll(){if(scrollFrame)return;scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncGeometry()})}
@@ -107,9 +119,29 @@ window.addEventListener('scroll',onScroll,{passive:true,capture:true});
 window.addEventListener('resize',()=>{syncGeometry();scheduleRefresh(120)},{passive:true});
 window.addEventListener('pageshow',()=>scheduleRefresh(40),{passive:true});
 window.addEventListener('pagehide',()=>{if(mapUrl){URL.revokeObjectURL(mapUrl);mapUrl=''}},{passive:true});
+
+document.addEventListener('pointermove',event=>{
+  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  /* flow-native.js is registered first and has already written --flow-lens-x.
+     Mirror that exact translation with the inverse transform so the visual
+     copy stays registered to the real page while the glass aperture moves. */
+  syncSceneMotion({animate:false});
+},{capture:true,passive:true});
+document.addEventListener('pointerup',event=>{
+  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  syncSceneMotion({animate:true});
+},{capture:true,passive:true});
+document.addEventListener('pointercancel',event=>{
+  if(!nav||document.documentElement.dataset.flowGlassMode!=='optical'||!event.target.closest?.(NAV_SELECTOR))return;
+  syncSceneMotion({animate:true});
+},{capture:true,passive:true});
+document.addEventListener('transitionend',event=>{
+  if(event.target!==lens||event.propertyName!=='transform')return;
+  syncSceneMotion({animate:false});
+},{passive:true});
 document.addEventListener('click',event=>{
   if(!event.target.closest?.('[data-view],[data-go],[data-go-view],#mobileSettingsBtn,.flow-mobile-settings,.flow-university-settings-button,#prevDay,#nextDay,#todayBtn,#prevWeek,#nextWeek,#thisWeekBtn,#prevMonth,#nextMonth'))return;
-  queueMicrotask(syncGeometry);scheduleRefresh(180);
+  queueMicrotask(()=>syncGeometry({animateScene:true}));scheduleRefresh(460);
 },{passive:true});
 
 setTimeout(()=>{void syncMode();scheduleRefresh(700)},24);
