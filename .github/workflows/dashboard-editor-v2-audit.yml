@@ -11,7 +11,7 @@ permissions:
 jobs:
   widget-editor-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,29 +22,42 @@ jobs:
           node --check university/dashboard.js
           node --check university/dashboard-editor-v2.js
           node --check university/dashboard-editor-feedback.js
+          node --check university/dashboard-home-editing.js
           node --check university/dashboard-memo-panel.js
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
+          node --check scripts/widget-home-editing-audit.mjs
           node --check scripts/widget-variant-audit.mjs
           node --check scripts/memo-panel-audit.mjs
           node --check scripts/mobile-stability-audit.mjs
           test -f university/dashboard-editor-v2.css
+          test -f university/dashboard-home-editing.css
           test -f university/dashboard-variants.css
           test -f university/dashboard-memo-panel.css
           test -f university/ui-unify-v2.css
+          test -f university/campus-ui-polish.css
           grep -q "dashboard-editor-v2.js" university/poi-icons.js
           grep -q "dashboard-editor-v2.js" sw.js
           grep -q "dashboard-editor-v2.css" sw.js
+          grep -q "dashboard-home-editing.js" university/dashboard-editor-feedback.js
+          grep -q "dashboard-home-editing.js" sw.js
+          grep -q "dashboard-home-editing.css" sw.js
           grep -q "dashboard-variants.css" sw.js
           grep -q "dashboard-memo-panel.js" university/dashboard-editor-feedback.js
           grep -q "dashboard-memo-panel.js" sw.js
           grep -q "dashboard-memo-panel.css" sw.js
           grep -q "ui-unify-v2.css" university/ui-unify.js
           grep -q "ui-unify-v2.css" sw.js
+          grep -q "campus-ui-polish.css" university/ui-unify.js
+          grep -q "campus-ui-polish.css" sw.js
           grep -q "widget-memo-input" university/dashboard-editor-v2.js
           grep -q "data-dashboard-columns" university/dashboard-editor-v2.js
           grep -q "widget-direct-floating" university/dashboard-editor-v2.js
           grep -q "widget-drag-placeholder" university/dashboard-editor-v2.css
+          grep -q "DWELL_MS=190" university/dashboard-home-editing.js
+          grep -q "touch-action:pan-y" university/dashboard-home-editing.css
+          grep -q "data-widget-auto-scroll" university/dashboard-home-editing.js
+          grep -q "widget-picker-live-preview" university/dashboard-home-editing.js
           grep -q "grid-auto-flow:row" university/ui-unify-v2.css
           grep -q "repeat(4,minmax(0,1fr))" university/ui-unify-v2.css
           grep -q "clock:{label:'현재 시각'" university/dashboard.js
@@ -64,6 +77,8 @@ jobs:
           exit 1
       - name: Run widget editor browser audit
         run: node scripts/dashboard-editor-v2-audit.mjs
+      - name: Run touch home editing and Campus composition audit
+        run: node scripts/widget-home-editing-audit.mjs
       - name: Run semantic widget variant audit
         run: node scripts/widget-variant-audit.mjs
       - name: Run memo and visual unification audit
