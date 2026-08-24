@@ -9,7 +9,7 @@ const UNIVERSITY={id:'knu',name:'경북대학교',englishName:'Kyungpook Nationa
 await mkdir(OUT,{recursive:true});
 const source=await readFile('flow-experience.js','utf8');
 if(source.includes('MutationObserver'))throw new Error('Flow experience must stay event-driven; MutationObserver found');
-if(!source.includes("flow-haptics-v1")||!source.includes("flow-ambient-v1"))throw new Error('Flow experience preference keys missing');
+if(!source.includes('flow-haptics-v1')||!source.includes('flow-ambient-v1'))throw new Error('Flow experience preference keys missing');
 const browser=await chromium.launch({headless:true});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 
@@ -39,9 +39,9 @@ async function runSchool({reducedMotion='no-preference'}={}){
     if(reducedMotion==='reduce'){
       const animation=await page.locator('.status-grid').evaluate(node=>getComputedStyle(node).animationName);if(animation!=='none')throw new Error(`${label} content settle motion not reduced: ${animation}`);await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,reducedAnimation:animation,errors}
     }
-    await page.locator('#datePicker').evaluate((input)=>{input.value='2026-08-24'});counter.count=0;await page.evaluate(()=>{window.__flowHaptics=[]});
-    const box=await page.locator('.date-label').boundingBox();if(!box)throw new Error('School date dial missing');const x=box.x+box.width/2,y=box.y+box.height/2;
-    for(const event of [new PointerEvent('pointerdown',{pointerId:71,pointerType:'touch',isPrimary:true,bubbles:true,clientX:x,clientY:y}),new PointerEvent('pointermove',{pointerId:71,pointerType:'touch',isPrimary:true,bubbles:true,cancelable:true,clientX:x+76,clientY:y}),new PointerEvent('pointerup',{pointerId:71,pointerType:'touch',isPrimary:true,bubbles:true,cancelable:true,clientX:x+76,clientY:y})])await page.locator('.date-label').dispatchEvent(event.type,{pointerId:event.pointerId,pointerType:event.pointerType,isPrimary:true,clientX:event.clientX,clientY:event.clientY,button:0});
+    await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24'});counter.count=0;await page.evaluate(()=>{window.__flowHaptics=[]});
+    const dial=page.locator('.date-label'),box=await dial.boundingBox();if(!box)throw new Error('School date dial missing');const x=box.x+box.width/2,y=box.y+box.height/2;
+    for(const event of [{type:'pointerdown',x},{type:'pointermove',x:x+76},{type:'pointerup',x:x+76}])await dial.dispatchEvent(event.type,{pointerId:71,pointerType:'touch',isPrimary:true,clientX:event.x,clientY:y,button:0,buttons:event.type==='pointerup'?0:1,bubbles:true,cancelable:true});
     await page.waitForTimeout(180);const dateValue=await page.locator('#datePicker').inputValue(),haptics=await page.evaluate(()=>window.__flowHaptics.slice());if(dateValue!=='2026-08-26')throw new Error(`${label} tactile date dial expected 2026-08-26, got ${dateValue}`);if(counter.count!==1)throw new Error(`${label} tactile date dial caused ${counter.count} dashboard requests; expected exactly 1 final load`);if(haptics.length<2)throw new Error(`${label} tactile dial haptics missing: ${JSON.stringify(haptics)}`);
     await page.locator('#mobileSettingsBtn:visible').tap();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();const card=page.locator('.flow-experience-settings');await card.waitFor();const ambient=card.locator('[data-flow-experience-toggle="ambient"]');if(await ambient.getAttribute('aria-pressed')!=='true')throw new Error(`${label} ambient preference did not default on`);await ambient.tap();if(await page.locator('html').getAttribute('data-flow-ambient')!=='off')throw new Error(`${label} ambient preference did not disable`);await ambient.tap();if(await page.locator('html').getAttribute('data-flow-ambient')!=='on')throw new Error(`${label} ambient preference did not restore`);
     await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,dateValue,dashboardRequests:counter.count,haptics,errors}
