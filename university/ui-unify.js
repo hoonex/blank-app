@@ -1,7 +1,7 @@
 import '/flow-settings-view.js';
 import '/flow-refraction.js';
 const THEME_KEY='flow-university-theme-v1';
-const UI_BUILD='20260824-3';
+const UI_BUILD='20260824-4';
 const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css','/university/campus-ui-polish.css','/university/page-header.css'].map(x=>`${x}?v=${UI_BUILD}`);
 const media=matchMedia('(prefers-color-scheme: dark)');
 function ensureStyles(){for(const href of STYLES){if(document.querySelector(`link[href="${href}"]`))continue;const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.append(l)}}
