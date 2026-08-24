@@ -47,8 +47,9 @@ html[data-flow-ambient="on"] :where(.content-card,.status-card,.panel,.summary-c
 .school-hero-content,.profile-content{position:relative;z-index:2}
 .next-card{position:relative;overflow:hidden}.next-card>*{position:relative;z-index:2}
 
-/* Physical contact: a tiny highlight starts exactly where the finger/pointer touches. */
-.flow-contact-host{position:relative;isolation:isolate;overflow:hidden}
+/* Physical contact: a tiny highlight starts exactly where the finger/pointer touches.
+ * Zero specificity lets existing absolute/fixed controls keep their authored positioning. */
+:where(.flow-contact-host){position:relative;isolation:isolate;overflow:hidden}
 .flow-contact-flare{
   position:absolute!important;
   left:var(--flow-contact-x,50%);
