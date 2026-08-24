@@ -21,7 +21,7 @@ function installStyles(){
 @media(max-width:900px){
   .timetable-actions{gap:5px!important}
   .timetable-mode-toggle{min-width:88px!important;height:36px!important;padding:2px!important;border-radius:11px!important}
-  .timetable-mode-toggle button{min-height:30px!important;padding:0 7px!important;border-radius:9px!important;font-size:.57rem!important}
+  .timetable-mode-toggle button{min-height:32px!important;padding:0 7px!important;border-radius:9px!important;font-size:.57rem!important}
   .timetable-actions>.neo-button{min-height:36px!important;padding:0 8px!important;border-radius:11px!important;font-size:.57rem!important}
   .inline-week-toolbar .week-controls{gap:5px!important}
   .inline-week-toolbar .week-controls .neo-button{min-width:0!important;min-height:36px!important;padding:0 8px!important;border-radius:11px!important;font-size:.58rem!important}
