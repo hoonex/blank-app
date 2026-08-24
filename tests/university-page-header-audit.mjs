@@ -35,11 +35,7 @@ async function fixtures(page){
 }
 
 async function switchView(page,view){
-  if(view==='today'){
-    await page.evaluate(()=>document.querySelector('.bottom-nav [data-view="today"]')?.click());
-  }else{
-    await page.evaluate(v=>document.querySelector(`.bottom-nav [data-view="${v}"]`)?.click(),view);
-  }
+  await page.evaluate(v=>document.querySelector(`.bottom-nav [data-view="${v}"]`)?.click(),view);
   await page.waitForFunction(v=>{const panel=document.querySelector(`[data-panel="${v}"]`);return panel&&!panel.classList.contains('hidden')},view);
   if(view==='campus')await page.waitForSelector('#campusHeaderTools');
   await page.waitForTimeout(120);
@@ -53,6 +49,9 @@ async function inspect(page,view){
     const labelNodes=[...panel.querySelectorAll('.kicker,.campus-section-label,.campus-nearby-quick-copy > span')];
     const visibleEnglishLabels=labelNodes.filter(node=>getComputedStyle(node).display!=='none'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0).map(node=>node.textContent.trim()).filter(Boolean);
     const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+    const nearby=v==='campus'?panel.querySelector('.campus-nearby-quick'):null;
+    const filter=v==='campus'?panel.querySelector('#campusFilter'):null;
+    const filterButtons=filter?[...filter.querySelectorAll('button')].filter(node=>getComputedStyle(node).display!=='none').map(rect):[];
     return{
       view:v,
       title:title?.textContent?.trim()||'',
@@ -62,6 +61,9 @@ async function inspect(page,view){
       actionRect:rect(action),
       buttonRects:visibleButtons.map(rect),
       visibleEnglishLabels,
+      nearbyRect:rect(nearby),
+      filterRect:rect(filter),
+      filterButtons,
       clientWidth:document.documentElement.clientWidth,
       scrollWidth:document.documentElement.scrollWidth,
     };
@@ -77,6 +79,16 @@ function validateViewport(name,states){
     if(!state.actionRect)throw new Error(`${name}/${state.view}: missing canonical page action ${JSON.stringify(state)}`);
     if(state.actionRect.right>state.clientWidth+1)throw new Error(`${name}/${state.view}: action escapes viewport ${JSON.stringify(state)}`);
     if(state.buttonRects.some(r=>r.height<39))throw new Error(`${name}/${state.view}: page action height is inconsistent/undersized ${JSON.stringify(state.buttonRects)}`);
+    if(state.view==='campus'){
+      if(!state.nearbyRect||!state.filterRect||state.filterButtons.length!==4)throw new Error(`${name}/campus: Nearby composition missing ${JSON.stringify(state)}`);
+      const widths=state.filterButtons.map(r=>r.width),spread=Math.max(...widths)-Math.min(...widths);
+      const leftGap=state.filterButtons[0].left-state.filterRect.left,rightGap=state.filterRect.right-state.filterButtons.at(-1).right;
+      if(name==='mobile-portrait'){
+        if(state.filterRect.width<state.nearbyRect.width*.94)throw new Error(`${name}/campus: filter does not fill Nearby control ${JSON.stringify({nearby:state.nearbyRect,filter:state.filterRect})}`);
+        if(spread>3)throw new Error(`${name}/campus: filter cells are not equal width ${JSON.stringify(widths)}`);
+        if(leftGap>2||rightGap>2)throw new Error(`${name}/campus: ghost space remains around filter cells ${JSON.stringify({leftGap,rightGap,filter:state.filterRect,buttons:state.filterButtons})}`);
+      }
+    }
   }
   const titleLefts=states.map(x=>x.titleRect.left),titleTops=states.map(x=>x.titleRect.top),actionRights=states.map(x=>x.actionRect.right);
   const spread=values=>Math.max(...values)-Math.min(...values);
