@@ -24,6 +24,7 @@ let searchAbort=null;
 let currentView=ROUTE_TO_VIEW[location.pathname]||'today';
 let toastTimer=null;
 let resizeTimer=null;
+let importDialogDismissedUntil=0;
 
 function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
 function write(key,value){localStorage.setItem(key,JSON.stringify(value))}
@@ -32,8 +33,8 @@ function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 function norm(v=''){return String(v).replace(/\s+/g,'').toLowerCase()}
 function loading(on){$('#loadingBar')?.classList.toggle('active',on)}
 function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900)}
-function openDialog(id){const d=$(id);if(d&&!d.open)d.showModal()}
-function closeDialog(d){d?.close()}
+function openDialog(id){const d=$(id);if(!d||d.open)return;if(id==='#importDialog'&&performance.now()<importDialogDismissedUntil)return;d.showModal()}
+function closeDialog(d){if(!d)return;if(d.id==='importDialog')importDialogDismissedUntil=performance.now()+480;if(d.open)d.close()}
 async function api(action,params={},options={}){const url=new URL(EDGE);url.searchParams.set('action',action);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=='')url.searchParams.set(k,String(v))});const r=await fetch(url,{...options});const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.error||'데이터를 불러오지 못했습니다.');return body}
 function initial(name='U'){return name.replace(/대학교|대학$/g,'').trim().slice(0,1)||'U'}
 function normalizeSemesterValue(value){const s=String(value??'').trim();if(!s)return'';if(/^\d+$/.test(s))return`${s}학기`;const m=s.match(/^([12])\s*(?:학기)?$/);if(m)return`${m[1]}학기`;return s}
