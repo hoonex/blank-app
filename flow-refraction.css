@@ -1,30 +1,21 @@
 /*
  * Optical Glass refraction copy.
  *
- * The ordinary CSS filter path is used on a counter-positioned visual copy of
- * the app surface. This avoids relying on SVG inside backdrop-filter while
- * preserving the real interactive DOM underneath. The copy exists only while
- * Optical Glass is enabled and never receives pointer/input events.
+ * The moving aperture samples the live app surface, but it must not erase the
+ * frosted navigation substrate underneath. The copy therefore stays partially
+ * transparent and acts as refraction detail, not as a replacement opaque pane.
  */
 .flow-refraction-copy-lens{display:none}
 
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav){
-  /* The shell may stay conventionally frosted because the refracted pixels no
-     longer come from a nested backdrop-filter. */
-  backdrop-filter:blur(18px) saturate(150%) brightness(1.01)!important;
-  -webkit-backdrop-filter:blur(18px) saturate(150%) brightness(1.01)!important;
+  backdrop-filter:blur(16px) saturate(148%) brightness(1.01)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(148%) brightness(1.01)!important;
 }
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body :where(.mobile-bottom-nav,.bottom-nav){
-  backdrop-filter:blur(18px) saturate(132%) brightness(.97)!important;
-  -webkit-backdrop-filter:blur(18px) saturate(132%) brightness(.97)!important;
+  backdrop-filter:blur(16px) saturate(132%) brightness(.97)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(132%) brightness(.97)!important;
 }
 
-/*
- * The refraction aperture is a DOM child of the grid nav. Keep the aperture's
- * absolute coordinate frame untouched, but explicitly place every real tab in
- * row 1. The Selectors-4 `of` clause counts only tab controls, so the optical
- * helper can never consume a tab slot or push Settings onto an implicit row.
- */
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>.flow-refraction-copy-lens{
   display:block;
   position:absolute;
@@ -37,12 +28,9 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   overflow:hidden;
   border-radius:var(--flow-radius-capsule,999px);
   z-index:0;
-  /* Keep the sampled scene itself at 1:1 scale. The visible rim pseudo-element
-     still stretches during press/drag, but scaling the copied page would make
-     text swim under the lens instead of staying registered to the backdrop. */
   transform:translate3d(var(--flow-lens-x,var(--flow-refraction-rest-x,0px)),0,0);
   transform-origin:center;
-  transition:transform var(--flow-lens-duration,420ms) var(--flow-lens-ease,cubic-bezier(.18,1.18,.28,1));
+  transition:transform var(--flow-lens-duration,190ms) var(--flow-lens-ease,cubic-bezier(.18,1.12,.28,1));
   will-change:transform;
   contain:paint;
 }
@@ -51,9 +39,7 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(3 of .mobile-tab,.bottom-item){grid-row:1;grid-column:3}
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(4 of .mobile-tab,.bottom-item){grid-row:1;grid-column:4}
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:nth-child(5 of .mobile-tab,.bottom-item){grid-row:1;grid-column:5}
-html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)[data-flow-lens-dragging="true"]>.flow-refraction-copy-lens{
-  transition:none;
-}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)[data-flow-lens-dragging="true"]>.flow-refraction-copy-lens{transition:none}
 
 .flow-refraction-sample{
   position:absolute;
@@ -61,8 +47,8 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   overflow:hidden;
   border-radius:inherit;
   pointer-events:none;
-  filter:url(#flow-liquid-nav-refraction);
-  opacity:.96;
+  filter:url(#flow-liquid-nav-refraction) saturate(1.12) contrast(1.06);
+  opacity:.64;
 }
 .flow-refraction-scene{
   position:absolute;
@@ -72,44 +58,38 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :whe
   transform:none;
   transform-origin:0 0;
 }
-.flow-refraction-source-copy,
-.flow-refraction-source-copy *{
-  pointer-events:none!important;
-  caret-color:transparent!important;
-}
-.flow-refraction-source-copy{
-  user-select:none!important;
-  -webkit-user-select:none!important;
-}
+.flow-refraction-source-copy,.flow-refraction-source-copy *{pointer-events:none!important;caret-color:transparent!important}
+.flow-refraction-source-copy{user-select:none!important;-webkit-user-select:none!important}
 
-/* The existing pseudo-element remains the rim/specular layer. Its old
-   backdrop-filter is disabled because the copy below now owns refraction. */
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body .mobile-bottom-nav::before,
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body .bottom-nav::before{
   z-index:1!important;
   backdrop-filter:none!important;
   -webkit-backdrop-filter:none!important;
   background:
-    radial-gradient(130% 115% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.58) 0%,rgba(255,255,255,.10) 34%,transparent 61%),
-    linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.025))!important;
-  /* The helper lens is prepended to the nav, so legacy :nth-child selectors
-     see shifted child indexes. Use the JS geometry calculated from real tabs. */
+    radial-gradient(125% 110% at var(--flow-lens-light-x,34%) -10%,rgba(255,255,255,.72) 0%,rgba(255,255,255,.13) 29%,transparent 57%),
+    linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.018))!important;
   transform:translate3d(var(--flow-lens-x,var(--flow-refraction-rest-x,0px)),0,0) scaleX(var(--flow-lens-scale-x,1)) scaleY(var(--flow-lens-scale-y,1))!important;
 }
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .mobile-bottom-nav::before,
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .bottom-nav::before{
   background:
-    radial-gradient(130% 115% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.25) 0%,rgba(255,255,255,.06) 32%,transparent 60%),
-    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.016))!important;
+    radial-gradient(125% 110% at var(--flow-lens-light-x,34%) -10%,rgba(255,255,255,.31) 0%,rgba(255,255,255,.075) 29%,transparent 57%),
+    linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.012))!important;
 }
-html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:where(.mobile-tab,.bottom-item,.flow-mobile-settings){
-  z-index:2!important;
+/* Runtime styles are appended later; this deliberately higher specificity keeps
+   their tint from covering the frosted substrate again. */
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme] body .mobile-bottom-nav.mobile-bottom-nav::before,
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme] body .bottom-nav.bottom-nav::before{
+  background-color:color-mix(in srgb,var(--surface) 12%,transparent)!important;
 }
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .mobile-bottom-nav.mobile-bottom-nav::before,
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-theme="dark"] body .bottom-nav.bottom-nav::before{
+  background-color:color-mix(in srgb,var(--surface) 17%,transparent)!important;
+}
+html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:where(.mobile-tab,.bottom-item,.flow-mobile-settings){z-index:2!important}
 
 @media(prefers-reduced-transparency:reduce){
   .flow-refraction-copy-lens{display:none!important}
-  html[data-flow-refraction-copy="true"] body :where(.mobile-bottom-nav,.bottom-nav){
-    backdrop-filter:none!important;
-    -webkit-backdrop-filter:none!important;
-  }
+  html[data-flow-refraction-copy="true"] body :where(.mobile-bottom-nav,.bottom-nav){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
