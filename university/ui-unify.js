@@ -1,5 +1,6 @@
 import '/flow-settings-view.js';
 import '/flow-refraction.js';
+import '/flow-experience.js';
 const THEME_KEY='flow-university-theme-v1';
 const UI_BUILD='20260824-4';
 const STYLES=['/university/ui-unify.css','/university/ui-unify-v2.css','/university/campus-ui-polish.css','/university/page-header.css'].map(x=>`${x}?v=${UI_BUILD}`);
