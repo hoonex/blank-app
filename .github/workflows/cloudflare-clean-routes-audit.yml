@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   clean-routes:
@@ -34,7 +35,9 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
 
       - name: Verify deployed clean routes survive refresh
+        id: live_routes
         if: github.event_name == 'push'
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -77,3 +80,39 @@ jobs:
 
           echo 'Cloudflare clean-route refresh health did not converge after 5 minutes.' >&2
           exit 1
+
+      - name: Publish Cloudflare live-route status
+        if: github.event_name == 'push' && always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIVE_OUTCOME: ${{ steps.live_routes.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state='success'
+          description='School and University clean routes refresh correctly'
+          if [[ "$LIVE_OUTCOME" != 'success' ]]; then
+            state='failure'
+            description='Cloudflare clean-route refresh probe failed'
+          fi
+          payload=$(python - "$state" "$description" <<'PY'
+          import json,sys
+          print(json.dumps({
+            'state':sys.argv[1],
+            'context':'Cloudflare clean routes',
+            'description':sys.argv[2],
+          }))
+          PY
+          )
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --data "$payload" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" >/dev/null
+          echo "Published Cloudflare clean routes status: $state"
+
+      - name: Enforce Cloudflare live-route health
+        if: github.event_name == 'push' && steps.live_routes.outcome != 'success'
+        run: exit 1
