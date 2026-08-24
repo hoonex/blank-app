@@ -30,6 +30,7 @@ jobs:
           grep -q '"name": "blank-app"' wrangler.jsonc
           grep -q '"binding": "ASSETS"' wrangler.jsonc
           grep -q 'cloudflare-worker.mjs' .assetsignore
+          grep -q 'installUniversityFetchRetry' university/net-bootstrap.js
 
       - name: Validate Wrangler deployment bundle
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
@@ -54,7 +55,7 @@ jobs:
 
           for attempt in $(seq 1 20); do
             ok=1
-            echo "Cloudflare route probe attempt $attempt/20"
+            echo "Cloudflare deployment probe attempt $attempt/20"
             for item in "${routes[@]}"; do
               route="${item%%|*}"
               marker="${item#*|}"
@@ -71,14 +72,30 @@ jobs:
               fi
               echo "OK $route -> 200 $marker"
             done
+
             if [[ "$ok" == '1' ]]; then
-              echo 'Cloudflare clean-route refresh health: GREEN'
+              deployed='/tmp/flow-net-bootstrap.js'
+              code=$(curl --silent --show-error --location \
+                --header 'cache-control: no-cache' \
+                --connect-timeout 10 --max-time 20 \
+                --output "$deployed" --write-out '%{http_code}' \
+                "$base/university/net-bootstrap.js?flow_deploy=$GITHUB_SHA" || true)
+              if [[ "$code" != '200' ]] || ! cmp -s university/net-bootstrap.js "$deployed"; then
+                echo "WAIT /university/net-bootstrap.js -> HTTP $code / deployed bytes do not match main"
+                ok=0
+              else
+                echo 'OK /university/net-bootstrap.js -> 200 exact repository bytes'
+              fi
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              echo 'Cloudflare clean-route and critical-asset health: GREEN'
               exit 0
             fi
             sleep 15
           done
 
-          echo 'Cloudflare clean-route refresh health did not converge after 5 minutes.' >&2
+          echo 'Cloudflare deployment health did not converge after 5 minutes.' >&2
           exit 1
 
       - name: Publish Cloudflare live-route status
@@ -90,10 +107,10 @@ jobs:
         run: |
           set -euo pipefail
           state='success'
-          description='School and University clean routes refresh correctly'
+          description='Clean routes and critical University asset match production'
           if [[ "$LIVE_OUTCOME" != 'success' ]]; then
             state='failure'
-            description='Cloudflare clean-route refresh probe failed'
+            description='Cloudflare route or critical-asset probe failed'
           fi
           payload=$(python - "$state" "$description" <<'PY'
           import json,sys
