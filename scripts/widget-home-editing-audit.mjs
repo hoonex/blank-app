@@ -61,7 +61,7 @@ const initial=await page.evaluate(()=>{
     scrollHeight:document.documentElement.scrollHeight,
   }
 });
-if(initial.editButtonDisplay!=='none')throw new Error(`Touch edit button should be hidden: ${JSON.stringify(initial)}`);
+if(initial.editButtonDisplay==='none')throw new Error(`Edit fallback button unexpectedly disappeared: ${JSON.stringify(initial)}`);
 if(initial.scrollWidth>initial.width+2)throw new Error(`Initial horizontal overflow: ${JSON.stringify(initial)}`);
 
 const touch=async(type,selector,xRatio=.5,yRatio=.5,id=31)=>page.evaluate(({type,selector,xRatio,yRatio,id})=>{
@@ -72,7 +72,6 @@ const touch=async(type,selector,xRatio=.5,yRatio=.5,id=31)=>page.evaluate(({type
   el.dispatchEvent(ev);return{x,y};
 },{type,selector,xRatio,yRatio,id});
 
-/* A quick vertical touch move must cancel the hold instead of lifting a widget. */
 await touch('touchstart','[data-widget-id="campus"]',.5,.45,41);
 await page.evaluate(()=>{
   const el=document.querySelector('[data-widget-id="campus"]'),r=el.getBoundingClientRect(),x=r.left+r.width*.5,y=r.top+r.height*.45+36;
@@ -84,7 +83,6 @@ const scrollIntent=await page.evaluate(()=>({floating:document.querySelectorAll(
 if(scrollIntent.floating||scrollIntent.arming||scrollIntent.editing)throw new Error(`Scroll intent was captured as a widget hold: ${JSON.stringify(scrollIntent)}`);
 await touch('touchend','[data-widget-id="campus"]',.5,.45,41);
 
-/* Normal-mode hold enters editing; touch-action changes to vertical scrolling rather than none. */
 await touch('touchstart','[data-widget-id="campus"]',.5,.5,42);
 await page.waitForTimeout(470);
 let held=await page.evaluate(()=>({editing:document.querySelector('#todayView')?.classList.contains('dashboard-editing'),floating:document.querySelectorAll('.widget-direct-floating').length,placeholder:document.querySelectorAll('.widget-drag-placeholder').length,touchAction:getComputedStyle(document.querySelector('.widget-direct-floating')).touchAction}));
@@ -94,7 +92,6 @@ await page.waitForTimeout(330);
 const editTouchAction=await page.evaluate(()=>getComputedStyle(document.querySelector('#widgetDashboard [data-widget-id="campus"]')).touchAction);
 if(!editTouchAction.includes('pan-y')||editTouchAction==='none')throw new Error(`Edit-mode touch scrolling is blocked: ${editTouchAction}`);
 
-/* Dwell over a live target: no instant jump, then smooth reflow after threshold. */
 const source=page.locator('[data-widget-id="campus"]'),target=page.locator('[data-widget-id="next"]');
 let sb=await source.boundingBox(),tb=await target.boundingBox();if(!sb||!tb)throw new Error('Widget geometry missing for dwell test.');
 await page.mouse.move(sb.x+sb.width*.5,sb.y+sb.height*.5);await page.mouse.down();
@@ -110,7 +107,6 @@ if(dwell.placeholderIndex===placementBefore)throw new Error(`Dwell did not commi
 if(dwell.animations<1)throw new Error(`Dwell reflow did not animate siblings: ${JSON.stringify(dwell)}`);
 await page.screenshot({path:`${out}/widget-dwell-reflow.png`,fullPage:false});
 
-/* While held near an edge the page must auto-scroll. */
 const beforeEdge=await page.evaluate(()=>scrollY);
 await page.mouse.move(195,838,{steps:5});await page.waitForTimeout(260);
 const edge=await page.evaluate(()=>({before:0,after:scrollY,direction:document.documentElement.dataset.widgetAutoScroll||''}));
@@ -119,7 +115,6 @@ await page.mouse.up();await page.waitForTimeout(330);
 const settled=await page.evaluate(()=>({floating:document.querySelectorAll('.widget-direct-floating').length,placeholder:document.querySelectorAll('.widget-drag-placeholder').length,stored:JSON.parse(localStorage.getItem('flow-university-dashboard-layout-v2')||'null')}));
 if(settled.floating||settled.placeholder||!settled.stored?.widgets?.campus)throw new Error(`Drag did not settle/persist: ${JSON.stringify(settled)}`);
 
-/* Gallery is visual and supports hold-to-lift from the gallery into the dashboard. */
 await page.locator('#widgetAddBtn').click();await page.locator('#widgetPicker').waitFor({state:'visible'});await page.locator('.widget-picker-live-preview').first().waitFor();
 const gallery=await page.evaluate(()=>({title:document.querySelector('#widgetPicker h2')?.textContent?.trim(),previews:document.querySelectorAll('#widgetPicker .widget-picker-live-preview').length,items:document.querySelectorAll('#widgetPicker [data-picker-id]').length,search:Boolean(document.querySelector('#widgetPickerSearch')),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
 if(gallery.title!=='위젯 갤러리'||gallery.previews<10||gallery.items<15||!gallery.search||gallery.overflow>2)throw new Error(`Widget gallery regression: ${JSON.stringify(gallery)}`);
@@ -132,13 +127,11 @@ await page.screenshot({path:`${out}/widget-gallery-lift.png`,fullPage:false});
 await page.mouse.move(190,Math.min(700,(page.viewportSize()?.height||844)-120),{steps:8});await page.mouse.up();await page.waitForTimeout(330);
 if(await page.locator('[data-widget-id="clock"].widget-hidden').count())throw new Error('Gallery-held widget stayed hidden after placement.');
 
-/* State survives reload. */
 const orderBeforeReload=await page.evaluate(()=>[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId));
 await page.reload({waitUntil:'domcontentloaded'});await page.locator('#widgetDashboard').waitFor();await page.waitForTimeout(300);
 const reload=await page.evaluate(()=>({order:[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId),clockVisible:!document.querySelector('[data-widget-id="clock"]')?.classList.contains('widget-hidden'),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
 if(orderBeforeReload.join('|')!==reload.order.join('|')||!reload.clockVisible||reload.overflow>2)throw new Error(`Widget placement was not persisted cleanly: ${JSON.stringify(reload)}`);
 
-/* Tablet Campus composition: title/tools and cards become full-width instead of squeezed half columns. */
 await page.setViewportSize({width:768,height:1024});
 await page.locator('.bottom-nav [data-view="campus"]').click();await page.locator('#campusView:not(.hidden)').waitFor({timeout:10000});await page.locator('#campusHeaderTools').waitFor({timeout:10000});await page.waitForTimeout(250);
 const campusTablet=await page.evaluate(()=>{
