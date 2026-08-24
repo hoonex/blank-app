@@ -18,6 +18,7 @@ function apply(value=pref()){
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',e==='dark'?'#202833':'#f5f7fa');
   document.querySelectorAll('[data-university-theme]').forEach(b=>b.classList.toggle('active',b.dataset.universityTheme===p));
   document.querySelectorAll('.flow-theme-cycle').forEach(b=>b.textContent=label(p));
+  window.dispatchEvent(new CustomEvent('flow:theme-changed',{detail:{mode:p,effective:e}}));
 }
 function cycle(){const order=['light','system','dark'],p=pref();apply(order[(order.indexOf(p)+1)%order.length])}
 function makeCycle(){const b=document.createElement('button');b.className='flow-theme-cycle';b.type='button';b.setAttribute('aria-label','테마 변경');b.addEventListener('click',cycle);return b}
@@ -29,6 +30,10 @@ function installControls(){
   const bottom=document.querySelector('.sidebar-bottom');if(bottom&&!bottom.querySelector('.flow-theme-segment')){const seg=document.createElement('div');seg.className='flow-theme-segment';seg.setAttribute('aria-label','화면 테마');seg.innerHTML='<button type="button" data-university-theme="light">Light</button><button type="button" data-university-theme="system">System</button><button type="button" data-university-theme="dark">Dark</button>';seg.addEventListener('click',e=>{const b=e.target.closest('[data-university-theme]');if(b)apply(b.dataset.universityTheme)});bottom.prepend(seg)}
   apply(pref())
 }
-function init(){ensureStyles();installControls();refreshServiceWorker()}
+function init(){
+  ensureStyles();installControls();refreshServiceWorker();
+  /* Contextual delight is progressive enhancement: never delay theme/core UI. */
+  void import('/flow-experience.js').catch(()=>{});
+}
 media.addEventListener?.('change',()=>{if(pref()==='system')apply('system')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

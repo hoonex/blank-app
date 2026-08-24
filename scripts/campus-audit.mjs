@@ -18,6 +18,9 @@ await page.locator('#searchResults .result-button').first().waitFor({timeout:150
 await page.locator('#searchResults .result-button').first().click();
 await page.locator('#importDialog').waitFor({state:'visible'});
 await page.locator('#importDialog [data-close-dialog]').click();
+await page.waitForTimeout(240);
+if(await page.locator('#importDialog').evaluate(dialog=>dialog.open))await page.locator('#importDialog [data-close-dialog]').click();
+await page.locator('#importDialog').waitFor({state:'hidden'});
 
 await page.evaluate(()=>{
   const timetable={source:'campus-audit',year:2026,semester:'2학기',subjects:[

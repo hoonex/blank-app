@@ -21,6 +21,7 @@ jobs:
         run: |
           node --check flow-native.js
           node --check flow-refraction.js
+          node --check flow-experience.js
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
@@ -32,8 +33,11 @@ jobs:
           node --check tests/optical-nav-layout-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
           node --check tests/university-page-header-audit.mjs
+          node --check tests/flow-experience-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
+          test -f flow-experience.css
+          ! grep -q 'MutationObserver' flow-experience.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -79,6 +83,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/liquid-glass-tab-lens-audit.mjs
+      - name: Verify ambient, tactile, and adaptive Flow experience
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/flow-experience-audit.mjs
       - name: Exercise School, University, Campus, widgets, and Admin in six viewports
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -112,4 +120,5 @@ jobs:
             optical-refraction-audit/
             optical-nav-layout-audit/
             university-page-header-audit/
+            flow-experience-audit/
           retention-days: 7
