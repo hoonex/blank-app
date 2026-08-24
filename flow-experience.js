@@ -5,7 +5,6 @@ const DAY_STEP_PX=34;
 const MAX_DAY_STEP=7;
 const CONTACT_SELECTOR='button,.neo-button,.primary-button,.soft-button,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.widget-link';
 const SELECT_HAPTIC_SELECTOR='.mobile-tab,.bottom-item,.nav-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.flow-settings-segment button,.flow-setting-segment button';
-const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let ambientTimer=0,dateGesture=null,suppressDateClickUntil=0,lastTouchAt=0;
 
 const $=(s,r=document)=>r.querySelector(s);
@@ -21,12 +20,8 @@ function ensureStyle(){
 }
 
 const AMBIENT={
-  light:{
-    dawn:['#f4ecea','#e8eef8'],day:['#eef4f8','#f7f8fa'],golden:['#f6eddd','#e9eff6'],evening:['#eee8ec','#e7edf7'],night:['#e9eef6','#f3f4f7']
-  },
-  dark:{
-    dawn:['#252936','#2d2a31'],day:['#212a35','#242d38'],golden:['#302a27','#252d38'],evening:['#292834','#222b37'],night:['#1b2430','#202936']
-  }
+  light:{dawn:['#f4ecea','#e8eef8'],day:['#eef4f8','#f7f8fa'],golden:['#f6eddd','#e9eff6'],evening:['#eee8ec','#e7edf7'],night:['#e9eef6','#f3f4f7']},
+  dark:{dawn:['#252936','#2d2a31'],day:['#212a35','#242d38'],golden:['#302a27','#252d38'],evening:['#292834','#222b37'],night:['#1b2430','#202936']}
 };
 function ambientPhase(date=new Date()){
   const h=date.getHours()+date.getMinutes()/60;
@@ -39,8 +34,7 @@ function applyAmbient(date=new Date()){
   root.dataset.flowAmbient=on?'on':'off';root.dataset.flowAmbientPhase=phase;
   root.style.setProperty('--flow-ambient-a',palette[0]);root.style.setProperty('--flow-ambient-b',palette[1]);
   const minutes=date.getHours()*60+date.getMinutes(),x=clamp(8+(minutes/1439)*84,8,92);
-  root.style.setProperty('--flow-ambient-x',`${x.toFixed(1)}%`);
-  root.style.setProperty('--flow-ambient-label',`"${ambientLabel(phase)}"`);
+  root.style.setProperty('--flow-ambient-x',`${x.toFixed(1)}%`);root.style.setProperty('--flow-ambient-label',`"${ambientLabel(phase)}"`);
   syncExperienceSettings()
 }
 function scheduleAmbient(){
@@ -80,8 +74,7 @@ function finishDateGesture(event,cancel=false){
   const step=cancel?0:g.step,moved=g.dragging;clearDateGesture();
   if(!moved||!step)return;
   event.preventDefault?.();suppressDateClickUntil=performance.now()+500;
-  const final=new Date(g.base);final.setDate(final.getDate()+step);g.input.value=ymd(final);haptic('impact');
-  g.input.dispatchEvent(new Event('change',{bubbles:true}))
+  const final=new Date(g.base);final.setDate(final.getDate()+step);g.input.value=ymd(final);haptic('impact');g.input.dispatchEvent(new Event('change',{bubbles:true}))
 }
 function installDateScrubber(){
   const controller=$('.date-controller'),label=$('.date-label',controller),input=$('#datePicker',controller);if(!controller||!label||!input||label.dataset.flowScrubBound)return;
@@ -89,7 +82,7 @@ function installDateScrubber(){
   const detents=document.createElement('span');detents.className='flow-date-detents';detents.setAttribute('aria-hidden','true');detents.innerHTML='<i></i><i></i><i></i><i></i><i></i><i></i><i></i>';controller.append(detents);
   label.addEventListener('pointerdown',event=>{
     if(!event.isPrimary||(event.pointerType==='mouse'&&event.button!==0))return;trackTouch(event);
-    dateGesture={id:event.pointerId,label,controller,input,base:parsePickerDate(input),startX:event.clientX,startY:event.clientY,lastX:event.clientX,step:0,dragging:false,cancelled:false};
+    dateGesture={id:event.pointerId,label,controller,input,base:parsePickerDate(input),startX:event.clientX,startY:event.clientY,step:0,dragging:false,cancelled:false};
     try{label.setPointerCapture?.(event.pointerId)}catch{}
   });
   label.addEventListener('pointermove',event=>{
@@ -114,16 +107,14 @@ function syncExperienceSettings(){
 }
 function installSettingsIntegration(){
   $$('.flow-settings-view').forEach(experienceCard);
-  document.addEventListener('click',event=>{if(!event.target.closest?.('#mobileSettingsBtn,#settingsBtn,.flow-mobile-settings,.flow-university-settings-button'))return;queueMicrotask(()=>$$('.flow-settings-view').forEach(experienceCard))},{capture:true,passive:true})
+  document.addEventListener('click',event=>{
+    if(event.target.closest?.('#mobileSettingsBtn,#settingsBtn,.flow-mobile-settings,.flow-university-settings-button'))queueMicrotask(()=>$$('.flow-settings-view').forEach(experienceCard));
+    if(event.target.closest?.('[data-theme-choice],[data-flow-settings-theme],[data-flow-university-theme-choice],[data-university-theme]'))setTimeout(()=>applyAmbient(),0)
+  },{capture:true,passive:true})
 }
 function init(){
-  ensureStyle();applyAmbient();scheduleAmbient();installContactFeedback();installDateScrubber();installSettingsIntegration();
-  document.documentElement.dataset.flowExperience='ready';
+  ensureStyle();applyAmbient();scheduleAmbient();installContactFeedback();installDateScrubber();installSettingsIntegration();document.documentElement.dataset.flowExperience='ready';
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){applyAmbient();scheduleAmbient()}},{passive:true});
-  window.addEventListener('storage',event=>{if(event.key===AMBIENT_KEY||event.key===HAPTIC_KEY)applyAmbient()},{passive:true});
-  window.addEventListener('flow:theme-changed',()=>applyAmbient(),{passive:true});
-  new MutationObserver;
+  window.addEventListener('storage',event=>{if(event.key===AMBIENT_KEY||event.key===HAPTIC_KEY)applyAmbient()},{passive:true})
 }
-
-/* This module intentionally has no MutationObserver. The inert expression below is removed by build-time/source audits. */
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
