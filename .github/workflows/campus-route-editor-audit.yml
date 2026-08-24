@@ -1,0 +1,58 @@
+name: Campus route editor audit
+
+on:
+  pull_request:
+    paths:
+      - 'school-metrics.js'
+      - 'school-timetable-polish.js'
+      - 'university/campus-interactive.js'
+      - 'university/campus-route-editor.js'
+      - 'university/campus-route-editor.css'
+      - 'tests/campus-route-editor-audit.mjs'
+      - 'tests/school-timetable-polish-audit.mjs'
+      - '.github/workflows/campus-route-editor-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  campus-route-editor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate sources
+        run: |
+          node --check school-timetable-polish.js
+          node --check university/campus-interactive.js
+          node --check university/campus-route-editor.js
+          node --check tests/school-timetable-polish-audit.mjs
+          node --check tests/campus-route-editor-audit.mjs
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Start local Flow server
+        run: |
+          python3 -m http.server 4173 >/tmp/flow-campus-route-editor-server.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep .5
+          done
+          cat /tmp/flow-campus-route-editor-server.log
+          exit 1
+      - name: Verify School weekly help placement
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173
+        run: node tests/school-timetable-polish-audit.mjs
+      - name: Verify Campus nearby and route editing
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173
+        run: node tests/campus-route-editor-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: campus-route-editor-audit
+          path: campus-route-editor-audit
+          retention-days: 7
