@@ -19,7 +19,7 @@ const env={ASSETS:{fetch:async request=>{
   const url=new URL(request.url);
   calls.push({pathname:url.pathname,search:url.search,method:request.method});
   return new Response(`asset:${url.pathname}`,{status:200,headers:{'content-type':'text/html; charset=utf-8'}});
-}};
+}}};
 
 for(const [route,shell] of Object.entries(ROUTE_SHELLS)){
   for(const pathname of [route,`${route}/`]){
