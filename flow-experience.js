@@ -58,8 +58,6 @@ function installContactFeedback(){
     host.classList.add('flow-contact-host');host.style.setProperty('--flow-contact-x',`${event.clientX-rect.left}px`);host.style.setProperty('--flow-contact-y',`${event.clientY-rect.top}px`);
     $('.flow-contact-flare',host)?.remove();const flare=document.createElement('i');flare.className='flow-contact-flare';flare.setAttribute('aria-hidden','true');host.append(flare)
   },{capture:true,passive:true});
-  const clear=event=>{const host=event.target.closest?.('.flow-contact-host');if(!host)return;setTimeout(()=>$('.flow-contact-flare',host)?.remove(),120)};
-  document.addEventListener('pointerup',clear,{capture:true,passive:true});document.addEventListener('pointercancel',clear,{capture:true,passive:true});
   document.addEventListener('click',event=>{if(Date.now()-lastTouchAt>900||ownsComplexGesture(event.target))return;const target=event.target.closest?.(SELECT_HAPTIC_SELECTOR);if(target&&!target.disabled)haptic('select')},{capture:true,passive:true})
 }
 
