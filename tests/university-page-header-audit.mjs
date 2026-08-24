@@ -96,7 +96,7 @@ for(const testCase of cases){
   const page=await context.newPage();await fixtures(page);
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#appView:not(.hidden)');
-  await page.waitForSelector('link[href*="/university/page-header.css"]');
+  await page.waitForSelector('link[href*="/university/page-header.css"]',{state:'attached'});
   await page.waitForSelector('#dashboardEditBtn');
   const states=[];
   for(const view of ['today','timetable','campus']){
