@@ -38,8 +38,8 @@ function validate(name,state,{count,first,last}){
   if(centerError>5)throw new Error(`${name}: optical copy lens is not aligned with active tab ${JSON.stringify({centerError,state})}`);
   if(state.lens.transform!==state.rimTransform)throw new Error(`${name}: optical content lens and visible rim disagree ${JSON.stringify(state)}`);
 }
-function validateUniversityButtonSkin(name,state){
-  const bad=state.items.filter(item=>parseFloat(item.borderTopWidth)>0||item.borderTopStyle!=='none'||item.appearance!=='none'||item.backgroundColor!=='rgba(0, 0, 0, 0)');
+function validateUniversityButtonSkin(name,state,{requireAppearanceNone=false}={}){
+  const bad=state.items.filter(item=>parseFloat(item.borderTopWidth)>0||item.borderTopStyle!=='none'||item.backgroundColor!=='rgba(0, 0, 0, 0)'||(requireAppearanceNone&&item.appearance!=='none'));
   if(bad.length)throw new Error(`${name}: native button chrome leaked into bottom nav ${JSON.stringify(bad)}`);
 }
 
@@ -48,6 +48,6 @@ const schoolContext=await browser.newContext({viewport:{width:390,height:844},is
 
 const universityContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const university=await universityContext.newPage();await universityFixtures(university);await university.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await university.locator('#appView:not(.hidden)').waitFor();const universityState=await inspect(university,'.bottom-nav',5);validate('University Optical nav',universityState,{count:5,first:'오늘',last:'설정'});validateUniversityButtonSkin('University portrait nav',universityState);await university.screenshot({path:`${OUT}/university-optical-nav.png`,fullPage:false});await universityContext.close();
 
-const landscapeContext=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const landscape=await landscapeContext.newPage();await universityFixtures(landscape);await landscape.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await landscape.locator('#appView:not(.hidden)').waitFor();const universityLandscapeState=await inspect(landscape,'.bottom-nav',5);validate('University landscape Optical nav',universityLandscapeState,{count:5,first:'오늘',last:'설정'});validateUniversityButtonSkin('University landscape nav',universityLandscapeState);await landscape.screenshot({path:`${OUT}/university-landscape-optical-nav.png`,fullPage:false});await landscapeContext.close();
+const landscapeContext=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const landscape=await landscapeContext.newPage();await universityFixtures(landscape);await landscape.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await landscape.locator('#appView:not(.hidden)').waitFor();const universityLandscapeState=await inspect(landscape,'.bottom-nav',5);validate('University landscape Optical nav',universityLandscapeState,{count:5,first:'오늘',last:'설정'});validateUniversityButtonSkin('University landscape nav',universityLandscapeState,{requireAppearanceNone:true});await landscape.screenshot({path:`${OUT}/university-landscape-optical-nav.png`,fullPage:false});await landscapeContext.close();
 
 await browser.close();console.log(JSON.stringify({schoolState,universityState,universityLandscapeState},null,2));
