@@ -1,6 +1,7 @@
 import './school-metrics-core.js';
 import '/flow-settings-view.js';
 import '/flow-refraction.js';
+import '/flow-experience.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
 
