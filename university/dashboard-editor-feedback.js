@@ -1,3 +1,4 @@
+import '/university/dashboard-home-editing.js';
 import '/university/dashboard-memo-panel.js';
 const STYLE='/university/dashboard-editor-feedback.css';
 let resize=null,press=null;
