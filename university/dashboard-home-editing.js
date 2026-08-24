@@ -11,9 +11,6 @@ function ensureStyle(){if($('link[href="/university/dashboard-home-editing.css"]
 function ensureEditing(){if(editing())return true;$('#dashboardEditBtn')?.click();return editing()}
 function persist(){
   const g=grid();if(!g)return;
-  const detail={handled:false};
-  document.dispatchEvent(new CustomEvent('flow:dashboard-layout-sync',{detail}));
-  if(detail.handled)return;
   let state;try{state=JSON.parse(localStorage.getItem(STATE_KEY)||'null')}catch{}
   if(!state||typeof state!=='object')state={columns:Number(g.dataset.columns)||2,widgets:{}};
   state.widgets=state.widgets&&typeof state.widgets==='object'?state.widgets:{};
