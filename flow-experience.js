@@ -4,6 +4,7 @@ const STYLE='/flow-experience.css';
 const DAY_STEP_PX=34;
 const MAX_DAY_STEP=7;
 const CONTACT_SELECTOR='button,.neo-button,.primary-button,.soft-button,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.widget-link';
+const COMPLEX_GESTURE_SELECTOR='#widgetDashboard,[data-widget-id],.widget-picker,.widget-gallery-sheet,.widget-v2-controls,.widget-controls,.widget-v2-resize';
 const SELECT_HAPTIC_SELECTOR='.mobile-tab,.bottom-item,.nav-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.flow-settings-segment button,.flow-setting-segment button';
 let ambientTimer=0,dateGesture=null,suppressDateClickUntil=0,lastTouchAt=0;
 
@@ -48,16 +49,18 @@ function haptic(kind='select'){
   try{return Boolean(navigator.vibrate(pattern))}catch{return false}
 }
 function trackTouch(event){if(touchLike(event))lastTouchAt=Date.now()}
+function ownsComplexGesture(target){return Boolean(target?.closest?.(COMPLEX_GESTURE_SELECTOR))}
 function installContactFeedback(){
   document.addEventListener('pointerdown',event=>{
-    trackTouch(event);const host=event.target.closest?.(CONTACT_SELECTOR);if(!host||host.disabled)return;
+    trackTouch(event);if(ownsComplexGesture(event.target))return;
+    const host=event.target.closest?.(CONTACT_SELECTOR);if(!host||host.disabled)return;
     const rect=host.getBoundingClientRect();if(!rect.width||!rect.height)return;
     host.classList.add('flow-contact-host');host.style.setProperty('--flow-contact-x',`${event.clientX-rect.left}px`);host.style.setProperty('--flow-contact-y',`${event.clientY-rect.top}px`);
     $('.flow-contact-flare',host)?.remove();const flare=document.createElement('i');flare.className='flow-contact-flare';flare.setAttribute('aria-hidden','true');host.append(flare)
   },{capture:true,passive:true});
   const clear=event=>{const host=event.target.closest?.('.flow-contact-host');if(!host)return;setTimeout(()=>$('.flow-contact-flare',host)?.remove(),120)};
   document.addEventListener('pointerup',clear,{capture:true,passive:true});document.addEventListener('pointercancel',clear,{capture:true,passive:true});
-  document.addEventListener('click',event=>{if(Date.now()-lastTouchAt>900)return;const target=event.target.closest?.(SELECT_HAPTIC_SELECTOR);if(target&&!target.disabled)haptic('select')},{capture:true,passive:true})
+  document.addEventListener('click',event=>{if(Date.now()-lastTouchAt>900||ownsComplexGesture(event.target))return;const target=event.target.closest?.(SELECT_HAPTIC_SELECTOR);if(target&&!target.disabled)haptic('select')},{capture:true,passive:true})
 }
 
 function parsePickerDate(input){
