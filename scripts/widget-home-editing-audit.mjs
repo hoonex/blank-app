@@ -37,6 +37,8 @@ await page.route('**/functions/v1/university-campus**',async route=>{
 });
 
 await page.addInitScript(()=>{
+  if(sessionStorage.getItem('flow-widget-home-fixture-ready'))return;
+  sessionStorage.setItem('flow-widget-home-fixture-ready','1');
   const d=(new Date().getDay()+6)%7;
   const make=(name,start,end,place,credit=3)=>({name,professor:'테스트',credit,times:[{day:d,start,end,startMinutes:Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes:Number(end.slice(0,2))*60+Number(end.slice(3)),place}]});
   localStorage.setItem('flow-university-profile-v1',JSON.stringify({id:'knu',name:'경북대학교',address:'대구광역시 북구 대학로 80',campus:'대구캠퍼스'}));
@@ -128,7 +130,7 @@ await page.mouse.move(190,Math.min(700,(page.viewportSize()?.height||844)-120),{
 if(await page.locator('[data-widget-id="clock"].widget-hidden').count())throw new Error('Gallery-held widget stayed hidden after placement.');
 
 const orderBeforeReload=await page.evaluate(()=>[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId));
-await page.reload({waitUntil:'domcontentloaded'});await page.locator('#widgetDashboard').waitFor();await page.waitForTimeout(300);
+await page.reload({waitUntil:'domcontentloaded'});await page.locator('#widgetDashboard').waitFor();await page.locator('[data-widget-id="memo"]').waitFor({timeout:10000});await page.waitForTimeout(300);
 const reload=await page.evaluate(()=>({order:[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId),clockVisible:!document.querySelector('[data-widget-id="clock"]')?.classList.contains('widget-hidden'),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
 if(orderBeforeReload.join('|')!==reload.order.join('|')||!reload.clockVisible||reload.overflow>2)throw new Error(`Widget placement was not persisted cleanly: ${JSON.stringify(reload)}`);
 
