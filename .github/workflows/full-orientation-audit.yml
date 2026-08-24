@@ -31,6 +31,7 @@ jobs:
           node --check tests/optical-runtime-bug-audit.mjs
           node --check tests/optical-nav-layout-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
+          node --check tests/university-page-header-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
       - name: Install Playwright Chromium
@@ -66,6 +67,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-nav-layout-audit.mjs
+      - name: Verify University page headers and action alignment
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/university-page-header-audit.mjs
       - name: Verify transient sheet direct drag and dismiss
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -106,4 +111,5 @@ jobs:
             settings-navigation-visual-audit/
             optical-refraction-audit/
             optical-nav-layout-audit/
+            university-page-header-audit/
           retention-days: 7
