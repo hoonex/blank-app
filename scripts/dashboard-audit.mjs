@@ -58,7 +58,21 @@ await page.reload({waitUntil:'domcontentloaded'});await page.locator('#widgetDas
 const reloaded=await page.evaluate(()=>({size:document.querySelector('[data-widget-id="campus"]')?.dataset.size,order:[...document.querySelectorAll('#widgetDashboard [data-widget-id]')].map(x=>x.dataset.widgetId)}));
 if(reloaded.size!==afterSize)throw new Error(`Reload lost widget size: ${JSON.stringify(reloaded)}`);
 await page.locator('#dashboardEditBtn').click();await page.locator('#widgetDoneBtn').click();
-const next=page.locator('[data-widget-id="next"]'),box=await next.boundingBox();if(box){await next.dispatchEvent('pointerdown',{button:0,clientX:box.x+10,clientY:box.y+10,pointerId:77,pointerType:'touch'});await page.waitForTimeout(620);await next.dispatchEvent('pointerup',{button:0,clientX:box.x+10,clientY:box.y+10,pointerId:77,pointerType:'touch'});}
+const next=page.locator('[data-widget-id="next"]'),box=await next.boundingBox();
+if(box){
+  const point={x:box.x+10,y:box.y+10};
+  await page.evaluate(({x,y})=>{
+    const el=document.querySelector('#widgetDashboard [data-widget-id="next"]');if(!el)throw new Error('Missing long-press widget.');
+    const t=new Touch({identifier:77,target:el,clientX:x,clientY:y,pageX:x+scrollX,pageY:y+scrollY,screenX:x,screenY:y,radiusX:8,radiusY:8,force:.6});
+    el.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,composed:true,touches:[t],targetTouches:[t],changedTouches:[t]}));
+  },point);
+  await page.waitForTimeout(620);
+  await page.evaluate(({x,y})=>{
+    const el=document.querySelector('.widget-direct-floating[data-widget-id="next"]')||document.querySelector('#widgetDashboard [data-widget-id="next"]');if(!el)return;
+    const t=new Touch({identifier:77,target:el,clientX:x,clientY:y,pageX:x+scrollX,pageY:y+scrollY,screenX:x,screenY:y,radiusX:8,radiusY:8,force:.6});
+    el.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,composed:true,touches:[],targetTouches:[],changedTouches:[t]}));
+  },point);
+}
 if(!await page.locator('#todayView.dashboard-editing').count())throw new Error('Long press did not enter edit mode.');
 await page.locator('#widgetDoneBtn').click();
 await page.waitForTimeout(300);
