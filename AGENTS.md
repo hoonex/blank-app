@@ -2,6 +2,15 @@
 
 This file is the operating contract for AI/code-agent work in this repository. Read it before changing code.
 
+## 0. The agent owns implementation
+
+- When the user asks to implement, fix, change, polish, refactor, test, deploy, or otherwise modify Flow, the agent must perform the repository work directly with the available GitHub/code tools.
+- Do **not** hand the task back as a prompt, developer instruction sheet, checklist for another agent, or "copy this into Codex" response unless the user explicitly asks for a prompt or handoff document.
+- Do **not** claim GitHub write access is unavailable until the installed GitHub connector/tools have actually been checked and a real tool/permission failure has occurred.
+- If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. Do not stop merely to ask whether to continue.
+- If a real blocker prevents implementation, report the exact failing tool/permission/check and preserve the branch/PR state. Do not substitute hypothetical instructions for work that can still be performed.
+- A user-provided screenshot or concrete UI complaint is an acceptance-test input. Reproduce and fix it in the repository rather than only explaining what should be changed.
+
 ## 1. Never edit `main` directly
 
 - Create a feature/fix branch **before the first write**.
@@ -57,6 +66,10 @@ Required invariants:
 - Mobile, tablet, desktop, and wide-touch layouts all matter.
 - UI-affecting ULW work must be reviewed across the responsive visual matrix: mobile portrait `390x844`, mobile landscape `844x390`, tablet portrait `768x1024`, tablet landscape `1024x768`, desktop `1366x768`, and large desktop `1920x1080`.
 - Do not accept a UI because it looks correct in only one orientation or device class. Compare portrait/landscape and mobile/desktop screenshots for density, whitespace, hierarchy, clipping, and awkward stretching.
+- Automated geometry/overflow checks are **necessary but not sufficient**. The agent must visually inspect the rendered screenshots and reject obvious product-quality failures even when CI is green.
+- Treat the following as visual regressions unless explicitly intended: large unexplained blank regions, cards using only a fraction of an available row, headline text wrapping because adjacent controls steal width, controls glued to one side of an oversized container, inconsistent section widths, mixed-language kicker/title residue, clipped first-fold content, and visibly unbalanced spacing.
+- When the user provides a screenshot, reproduce the same or nearest viewport/data state before merge and compare the new screenshot against the complaint.
+- For Liquid/Optical Glass work, inspect the rendered result rather than only CSS/state assertions. Standard Glass must visibly preserve the underlying surface/content relationship; Optical mode must have a perceptible but controlled refraction/highlight difference from Standard and must update promptly during interaction. If Standard and Optical are visually indistinguishable, the task is not complete.
 
 ## 7. Testing before merge
 
@@ -65,6 +78,7 @@ For a feature PR:
 - Add or update a focused automated test for the new behavior when practical.
 - Run relevant existing audits, not only the new test.
 - For UI-affecting changes, generate the complete responsive visual matrix and inspect its screenshots before merge; key screens should include a viewport/first-fold capture and a full-page capture where practical.
+- For a UI complaint, automated GREEN does not override a visibly bad screenshot. Fix the visible defect before merge.
 - Confirm horizontal overflow is absent across the responsive visual matrix unless a component explicitly requires horizontal scrolling.
 - Confirm console/page errors are zero in the relevant browser audit.
 - Confirm important persistence behavior after reload if localStorage/PWA state is involved.
@@ -99,10 +113,13 @@ Do not hide a failed experiment inside a successful PR. Revert or close failed e
 Before saying a task is finished, verify:
 
 - [ ] Work occurred on a branch, not directly on `main`.
+- [ ] The agent performed the requested implementation directly; it was not handed back as a prompt/instruction sheet unless the user explicitly requested that format.
 - [ ] No secret was exposed.
 - [ ] No unnecessary observer/hotfix/runtime layer was added.
 - [ ] New behavior was browser-tested where applicable.
 - [ ] Relevant existing CI passed.
 - [ ] Responsive portrait/landscape and mobile/desktop screenshots were inspected for UI-affecting work.
+- [ ] User-provided screenshot complaints were reproduced and visually checked after the fix.
+- [ ] UI work has no obvious whitespace, hierarchy, wrapping, alignment, or glass-quality regression even if automated checks are green.
 - [ ] PR merged only after checks passed.
 - [ ] Production deploy/route health was checked when relevant.
