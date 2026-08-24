@@ -6,7 +6,7 @@ import {decoratePoiNode} from '/university/poi-icons.js';
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1',TIMETABLE_KEY='flow-university-timetable-v1';
-let sdkPromise=null,campusPromise=null,campusSignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentRouteOverlay=null,currentPosition=null,currentRouteData=null,poiLayerEnabled=false,renderToken=0;
+let sdkPromise=null,campusPromise=null,campusSignature='',contextReadySignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentRouteOverlay=null,currentPosition=null,currentRouteData=null,poiLayerEnabled=false,renderToken=0,customRoutePlan=null;
 const routeCache=new Map();
 
 function read(k,f=null){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
@@ -21,10 +21,13 @@ function uniquePlaces(day){const out=[],seen=new Set();for(const entry of dayEnt
 function resolution(raw){return campusData?.places?.find(x=>String(x.raw).trim()===String(raw).trim())||null}
 function resolved(raw){const r=resolution(raw);return r?.resolved?r.place:null}
 function signature(){const p=profile(),tt=timetable();if(!p)return'';return`${p.id||''}|${p.name||''}|${p.address||''}|${tt?.year||''}|${tt?.semester||''}|${entries().map(x=>`${x.day}:${x.startMinutes}:${x.place}`).join('|')}`}
+function normalizeRouteStop(stop,index=0){return{id:String(stop?.id||`stop:${index}`),kind:stop?.kind==='class'?'class':'custom',name:String(stop?.name||'').trim(),label:String(stop?.label||stop?.name||'').trim(),meta:String(stop?.meta||'').trim(),x:String(stop?.x??'').trim(),y:String(stop?.y??'').trim(),url:String(stop?.url||'').trim(),sourcePlace:String(stop?.sourcePlace||'').trim()}}
+function defaultRouteStops(day=selectedDay()){return dayEntries(day).filter(x=>x.place).map((entry,index)=>{const p=resolved(entry.place);return normalizeRouteStop({id:`class:${entry.subjectIndex}:${entry.day}:${entry.startMinutes}:${index}`,kind:'class',name:entry.place,label:entry.subject?.name||entry.place,meta:[entry.start,entry.subject?.name].filter(Boolean).join(' · '),x:p?.x||'',y:p?.y||'',url:p?.url||'',sourcePlace:entry.place},index)})}
+function activeCustomStops(day=selectedDay()){if(customRoutePlan?.day!==day||!Array.isArray(customRoutePlan.stops))return null;return customRoutePlan.stops.map(normalizeRouteStop).filter(stop=>stop.name&&stop.x&&stop.y)}
 
 async function campusApi(action,payload){const url=new URL(CAMPUS_EDGE);url.searchParams.set('action',action);const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.error||'캠퍼스 정보를 불러오지 못했습니다.');return b}
 async function getCampusData(){const p=profile();if(!p)return null;const s=signature();if(campusData&&campusSignature===s)return campusData;if(campusPromise&&campusSignature===s)return campusPromise;campusSignature=s;campusPromise=campusApi('campus',{schoolName:p.name,address:p.address,items:entries().filter(x=>x.place).map(x=>({place:x.place}))}).then(d=>campusData=d).finally(()=>campusPromise=null);return campusPromise}
-function loadSdk(){if(['localhost','127.0.0.1','::1'].includes(location.hostname))return Promise.resolve(false);if(window.kakao?.maps?.Map)return Promise.resolve(true);if(sdkPromise)return sdkPromise;sdkPromise=new Promise(resolve=>{const script=document.createElement('script');script.src=`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_JS_KEY)}&autoload=false`;script.async=true;script.onload=()=>{try{kakao.maps.load(()=>resolve(Boolean(kakao.maps.Map)))}catch{resolve(false)}};script.onerror=()=>resolve(false);document.head.append(script)});return sdkPromise}
+function loadSdk(){if(['localhost','127.0.0.1','::1'].includes(location.hostname))return Promise.resolve(Boolean(window.kakao?.maps?.Map));if(window.kakao?.maps?.Map&&window.kakao?.maps?.services?.Places)return Promise.resolve(true);if(sdkPromise)return sdkPromise;sdkPromise=new Promise(resolve=>{const script=document.createElement('script');script.src=`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(KAKAO_JS_KEY)}&autoload=false&libraries=services`;script.async=true;script.onload=()=>{try{kakao.maps.load(()=>resolve(Boolean(kakao.maps.Map)))}catch{resolve(false)}};script.onerror=()=>resolve(false);document.head.append(script)});return sdkPromise}
 function clearLayer(list){for(const x of list)try{x.setMap(null)}catch{}list.length=0}
 function point(p){if(!window.kakao?.maps||!p)return null;const x=Number(Array.isArray(p)?p[0]:p.x??p.lng),y=Number(Array.isArray(p)?p[1]:p.y??p.lat);return Number.isFinite(x)&&Number.isFinite(y)?new kakao.maps.LatLng(y,x):null}
 function placePoint(p){return point({x:p?.x,y:p?.y})}
@@ -105,21 +108,33 @@ async function renderMapLayers(){
   const token=++renderToken;
   if(!map||!campusData)return;
   clearLayer(classOverlays);clearLayer(poiOverlays);clearLayer(routeLines);clearLayer(routeOverlays);
-  const day=selectedDay(),places=uniquePlaces(day),next=day===todayIndex()?nextUpcoming():null,bounds=new kakao.maps.LatLngBounds();
+  const day=selectedDay(),customStops=activeCustomStops(day),next=day===todayIndex()?nextUpcoming():null,bounds=new kakao.maps.LatLngBounds();
+  const customSegments=[];
   let count=0;
-  places.forEach((item,i)=>{
-    const p=resolved(item.raw),pos=placePoint(p);
-    if(!p||!pos)return;
-    const overlay=new kakao.maps.CustomOverlay({map,position:pos,content:markerNode(i+1,p,item.entry,Boolean(next&&next.place===item.raw)),xAnchor:.5,yAnchor:1.18,zIndex:5});
-    classOverlays.push(overlay);bounds.extend(pos);count++;
-  });
-  const list=dayEntries(day).filter(x=>x.place);
+  if(customStops){
+    customStops.forEach((stop,i)=>{
+      const pos=placePoint(stop);if(!pos)return;
+      const pseudo={place:stop.name,subject:{name:stop.label||stop.name}};
+      const overlay=new kakao.maps.CustomOverlay({map,position:pos,content:markerNode(i+1,stop,pseudo,false),xAnchor:.5,yAnchor:1.18,zIndex:5});
+      classOverlays.push(overlay);bounds.extend(pos);count++;
+    });
+  }else{
+    const places=uniquePlaces(day);
+    places.forEach((item,i)=>{
+      const p=resolved(item.raw),pos=placePoint(p);
+      if(!p||!pos)return;
+      const overlay=new kakao.maps.CustomOverlay({map,position:pos,content:markerNode(i+1,p,item.entry,Boolean(next&&next.place===item.raw)),xAnchor:.5,yAnchor:1.18,zIndex:5});
+      classOverlays.push(overlay);bounds.extend(pos);count++;
+    });
+  }
+  const list=customStops||dayEntries(day).filter(x=>x.place);
   for(let i=0;i<list.length-1;i++){
     if(token!==renderToken)return;
-    const a=list[i],b=list[i+1],pa=resolved(a.place),pb=resolved(b.place);
-    if(!pa||!pb||(pa.x===pb.x&&pa.y===pb.y))continue;
-    const result=await route(pa,pb,a.place,b.place),drawn=drawPolyline(result);
-    if(!drawn)continue;
+    const a=list[i],b=list[i+1],pa=customStops?a:resolved(a.place),pb=customStops?b:resolved(b.place),aName=customStops?a.name:a.place,bName=customStops?b.name:b.place;
+    if(!pa||!pb)continue;
+    if(pa.x===pb.x&&pa.y===pb.y){if(customStops)customSegments.push({from:a,to:b,time:0,distance:0,landingUrl:pb.url||'',same:true});continue}
+    const result=await route(pa,pb,aName,bName);if(customStops&&result?.status==='OK')customSegments.push({from:a,to:b,time:Number(result.time??result.duration??0),distance:Number(result.distance||0),landingUrl:result.landingUrl||pb.url||'',same:false});
+    const drawn=drawPolyline(result);if(!drawn)continue;
     routeLines.push(drawn.line);
     drawn.path.forEach(p=>{bounds.extend(p);count++});
     const label=routeLabel(result,drawn.path);
@@ -129,13 +144,28 @@ async function renderMapLayers(){
   count+=renderCurrentLocation(bounds);
   count+=renderCurrentRoute(bounds);
   if(count>1)map.setBounds(bounds);
+  if(customStops)window.dispatchEvent(new CustomEvent('flow:campus-custom-route-rendered',{detail:{day,stops:customStops,segments:customSegments}}));
   setTimeout(()=>{try{map.relayout()}catch{}},30);
 }
-async function activate(){const wrap=document.querySelector('#campusMapWrap');if(!wrap)return;try{const[data,sdk]=await Promise.all([getCampusData(),loadSdk()]);if(data&&sdk&&ensureMap())await renderMapLayers()}catch{}}
+async function activate(){const wrap=document.querySelector('#campusMapWrap');if(!wrap)return;try{const[data,sdk]=await Promise.all([getCampusData(),loadSdk()]);if(data){const readySignature=`${campusSignature}|${selectedDay()}`;if(contextReadySignature!==readySignature){contextReadySignature=readySignature;window.dispatchEvent(new CustomEvent('flow:campus-context-ready',{detail:{day:selectedDay()}}))}if(sdk&&ensureMap())await renderMapLayers()}}catch{}}
 function schedule(d=80){setTimeout(()=>void activate(),d)}
-document.addEventListener('click',e=>{if(e.target.closest?.('[data-view="campus"],[data-campus-day]'))schedule(120);if(e.target.closest?.('#campusFilter [data-nearby]')){poiLayerEnabled=true;schedule(100)}if(e.target.closest?.('#campusRefreshBtn')){campusData=null;campusSignature='';routeCache.clear();schedule(450)}},{passive:true});
+async function searchPlaces(query){
+  const text=String(query||'').trim();if(text.length<2)return[];
+  if(!window.kakao?.maps?.services?.Places){const ok=await loadSdk();if(!ok||!window.kakao?.maps?.services?.Places)return[]}
+  const center=campusData?.center,options={size:10};
+  if(center?.x&&center?.y){options.location=new kakao.maps.LatLng(Number(center.y),Number(center.x));options.radius=5000;options.sort=kakao.maps.services.SortBy?.DISTANCE}
+  return new Promise(resolve=>{try{const places=new kakao.maps.services.Places();places.keywordSearch(text,(items,status)=>{if(status!==kakao.maps.services.Status?.OK){resolve([]);return}resolve((items||[]).map(item=>({id:String(item.id||''),name:String(item.place_name||''),url:String(item.place_url||'').replace(/^http:/,'https:'),category:String(item.category_name||''),address:String(item.address_name||''),roadAddress:String(item.road_address_name||''),x:String(item.x||''),y:String(item.y||'')})).filter(item=>item.name&&item.x&&item.y))},options)}catch{resolve([])}})
+}
+function applyPlan(day,stops){const normalized=(Array.isArray(stops)?stops:[]).map(normalizeRouteStop).filter(stop=>stop.name&&stop.x&&stop.y);customRoutePlan={day:Number(day),stops:normalized};schedule(0)}
+function clearPlan(day){if(customRoutePlan?.day===Number(day))customRoutePlan=null;schedule(0)}
+function routeEditorContext(){const day=selectedDay();return{day,profile:profile(),timetable:timetable(),campusData,defaultStops:defaultRouteStops(day)}}
+
+window.flowCampusRouteBridge={getContext:routeEditorContext,applyPlan,clearPlan,searchPlaces};
+window.dispatchEvent(new CustomEvent('flow:campus-bridge-ready'));
+document.addEventListener('click',e=>{if(e.target.closest?.('[data-view="campus"],[data-campus-day]'))schedule(120);if(e.target.closest?.('#campusFilter [data-nearby]')){poiLayerEnabled=true;schedule(100)}if(e.target.closest?.('#campusRefreshBtn')){campusData=null;campusSignature='';contextReadySignature='';routeCache.clear();schedule(450)}},{passive:true});
 window.addEventListener('flow:campus-current-position',e=>{const lat=Number(e.detail?.lat),lng=Number(e.detail?.lng),accuracy=Number(e.detail?.accuracy||0);if(!Number.isFinite(lat)||!Number.isFinite(lng))return;currentPosition={lat,lng,accuracy};schedule(0)});
 window.addEventListener('flow:campus-current-route',e=>{const d=e.detail||{},sx=Number(d.start?.x),sy=Number(d.start?.y);if(Number.isFinite(sx)&&Number.isFinite(sy))currentPosition={lng:sx,lat:sy,accuracy:0};currentRouteData=d;schedule(0)});
 window.addEventListener('popstate',()=>{if(location.pathname==='/university/campus')schedule(120)});
 window.addEventListener('resize',()=>{if(map)setTimeout(()=>{try{map.relayout()}catch{}},80)},{passive:true});
+void import('/university/campus-route-editor.js').catch(()=>{});
 if(location.pathname==='/university/campus')schedule(500);
