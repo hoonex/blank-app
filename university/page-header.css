@@ -79,7 +79,7 @@
 #campusView .campus-nearby-quick-copy{min-width:84px!important}
 #campusView .campus-nearby-quick-copy strong{margin:0!important}
 
-/* Portrait phones: title owns the first row; page actions share the same right-aligned second row. */
+/* Portrait phones/tablets: fill the available Nearby control cell instead of leaving a ghost white bar. */
 @media(max-width:820px) and (min-height:521px){
   .app .view>.view-header{
     grid-template-columns:minmax(0,1fr)!important;
@@ -103,16 +103,55 @@
     padding:0 11px!important;
   }
   #campusView.campus-view>.view-header{
-    grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-columns:minmax(0,1fr) 104px!important;
     grid-template-areas:"copy copy" "nearby refresh"!important;
     gap:9px 8px!important;
     margin:8px 3px 14px!important;
   }
   #campusView>.view-header>#campusRefreshBtn{
-    min-width:96px!important;
-    width:96px!important;
+    min-width:104px!important;
+    width:104px!important;
+    justify-self:stretch!important;
+  }
+  #campusView .campus-header-tools{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    align-self:stretch!important;
+  }
+  #campusView .campus-nearby-quick{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    padding:5px!important;
+    box-sizing:border-box!important;
   }
   #campusView .campus-nearby-quick-copy{display:none!important}
+  #campusView .campus-nearby-quick .campus-filter{
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    gap:4px!important;
+    padding:0!important;
+    margin:0!important;
+    overflow:visible!important;
+  }
+  #campusView .campus-nearby-quick .campus-filter button{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:40px!important;
+    height:40px!important;
+    margin:0!important;
+    padding:0 5px!important;
+    box-sizing:border-box!important;
+    white-space:nowrap!important;
+  }
 }
 
 /* 844x390-class phones: same title/action baseline on Today, Timetable and Campus. */
@@ -164,5 +203,8 @@
   #timetableView>.view-header .schedule-actions{gap:5px!important}
   #todayView>.hero-header .dashboard-top-actions>button,
   #timetableView>.view-header .schedule-actions>button{padding:0 9px!important;font-size:.64rem!important}
-  #campusView>.view-header>#campusRefreshBtn{min-width:94px!important;width:94px!important}
+  #campusView.campus-view>.view-header{grid-template-columns:minmax(0,1fr) 96px!important}
+  #campusView>.view-header>#campusRefreshBtn{min-width:96px!important;width:96px!important}
+  #campusView .campus-nearby-quick .campus-filter{gap:3px!important}
+  #campusView .campus-nearby-quick .campus-filter button{padding:0 3px!important;font-size:9.5px!important}
 }
