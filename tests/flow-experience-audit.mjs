@@ -7,9 +7,11 @@ const SCHOOL={officeCode:'D10',officeName:'대구광역시교육청',schoolCode:
 const UNIVERSITY={id:'knu',name:'경북대학교',englishName:'Kyungpook National University',kind:'대학교',division:'대학',foundation:'국립',campus:'본교',region:'대구',address:'대구광역시 북구 대학로 80',phone:'053-950-5114',homepage:'https://www.knu.ac.kr'};
 
 await mkdir(OUT,{recursive:true});
-const source=await readFile('flow-experience.js','utf8');
+const source=await readFile('flow-experience.js','utf8'),css=await readFile('flow-experience.css','utf8');
 if(source.includes('MutationObserver'))throw new Error('Flow experience must stay event-driven; MutationObserver found');
 if(!source.includes('flow-haptics-v1')||!source.includes('flow-ambient-v1'))throw new Error('Flow experience preference keys missing');
+if(css.includes('container-type')||css.includes('@container'))throw new Error('Experience CSS must not establish containment around direct-manipulation widgets');
+if(!css.includes('repeat(auto-fit'))throw new Error('Intrinsic auto-fit adaptation is missing');
 const browser=await chromium.launch({headless:true});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 
@@ -35,7 +37,7 @@ async function runSchool({reducedMotion='no-preference'}={}){
   try{
     await page.addInitScript(({school})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light')},{school:SCHOOL});
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowExperience==='ready');
-    const state=await experienceState(page);if(state.ready!=='ready'||state.ambient!=='on'||!state.phase||!state.ambientA||!state.experienceCss||state.containerType!=='inline-size')throw new Error(`${label} experience bootstrap invalid: ${JSON.stringify(state)}`);
+    const state=await experienceState(page);if(state.ready!=='ready'||state.ambient!=='on'||!state.phase||!state.ambientA||!state.experienceCss||state.containerType!=='normal')throw new Error(`${label} experience bootstrap invalid: ${JSON.stringify(state)}`);
     if(reducedMotion==='reduce'){
       const animation=await page.locator('.status-grid').evaluate(node=>getComputedStyle(node).animationName);if(animation!=='none')throw new Error(`${label} content settle motion not reduced: ${animation}`);await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,reducedAnimation:animation,errors}
     }
@@ -52,7 +54,7 @@ async function runUniversity(){
   const label='university-touch';const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(9000);const errors=watch(page);await installHaptics(page);await universityRoutes(page);
   try{
     await page.addInitScript(({university,tt})=>{localStorage.clear();localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify(tt));localStorage.setItem('flow-university-theme-v1','light')},{university:UNIVERSITY,tt:timetable()});
-    await page.goto(new URL('/university/',BASE).href,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowExperience==='ready');const state=await experienceState(page);if(state.ambient!=='on'||!state.experienceCss||state.containerType!=='inline-size')throw new Error(`${label} experience bootstrap invalid: ${JSON.stringify(state)}`);
+    await page.goto(new URL('/university/',BASE).href,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowExperience==='ready');const state=await experienceState(page);if(state.ambient!=='on'||!state.experienceCss||state.containerType!=='normal')throw new Error(`${label} experience bootstrap invalid: ${JSON.stringify(state)}`);
     await page.evaluate(()=>{window.__flowHaptics=[]});await page.locator('.bottom-item[data-view="timetable"]:visible').tap();await page.locator('#timetableView:not(.hidden)').waitFor();const haptics=await page.evaluate(()=>window.__flowHaptics.slice());if(!haptics.length)throw new Error(`${label} navigation selection haptic missing`);
     await page.locator('.flow-mobile-settings:visible').tap();await page.locator('#flowUniversitySettingsView:not(.hidden)').waitFor();if(await page.locator('.flow-experience-settings').count()!==1)throw new Error(`${label} sensory settings card missing`);
     await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,haptics,errors}
