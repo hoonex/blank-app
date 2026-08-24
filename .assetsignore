@@ -1,0 +1,8 @@
+# Deployment/configuration files are not public static assets.
+.git
+.github
+.devcontainer
+.gitignore
+.assetsignore
+wrangler.jsonc
+cloudflare-worker.mjs

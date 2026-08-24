@@ -1,0 +1,79 @@
+name: Cloudflare clean-route refresh audit
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-routes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate Cloudflare route worker
+        run: |
+          node --check cloudflare-worker.mjs
+          node --check tests/cloudflare-clean-routes-audit.mjs
+          python -m json.tool wrangler.jsonc >/dev/null
+          node tests/cloudflare-clean-routes-audit.mjs
+          grep -q '"name": "blank-app"' wrangler.jsonc
+          grep -q '"binding": "ASSETS"' wrangler.jsonc
+          grep -q 'cloudflare-worker.mjs' .assetsignore
+
+      - name: Validate Wrangler deployment bundle
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
+
+      - name: Verify deployed clean routes survive refresh
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://blank-app.agfvrd.workers.dev'
+          routes=(
+            '/home|Flow School'
+            '/week|Flow School'
+            '/schedule|Flow School'
+            '/school|Flow School'
+            '/university/timetable|Flow University'
+            '/university/campus|Flow University'
+            '/university/school|Flow University'
+          )
+
+          for attempt in $(seq 1 20); do
+            ok=1
+            echo "Cloudflare route probe attempt $attempt/20"
+            for item in "${routes[@]}"; do
+              route="${item%%|*}"
+              marker="${item#*|}"
+              body="/tmp/flow-route-$(echo "$route" | tr '/?' '__').html"
+              code=$(curl --silent --show-error --location \
+                --header 'cache-control: no-cache' \
+                --connect-timeout 10 --max-time 20 \
+                --output "$body" --write-out '%{http_code}' \
+                "$base$route?flow_deploy=$GITHUB_SHA" || true)
+              if [[ "$code" != '200' ]] || ! grep -q "$marker" "$body" 2>/dev/null; then
+                echo "WAIT $route -> HTTP $code / expected $marker"
+                ok=0
+                break
+              fi
+              echo "OK $route -> 200 $marker"
+            done
+            if [[ "$ok" == '1' ]]; then
+              echo 'Cloudflare clean-route refresh health: GREEN'
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo 'Cloudflare clean-route refresh health did not converge after 5 minutes.' >&2
+          exit 1
