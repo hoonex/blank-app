@@ -41,7 +41,7 @@ function moveNearbyQuickAccess(){
   const tools=document.createElement('div');tools.id='campusHeaderTools';tools.className='campus-header-tools';
   const nearby=document.createElement('div');nearby.className='campus-nearby-quick';
   const copy=document.createElement('div');copy.className='campus-nearby-quick-copy';copy.innerHTML='<span>NEARBY</span><strong>캠퍼스 주변</strong>';
-  nearby.append(copy,filter);tools.append(nearby,refresh);header.append(tools);
+  nearby.append(copy,filter);tools.append(nearby);header.append(refresh,tools);
 }
 function ensureEditor(){
   const card=$('.campus-map-card'),note=$('.campus-map-note',card);if(!card||!note||$('#campusRouteEditor'))return;
