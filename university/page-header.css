@@ -48,7 +48,7 @@
   grid-template-areas:"copy"!important;
 }
 
-/* Campus has one real page action (refresh). Nearby is a secondary control row, not a competing header action. */
+/* Campus has one real page action (refresh). Nearby stays in a real secondary tools box. */
 #campusView.campus-view>.view-header{
   grid-template-columns:minmax(0,1fr) auto!important;
   grid-template-areas:"copy refresh" "nearby nearby"!important;
@@ -56,8 +56,14 @@
   gap:10px 12px!important;
   margin:0 0 14px!important;
 }
-#campusView .campus-header-tools{display:contents!important}
-#campusView .campus-header-tools>#campusRefreshBtn{
+#campusView .campus-header-tools{
+  grid-area:nearby;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+}
+#campusView>.view-header>#campusRefreshBtn{
   grid-area:refresh;
   align-self:end!important;
   justify-self:end!important;
@@ -65,7 +71,6 @@
   width:auto!important;
 }
 #campusView .campus-nearby-quick{
-  grid-area:nearby;
   width:100%!important;
   min-width:0!important;
   max-width:none!important;
@@ -103,7 +108,7 @@
     gap:9px 8px!important;
     margin:8px 3px 14px!important;
   }
-  #campusView .campus-header-tools>#campusRefreshBtn{
+  #campusView>.view-header>#campusRefreshBtn{
     min-width:96px!important;
     width:96px!important;
   }
@@ -142,7 +147,7 @@
     gap:8px 12px!important;
     margin:7px 3px 12px!important;
   }
-  #campusView .campus-header-tools>#campusRefreshBtn{
+  #campusView>.view-header>#campusRefreshBtn{
     min-width:0!important;
     width:auto!important;
   }
@@ -159,5 +164,5 @@
   #timetableView>.view-header .schedule-actions{gap:5px!important}
   #todayView>.hero-header .dashboard-top-actions>button,
   #timetableView>.view-header .schedule-actions>button{padding:0 9px!important;font-size:.64rem!important}
-  #campusView .campus-header-tools>#campusRefreshBtn{min-width:94px!important;width:94px!important}
+  #campusView>.view-header>#campusRefreshBtn{min-width:94px!important;width:94px!important}
 }
