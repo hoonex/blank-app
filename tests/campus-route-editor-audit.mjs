@@ -58,7 +58,9 @@ await page.addInitScript(()=>{
   window.kakao={maps:{Map,LatLng,LatLngBounds,CustomOverlay,Polyline,event,load:fn=>fn(),services:{Places,Status:{OK:'OK'},SortBy:{DISTANCE:'DISTANCE'}}}};
 });
 
-await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeout:30000});
+await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded',timeout:30000});
+await page.locator('#appView:not(.hidden)').waitFor({timeout:10000});
+await page.locator('.bottom-nav [data-view="campus"]').click();
 await page.locator('#campusView:not(.hidden)').waitFor({timeout:10000});
 await page.locator('#campusHeaderTools').waitFor({timeout:10000});
 await page.waitForFunction(()=>document.querySelectorAll('#campusRouteEditorList .campus-route-stop').length===3,{timeout:10000});
