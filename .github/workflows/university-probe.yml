@@ -23,6 +23,9 @@ jobs:
           node --check university/university.js
           node --check university/campus.js
           node --check university/campus-interactive.js
+          node --check university/net-bootstrap.js
+          node --check tests/university-network-resilience-audit.mjs
+          node tests/university-network-resilience-audit.mjs
           node --check scripts/university-audit.mjs
           node --check scripts/campus-audit.mjs
           node --check scripts/vercel-rest.mjs
@@ -36,29 +39,45 @@ jobs:
           ! grep -E 'event_name.*(schoolName|universitySearch|everytimeUrl)' university/university.js
           test -f university/campus-interactive.css
           grep -q 'Flow University' university/index.html
+          grep -q 'net-bootstrap.js' university/index.html
           grep -q 'campus-interactive.js' university/index.html
           grep -q 'campus-interactive.css' university/index.html
+          grep -q '/university/net-bootstrap.js' sw.js
           grep -q '/university/campus' vercel.json
       - name: Verify university server APIs
+        shell: bash
         run: |
-          curl -fsSL 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90' | tee university-search.json | grep -q '경북대학교'
-          curl -fsSL -X POST -H 'content-type: application/json' \
+          set -euo pipefail
+          request_json(){
+            local output="$1"; shift
+            curl -fsSL \
+              --retry 3 --retry-delay 1 --retry-all-errors --retry-max-time 45 \
+              --connect-timeout 10 --max-time 35 \
+              --output "$output" "$@"
+          }
+
+          request_json university-search.json \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=search&q=%EA%B2%BD%EB%B6%81%EB%8C%80%ED%95%99%EA%B5%90'
+          grep -q '경북대학교' university-search.json
+
+          request_json university-import.json -X POST -H 'content-type: application/json' \
             -d '{"url":"https://everytime.kr/@de9YHaTAnl47JtxH0muz"}' \
-            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=import-everytime' \
-            | tee university-import.json | grep -q '컴퓨터네트워크및보안'
-          curl -fsSL -X POST -H 'content-type: application/json' \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data?action=import-everytime'
+          grep -q '컴퓨터네트워크및보안' university-import.json
+
+          request_json university-campus.json -X POST -H 'content-type: application/json' \
             -d '{"schoolName":"경북대학교","address":"대구광역시 북구 대학로 80","items":[{"place":"IT대학 2호관"},{"place":"공대9호관"},{"place":"법과대학"}]}' \
-            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus' \
-            | tee university-campus.json | grep -q 'nearby'
-          curl -fsSL -X POST -H 'content-type: application/json' \
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus'
+          grep -q 'nearby' university-campus.json
+
+          request_json university-campus-place-formats.json -X POST -H 'content-type: application/json' \
             -d '{"schoolName":"경북대학교","address":"대구광역시 북구 대학로 80","items":[{"place":"산격동 캠퍼스 미래융합과학관(물리생명공학관)-101"},{"place":"산격동 캠퍼스 IT대학1호관(공대10호관)-211"},{"place":"산격동 캠퍼스 IT융합산업빌딩-409"}]}' \
-            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus' \
-            | tee university-campus-place-formats.json
+            'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus?action=campus'
           node - <<'NODE'
           const fs=require('fs');
           const data=JSON.parse(fs.readFileSync('university-campus-place-formats.json','utf8'));
           const rows=data.places||[];
-          console.log(rows.map(x=>({raw:x.raw,resolved:x.resolved,place:x.place?.name,confidence:x.confidence,queries:x.queries}))); 
+          console.log(rows.map(x=>({raw:x.raw,resolved:x.resolved,place:x.place?.name,confidence:x.confidence,queries:x.queries})));
           if(rows.length!==3) throw new Error(`Expected 3 places, got ${rows.length}`);
           const failed=rows.filter(x=>!x.resolved||!x.place?.x||!x.place?.y);
           if(failed.length) throw new Error(`Unresolved Everytime places: ${JSON.stringify(failed)}`);
