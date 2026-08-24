@@ -80,7 +80,8 @@ function finishDateGesture(event,cancel=false){
   const final=new Date(g.base);final.setDate(final.getDate()+step);g.input.value=ymd(final);haptic('impact');g.input.dispatchEvent(new Event('change',{bubbles:true}))
 }
 function installDateScrubber(){
-  const controller=$('.date-controller'),label=$('.date-label',controller),input=$('#datePicker',controller);if(!controller||!label||!input||label.dataset.flowScrubBound)return;
+  const controller=$('.date-controller');if(!controller)return;
+  const label=$('.date-label',controller),input=$('#datePicker',controller);if(!label||!input||label.dataset.flowScrubBound)return;
   label.dataset.flowScrubBound='true';controller.classList.add('flow-date-controller');
   const detents=document.createElement('span');detents.className='flow-date-detents';detents.setAttribute('aria-hidden','true');detents.innerHTML='<i></i><i></i><i></i><i></i><i></i><i></i><i></i>';controller.append(detents);
   label.addEventListener('pointerdown',event=>{
