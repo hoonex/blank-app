@@ -297,8 +297,25 @@ async function auditUniversity(c) {
     if (c.hasTouch) {
       const campusWidget = page.locator('[data-widget-id="campus"]');
       if (await campusWidget.count() && !await campusWidget.evaluate(e => e.classList.contains('widget-hidden'))) {
-        await campusWidget.scrollIntoViewIfNeeded(); const b = await campusWidget.boundingBox();
-        if (b) { await page.mouse.move(b.x + b.width * .5, b.y + b.height * .5); await page.mouse.down(); await page.waitForTimeout(500); const editing = await page.locator('#todayView').evaluate(e => e.classList.contains('dashboard-editing')); await page.mouse.move(b.x + Math.min(45, b.width * .2), b.y + Math.min(35, b.height * .2), { steps: 5 }); await page.mouse.up(); if (!editing) throw new Error(`${c.name} long-press did not enter widget edit mode`); if (await page.locator('#widgetDoneBtn').isVisible()) await page.locator('#widgetDoneBtn').click(); }
+        await campusWidget.scrollIntoViewIfNeeded();
+        const pressPoint = await campusWidget.evaluate(el => {
+          const interactiveSelector = 'textarea,input,select,button,a,.widget-v2-controls,.widget-controls';
+          const fractions = [.12, .3, .5, .7, .88], r = el.getBoundingClientRect();
+          for (const fy of fractions) for (const fx of fractions) {
+            const x = r.left + r.width * fx, y = r.top + r.height * fy;
+            if (x < 1 || y < 1 || x >= innerWidth - 1 || y >= innerHeight - 1) continue;
+            const target = document.elementFromPoint(x, y);
+            if (!target || !el.contains(target) || target.closest(interactiveSelector)) continue;
+            return { x, y };
+          }
+          return null;
+        });
+        if (!pressPoint) throw new Error(`${c.name} long-press audit found no non-interactive widget surface`);
+        await page.mouse.move(pressPoint.x, pressPoint.y); await page.mouse.down(); await page.waitForTimeout(500);
+        const editing = await page.locator('#todayView').evaluate(e => e.classList.contains('dashboard-editing'));
+        await page.mouse.move(pressPoint.x + 24, pressPoint.y + 18, { steps: 5 }); await page.mouse.up();
+        if (!editing) throw new Error(`${c.name} long-press did not enter widget edit mode`);
+        if (await page.locator('#widgetDoneBtn').isVisible()) await page.locator('#widgetDoneBtn').click();
       }
     }
 
