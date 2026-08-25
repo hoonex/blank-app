@@ -1,29 +1,37 @@
-/* University profile composition: keep basic facts readable and balance incomplete rows. */
+/* University profile composition: keep basic facts readable and balance incomplete rows.
+   Each responsive regime is intentionally exclusive so :has() row-balancing rules cannot
+   leak into narrower layouts through selector specificity. */
 #schoolView #basicGrid{
   display:grid!important;
   grid-template-columns:repeat(12,minmax(0,1fr))!important;
   gap:10px!important;
 }
-#schoolView #basicGrid>.basic-item{grid-column:auto/span 3!important;min-width:0}
-#schoolView #basicGrid:has(>.basic-item:nth-child(4n+1):last-child)>.basic-item:last-child{grid-column:5/span 4!important}
-#schoolView #basicGrid:has(>.basic-item:nth-child(4n+2):last-child)>.basic-item:nth-last-child(2){grid-column:3/span 4!important}
-#schoolView #basicGrid:has(>.basic-item:nth-child(4n+2):last-child)>.basic-item:last-child{grid-column:7/span 4!important}
-#schoolView #basicGrid:has(>.basic-item:nth-child(4n+3):last-child)>.basic-item:nth-last-child(-n+3){grid-column:auto/span 4!important}
+#schoolView #basicGrid>.basic-item{min-width:0}
 
-/* Tablet landscape / compact desktop: three useful columns instead of many tiny fact chips. */
-@media(max-width:1199px){
+/* Wide desktop: four readable columns, then rebalance an incomplete final row. */
+@media(min-width:1200px){
+  #schoolView #basicGrid>.basic-item{grid-column:auto/span 3!important}
+  #schoolView #basicGrid:has(>.basic-item:nth-child(4n+1):last-child)>.basic-item:last-child{grid-column:5/span 4!important}
+  #schoolView #basicGrid:has(>.basic-item:nth-child(4n+2):last-child)>.basic-item:nth-last-child(2){grid-column:3/span 4!important}
+  #schoolView #basicGrid:has(>.basic-item:nth-child(4n+2):last-child)>.basic-item:last-child{grid-column:7/span 4!important}
+  #schoolView #basicGrid:has(>.basic-item:nth-child(4n+3):last-child)>.basic-item:nth-last-child(-n+3){grid-column:auto/span 4!important}
+}
+
+/* Tablet landscape / compact desktop: three useful columns. */
+@media(min-width:821px) and (max-width:1199px){
   #schoolView #basicGrid>.basic-item{grid-column:auto/span 4!important}
   #schoolView #basicGrid:has(>.basic-item:nth-child(3n+1):last-child)>.basic-item:last-child{grid-column:5/span 4!important}
   #schoolView #basicGrid:has(>.basic-item:nth-child(3n+2):last-child)>.basic-item:nth-last-child(2){grid-column:1/span 6!important}
   #schoolView #basicGrid:has(>.basic-item:nth-child(3n+2):last-child)>.basic-item:last-child{grid-column:7/span 6!important}
 }
 
-/* Touch portrait: two columns, with an odd final fact centered rather than stranded left. */
-@media(max-width:820px){
+/* Touch portrait: two columns, with an odd final fact centered. */
+@media(min-width:431px) and (max-width:820px){
   #schoolView #basicGrid>.basic-item{grid-column:auto/span 6!important}
   #schoolView #basicGrid:has(>.basic-item:nth-child(2n+1):last-child)>.basic-item:last-child{grid-column:4/span 6!important}
 }
 
+/* Narrow phones: every fact owns a full row. */
 @media(max-width:430px){
-  #schoolView #basicGrid:has(>.basic-item)>.basic-item{grid-column:1/-1!important}
+  #schoolView #basicGrid>.basic-item{grid-column:1/-1!important}
 }
