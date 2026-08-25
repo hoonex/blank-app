@@ -70,6 +70,14 @@ jobs:
           node --check tests/school-composition-audit.mjs
           node tests/school-composition-audit.mjs
 
+      - name: Verify University profile composition
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check tests/university-profile-composition-audit.mjs
+          node tests/university-profile-composition-audit.mjs
+
       - name: Verify mobile school info and meal time
         if: success()
         env:
