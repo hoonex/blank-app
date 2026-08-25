@@ -54,6 +54,14 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/mobile-light-audit.mjs
 
+      - name: Verify landing shell composition
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check tests/contextual-shell-audit.mjs
+          node tests/contextual-shell-audit.mjs
+
       - name: Verify mobile school info and meal time
         if: success()
         env:
@@ -92,4 +100,5 @@ jobs:
           path: |
             browser-audit-artifacts
             school-calendar-audit
+            contextual-shell-audit
           retention-days: 7
