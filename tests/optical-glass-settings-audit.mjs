@@ -65,8 +65,8 @@ async function universityDesktop(){
   const context=await browser.newContext({viewport:{width:1366,height:768},locale:'ko-KR'});const page=await context.newPage();
   await mockUniversity(page);await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor();await waitMaterial(page);
   const trigger=page.locator('.flow-university-settings-button');await trigger.waitFor({state:'visible'});await trigger.click();await page.locator('#flowUniversitySettingsView:not(.hidden)').waitFor();
-  const geometry=await page.evaluate(()=>{const view=document.querySelector('#flowUniversitySettingsView'),stack=view.querySelector('.flow-settings-stack');return{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,stackWidth:stack.getBoundingClientRect().width,modal:document.querySelector('#flowUniversitySettingsDialog').open}});
-  if(geometry.scrollWidth>geometry.clientWidth+3||geometry.stackWidth<500||geometry.stackWidth>840||geometry.modal)throw new Error(`university desktop Settings geometry failed ${JSON.stringify(geometry)}`);
+  const geometry=await page.evaluate(()=>{const view=document.querySelector('#flowUniversitySettingsView'),stack=view.querySelector('.flow-settings-stack'),vr=view.getBoundingClientRect(),sr=stack.getBoundingClientRect();return{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,viewWidth:vr.width,stackWidth:sr.width,stackRight:sr.right,viewRight:vr.right,modal:document.querySelector('#flowUniversitySettingsDialog').open}});
+  if(geometry.scrollWidth>geometry.clientWidth+3||geometry.stackWidth<500||geometry.stackWidth<geometry.viewWidth*.9||geometry.stackWidth>geometry.viewWidth+3||geometry.stackRight>geometry.viewRight+3||geometry.modal)throw new Error(`university desktop Settings geometry failed ${JSON.stringify(geometry)}`);
   await page.screenshot({path:`${OUT}/settings-university-dedicated-desktop.png`,fullPage:false});await context.close();return geometry;
 }
 
