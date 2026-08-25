@@ -193,3 +193,35 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
   .school-hero-content{padding:13px!important}
   .neis-timetable-help{font-size:.72rem}
 }
+
+/* Product pages are Korean-first: the visible title already owns the hierarchy.
+   Keep setup/dialog kickers intact because they are separate task sheets. */
+.product-main .view .section-kicker{display:none!important}
+.product-main .view .section-kicker+h1,
+.product-main .view .section-kicker+h2{margin-top:0!important}
+
+/* School profile data should finish as a composition, not leave one tiny orphan tile.
+   Twelve tracks let incomplete rows rebalance without changing data order or card semantics. */
+.school-info-grid{grid-template-columns:repeat(12,minmax(0,1fr))!important}
+.school-info-grid>.info-tile{grid-column:span 3!important}
+.school-info-grid>.info-tile-empty{grid-column:1/-1!important}
+.school-info-grid:has(>.info-tile:nth-child(4n+1):last-child)>.info-tile:last-child{grid-column:5/span 4!important}
+.school-info-grid:has(>.info-tile:nth-child(4n+2):last-child)>.info-tile:nth-last-child(2){grid-column:3/span 4!important}
+.school-info-grid:has(>.info-tile:nth-child(4n+2):last-child)>.info-tile:last-child{grid-column:7/span 4!important}
+.school-info-grid:has(>.info-tile:nth-child(4n+3):last-child)>.info-tile:nth-last-child(-n+3){grid-column:span 4!important}
+
+@media(max-width:1120px){
+  .school-info-grid>.info-tile{grid-column:span 4!important}
+  .school-info-grid>.info-tile-empty{grid-column:1/-1!important}
+  .school-info-grid:has(>.info-tile:nth-child(3n+1):last-child)>.info-tile:last-child{grid-column:5/span 4!important}
+  .school-info-grid:has(>.info-tile:nth-child(3n+2):last-child)>.info-tile:nth-last-child(2){grid-column:1/span 6!important}
+  .school-info-grid:has(>.info-tile:nth-child(3n+2):last-child)>.info-tile:last-child{grid-column:7/span 6!important}
+}
+@media(max-width:820px){
+  .school-info-grid>.info-tile{grid-column:span 6!important}
+  .school-info-grid>.info-tile-empty{grid-column:1/-1!important}
+  .school-info-grid:has(>.info-tile:nth-child(2n+1):last-child)>.info-tile:last-child{grid-column:4/span 6!important}
+}
+@media(max-width:520px){
+  #schoolInfoGrid>.info-tile{grid-column:1/-1!important}
+}
