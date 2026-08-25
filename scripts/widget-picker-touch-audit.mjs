@@ -40,12 +40,22 @@ await page.locator('#dashboardEditBtn').click();
 await page.locator('#todayView.dashboard-editing').waitFor({timeout:5000});
 await page.locator('#widgetAddBtn').click();
 await page.locator('#widgetPicker').waitFor({state:'visible',timeout:5000});
-await page.locator('#widgetPicker [data-picker-id="clock"]').scrollIntoViewIfNeeded();
-await page.waitForTimeout(80);
+await page.locator('#widgetPicker .widget-picker-live-preview').first().waitFor({timeout:5000});
+await page.waitForTimeout(120);
 
-const item=page.locator('#widgetPicker [data-picker-id="clock"]');
-const box=await item.boundingBox();
-if(!box)throw new Error('Clock picker item has no geometry.');
+await page.evaluate(()=>{
+  const el=document.querySelector('#widgetPicker [data-picker-id="clock"]');
+  if(!el)throw new Error('Clock picker item missing after gallery render.');
+  el.scrollIntoView({block:'center',inline:'nearest'});
+});
+await page.waitForTimeout(80);
+const box=await page.evaluate(()=>{
+  const el=document.querySelector('#widgetPicker [data-picker-id="clock"]');
+  if(!el)return null;
+  const r=el.getBoundingClientRect();
+  return{x:r.x,y:r.y,width:r.width,height:r.height};
+});
+if(!box||!box.width||!box.height)throw new Error('Clock picker item has no geometry.');
 const x=Math.round(box.x+box.width*.5),y=Math.round(box.y+Math.min(52,box.height*.34));
 const point=(px,py)=>({x:Math.round(px),y:Math.round(py),id:17,radiusX:8,radiusY:8,force:.6});
 
