@@ -82,7 +82,7 @@ html[data-theme="dark"][data-flow-glass-mode="optical"] .flow-optical-switch{
   --flow-jelly-light-y:28%;
   display:none;
   position:fixed;
-  z-index:45;
+  z-index:30;
   top:94px;
   right:28px;
   width:68px;
