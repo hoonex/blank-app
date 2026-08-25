@@ -47,6 +47,7 @@ const result=await page.evaluate(()=>({
   routeCount:document.querySelectorAll('#campusRouteList .campus-route').length,
   routeTexts:[...document.querySelectorAll('#campusRouteList .campus-route')].map(x=>x.textContent.replace(/\s+/g,' ').trim()),
   nextEta:document.querySelector('#campusNextEta')?.textContent?.trim()||'',
+  nearbyActive:document.querySelectorAll('#campusFilter [data-nearby].active').length,
   nearbyCount:document.querySelectorAll('#campusNearbyList .campus-nearby').length,
   navCount:document.querySelectorAll('.bottom-nav [data-view]').length,
 }));
@@ -56,6 +57,7 @@ if(result.placeCount<3)throw new Error(`Too few campus place rows: ${result.plac
 if(result.resolvedPlaceLinks.filter(x=>x.includes('place.map.kakao.com')).length<2)throw new Error(`Too few resolved Kakao places: ${JSON.stringify(result.resolvedPlaceLinks)}`);
 if(result.routeCount<1)throw new Error('No walking route between class buildings was rendered.');
 if(result.navCount!==4)throw new Error(`Mobile university navigation should have 4 items, got ${result.navCount}`);
+if(result.nearbyActive!==0||result.nearbyCount!==0)throw new Error(`Nearby filter should start unselected: ${JSON.stringify({nearbyActive:result.nearbyActive,nearbyCount:result.nearbyCount})}`);
 
 await page.locator('#campusFilter [data-nearby="stores"]').click();
 await page.waitForTimeout(150);
