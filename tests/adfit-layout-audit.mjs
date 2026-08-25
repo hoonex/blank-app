@@ -22,7 +22,7 @@ async function mockSdk(page){
 }
 async function fixtures(page,app,configured=true){
   await mockSdk(page);
-  if(configured)await page.addInitScript(({app})=>{window.__FLOW_ADFIT_CONFIG={[app]:{unit:`DAN-test-${app}`,width:320,height:100}}},{app});
+  await page.addInitScript(({app,configured})=>{window.__FLOW_ADFIT_CONFIG={[app]:configured?{unit:`DAN-test-${app}`,width:320,height:100}:{unit:''}}},{app,configured});
   if(app==='school'){
     const school={officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 반야월북로 199',homepage:'https://jungdong.dge.hs.kr'};
     const timetable=Array.from({length:7},(_,i)=>({date:'20260825',period:i+1,subject:['국어','수학','영어Ⅱ','화학','미적분','정보','체육'][i],grade:'2',className:'6'}));
