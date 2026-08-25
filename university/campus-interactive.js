@@ -6,7 +6,7 @@ import {decoratePoiNode} from '/university/poi-icons.js';
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const CAMPUS_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-campus';
 const PROFILE_KEY='flow-university-profile-v1',TIMETABLE_KEY='flow-university-timetable-v1';
-let sdkPromise=null,campusPromise=null,campusSignature='',contextReadySignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentRouteOverlay=null,currentPosition=null,currentRouteData=null,poiLayerEnabled=false,renderToken=0,customRoutePlan=null;
+let sdkPromise=null,campusPromise=null,campusSignature='',contextReadySignature='',campusData=null,map=null,mapContainer=null,classOverlays=[],poiOverlays=[],routeLines=[],routeOverlays=[],currentOverlay=null,currentRouteLine=null,currentRouteOverlay=null,currentPosition=null,currentRouteData=null,poiLayerEnabled=false,renderToken=0,customRoutePlan=null,mapRelayoutTimer=0;
 const routeCache=new Map();
 
 function read(k,f=null){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
@@ -16,7 +16,7 @@ function todayIndex(){return(new Date().getDay()+6)%7}
 function entries(){const tt=timetable();if(!tt?.subjects)return[];return tt.subjects.flatMap((subject,subjectIndex)=>(subject.times||[]).map(time=>({...time,subject,subjectIndex,place:String(time.place||subject.place||'').trim()}))).filter(x=>Number.isFinite(x.day)&&Number.isFinite(x.startMinutes)).sort((a,b)=>a.day-b.day||a.startMinutes-b.startMinutes)}
 function dayEntries(d){return entries().filter(x=>x.day===d)}
 function selectedDay(){const a=document.querySelector('#campusDayTabs [data-campus-day].active');if(a)return Number(a.dataset.campusDay);const days=[...new Set(entries().map(x=>x.day))];return days.includes(todayIndex())?todayIndex():(days[0]??todayIndex())}
-function selectedNearby(){return document.querySelector('#campusFilter [data-nearby].active')?.dataset.nearby||'dining'}
+function selectedNearby(){return document.querySelector('#campusFilter [data-nearby].active')?.dataset.nearby||''}
 function uniquePlaces(day){const out=[],seen=new Set();for(const entry of dayEntries(day)){if(!entry.place)continue;const key=entry.place.toLowerCase();if(seen.has(key))continue;seen.add(key);out.push({raw:entry.place,entry})}return out}
 function resolution(raw){return campusData?.places?.find(x=>String(x.raw).trim()===String(raw).trim())||null}
 function resolved(raw){const r=resolution(raw);return r?.resolved?r.place:null}
@@ -104,6 +104,20 @@ function renderCurrentRoute(bounds){
 }
 
 function ensureMap(){const wrap=document.querySelector('#campusMapWrap');if(!wrap||!campusData?.center?.x||!campusData?.center?.y||!window.kakao?.maps?.Map)return false;if(map&&mapContainer?.isConnected)return true;mapContainer=document.createElement('div');mapContainer.className='campus-interactive-map';wrap.append(mapContainer);map=new kakao.maps.Map(mapContainer,{center:new kakao.maps.LatLng(Number(campusData.center.y),Number(campusData.center.x)),level:3});map.setZoomable(true);map.setDraggable(true);kakao.maps.event.addListener(map,'tilesloaded',()=>{wrap.classList.add('interactive-ready');wrap.dataset.interactiveMap='ready'});return true}
+function scheduleMapRelayout(delay=150){
+  if(!map)return;
+  let center=null,level=null;
+  try{center=map.getCenter?.()||null;level=map.getLevel?.()}catch{}
+  clearTimeout(mapRelayoutTimer);
+  mapRelayoutTimer=setTimeout(()=>{
+    mapRelayoutTimer=0;
+    try{
+      map.relayout();
+      if(center)map.setCenter(center);
+      if(Number.isFinite(level))map.setLevel(level);
+    }catch{}
+  },delay);
+}
 async function renderMapLayers(){
   const token=++renderToken;
   if(!map||!campusData)return;
@@ -140,7 +154,7 @@ async function renderMapLayers(){
     const label=routeLabel(result,drawn.path);
     if(label){const o=new kakao.maps.CustomOverlay({map,position:label.position,content:label.node,xAnchor:.5,yAnchor:.5,zIndex:4});routeOverlays.push(o)}
   }
-  if(poiLayerEnabled){const type=selectedNearby();for(const item of(campusData?.nearby?.[type]||[]).slice(0,8)){const pos=placePoint(item);if(!pos)continue;poiOverlays.push(new kakao.maps.CustomOverlay({map,position:pos,content:poiNode(type,item),xAnchor:.5,yAnchor:.5,zIndex:3}));bounds.extend(pos);count++}}
+  if(poiLayerEnabled){const type=selectedNearby();if(type){for(const item of(campusData?.nearby?.[type]||[]).slice(0,8)){const pos=placePoint(item);if(!pos)continue;poiOverlays.push(new kakao.maps.CustomOverlay({map,position:pos,content:poiNode(type,item),xAnchor:.5,yAnchor:.5,zIndex:3}));bounds.extend(pos);count++}}}
   count+=renderCurrentLocation(bounds);
   count+=renderCurrentRoute(bounds);
   if(count>1)map.setBounds(bounds);
@@ -159,13 +173,21 @@ async function searchPlaces(query){
 function applyPlan(day,stops){const normalized=(Array.isArray(stops)?stops:[]).map(normalizeRouteStop).filter(stop=>stop.name&&stop.x&&stop.y);customRoutePlan={day:Number(day),stops:normalized};schedule(0)}
 function clearPlan(day){if(customRoutePlan?.day===Number(day))customRoutePlan=null;schedule(0)}
 function routeEditorContext(){const day=selectedDay();return{day,profile:profile(),timetable:timetable(),campusData,defaultStops:defaultRouteStops(day)}}
+function resetPoiLayer(){poiLayerEnabled=false;clearLayer(poiOverlays)}
 
 window.flowCampusRouteBridge={getContext:routeEditorContext,applyPlan,clearPlan,searchPlaces};
 window.dispatchEvent(new CustomEvent('flow:campus-bridge-ready'));
-document.addEventListener('click',e=>{if(e.target.closest?.('[data-view="campus"],[data-campus-day]'))schedule(120);if(e.target.closest?.('#campusFilter [data-nearby]')){poiLayerEnabled=true;schedule(100)}if(e.target.closest?.('#campusRefreshBtn')){campusData=null;campusSignature='';contextReadySignature='';routeCache.clear();schedule(450)}},{passive:true});
+document.addEventListener('click',e=>{
+  if(e.target.closest?.('[data-view="campus"]')){resetPoiLayer();schedule(120)}
+  else if(e.target.closest?.('[data-campus-day]'))schedule(120);
+  if(e.target.closest?.('#campusFilter [data-nearby]')){poiLayerEnabled=true;schedule(100)}
+  if(e.target.closest?.('#campusRefreshBtn')){campusData=null;campusSignature='';contextReadySignature='';routeCache.clear();schedule(450)}
+},{passive:true});
 window.addEventListener('flow:campus-current-position',e=>{const lat=Number(e.detail?.lat),lng=Number(e.detail?.lng),accuracy=Number(e.detail?.accuracy||0);if(!Number.isFinite(lat)||!Number.isFinite(lng))return;currentPosition={lat,lng,accuracy};schedule(0)});
 window.addEventListener('flow:campus-current-route',e=>{const d=e.detail||{},sx=Number(d.start?.x),sy=Number(d.start?.y);if(Number.isFinite(sx)&&Number.isFinite(sy))currentPosition={lng:sx,lat:sy,accuracy:0};currentRouteData=d;schedule(0)});
-window.addEventListener('popstate',()=>{if(location.pathname==='/university/campus')schedule(120)});
-window.addEventListener('resize',()=>{if(map)setTimeout(()=>{try{map.relayout()}catch{}},80)},{passive:true});
+window.addEventListener('popstate',()=>{if(location.pathname==='/university/campus'){resetPoiLayer();schedule(120)}});
+window.addEventListener('resize',()=>scheduleMapRelayout(),{passive:true});
+window.addEventListener('orientationchange',()=>scheduleMapRelayout(180),{passive:true});
+window.visualViewport?.addEventListener('resize',()=>scheduleMapRelayout(),{passive:true});
 void import('/university/campus-route-editor.js').catch(()=>{});
 if(location.pathname==='/university/campus')schedule(500);

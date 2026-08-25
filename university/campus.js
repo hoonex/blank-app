@@ -4,7 +4,7 @@ const PROFILE_KEY='flow-university-profile-v1';
 const TIMETABLE_KEY='flow-university-timetable-v1';
 const DAY_NAMES=['월','화','수','목','금','토','일'];
 const $c=(s)=>document.querySelector(s);const $$c=(s)=>[...document.querySelectorAll(s)];
-let campusData=null,campusLoading=null,campusDay=Math.max(0,Math.min(6,(new Date().getDay()+6)%7)),nearbyType='dining';
+let campusData=null,campusLoading=null,campusDay=Math.max(0,Math.min(6,(new Date().getDay()+6)%7)),nearbyType='';
 const routeCache=new Map();
 
 function cRead(key,fallback=null){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
@@ -18,6 +18,7 @@ function distanceText(meters){const m=Number(meters||0);return m>=1000?`${(m/100
 function campusEntries(){const tt=cTimetable();if(!tt?.subjects)return[];return tt.subjects.flatMap((subject,subjectIndex)=>(subject.times||[]).map(time=>({...time,subject,subjectIndex,place:String(time.place||subject.place||'').trim()}))).filter(x=>Number.isFinite(x.day)&&Number.isFinite(x.startMinutes)).sort((a,b)=>a.day-b.day||a.startMinutes-b.startMinutes)}
 function dayEntries(day){return campusEntries().filter(x=>x.day===day)}
 
+function resetNearby(){nearbyType='';$$c('#campusFilter [data-nearby]').forEach(x=>x.classList.remove('active'));$c('#campusNearbyList')?.replaceChildren()}
 function injectCampusShell(){
   if(!$c('link[href="/university/campus.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='/university/campus.css';document.head.append(link)}
   const sidebarNav=$c('.sidebar .nav');
@@ -56,7 +57,7 @@ function injectCampusShell(){
       </div>
       <div class="content-grid" style="margin-top:18px">
         <article class="panel campus-section"><span class="campus-section-label">WALK</span><h2>수업 사이 이동</h2><div class="campus-route-list" id="campusRouteList"></div></article>
-        <article class="panel campus-section"><span class="campus-section-label">NEARBY</span><h2>캠퍼스 주변</h2><div class="campus-filter" id="campusFilter"><button class="active" data-nearby="dining" type="button">학식</button><button data-nearby="stores" type="button">편의점</button><button data-nearby="cafes" type="button">카페</button><button data-nearby="food" type="button">식당</button></div><div class="campus-nearby-list" id="campusNearbyList"></div></article>
+        <article class="panel campus-section"><span class="campus-section-label">NEARBY</span><h2>캠퍼스 주변</h2><div class="campus-filter" id="campusFilter"><button data-nearby="dining" type="button">학식</button><button data-nearby="stores" type="button">편의점</button><button data-nearby="cafes" type="button">카페</button><button data-nearby="food" type="button">식당</button></div><div class="campus-nearby-list" id="campusNearbyList"></div></article>
       </div>`;
     main.insertBefore(section,schoolView);
   }
@@ -68,6 +69,7 @@ function injectCampusShell(){
 
 function showCampusView(push=true){
   const profile=cProfile();if(!profile)return;
+  resetNearby();
   $$c('[data-panel]').forEach(p=>p.classList.toggle('hidden',p.dataset.panel!=='campus'));
   $$c('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='campus'));
   if(push&&location.pathname!=='/university/campus')history.pushState({view:'campus'},'', '/university/campus');
@@ -120,7 +122,7 @@ async function renderNext(){
   const route=await fetchRoute(start,dest,n.from.place,n.next.place);if(route?.status!=='OK'){eta.textContent='경로 없음';dist.textContent='카카오 도보 경로 미탐색';return}
   eta.textContent=durationText(route.time);dist.textContent=`${distanceText(route.distance)} · ${minText(n.next.startMinutes-Math.ceil(route.time/60)-3)} 출발 권장`;if(link&&route.landingUrl){link.href=route.landingUrl;link.classList.remove('hidden')}
 }
-function renderNearby(){const box=$c('#campusNearbyList');if(!box)return;const label={dining:'학식',stores:'편의점',cafes:'카페',food:'식당'}[nearbyType]||'주변';const list=campusData?.nearby?.[nearbyType]||[];if(!list.length){box.innerHTML=`<div class="campus-status">카카오맵에서 확인되는 ${label} 장소가 없습니다.</div>`;return}box.innerHTML=list.slice(0,7).map(p=>`<a class="campus-nearby" href="${cEsc(p.url||'#')}" target="_blank" rel="noopener noreferrer">${poiBadgeMarkup(nearbyType,p)}<span><strong>${cEsc(p.name)}</strong><small>${cEsc(p.category||p.roadAddress||p.address||'')}</small></span><span class="campus-distance">${p.distance?distanceText(p.distance):''}</span></a>`).join('')}
+function renderNearby(){const box=$c('#campusNearbyList');if(!box)return;if(!nearbyType){box.replaceChildren();return}const label={dining:'학식',stores:'편의점',cafes:'카페',food:'식당'}[nearbyType]||'주변';const list=campusData?.nearby?.[nearbyType]||[];if(!list.length){box.innerHTML=`<div class="campus-status">카카오맵에서 확인되는 ${label} 장소가 없습니다.</div>`;return}box.innerHTML=list.slice(0,7).map(p=>`<a class="campus-nearby" href="${cEsc(p.url||'#')}" target="_blank" rel="noopener noreferrer">${poiBadgeMarkup(nearbyType,p)}<span><strong>${cEsc(p.name)}</strong><small>${cEsc(p.category||p.roadAddress||p.address||'')}</small></span><span class="campus-distance">${p.distance?distanceText(p.distance):''}</span></a>`).join('')}
 async function renderCampus(){if(!campusData)return;renderCampusDayTabs();renderMap();renderPlaces();renderNearby();await Promise.all([renderRoutes(),renderNext()])}
 
 async function loadCampus(force=false){

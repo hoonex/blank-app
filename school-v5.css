@@ -68,9 +68,14 @@ html[data-theme="dark"]{
 .nav-item.active,.mobile-tab.active{box-shadow:none!important;background:var(--accent-soft)!important;color:var(--accent)!important}
 .school-identity{box-shadow:none!important;background:var(--surface-soft)!important}
 
-/* Calendar: clean grid, no embossed cells. */
-.calendar-grid{gap:4px!important}
+/* Calendar: clean grid, no embossed cells. Six week rows stay independent of label length. */
+.calendar-grid{gap:4px!important;grid-template-rows:auto repeat(6,82px)}
 .calendar-day{
+  height:82px!important;
+  min-height:0!important;
+  max-height:82px!important;
+  overflow:hidden;
+  align-self:start;
   border:0!important;
   box-shadow:none!important;
   background:transparent!important;
@@ -131,9 +136,12 @@ html[data-theme="dark"]{
   .national-schedule-card,.rank-card{margin:12px 0 0;padding:17px}
   .national-event{grid-template-columns:52px minmax(0,1fr);gap:8px}.national-event small{grid-column:2}
   .selected-day-panel{margin:0 0 12px}
+  .calendar-grid{grid-template-rows:auto repeat(6,66px)}
+  .calendar-day{height:66px!important;max-height:66px!important}
 }
 @media(max-width:520px){
   .rank-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .rank-result{align-items:flex-start;flex-direction:column}.rank-result span{text-align:left}
-  .calendar-day{border-radius:13px!important}
+  .calendar-grid{grid-template-rows:auto repeat(6,54px)}
+  .calendar-day{height:54px!important;max-height:54px!important;border-radius:13px!important}
 }

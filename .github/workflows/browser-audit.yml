@@ -72,6 +72,12 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/kakao-map-audit.mjs
 
+      - name: Verify School calendar week geometry
+        if: success()
+        run: |
+          node --check scripts/school-calendar-geometry-audit.mjs
+          node scripts/school-calendar-geometry-audit.mjs
+
       - name: Capture current-date mobile and wide-touch layouts
         if: success()
         env:
@@ -83,5 +89,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browser-audit
-          path: browser-audit-artifacts
+          path: |
+            browser-audit-artifacts
+            school-calendar-audit
           retention-days: 7
