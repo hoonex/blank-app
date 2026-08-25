@@ -191,6 +191,13 @@ function touchStart(e){
 }
 function touchBy(list,id){return[...list].find(t=>t.identifier===id)}
 function touchMove(e){
+  if(pickerPress?.kind==='touch'){
+    const t=touchBy(e.touches,pickerPress.id);
+    if(t){
+      pickerPress.x=t.clientX;pickerPress.y=t.clientY;
+      if(Math.hypot(t.clientX-pickerPress.sx,t.clientY-pickerPress.sy)>10)clearPickerPress();
+    }
+  }
   if(press?.kind==='touch'){
     const t=touchBy(e.touches,press.id);
     if(t){
@@ -204,6 +211,7 @@ function touchMove(e){
   }
 }
 function touchEnd(e){
+  if(pickerPress?.kind==='touch'&&touchBy(e.changedTouches,pickerPress.id))clearPickerPress();
   if(press?.kind==='touch'&&touchBy(e.changedTouches,press.id))clearPress();
   if(drag?.input==='touch'&&touchBy(e.changedTouches,drag.id)){e.preventDefault();e.stopPropagation();settle()}
 }
@@ -238,7 +246,10 @@ function upgradePicker(){
     sheet.insertBefore(label,box);input=$('#widgetPickerSearch',sheet);input.addEventListener('input',renderPicker);
   }
   if(box.dataset.homeGalleryBound!=='1'){
-    box.dataset.homeGalleryBound='1';box.addEventListener('click',pickerClick);box.addEventListener('pointerdown',pickerDown);
+    box.dataset.homeGalleryBound='1';
+    box.addEventListener('click',pickerClick);
+    box.addEventListener('pointerdown',pickerDown);
+    box.addEventListener('touchstart',pickerTouchStart,{passive:true});
   }
   renderPicker();
 }
@@ -274,26 +285,41 @@ function pickerVisualRect(el,x,y){
   const top=Math.max(8,Math.min(innerHeight-height-8,y-Math.min(height*.34,62)));
   return{left,top,width,height,right:left+width,bottom:top+height};
 }
+function liftPickerWidget(existing,p,input,id){
+  const list=p.b.parentElement;if(list)list.dataset.suppressUntil=String(Date.now()+550);
+  try{navigator.vibrate?.(14)}catch{}
+  const el=existing.classList.contains('widget-hidden')?showWidget(p.id):existing;
+  $('#widgetPicker')?.close();
+  if(!ensureEditing()||!el)return clearPickerPress();
+  const visual=pickerVisualRect(el,p.x,p.y);
+  const started=beginDrag(el,p.x,p.y,input,id,visual);
+  if(started)el.dataset.pickerLifted='1';
+  clearPickerPress();
+}
 function pickerDown(e){
+  if(e.pointerType==='touch')return;
   const b=e.target.closest?.('[data-picker-id]');if(!b||e.button!==0)return;
   const existing=grid()?.querySelector(`[data-widget-id="${CSS.escape(b.dataset.pickerId)}"]`);if(!existing)return;
   clearPickerPress();
-  pickerPress={b,id:b.dataset.pickerId,pid:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{
-    const p=pickerPress;if(!p)return;
-    const list=p.b.parentElement;if(list)list.dataset.suppressUntil=String(Date.now()+550);
-    try{navigator.vibrate?.(14)}catch{}
-    const el=existing.classList.contains('widget-hidden')?showWidget(p.id):existing;
-    $('#widgetPicker')?.close();
-    if(!ensureEditing()||!el)return clearPickerPress();
-    const visual=pickerVisualRect(el,p.x,p.y);
-    const started=beginDrag(el,p.x,p.y,'pointer',p.pid,visual);
-    if(started)el.dataset.pickerLifted='1';
-    clearPickerPress();
+  pickerPress={kind:'pointer',b,id:b.dataset.pickerId,inputId:e.pointerId,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,timer:setTimeout(()=>{
+    const p=pickerPress;if(!p||p.kind!=='pointer')return;
+    liftPickerWidget(existing,p,'pointer',p.inputId);
+  },PICKER_HOLD_MS)};
+}
+function pickerTouchStart(e){
+  if(e.touches.length!==1)return;
+  const b=e.target.closest?.('[data-picker-id]');if(!b)return;
+  const existing=grid()?.querySelector(`[data-widget-id="${CSS.escape(b.dataset.pickerId)}"]`);if(!existing)return;
+  const t=e.touches[0];clearPickerPress();
+  pickerPress={kind:'touch',b,id:t.identifier,pickerId:b.dataset.pickerId,x:t.clientX,y:t.clientY,sx:t.clientX,sy:t.clientY,timer:setTimeout(()=>{
+    const p=pickerPress;if(!p||p.kind!=='touch')return;
+    p.id=p.pickerId;
+    liftPickerWidget(existing,p,'touch',t.identifier);
   },PICKER_HOLD_MS)};
 }
 function clearPickerPress(){if(!pickerPress)return;clearTimeout(pickerPress.timer);pickerPress=null}
-function pickerMove(e){if(pickerPress&&e.pointerId===pickerPress.pid&&Math.hypot(e.clientX-pickerPress.x,e.clientY-pickerPress.y)>10)clearPickerPress()}
-function pickerEnd(e){if(pickerPress&&e.pointerId===pickerPress.pid)clearPickerPress()}
+function pickerMove(e){if(pickerPress?.kind==='pointer'&&e.pointerId===pickerPress.inputId&&Math.hypot(e.clientX-pickerPress.sx,e.clientY-pickerPress.sy)>10)clearPickerPress()}
+function pickerEnd(e){if(pickerPress?.kind==='pointer'&&e.pointerId===pickerPress.inputId)clearPickerPress()}
 
 function init(){
   ensureStyle();polishEditorBar();
