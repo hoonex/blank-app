@@ -26,7 +26,8 @@ jobs:
           node --check tests/optical-ambient-scroll-audit.mjs
           test ! -f flow-optical-ambient.css
           ! grep -q 'DeviceOrientationEvent' flow-optical-ambient.js
-          ! grep -q 'flow-optical-jelly' flow-optical-ambient.js
+          ! grep -q 'requestAnimationFrame' flow-optical-ambient.js
+          ! grep -q 'pointermove' flow-optical-ambient.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
