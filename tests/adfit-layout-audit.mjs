@@ -25,8 +25,16 @@ async function fixtures(page,app,configured=true){
   if(configured)await page.addInitScript(({app})=>{window.__FLOW_ADFIT_CONFIG={[app]:{unit:`DAN-test-${app}`,width:320,height:100}}},{app});
   if(app==='school'){
     const school={officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 반야월북로 199',homepage:'https://jungdong.dge.hs.kr'};
-    const timetable=Array.from({length:7},(_,i)=>({date:'20260825',period:i+1,subject:['국어','수학','영어Ⅱ','화학','미적분','정보','체육'][i]}));
-    await page.route('**/functions/v1/school-data**',route=>{const action=new URL(route.request().url()).searchParams.get('action');if(action==='dashboard')return json(route,{school,selected:'20260825',from:'20260824',to:'20260828',timetable,meals:[{date:'20260825',type:'중식',menu:['현미밥','미역국','닭갈비'],calories:'720 Kcal'}],events:[{date:'20260827',name:'동아리 활동'}],scheduleMeta:{mode:'fixture',count:1}});if(action==='media')return json(route,{media:{},homepage:school.homepage});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6']});return json(route,{})});
+    const timetable=Array.from({length:7},(_,i)=>({date:'20260825',period:i+1,subject:['국어','수학','영어Ⅱ','화학','미적분','정보','체육'][i],grade:'2',className:'6'}));
+    await page.route('**/functions/v1/school-data**',route=>{
+      const action=new URL(route.request().url()).searchParams.get('action');
+      if(action==='dashboard')return json(route,{school,selected:'20260825',from:'20260824',to:'20260828',timetable,meals:[{date:'20260825',type:'중식',dishes:['현미밥','미역국','닭갈비'],calories:'720 Kcal',nutrition:'탄수화물 90g\n단백질 32g',origin:'쌀 국내산\n닭고기 국내산',people:'320'}],events:[{date:'20260827',name:'동아리 활동',content:'학급별 활동',grade1:'N',grade2:'Y',grade3:'N',holidayType:''}],scheduleMeta:{mode:'fixture',count:1}});
+      if(action==='media')return json(route,{media:{hero:'',logo:''},homepage:school.homepage});
+      if(action==='place')return json(route,{provider:'kakao',place:null});
+      if(action==='classes')return json(route,{classes:['1','2','3','4','5','6']});
+      if(action==='search')return json(route,{schools:[school]});
+      return json(route,{});
+    });
     await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
     await page.addInitScript(school=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light')},school);
   }else{
@@ -50,8 +58,10 @@ async function prepare(app,width,height,configured=true){
 async function auditConfigured(app,name,width,height){
   const {context,page,consoleErrors,pageErrors}=await prepare(app,width,height,true);
   try{
-    const slot=page.locator(`.flow-adfit-slot[data-flow-adfit-kind="${app}"]`),creative=slot.locator('.flow-adfit-mock');
-    await slot.scrollIntoViewIfNeeded();await page.waitForTimeout(80);
+    const slot=page.locator(`.flow-adfit-slot[data-flow-adfit-kind="${app}"]`);
+    if(width<=900)await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+    else await slot.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(100);
     const geometry=await page.evaluate(app=>{
       const slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${app}"]`),creative=slot?.querySelector('.flow-adfit-mock'),nav=[...document.querySelectorAll('.mobile-bottom-nav,.bottom-nav')].find(node=>getComputedStyle(node).display!=='none');
       const s=slot?.getBoundingClientRect(),c=creative?.getBoundingClientRect(),n=nav?.getBoundingClientRect();
