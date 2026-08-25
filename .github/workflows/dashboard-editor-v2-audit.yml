@@ -28,6 +28,7 @@ jobs:
           node --check scripts/dashboard-editor-v2-audit.mjs
           node --check scripts/dashboard-default-composition-audit.mjs
           node --check scripts/widget-home-editing-audit.mjs
+          node --check scripts/widget-gallery-composition-audit.mjs
           node --check scripts/widget-picker-touch-audit.mjs
           node --check scripts/widget-variant-audit.mjs
           node --check scripts/memo-panel-audit.mjs
@@ -61,6 +62,7 @@ jobs:
           grep -q "pickerTouchStart" university/dashboard-home-editing.js
           grep -q "data-widget-auto-scroll" university/dashboard-home-editing.js
           grep -q "widget-picker-live-preview" university/dashboard-home-editing.js
+          grep -q "widget-picker-live-preview.next-card" university/dashboard-home-editing.css
           grep -q "grid-auto-flow:row" university/ui-unify-v2.css
           grep -q "repeat(4,minmax(0,1fr))" university/ui-unify-v2.css
           grep -q "clock:{label:'현재 시각'" university/dashboard.js
@@ -84,6 +86,8 @@ jobs:
         run: node scripts/dashboard-default-composition-audit.mjs
       - name: Run touch home editing and Campus composition audit
         run: node scripts/widget-home-editing-audit.mjs
+      - name: Verify widget gallery composition across six viewports
+        run: node scripts/widget-gallery-composition-audit.mjs
       - name: Run continuous touch drag from widget gallery audit
         run: node scripts/widget-picker-touch-audit.mjs
       - name: Run semantic widget variant audit
