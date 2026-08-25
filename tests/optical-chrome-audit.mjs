@@ -32,7 +32,7 @@ async function preparePage(app,mode,width,height){
     await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor({timeout:10000});
   }
   await page.waitForFunction(expected=>document.documentElement.dataset.flowGlassMode===expected,mode,{timeout:5000});
-  await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>{try{return new URL(sheet.href||'',location.href).pathname==='/flow-refraction.css'}catch{return false}}),null,{timeout:5000});
+  if(mode==='optical')await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>{try{return new URL(sheet.href||'',location.href).pathname==='/flow-refraction.css'}catch{return false}}),null,{timeout:5000});
   await page.waitForTimeout(180);
   return{context,page};
 }
