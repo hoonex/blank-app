@@ -70,7 +70,9 @@ await page.route('**/functions/v1/university-campus**',async route=>{
   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(fixture)});
 });
 
-await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeout:30000});
+await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded',timeout:30000});
+await page.locator('.bottom-nav [data-view="campus"]').waitFor({timeout:10000});
+await page.locator('.bottom-nav [data-view="campus"]').click();
 await page.locator('#campusView:not(.hidden)').waitFor({timeout:10000});
 await page.locator('.campus-interactive-map').waitFor({timeout:10000});
 await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:10000});
