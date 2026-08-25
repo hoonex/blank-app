@@ -76,21 +76,13 @@ jobs:
         run: |
           report=$(jq -c . production-map-audit/report.json)
           short=${GITHUB_SHA:0:7}
-          gh issue comment 14 --body "### Production campus map audit — ${short}
-
-PASS: Kakao Web Map SDK rendered on the registered production domain, including current-position route reuse.
-
-\`\`\`json
-${report}
-\`\`\`"
+          body=$(printf '### Production campus map audit — %s\n\nPASS: Kakao Web Map SDK rendered on the registered production domain, including current-position route reuse.\n\n```json\n%s\n```' "$short" "$report")
+          gh issue comment 14 --body "$body"
       - name: Log failed production map audit
         if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           short=${GITHUB_SHA:0:7}
-          gh issue comment 14 --body "### Production campus map audit — ${short}
-
-FAIL: production interactive map browser audit failed.
-
-Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body=$(printf '### Production campus map audit — %s\n\nFAIL: production interactive map browser audit failed.\n\nRun: https://github.com/%s/actions/runs/%s' "$short" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          gh issue comment 14 --body "$body"
