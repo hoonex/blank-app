@@ -1,0 +1,23 @@
+import { chromium } from 'playwright';
+import fs from 'node:fs/promises';
+
+const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173/';
+const OUT='browser-audit-artifacts';
+await fs.mkdir(OUT,{recursive:true});
+const browser=await chromium.launch({headless:true});
+const context=await browser.newContext({viewport:{width:1536,height:960},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
+const page=await context.newPage();
+await page.clock.setFixedTime(new Date('2026-08-25T13:59:00+09:00'));
+const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청'},grade:2,className:'6'};
+await page.addInitScript(({profile})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light')},{profile});
+const row=(date,period,subject)=>({date,period,subject});
+const fixture={school:profile.school,timetable:[row('20260824',1,'국어'),row('20260824',2,'수학'),row('20260824',3,'영어'),row('20260824',4,'화학'),row('20260824',5,'정보'),row('20260824',6,'체육'),row('20260824',7,'진로'),row('20260825',1,'국어'),row('20260825',2,'수학'),row('20260825',3,'영어Ⅱ')],meals:[],events:[],media:null};
+await page.route('**/functions/v1/school-data**',route=>{const url=new URL(route.request().url());if(url.searchParams.get('action')==='dashboard')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(fixture)});return route.fulfill({status:200,contentType:'application/json',body:'{}'})});
+await page.route('**/functions/v1/flow-quest-event**',route=>route.fulfill({status:204,body:''}));
+await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor({timeout:10000});await page.waitForTimeout(250);
+const state=await page.evaluate(()=>({lessons:document.querySelector('#quickLessons')?.textContent?.trim(),lessonSub:document.querySelector('#quickLessonSub')?.textContent?.trim(),clock:document.querySelector('#clockTitle')?.textContent?.trim(),clockCaption:document.querySelector('#clockCaption')?.textContent?.trim(),periods:[...document.querySelectorAll('#timetable .period-button')].map(el=>({period:el.dataset.period,subject:el.querySelector('.period-name')?.textContent?.trim()})),width:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}));
+if(state.lessons!=='7교시')throw new Error(`Effective school-day count excluded elective placeholders: ${JSON.stringify(state)}`);
+if(state.clock!=='6교시 수업 중'||!state.clockCaption.startsWith('선택과목 · '))throw new Error(`Live status ended before elective periods: ${JSON.stringify(state)}`);
+if(state.periods.length!==7||state.periods.slice(3).some(row=>row.subject!=='선택과목'))throw new Error(`Elective placeholders missing from timetable: ${JSON.stringify(state.periods)}`);
+if(state.scrollWidth>state.width+2)throw new Error(`Horizontal overflow: ${JSON.stringify(state)}`);
+await page.screenshot({path:`${OUT}/school-elective-status.png`,fullPage:false});console.log(JSON.stringify(state,null,2));await browser.close();
