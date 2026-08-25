@@ -84,6 +84,14 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/mobile-school-info-audit.mjs
 
+      - name: Verify elective School day status
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check tests/school-elective-status-audit.mjs
+          node tests/school-elective-status-audit.mjs
+
       - name: Verify school logo fallback request budget
         if: success()
         env:

@@ -182,10 +182,10 @@ function nextEventText(){const e=nextEvents()[0];if(!e)return'예정 없음';con
 function nationalFor(){return isHigh()?NATIONAL_2026.filter(e=>e.grades.includes(grade())):[]}
 function nationalOn(date=selectedDate){return nationalFor().filter(e=>e.date===isoDate(date))}
 function rawRowsForDate(date=selectedDate){return (data?.timetable||[]).filter(x=>x.date===ymd(date)).sort((a,b)=>Number(a.period)-Number(b.period))}
-function maxPeriodWeek(){const dates=new Set(weekDates().map(ymd));return Math.max(0,...(data?.timetable||[]).filter(r=>dates.has(r.date)).map(r=>Number(r.period)||0))}
+function maxPeriodWeek(date=selectedDate){const dates=new Set(weekDates(date).map(ymd));return Math.max(0,...(data?.timetable||[]).filter(r=>dates.has(r.date)).map(r=>Number(r.period)||0))}
 function specialEvent(date=selectedDate){return eventsOn(date).find(e=>/(공휴일|휴업|방학|개교기념|재량휴업|졸업|입학)/.test(e.name||''))||null}
 function specialRowsLabel(rows){const names=rows.map(r=>String(r.subject||'').trim()).filter(Boolean);if(!names.length)return'';const specials=names.filter(n=>/(공휴일|휴업|방학|개교기념|재량휴업)/.test(n));if(specials.length!==names.length)return'';const counts=new Map();for(const n of specials)counts.set(n,(counts.get(n)||0)+1);return [...counts.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||''}
-function dayRows(date=selectedDate){const rows=rawRowsForDate(date);if(!rows.length)return[];const max=Math.max(...rows.map(r=>Number(r.period)||0),maxPeriodWeek());return Array.from({length:max},(_,i)=>rows.find(r=>Number(r.period)===i+1)||{date:ymd(date),period:i+1,subject:'',synthetic:true})}
+function dayRows(date=selectedDate){const rows=rawRowsForDate(date);if(!rows.length)return[];const max=Math.max(...rows.map(r=>Number(r.period)||0),maxPeriodWeek(date));return Array.from({length:max},(_,i)=>rows.find(r=>Number(r.period)===i+1)||{date:ymd(date),period:i+1,subject:'',synthetic:true})}
 function overrideMap(){return readJson(OVERRIDE_KEY,{})}
 function overrideId(row){return `${profile?.school?.schoolCode||''}:${profile?.grade||''}:${profile?.className||''}:${weekdayIndex(row.date)}:${row.period}`}
 function subjectFor(row){const overridden=overrideMap()[overrideId(row)];if(overridden)return overridden;if(String(row.subject||'').trim())return row.subject;return isHigh()?'선택과목':'—'}
@@ -193,8 +193,8 @@ function setSubjectOverride(row,subject){const all=overrideMap(),id=overrideId(r
 
 function renderHero(){
   renderIdentity();const today=sameDay(selectedDate,new Date());$('#heroEyebrow').textContent=today?'TODAY':'SELECTED DATE';$('#heroDate').textContent=today?'오늘':koDate(selectedDate,false);$('#dateTitle').textContent=koDate(selectedDate);$('#datePicker').value=isoDate(selectedDate);
-  const rows=rawRowsForDate(),special=specialRowsLabel(rows)||specialEvent()?.name||'',meals=(data?.meals||[]).filter(x=>x.date===ymd(selectedDate));
-  $('#quickLessons').textContent=special?'—':rows.length?`${rows.length}교시`:'—';$('#quickLessonSub').textContent=special||rows[0]?.subject||'시간표 없음';
+  const raw=rawRowsForDate(),rows=dayRows(),special=specialRowsLabel(raw)||specialEvent()?.name||'',meals=(data?.meals||[]).filter(x=>x.date===ymd(selectedDate));
+  $('#quickLessons').textContent=special?'—':rows.length?`${rows.length}교시`:'—';$('#quickLessonSub').textContent=special||(rows[0]?subjectFor(rows[0]):'시간표 없음');
   const lunch=bellConfig().meal||'12:20';$('#quickMeal').textContent=meals.length?meals.map(m=>m.type).join(' · '):'급식 없음';$('#quickMealSub').textContent=meals.length?[lunch,meals[0]?.calories].filter(Boolean).join(' · '):'오늘 제공 없음';$('#quickEvent').textContent=nextEventText();$('#quickEventSub').textContent=nextEvents()[0]?fmtDate8(nextEvents()[0].date):'등록된 일정 없음';
   const diff=daysBetween(new Date(),CSAT_DATE);$('#csatDday').textContent=diff>=0?`D-${diff}`:'종료';renderClock();
 }
@@ -236,7 +236,7 @@ function renderWeek(){
   const dayMeta=days.map(d=>{const raw=rawRowsForDate(d);return{raw,special:specialRowsLabel(raw)||(!raw.length?specialEvent(d)?.name:'')}});
   for(let p=1;p<=max;p++){
     cells.push(`<div class="week-cell week-period">${p}</div>`);
-    days.forEach((d,i)=>{const meta=dayMeta[i];let subject='—';if(meta.special)subject=p===1?meta.special:'—';else if(meta.raw.length){const raw=meta.raw.find(r=>Number(r.period)===p),row=raw||{date:ymd(d),period:p,subject:'',synthetic:true};subject=subjectFor(row)}cells.push(`<div class="week-cell"><div class="week-subject${subject==='선택과목'?' elective':''}${subject==='—'?' is-empty':''}">${esc(subject)}</div></div>`)});
+    days.forEach((d,i)=>{const meta=dayMeta[i];let subject='—';if(meta.special)subject=p===1?meta.special:'—';else if(meta.raw.length){const raw=meta.raw.find(r=>Number(r.period)===p),row=raw||{date:ymd(d),period:p,subject:'',synthetic:true};subject=subjectFor(row)}cells.push(`<div class="week-cell"><div class="week-subject${subject==='선택과목'?' elective':''}${subject==='—'?' is-empty':''}">${esc(subject)}</div></div>`)})
   }
   $('#weekTable').innerHTML=cells.join('');
 }
@@ -267,8 +267,8 @@ function renderSchoolInfo(){
 function bellDefaults(){const kind=profile?.school?.kind||'';if(kind.includes('초등'))return{start:'09:00',lesson:40,break:10,meal:'12:10'};if(kind.includes('중학'))return{start:'09:00',lesson:45,break:10,meal:'12:20'};return{start:'08:30',lesson:50,break:10,meal:'12:20'}}
 function bellConfig(){return{...bellDefaults(),...readJson(BELL_KEY,{})}}
 function renderClock(){
-  if(!profile||currentView!=='today')return;const rows=rawRowsForDate(new Date()),cfg=bellConfig(),[h,m]=String(cfg.start).split(':').map(Number),now=new Date(),start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h||8,m||30),lesson=Number(cfg.lesson)||50,brk=Number(cfg.break)||10,total=lesson+brk,mins=(now-start)/60000,lessons=rows.length||Math.max(maxPeriodWeek(),7);let title='수업 전',caption=`1교시 ${cfg.start} 시작`,progress=0;
-  if(now.getDay()===0||now.getDay()===6){title='주말';caption='오늘은 정규 수업이 없습니다.'}else if(mins<0){caption=`1교시까지 ${Math.max(1,Math.ceil(-mins))}분`}else{const idx=Math.floor(mins/total),inside=mins-idx*total;if(idx>=lessons){title='오늘 수업 종료';caption='오늘도 수고했어요.';progress=100}else if(inside<lesson){title=`${idx+1}교시 수업 중`;const row=rows.find(r=>Number(r.period)===idx+1);caption=row?.subject?`${subjectFor(row)} · ${Math.ceil(lesson-inside)}분 남음`:`${Math.ceil(lesson-inside)}분 남음`;progress=Math.max(0,Math.min(100,inside/lesson*100))}else{title=`${idx+1}교시 후 쉬는 시간`;caption=`다음 수업까지 ${Math.ceil(total-inside)}분`;progress=100}}
+  if(!profile||currentView!=='today')return;const now=new Date(),rows=dayRows(now),cfg=bellConfig(),[h,m]=String(cfg.start).split(':').map(Number),start=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h||8,m||30),lesson=Number(cfg.lesson)||50,brk=Number(cfg.break)||10,total=lesson+brk,mins=(now-start)/60000,lessons=rows.length||Math.max(maxPeriodWeek(now),7);let title='수업 전',caption=`1교시 ${cfg.start} 시작`,progress=0;
+  if(now.getDay()===0||now.getDay()===6){title='주말';caption='오늘은 정규 수업이 없습니다.'}else if(mins<0){caption=`1교시까지 ${Math.max(1,Math.ceil(-mins))}분`}else{const idx=Math.floor(mins/total),inside=mins-idx*total;if(idx>=lessons){title='오늘 수업 종료';caption='오늘도 수고했어요.';progress=100}else if(inside<lesson){title=`${idx+1}교시 수업 중`;const row=rows.find(r=>Number(r.period)===idx+1);caption=row?`${subjectFor(row)} · ${Math.ceil(lesson-inside)}분 남음`:`${Math.ceil(lesson-inside)}분 남음`;progress=Math.max(0,Math.min(100,inside/lesson*100))}else{title=`${idx+1}교시 후 쉬는 시간`;caption=`다음 수업까지 ${Math.ceil(total-inside)}분`;progress=100}}
   $('#clockTitle').textContent=title;$('#clockCaption').textContent=`${caption} · 예상 타종`;$('#clockProgress').style.width=`${progress}%`;
 }
 function renderSettings(){const cfg=bellConfig();$('#bellStart').value=cfg.start;$('#lessonMinutes').value=cfg.lesson;$('#breakMinutes').value=cfg.break;if($('#mealStart'))$('#mealStart').value=cfg.meal||'12:20';applyTheme()}
