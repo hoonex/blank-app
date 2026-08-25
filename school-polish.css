@@ -223,5 +223,5 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
   .school-info-grid:has(>.info-tile:nth-child(2n+1):last-child)>.info-tile:last-child{grid-column:4/span 6!important}
 }
 @media(max-width:520px){
-  .school-info-grid>.info-tile{grid-column:1/-1!important}
+  #schoolInfoGrid>.info-tile{grid-column:1/-1!important}
 }
