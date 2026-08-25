@@ -23,32 +23,49 @@
     </header>
 
     <section class="login-panel" id="loginPanel">
-      <span class="eyebrow">PRIVATE CONTROL PLANE</span>
-      <h1>관리자 인증</h1>
-      <p>Flow 전용 관리자 아이디와 비밀번호로 로그인합니다. 한 번 로그인하면 이 기기에서는 세션이 자동으로 유지·갱신됩니다.</p>
-      <form id="passwordForm" class="auth-form">
-        <label for="usernameInput">관리자 아이디</label>
-        <div class="auth-row"><input id="usernameInput" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="flowadmin"></div>
-        <label for="passwordInput">비밀번호</label>
-        <div class="auth-row"><input id="passwordInput" type="password" autocomplete="current-password" required placeholder="비밀번호"><button type="submit">로그인</button></div>
-      </form>
-      <form id="setupForm" class="auth-form hidden">
-        <label for="newPasswordInput">새 Flow 관리자 비밀번호</label>
-        <div class="auth-row"><input id="newPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="10자 이상"><button type="submit">비밀번호 설정</button></div>
-        <label for="confirmPasswordInput">비밀번호 확인</label>
-        <div class="auth-row"><input id="confirmPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="한 번 더 입력"></div>
-      </form>
-      <p class="setup-hint hidden" id="setupHint">이 링크는 1회용입니다. 여기서 비밀번호를 정하면 이후에는 <strong>flowadmin + 비밀번호</strong>만 사용합니다.</p>
-      <p class="auth-status" id="authStatus" role="status"></p>
+      <div class="login-identity" aria-hidden="true">
+        <span class="eyebrow">FLOW CONTROL</span>
+        <h1>운영 상태를<br>한 화면에서.</h1>
+        <p>School과 University, 데이터 계층과 외부 연결 상태를 한 곳에서 확인하는 Flow 전용 운영 콘솔입니다.</p>
+        <div class="login-scope">
+          <span>School</span><span>University</span><span>Backend</span>
+        </div>
+      </div>
+      <div class="login-card">
+        <span class="eyebrow">PRIVATE CONTROL PLANE</span>
+        <h2>관리자 인증</h2>
+        <p>Flow 전용 관리자 아이디와 비밀번호로 로그인합니다. 이 기기에서는 유효한 관리자 세션을 안전하게 유지·갱신합니다.</p>
+        <form id="passwordForm" class="auth-form">
+          <label for="usernameInput">관리자 아이디</label>
+          <div class="auth-row"><input id="usernameInput" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="flowadmin"></div>
+          <label for="passwordInput">비밀번호</label>
+          <div class="auth-row"><input id="passwordInput" type="password" autocomplete="current-password" required placeholder="비밀번호"><button type="submit">로그인</button></div>
+        </form>
+        <form id="setupForm" class="auth-form hidden">
+          <label for="newPasswordInput">새 Flow 관리자 비밀번호</label>
+          <div class="auth-row"><input id="newPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="10자 이상"><button type="submit">비밀번호 설정</button></div>
+          <label for="confirmPasswordInput">비밀번호 확인</label>
+          <div class="auth-row"><input id="confirmPasswordInput" type="password" autocomplete="new-password" minlength="10" required placeholder="한 번 더 입력"></div>
+        </form>
+        <p class="setup-hint hidden" id="setupHint">이 링크는 1회용입니다. 여기서 비밀번호를 정하면 이후에는 <strong>flowadmin + 비밀번호</strong>만 사용합니다.</p>
+        <p class="auth-status" id="authStatus" role="status"></p>
+      </div>
     </section>
 
     <section class="dashboard hidden" id="dashboard" aria-live="polite">
-      <section class="summary-head">
-        <div><span class="eyebrow">OPERATIONS</span><h1>Flow 상태</h1><p id="generatedAt">운영 데이터를 불러오는 중</p></div>
+      <section class="summary-head" id="overview">
+        <div class="summary-copy"><span class="eyebrow">OPERATIONS</span><h1>Flow 운영 콘솔</h1><p id="generatedAt">운영 데이터를 불러오는 중</p></div>
         <div class="dashboard-actions"><select id="windowSelect" aria-label="조회 기간"><option value="1">1시간</option><option value="24" selected>24시간</option><option value="168">7일</option></select><button class="ghost" id="refreshBtn" type="button">새로고침</button><button id="probeBtn" type="button">API 상태 검사</button></div>
       </section>
 
-      <section class="metric-grid">
+      <nav class="section-nav" aria-label="관리자 화면 바로가기">
+        <a href="#overview">개요</a>
+        <a href="#architecture">전체 구조도</a>
+        <a href="#integrations">연결 서비스</a>
+        <a href="#health">상태 검사</a>
+      </nav>
+
+      <section class="metric-grid" aria-label="운영 요약">
         <article class="metric"><span>이벤트</span><strong id="totalEvents">—</strong><small id="windowLabel">최근 24시간</small></article>
         <article class="metric"><span>익명 기기</span><strong id="uniqueAnonymous">—</strong><small>집계값만 표시</small></article>
         <article class="metric"><span>등록 프로필</span><strong id="registeredProfiles">—</strong><small>Flow Auth</small></article>
@@ -66,19 +83,69 @@
         </article>
       </section>
 
-      <section class="panel inventory-panel">
-        <div class="panel-head"><div><span class="eyebrow">API &amp; INTEGRATIONS</span><h2>Flow 연결 서비스</h2><p>최근 호출 여부와 무관하게 Flow가 코드상 연결한 API·인프라·운영 서비스를 항상 표시합니다.</p></div><span class="panel-meta" id="inventoryMeta">—</span></div>
+      <section class="panel architecture-panel" id="architecture">
+        <div class="panel-head architecture-head"><div><span class="eyebrow">SYSTEM MAP</span><h2>Flow 전체 구조도</h2><p>현재 제품 코드 기준의 주요 경로입니다. 실제 연결 목록과 서버 상태는 아래 운영 데이터에서 별도로 확인합니다.</p></div><span class="panel-meta">4 layers</span></div>
+        <div class="architecture-map" aria-label="Flow 시스템 구조도">
+          <section class="architecture-stage architecture-products">
+            <div class="stage-label"><span>01</span><strong>Products</strong><small>사용자 화면</small></div>
+            <div class="stage-nodes">
+              <article class="architecture-node"><strong>Flow School</strong><span>시간표 · 급식 · 학사 · 학교 정보</span></article>
+              <article class="architecture-node"><strong>Flow University</strong><span>오늘 · 시간표 · 캠퍼스 · 학교 정보</span></article>
+              <article class="architecture-node"><strong>Flow Admin</strong><span>운영 집계 · 연결 현황 · Health</span></article>
+            </div>
+          </section>
+          <div class="architecture-connector" aria-hidden="true"><span>HTTPS</span></div>
+          <section class="architecture-stage architecture-edge">
+            <div class="stage-label"><span>02</span><strong>Flow Edge</strong><small>서버 기능</small></div>
+            <div class="stage-nodes compact">
+              <article class="architecture-node"><strong>school-data</strong><span>학교 데이터</span></article>
+              <article class="architecture-node"><strong>university-data</strong><span>대학 데이터</span></article>
+              <article class="architecture-node"><strong>university-campus</strong><span>캠퍼스/장소</span></article>
+              <article class="architecture-node"><strong>flow-admin</strong><span>관리자 인증/집계</span></article>
+            </div>
+          </section>
+          <div class="architecture-connector" aria-hidden="true"><span>API</span></div>
+          <section class="architecture-stage architecture-platform">
+            <div class="stage-label"><span>03</span><strong>Platform</strong><small>인증 · 데이터</small></div>
+            <div class="stage-nodes">
+              <article class="architecture-node"><strong>Supabase Auth</strong><span>사용자/관리자 세션</span></article>
+              <article class="architecture-node"><strong>Postgres / PostgREST</strong><span>프로필 · 이벤트 · 운영 집계</span></article>
+              <article class="architecture-node"><strong>Edge Functions</strong><span>Flow 서버리스 실행 계층</span></article>
+            </div>
+          </section>
+          <div class="architecture-connector" aria-hidden="true"><span>DATA</span></div>
+          <section class="architecture-stage architecture-external">
+            <div class="stage-label"><span>04</span><strong>External</strong><small>공공/외부 데이터</small></div>
+            <div class="stage-nodes compact">
+              <article class="architecture-node"><strong>NEIS</strong><span>학교 · 시간표 · 급식</span></article>
+              <article class="architecture-node"><strong>Kakao</strong><span>지도 · 장소 · 이미지 · 경로</span></article>
+              <article class="architecture-node"><strong>대학 공공데이터</strong><span>학과 · 등록금 · 교육여건</span></article>
+              <article class="architecture-node"><strong>Everytime Public</strong><span>공개 시간표 import</span></article>
+            </div>
+          </section>
+        </div>
+        <div class="operations-lane" aria-label="운영 및 배포 계층">
+          <div><span class="lane-kicker">OPERATIONS</span><strong>GitHub</strong><small>source · PR</small></div>
+          <span class="lane-arrow" aria-hidden="true">→</span>
+          <div><strong>GitHub Actions</strong><small>CI · browser audits</small></div>
+          <span class="lane-arrow" aria-hidden="true">→</span>
+          <div><strong>Cloudflare</strong><small>static routes · worker</small></div>
+        </div>
+      </section>
+
+      <section class="panel inventory-panel" id="integrations">
+        <div class="panel-head"><div><span class="eyebrow">API &amp; INTEGRATIONS</span><h2>Flow 연결 서비스</h2><p>최근 호출 여부와 무관하게 Flow가 코드상 연결한 API·인프라·운영 서비스를 표시합니다.</p></div><span class="panel-meta" id="inventoryMeta">—</span></div>
         <div class="inventory-list" id="inventoryList"></div>
       </section>
 
-      <section class="panel health-panel">
+      <section class="panel health-panel" id="health">
         <div class="panel-head"><div><span class="eyebrow">API HEALTH</span><h2>최근 서버 상태 검사</h2><p>자동 polling 없이 관리자가 버튼을 눌렀을 때만 실제 upstream 경로를 검사합니다.</p></div><span class="panel-meta" id="probeMeta">—</span></div>
         <div class="health-table" id="probeList"></div>
       </section>
 
       <section class="security-note">
-        <strong>Security boundary</strong>
-        <p>관리자 로그인 비밀번호는 Supabase Auth가 해시·관리하며 Flow DB나 GitHub에는 평문으로 저장되지 않습니다. 최초 설정 링크는 1회 사용 후 폐기되고, 브라우저에는 관리자 세션만 저장됩니다.</p>
+        <div class="security-mark" aria-hidden="true">S</div>
+        <div><strong>Security boundary</strong><p>관리자 로그인 비밀번호는 Supabase Auth가 해시·관리하며 Flow DB나 GitHub에는 평문으로 저장되지 않습니다. 최초 설정 링크는 1회 사용 후 폐기되고, 브라우저에는 관리자 세션만 저장됩니다.</p></div>
       </section>
     </section>
   </main>
