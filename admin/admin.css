@@ -167,6 +167,22 @@ a{color:inherit}
   .login-identity{display:none}
   .login-card{padding:clamp(24px,6vw,38px)}
 }
+@media(max-height:520px) and (min-width:700px){
+  .admin-shell{padding-top:6px}
+  .admin-topbar{min-height:44px}
+  .login-panel{max-width:760px;margin:4px auto 0;grid-template-columns:minmax(0,.8fr) minmax(400px,1.2fr);border-radius:18px}
+  .login-identity{min-height:0;padding:18px 22px}
+  .login-identity h1{margin:8px 0 10px;font-size:2rem;line-height:.96}
+  .login-identity p{font-size:.68rem;line-height:1.45}
+  .login-scope{display:none}
+  .login-card{padding:16px 22px}
+  .login-card h2{font-size:1.5rem;margin:6px 0}
+  .login-card>p{font-size:.68rem;line-height:1.4}
+  .auth-form{gap:4px;margin-top:12px}
+  .auth-form label{font-size:.66rem}
+  .auth-row input{padding:8px 11px}
+  .auth-status{margin:7px 0 0!important;font-size:.68rem!important}
+}
 @media(max-width:520px){
   .admin-topbar{min-height:52px}
   .dashboard{padding-top:22px}
