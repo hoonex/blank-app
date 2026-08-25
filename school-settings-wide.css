@@ -1,0 +1,40 @@
+/* Wide-screen composition for the dedicated Flow School settings view. */
+@media (min-width:1100px){
+  #flowSchoolSettingsView .flow-settings-stack{
+    max-width:none;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    align-items:stretch;
+  }
+  #flowSchoolSettingsView .flow-settings-card{
+    min-width:0;
+    height:100%;
+  }
+  #flowSchoolSettingsView .flow-settings-card:nth-child(1){
+    grid-column:1/span 3;
+    grid-row:1;
+  }
+  #flowSchoolSettingsView .flow-settings-card:nth-child(2){
+    grid-column:4/-1;
+    grid-row:1;
+  }
+  #flowSchoolSettingsView .flow-settings-card:nth-child(3){
+    grid-column:1/span 3;
+    grid-row:2;
+  }
+  #flowSchoolSettingsView .flow-settings-card:nth-child(4){
+    grid-column:4/-1;
+    grid-row:2;
+  }
+  #flowSchoolSettingsView .flow-settings-card:nth-child(5){
+    grid-column:1/span 2;
+    grid-row:3;
+  }
+  #flowSchoolSettingsView .flow-settings-save ~ .flow-settings-card{
+    grid-column:3/-1;
+    grid-row:3;
+  }
+  #flowSchoolSettingsView .flow-settings-save{
+    grid-column:1/-1;
+    grid-row:4;
+  }
+}
