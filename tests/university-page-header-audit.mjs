@@ -49,6 +49,7 @@ async function inspect(page,view){
     const labelNodes=[...panel.querySelectorAll('.kicker,.campus-section-label,.campus-nearby-quick-copy > span')];
     const visibleEnglishLabels=labelNodes.filter(node=>getComputedStyle(node).display!=='none'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0).map(node=>node.textContent.trim()).filter(Boolean);
     const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+    const tools=v==='campus'?panel.querySelector('#campusHeaderTools'):null;
     const nearby=v==='campus'?panel.querySelector('.campus-nearby-quick'):null;
     const filter=v==='campus'?panel.querySelector('#campusFilter'):null;
     const filterButtons=filter?[...filter.querySelectorAll('button')].filter(node=>getComputedStyle(node).display!=='none').map(rect):[];
@@ -61,6 +62,7 @@ async function inspect(page,view){
       actionRect:rect(action),
       buttonRects:visibleButtons.map(rect),
       visibleEnglishLabels,
+      toolsRect:rect(tools),
       nearbyRect:rect(nearby),
       filterRect:rect(filter),
       filterButtons,
@@ -80,31 +82,43 @@ function validateViewport(name,states){
     if(state.actionRect.right>state.clientWidth+1)throw new Error(`${name}/${state.view}: action escapes viewport ${JSON.stringify(state)}`);
     if(state.buttonRects.some(r=>r.height<39))throw new Error(`${name}/${state.view}: page action height is inconsistent/undersized ${JSON.stringify(state.buttonRects)}`);
     if(state.view==='campus'){
-      if(!state.nearbyRect||!state.filterRect||state.filterButtons.length!==4)throw new Error(`${name}/campus: Nearby composition missing ${JSON.stringify(state)}`);
-      const widths=state.filterButtons.map(r=>r.width),spread=Math.max(...widths)-Math.min(...widths);
-      const leftGap=state.filterButtons[0].left-state.filterRect.left,rightGap=state.filterRect.right-state.filterButtons.at(-1).right;
+      if(!state.toolsRect||!state.nearbyRect||!state.filterRect||state.filterButtons.length!==4)throw new Error(`${name}/campus: contextual toolbar is missing ${JSON.stringify(state)}`);
+      const widths=state.filterButtons.map(r=>r.width),widthSpread=Math.max(...widths)-Math.min(...widths);
       if(name==='mobile-portrait'){
-        if(state.filterRect.width<state.nearbyRect.width*.94)throw new Error(`${name}/campus: filter does not fill Nearby control ${JSON.stringify({nearby:state.nearbyRect,filter:state.filterRect})}`);
-        if(spread>3)throw new Error(`${name}/campus: filter cells are not equal width ${JSON.stringify(widths)}`);
-        if(leftGap>2||rightGap>2)throw new Error(`${name}/campus: ghost space remains around filter cells ${JSON.stringify({leftGap,rightGap,filter:state.filterRect,buttons:state.filterButtons})}`);
+        const leftGap=state.filterButtons[0].left-state.filterRect.left,rightGap=state.filterRect.right-state.filterButtons.at(-1).right;
+        if(state.filterRect.width<state.nearbyRect.width*.94)throw new Error(`${name}/campus: filter does not fill the portrait Nearby control ${JSON.stringify({nearby:state.nearbyRect,filter:state.filterRect})}`);
+        if(widthSpread>3)throw new Error(`${name}/campus: portrait filter cells are not equal width ${JSON.stringify(widths)}`);
+        if(leftGap>2||rightGap>2)throw new Error(`${name}/campus: ghost space remains around portrait filter cells ${JSON.stringify({leftGap,rightGap,filter:state.filterRect,buttons:state.filterButtons})}`);
+      }else{
+        const railGap=state.actionRect.left-state.nearbyRect.right;
+        const topDelta=Math.abs(state.actionRect.top-state.nearbyRect.top);
+        const heightDelta=Math.abs(state.actionRect.height-state.nearbyRect.height);
+        if(railGap<4||railGap>18)throw new Error(`${name}/campus: related toolbar controls are visually disconnected ${JSON.stringify({railGap,nearby:state.nearbyRect,refresh:state.actionRect})}`);
+        if(topDelta>3||heightDelta>5)throw new Error(`${name}/campus: Nearby and refresh do not read as one command rail ${JSON.stringify({topDelta,heightDelta,nearby:state.nearbyRect,refresh:state.actionRect})}`);
+        if(state.nearbyRect.width>Math.min(470,state.headerRect.width*.65))throw new Error(`${name}/campus: Nearby surface is oversized relative to its content ${JSON.stringify({nearby:state.nearbyRect,header:state.headerRect})}`);
+        if(Math.min(...widths)<60||Math.max(...widths)>92||widthSpread>3)throw new Error(`${name}/campus: filter choices are stretched instead of content-sized ${JSON.stringify(widths)}`);
+        if(Math.abs(state.nearbyRect.left-state.titleRect.left)>3)throw new Error(`${name}/campus: contextual toolbar does not align with page copy ${JSON.stringify({title:state.titleRect,nearby:state.nearbyRect})}`);
       }
     }
   }
-  const titleLefts=states.map(x=>x.titleRect.left),titleTops=states.map(x=>x.titleRect.top),actionRights=states.map(x=>x.actionRect.right);
+  const titleLefts=states.map(x=>x.titleRect.left),titleTops=states.map(x=>x.titleRect.top);
+  const standardActions=states.filter(x=>x.view!=='campus').map(x=>x.actionRect.right);
   const spread=values=>Math.max(...values)-Math.min(...values);
   if(spread(titleLefts)>3)throw new Error(`${name}: title left edge drift ${JSON.stringify(titleLefts)}`);
   if(spread(titleTops)>4)throw new Error(`${name}: title top baseline drift ${JSON.stringify(titleTops)}`);
-  if(spread(actionRights)>4)throw new Error(`${name}: page actions do not share the same right edge ${JSON.stringify(actionRights)}`);
+  if(standardActions.length>1&&spread(standardActions)>4)throw new Error(`${name}: global page actions do not share the same right edge ${JSON.stringify(standardActions)}`);
 }
 
 const browser=await chromium.launch({headless:true});
 const cases=[
-  {name:'mobile-portrait',viewport:{width:390,height:844}},
-  {name:'mobile-landscape',viewport:{width:844,height:390}},
+  {name:'mobile-portrait',viewport:{width:390,height:844},isMobile:true,hasTouch:true},
+  {name:'mobile-landscape',viewport:{width:844,height:390},isMobile:true,hasTouch:true},
+  {name:'tablet-landscape',viewport:{width:1024,height:768},isMobile:true,hasTouch:true},
+  {name:'desktop-1366',viewport:{width:1366,height:768},isMobile:false,hasTouch:false},
 ];
 const report={};
 for(const testCase of cases){
-  const context=await browser.newContext({viewport:testCase.viewport,isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
+  const context=await browser.newContext({viewport:testCase.viewport,isMobile:testCase.isMobile,hasTouch:testCase.hasTouch,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
   const page=await context.newPage();await fixtures(page);
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#appView:not(.hidden)');
