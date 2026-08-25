@@ -32,11 +32,15 @@ jobs:
           node --check tests/optical-runtime-bug-audit.mjs
           node --check tests/optical-nav-layout-audit.mjs
           node --check tests/settings-navigation-visual-audit.mjs
+          node --check tests/settings-wide-composition-audit.mjs
           node --check tests/university-page-header-audit.mjs
           node --check tests/flow-experience-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
           test -f flow-experience.css
+          test -f university/settings-wide.css
+          grep -q "settings-wide.css" university/ui-unify.js
+          grep -q "settings-wide.css" sw.js
           ! grep -q 'MutationObserver' flow-experience.js
       - name: Install Playwright Chromium
         run: |
@@ -105,6 +109,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/settings-navigation-visual-audit.mjs
+      - name: Verify University settings wide composition
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/settings-wide-composition-audit.mjs
       - name: Verify native-feel motion and reduced-motion behavior
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -117,6 +125,7 @@ jobs:
             full-orientation-audit/
             native-feel-audit/
             settings-navigation-visual-audit/
+            settings-wide-composition-audit/
             optical-refraction-audit/
             optical-nav-layout-audit/
             university-page-header-audit/
