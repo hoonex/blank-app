@@ -17,6 +17,8 @@ async function seed(page){
   await page.route('**/functions/v1/university-data**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({})}));
   await page.route('**/functions/v1/university-campus**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({center:null,places:[],nearby:{dining:[],stores:[],cafes:[],food:[]}})}));
   await page.addInitScript(({profile,tt})=>{
+    if(sessionStorage.getItem('flow-dashboard-default-fixture-ready'))return;
+    sessionStorage.setItem('flow-dashboard-default-fixture-ready','1');
     localStorage.clear();
     localStorage.setItem('flow-university-profile-v1',JSON.stringify(profile));
     localStorage.setItem('flow-university-timetable-v1',JSON.stringify(tt));
