@@ -25,5 +25,5 @@
 }
 
 @media(max-width:430px){
-  #schoolView #basicGrid>.basic-item{grid-column:1/-1!important}
+  #schoolView #basicGrid:has(>.basic-item)>.basic-item{grid-column:1/-1!important}
 }
