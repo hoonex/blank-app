@@ -72,18 +72,19 @@ for(const c of CASES){
     });
     if(!state.wideStyleLoaded)throw new Error(`${c.name}: School wide settings stylesheet was not loaded`);
     if(state.scrollWidth>state.width+2)throw new Error(`${c.name}: horizontal overflow ${JSON.stringify(state)}`);
-    if(!state.panel||!state.stack||!state.save||state.cards.length!==5)throw new Error(`${c.name}: settings geometry missing ${JSON.stringify(state)}`);
+    if(!state.panel||!state.stack||!state.save||state.cards.length!==6)throw new Error(`${c.name}: settings geometry missing ${JSON.stringify(state)}`);
     const columnCount=state.gridTemplateColumns.split(' ').filter(Boolean).length;
     const same=(x,y,t=2)=>Math.abs(x-y)<=t;
     if(c.viewport.width>=1100){
       if(columnCount!==6)throw new Error(`${c.name}: wide School settings did not become six grid tracks ${JSON.stringify(state)}`);
       if(state.stack.width<state.panel.width*.9)throw new Error(`${c.name}: School settings still leaves a large unused canvas ${JSON.stringify(state)}`);
-      const [screen,bell,meal,glass,install]=state.cards;
-      if(!same(screen.top,bell.top)||meal.top<=screen.top+2||!same(meal.top,glass.top)||!same(meal.top,install.top))throw new Error(`${c.name}: School settings rows are not 2 + 3 ${JSON.stringify(state)}`);
-      if(!same(screen.width,bell.width,3))throw new Error(`${c.name}: first School settings row is unbalanced ${JSON.stringify(state)}`);
-      if(!same(meal.width,glass.width,3)||!same(glass.width,install.width,3))throw new Error(`${c.name}: second School settings row is unbalanced ${JSON.stringify(state)}`);
-      if(!(screen.left<bell.left&&meal.left<glass.left&&glass.left<install.left))throw new Error(`${c.name}: School settings column order is wrong ${JSON.stringify(state)}`);
-      if(!same(state.save.left,state.stack.left,3)||!same(state.save.right,state.stack.right,3)||state.save.top<=meal.top+2)throw new Error(`${c.name}: save action does not span the wide grid ${JSON.stringify(state)}`);
+      const [screen,bell,meal,glass,install,info]=state.cards;
+      if(!same(screen.top,bell.top)||meal.top<=screen.top+2||!same(meal.top,glass.top)||install.top<=meal.top+2||!same(install.top,info.top))throw new Error(`${c.name}: School settings rows are not 2 + 2 + 2 ${JSON.stringify(state)}`);
+      if(!same(screen.width,bell.width,3)||!same(meal.width,glass.width,3))throw new Error(`${c.name}: first two School settings rows are unbalanced ${JSON.stringify(state)}`);
+      if(!(screen.left<bell.left&&meal.left<glass.left&&install.left<info.left))throw new Error(`${c.name}: School settings column order is wrong ${JSON.stringify(state)}`);
+      const thirdCombined=install.width+info.width+(info.left-install.right);
+      if(info.width<=install.width*1.8||Math.abs(thirdCombined-state.stack.width)>4)throw new Error(`${c.name}: compact install / wide info row is not balanced to the full canvas ${JSON.stringify(state)}`);
+      if(!same(state.save.left,state.stack.left,3)||!same(state.save.right,state.stack.right,3)||state.save.top<=install.top+2)throw new Error(`${c.name}: save action does not span below the wide grid ${JSON.stringify(state)}`);
     }else if(columnCount!==1){
       throw new Error(`${c.name}: School tablet/mobile settings should remain a single column ${JSON.stringify(state)}`);
     }
