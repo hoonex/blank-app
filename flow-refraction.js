@@ -3,7 +3,10 @@ const TAB_SELECTOR='.mobile-tab, .bottom-item';
 const GLASS_KEY='flow-glass-mode-v2';
 const INSET=5;
 const RUNTIME_STYLE_ID='flow-liquid-glass-runtime-style';
+const AMBIENT_SCRIPT='/flow-optical-ambient.js';
+const SCROLL_FOLLOW_MS=130;
 let nav=null,source=null,lens=null,sample=null,scene=null,refreshTimer=0,scrollFrame=0,mapData='',stylePromise=null,idAliasStyle=null,idAliasSignature='';
+let scrollFollowUntil=0,scrollStableFrames=0,lastScrollX=0,lastScrollY=0;
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
@@ -52,7 +55,11 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-them
   document.head.append(style);return style;
 }
 function raiseRuntimeStyles(){const style=installRuntimeStyles();if(style.parentElement===document.head)document.head.append(style)}
-installRuntimeStyles();
+function ensureAmbientScript(){
+  if(window.__flowOpticalAmbientInstalled||[...document.scripts].some(node=>{try{return new URL(node.src,location.href).pathname===AMBIENT_SCRIPT}catch{return false}}))return;
+  const script=document.createElement('script');script.src=AMBIENT_SCRIPT;script.dataset.flowOpticalAmbient='true';document.head.append(script);
+}
+installRuntimeStyles();ensureAmbientScript();
 
 function ensureStyles(){
   if(stylePromise)return stylePromise.then(()=>{raiseRuntimeStyles()});
@@ -212,7 +219,7 @@ function cloneSource(){
   if(!source||!scene)return;
   ensureIdStyleAliases();
   const kind=sourceKind(source),copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=kind;copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
-  copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics').forEach(node=>node.remove());
+  copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics,.flow-optical-jelly').forEach(node=>node.remove());
   /* The School mobile header is sticky viewport chrome. A DOM clone inside the
      bottom lens would make that sticky header re-stick inside the aperture and
      visually refract the Flow wordmark instead of the content actually behind
@@ -237,13 +244,34 @@ function syncGeometry({animateScene=false}={}){
   syncSceneMotion({animate:animateScene});
 }
 function scheduleRefresh(delay=80){clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!opticalEnabled())return;ensureLens();cloneSource()},delay)}
-function onScroll(){if(!opticalEnabled()||scrollFrame)return;scrollFrame=requestAnimationFrame(()=>{scrollFrame=0;syncGeometry()})}
+function scrollPosition(){
+  const dedicated=source?.matches?.('#switchDialog[open][data-flow-dedicated="true"]');
+  return dedicated?{x:source.scrollLeft,y:source.scrollTop}:{x:window.scrollX,y:window.scrollY};
+}
+function runScrollSync(time){
+  scrollFrame=0;
+  if(!opticalEnabled())return;
+  const pos=scrollPosition(),moved=Math.abs(pos.x-lastScrollX)>.1||Math.abs(pos.y-lastScrollY)>.1;
+  lastScrollX=pos.x;lastScrollY=pos.y;scrollStableFrames=moved?0:scrollStableFrames+1;
+  syncGeometry();
+  if(time<scrollFollowUntil||scrollStableFrames<3)scrollFrame=requestAnimationFrame(runScrollSync);
+}
+function onScroll(){
+  if(!opticalEnabled())return;
+  const pos=scrollPosition();lastScrollX=pos.x;lastScrollY=pos.y;
+  scrollFollowUntil=performance.now()+SCROLL_FOLLOW_MS;scrollStableFrames=0;
+  syncGeometry();
+  if(!scrollFrame)scrollFrame=requestAnimationFrame(runScrollSync);
+}
 function disable(){
+  if(scrollFrame){cancelAnimationFrame(scrollFrame);scrollFrame=0}
+  scrollFollowUntil=0;scrollStableFrames=0;
   lens?.remove();lens=sample=scene=null;
   if(nav){for(const name of ['--flow-refraction-rest-x','--flow-refraction-scene-left','--flow-refraction-scene-top'])nav.style.removeProperty(name)}
   nav=source=null;document.documentElement.removeAttribute('data-flow-refraction-copy');
 }
 async function syncMode(){
+  ensureAmbientScript();
   const root=document.documentElement;
   if((localStorage.getItem(GLASS_KEY)||'standard')!=='optical'&&root.dataset.flowGlassMode!=='optical'){disable();return}
   await ensureStyles();
@@ -256,8 +284,9 @@ window.addEventListener('flow:glass-mode-changed',()=>void syncMode(),{passive:t
 window.addEventListener('flow:refraction-refresh',()=>scheduleRefresh(0),{passive:true});
 window.addEventListener('flow:timetable-changed',()=>scheduleRefresh(70),{passive:true});
 window.addEventListener('scroll',onScroll,{passive:true,capture:true});
+window.visualViewport?.addEventListener('scroll',onScroll,{passive:true});
 window.addEventListener('resize',()=>{if(!opticalEnabled())return;syncGeometry();scheduleRefresh(120)},{passive:true});
-window.addEventListener('pageshow',event=>{if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
+window.addEventListener('pageshow',event=>{ensureAmbientScript();if(event.persisted)void syncMode();else scheduleRefresh(40)},{passive:true});
 
 document.addEventListener('focusin',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(0)},{capture:true,passive:true});
 document.addEventListener('input',event=>{if(event.target?.matches?.('#switchSearch'))scheduleRefresh(520)},{capture:true,passive:true});
@@ -285,4 +314,4 @@ document.addEventListener('click',event=>{
   queueMicrotask(()=>{syncGeometry({animateScene:true});scheduleRefresh(0)});
 },{passive:true});
 
-setTimeout(()=>{void syncMode();scheduleRefresh(700)},24);
+setTimeout(()=>{ensureAmbientScript();void syncMode();scheduleRefresh(700)},24);
