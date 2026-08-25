@@ -39,6 +39,7 @@ async function prepare(app,width,height){
     await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor({timeout:12000});
   }
   await page.waitForFunction(()=>document.documentElement.dataset.flowGlassMode==='optical'&&document.documentElement.dataset.flowOpticalJelly==='true'&&document.querySelector('.flow-optical-jelly'),null,{timeout:8000});
+  await page.waitForTimeout(100);
   return{context,page};
 }
 
@@ -49,7 +50,7 @@ async function openSettings(page,app){
   await page.locator(`${panel} [data-flow-jelly-toggle]`).waitFor({timeout:5000});
   return panel;
 }
-async function closeSettings(page){const today=page.locator('[data-view="today"]:visible').first();await today.click();await page.waitForTimeout(100)}
+async function closeSettings(page){const today=page.locator('[data-view="today"]:visible').first();await today.click();await page.waitForTimeout(180)}
 
 async function exerciseJelly(page){
   const before=await page.locator('.flow-optical-jelly').evaluate(node=>getComputedStyle(node).transform);
@@ -63,9 +64,23 @@ async function exerciseJelly(page){
     const size=page.viewportSize();await page.mouse.move(size.width*.18,size.height*.74);
   }
   await page.waitForTimeout(330);
-  const after=await page.locator('.flow-optical-jelly').evaluate(node=>({transform:getComputedStyle(node).transform,lightX:node.style.getPropertyValue('--flow-jelly-light-x'),lightY:node.style.getPropertyValue('--flow-jelly-light-y')}));
+  const after=await page.locator('.flow-optical-jelly').evaluate(node=>({transform:getComputedStyle(node).transform,lightX:node.style.getPropertyValue('--flow-jelly-light-x'),lightY:node.style.getPropertyValue('--flow-jelly-light-y'),placement:node.dataset.flowJellyPlacement,placementOverlap:Number(node.dataset.flowJellyOverlap||NaN)}));
   assert(after.transform!==before,`jelly did not respond to ${hasOrientation?'orientation':'pointer'} input`);
+  assert(Number.isFinite(after.placementOverlap)&&after.placementOverlap===0,`jelly placement envelope overlaps a visible control by ${after.placementOverlap}`);
   return{input:hasOrientation?'orientation':'pointer',before,after};
+}
+async function visibleControlCollisions(page){
+  return page.evaluate(()=>{
+    const jelly=document.querySelector('.flow-optical-jelly');if(!jelly)return['missing jelly'];
+    const jr=jelly.getBoundingClientRect(),selector='button:enabled,a[href],input:not([type="hidden"]):not(:disabled),select:not(:disabled),textarea:not(:disabled),[role="button"],[role="switch"]';
+    const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+    return [...document.querySelectorAll(selector)].filter(node=>{
+      if(node.closest('.flow-optical-jelly,.flow-refraction-copy-lens'))return false;
+      const style=getComputedStyle(node),r=node.getBoundingClientRect();
+      if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||r.width<=1||r.height<=1||r.bottom<=0||r.top>=innerHeight||r.right<=0||r.left>=innerWidth)return false;
+      return overlap(jr,r)>.5;
+    }).map(node=>({tag:node.tagName,id:node.id||'',text:(node.textContent||node.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ').slice(0,48),rect:rectData(node.getBoundingClientRect())}));
+  });
 }
 
 async function auditCase(app,name,width,height){
@@ -82,11 +97,13 @@ async function auditCase(app,name,width,height){
     assert(/blur\(/.test(switchState.backdrop),`${app}/${name}: switch has no glass backdrop ${switchState.backdrop}`);
     await page.screenshot({path:`${OUT}/${app}-${name}-settings.png`,fullPage:false,animations:'disabled'});
     await closeSettings(page);
-    const motion=await exerciseJelly(page);
+    const motion=await exerciseJelly(page),collisions=await visibleControlCollisions(page);
+    assert(collisions.length===0,`${app}/${name}: moved jelly covers visible controls ${JSON.stringify(collisions)}`);
+    const finalBox=rectData(await jelly.boundingBox());assert(finalBox&&finalBox.left>=-1&&finalBox.right<=width+1&&finalBox.top>=-1&&finalBox.bottom<=height+1,`${app}/${name}: moved jelly outside viewport ${JSON.stringify(finalBox)}`);
     const scroll=await page.evaluate(()=>({client:document.documentElement.clientWidth,width:document.documentElement.scrollWidth}));
     assert(scroll.width<=scroll.client+3,`${app}/${name}: horizontal overflow ${JSON.stringify(scroll)}`);
     await page.screenshot({path:`${OUT}/${app}-${name}-jelly.png`,fullPage:false,animations:'disabled'});
-    return{app,name,viewport:{width,height},jelly:jr,switchState,motion,scroll};
+    return{app,name,viewport:{width,height},jelly:jr,finalJelly:finalBox,switchState,motion,collisions,scroll};
   }finally{await context.close()}
 }
 
