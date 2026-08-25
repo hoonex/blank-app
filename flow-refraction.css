@@ -89,7 +89,83 @@ html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"][data-them
 }
 html[data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body :where(.mobile-bottom-nav,.bottom-nav)>:where(.mobile-tab,.bottom-item,.flow-mobile-settings){z-index:2!important}
 
+/* Optical is an app-chrome material, not only a moving bottom-nav lens.
+ * Keep content cards matte, but let navigation and transient controls share
+ * the brighter edge, lower-opacity substrate, and stronger optical separation. */
+html[data-flow-glass-mode="optical"][data-theme] body :where(.mobile-topbar,.mobile-header){
+  background:
+    radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.78) 0%,rgba(255,255,255,.20) 32%,transparent 57%),
+    linear-gradient(180deg,rgba(247,250,255,.66),rgba(244,248,253,.47))!important;
+  border-bottom-color:rgba(255,255,255,.62)!important;
+  box-shadow:0 9px 30px rgba(38,55,88,.09),inset 0 1px 0 rgba(255,255,255,.86)!important;
+  backdrop-filter:blur(18px) saturate(178%) brightness(1.035) contrast(1.02)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(178%) brightness(1.035) contrast(1.02)!important;
+}
+html[data-flow-glass-mode="optical"][data-theme="dark"] body :where(.mobile-topbar,.mobile-header){
+  background:
+    radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.19) 0%,rgba(255,255,255,.045) 33%,transparent 58%),
+    linear-gradient(180deg,rgba(25,31,40,.68),rgba(18,23,30,.53))!important;
+  border-bottom-color:rgba(255,255,255,.14)!important;
+  box-shadow:0 10px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.17)!important;
+  backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
+}
+
+html[data-flow-glass-mode="optical"][data-theme] body :where(.desktop-sidebar,.sidebar){
+  background:
+    radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.76) 0%,rgba(255,255,255,.19) 30%,transparent 56%),
+    linear-gradient(145deg,rgba(249,251,255,.66),rgba(244,248,253,.47))!important;
+  border-color:rgba(255,255,255,.72)!important;
+  box-shadow:0 22px 62px rgba(31,48,80,.12),inset 0 1px 0 rgba(255,255,255,.91)!important;
+  backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
+  -webkit-backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
+}
+html[data-flow-glass-mode="optical"][data-theme="dark"] body :where(.desktop-sidebar,.sidebar){
+  background:
+    radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 31%,transparent 57%),
+    linear-gradient(145deg,rgba(25,31,39,.65),rgba(17,21,27,.51))!important;
+  border-color:rgba(255,255,255,.15)!important;
+  box-shadow:0 24px 66px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.16)!important;
+  backdrop-filter:blur(23px) saturate(142%) brightness(.965) contrast(1.035)!important;
+  -webkit-backdrop-filter:blur(23px) saturate(142%) brightness(.965) contrast(1.035)!important;
+}
+
+html[data-flow-glass-mode="optical"][data-theme] body :where(.date-controller,#widgetEditorBar:not(.hidden)){
+  background:
+    radial-gradient(150% 120% at 14% -28%,rgba(255,255,255,.82) 0%,rgba(255,255,255,.18) 33%,transparent 58%),
+    linear-gradient(180deg,rgba(250,252,255,.64),rgba(245,249,254,.48))!important;
+  border-color:rgba(255,255,255,.68)!important;
+  box-shadow:0 12px 34px rgba(34,52,87,.11),inset 0 1px 0 rgba(255,255,255,.9)!important;
+  backdrop-filter:blur(19px) saturate(176%) brightness(1.03) contrast(1.02)!important;
+  -webkit-backdrop-filter:blur(19px) saturate(176%) brightness(1.03) contrast(1.02)!important;
+}
+html[data-flow-glass-mode="optical"][data-theme="dark"] body :where(.date-controller,#widgetEditorBar:not(.hidden)){
+  background:
+    radial-gradient(150% 120% at 14% -28%,rgba(255,255,255,.18) 0%,rgba(255,255,255,.04) 33%,transparent 58%),
+    linear-gradient(180deg,rgba(30,37,47,.66),rgba(21,27,35,.52))!important;
+  border-color:rgba(255,255,255,.15)!important;
+  box-shadow:0 13px 36px rgba(0,0,0,.29),inset 0 1px 0 rgba(255,255,255,.16)!important;
+  backdrop-filter:blur(19px) saturate(142%) brightness(.97) contrast(1.03)!important;
+  -webkit-backdrop-filter:blur(19px) saturate(142%) brightness(.97) contrast(1.03)!important;
+}
+
+html[data-flow-glass-mode="optical"][data-theme] body dialog[open] > :is(.sheet,.dialog-sheet){
+  background:
+    radial-gradient(145% 115% at 10% -14%,rgba(255,255,255,.76) 0%,rgba(255,255,255,.16) 31%,transparent 57%),
+    linear-gradient(155deg,rgba(250,252,255,.67),rgba(244,248,253,.52))!important;
+  border-color:rgba(255,255,255,.72)!important;
+  box-shadow:0 30px 86px rgba(24,39,69,.20),inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+html[data-flow-glass-mode="optical"][data-theme="dark"] body dialog[open] > :is(.sheet,.dialog-sheet){
+  background:
+    radial-gradient(145% 115% at 10% -14%,rgba(255,255,255,.17) 0%,rgba(255,255,255,.035) 31%,transparent 57%),
+    linear-gradient(155deg,rgba(27,34,43,.68),rgba(18,23,30,.56))!important;
+  border-color:rgba(255,255,255,.16)!important;
+  box-shadow:0 32px 90px rgba(0,0,0,.43),inset 0 1px 0 rgba(255,255,255,.16)!important;
+}
+
 @media(prefers-reduced-transparency:reduce){
   .flow-refraction-copy-lens{display:none!important}
   html[data-flow-refraction-copy="true"] body :where(.mobile-bottom-nav,.bottom-nav){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  html[data-flow-glass-mode="optical"] body :where(.mobile-topbar,.mobile-header,.desktop-sidebar,.sidebar,.date-controller,#widgetEditorBar){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
