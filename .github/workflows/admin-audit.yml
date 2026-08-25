@@ -10,7 +10,7 @@ permissions:
 jobs:
   admin-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,6 +21,9 @@ jobs:
           set -euo pipefail
           node --check admin/admin.js
           node --check tests/admin-audit.mjs
+          node --check tests/admin-console-visual-audit.mjs
+          grep -q "Flow 전체 구조도" admin/index.html
+          grep -q "architecture-map" admin/admin.css
           grep -q "flow_admins" supabase/migrations/20260820_flow_admin_observability.sql
           grep -q "flow_school_events" supabase/migrations/20260821_flow_admin_activity_health_v2.sql
           grep -q "probe_kind" supabase/migrations/20260821_flow_admin_activity_health_v2.sql
@@ -47,6 +50,8 @@ jobs:
           exit 1
       - name: Run admin browser audit
         run: node tests/admin-audit.mjs
+      - name: Verify authenticated admin console across six viewports
+        run: node tests/admin-console-visual-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
