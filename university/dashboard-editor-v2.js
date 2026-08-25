@@ -41,7 +41,7 @@ function getWidgets(){const grid=getGrid();return grid?$$('[data-widget-id]',gri
 function stateFor(id){state.widgets[id]??={size:normalizeSize(id,id==='memo'?DEFAULT_MEMO_SIZE:'1x1'),visible:true,order:Object.keys(state.widgets).length};return state.widgets[id]}
 function buildInitialState(){
   const legacy=read(LEGACY_LAYOUT_KEY,[]),legacyMap=new Map(Array.isArray(legacy)?legacy.map(x=>[x.id,x]):[]),widgets={};
-  getWidgets().forEach((el,index)=>{const id=widgetId(el),old=legacyMap.get(id)||{};widgets[id]={size:normalizeSize(id,old.size||el.dataset.size||'1x1'),visible:typeof old.visible==='boolean'?old.visible:!el.classList.contains('widget-hidden'),order:Number.isFinite(old.order)?old.order:index}});
+  getWidgets().forEach((el,index)=>{const id=widgetId(el),old=legacyMap.get(id)||{},fallback=id==='memo'?DEFAULT_MEMO_SIZE:'1x1';widgets[id]={size:normalizeSize(id,old.size||el.dataset.size||fallback),visible:typeof old.visible==='boolean'?old.visible:!el.classList.contains('widget-hidden'),order:Number.isFinite(old.order)?old.order:index}});
   widgets.memo??={size:DEFAULT_MEMO_SIZE,visible:true,order:Object.keys(widgets).length};
   return{columns:defaultColumns(),widgets};
 }
