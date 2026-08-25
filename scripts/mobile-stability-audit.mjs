@@ -46,7 +46,7 @@ for(let i=1;i<=18;i++){
   const t=i/18,x=sx+(ex-sx)*t,y=sy+(ey-sy)*t;
   await page.mouse.move(x,y);
   await page.waitForTimeout(12);
-  const p=await page.evaluate(()=>{const e=document.querySelector('.widget-drag-placeholder');if(!e)return null;const r=e.getBoundingClientRect();return{left:Math.round(r.left),top:Math.round(r.top)}});
+  const p=await page.evaluate(()=>{const e=document.querySelector('.widget-drag-placeholder');if(!e)return null;const r=e.getBoundingClientRect();return{left:Math.round(r.left),top:Math.round(r.top+scrollY)}});
   if(p)placeholderPath.push(p);
 }
 await page.mouse.up();await page.waitForTimeout(260);
