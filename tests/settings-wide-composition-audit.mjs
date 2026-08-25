@@ -58,14 +58,15 @@ for(const c of CASES){
       };
     });
     if(state.scrollWidth>state.width+2)throw new Error(`${c.name}: horizontal overflow ${JSON.stringify(state)}`);
-    if(!state.panel||!state.stack||state.cards.length!==3)throw new Error(`${c.name}: settings geometry missing ${JSON.stringify(state)}`);
+    if(!state.panel||!state.stack||state.cards.length!==4)throw new Error(`${c.name}: settings geometry missing ${JSON.stringify(state)}`);
     const columnCount=state.gridTemplateColumns.split(' ').filter(Boolean).length;
     if(c.viewport.width>=1100){
-      if(columnCount!==3)throw new Error(`${c.name}: wide settings did not become three columns ${JSON.stringify(state)}`);
+      if(columnCount!==2)throw new Error(`${c.name}: wide settings did not become two balanced columns ${JSON.stringify(state)}`);
       if(state.stack.width<state.panel.width*.9)throw new Error(`${c.name}: settings still leaves a large unused canvas ${JSON.stringify(state)}`);
-      const tops=state.cards.map(x=>x.top),widths=state.cards.map(x=>x.width);
-      if(Math.max(...tops)-Math.min(...tops)>2)throw new Error(`${c.name}: wide settings cards are not one aligned row ${JSON.stringify(state)}`);
-      if(Math.max(...widths)-Math.min(...widths)>3)throw new Error(`${c.name}: wide settings columns are unbalanced ${JSON.stringify(state)}`);
+      const [a,b,c1,d]=state.cards;
+      const same=(x,y,t=2)=>Math.abs(x-y)<=t;
+      if(!same(a.top,b.top)||!same(c1.top,d.top)||c1.top<=a.top+2)throw new Error(`${c.name}: four settings cards did not form a clean 2x2 grid ${JSON.stringify(state)}`);
+      if(!same(a.width,b.width,3)||!same(c1.width,d.width,3)||!same(a.left,c1.left,3)||!same(b.left,d.left,3))throw new Error(`${c.name}: wide settings columns are unbalanced ${JSON.stringify(state)}`);
     }else if(columnCount!==1){
       throw new Error(`${c.name}: tablet/mobile settings should remain a single column ${JSON.stringify(state)}`);
     }
