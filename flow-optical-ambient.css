@@ -14,8 +14,8 @@
 .flow-optical-switch{
   --flow-switch-x:0px;
   position:relative;
-  width:54px;
-  height:32px;
+  width:58px;
+  height:44px;
   flex:none;
   padding:0;
   border:1px solid color-mix(in srgb,var(--text) 10%,transparent);
@@ -29,9 +29,9 @@
 .flow-optical-switch>span{
   position:absolute;
   left:4px;
-  top:4px;
-  width:22px;
-  height:22px;
+  top:8px;
+  width:28px;
+  height:28px;
   border-radius:50%;
   background:var(--surface);
   box-shadow:0 3px 9px rgba(24,35,55,.16),inset 0 1px 0 rgba(255,255,255,.7);
