@@ -32,7 +32,7 @@ async function preparePage(app,mode,width,height){
     await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor({timeout:10000});
   }
   await page.waitForFunction(expected=>document.documentElement.dataset.flowGlassMode===expected,mode,{timeout:5000});
-  if(mode==='optical')await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>{try{return new URL(sheet.href||'',location.href).pathname==='/flow-refraction.css'}catch{return false}}),null,{timeout:5000});
+  await page.waitForFunction(()=>Boolean(document.querySelector('style#flow-liquid-glass-runtime-style')),null,{timeout:5000});
   await page.waitForTimeout(180);
   return{context,page};
 }
@@ -46,10 +46,11 @@ async function materialState(page,app){return page.evaluate(app=>{
   return{mode:document.documentElement.dataset.flowGlassMode||'',refraction:document.documentElement.dataset.flowGlassRefraction||'',chrome:describe(chrome),content:describe(content),width:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
 },app)}
 
-async function sheetState(page,app){
+async function sheetState(page,app,{capture=null}={}){
   await page.evaluate(app=>{const dialog=document.querySelector(app==='school'?'#settingsDialog':'#flowUniversitySettingsDialog');if(dialog&&!dialog.open)dialog.showModal()},app);
   await page.waitForTimeout(120);
   const state=await page.evaluate(app=>{const dialog=document.querySelector(app==='school'?'#settingsDialog':'#flowUniversitySettingsDialog'),sheet=dialog?.querySelector(':scope > .sheet, :scope > .dialog-sheet');if(!sheet)return null;const s=getComputedStyle(sheet),r=sheet.getBoundingClientRect();return{backgroundImage:s.backgroundImage,backgroundColor:s.backgroundColor,backdropFilter:s.backdropFilter||s.webkitBackdropFilter||'none',borderColor:s.borderColor,boxShadow:s.boxShadow,rect:{left:r.left,top:r.top,width:r.width,height:r.height}}},app);
+  if(capture)await page.screenshot({path:capture,fullPage:false,animations:'disabled'});
   await page.evaluate(app=>{const dialog=document.querySelector(app==='school'?'#settingsDialog':'#flowUniversitySettingsDialog');if(dialog?.open)dialog.close()},app);
   return state;
 }
@@ -62,7 +63,7 @@ for(const app of ['school','university'])for(const[name,width,height]of viewport
     await standard.page.screenshot({path:`${OUT}/${app}-${name}-standard.png`,fullPage:false,animations:'disabled'});
 
     const optical=await preparePage(app,'optical',width,height);opticalContext=optical.context;
-    const opticalState=await materialState(optical.page,app),opticalSheet=await sheetState(optical.page,app);
+    const opticalState=await materialState(optical.page,app),opticalSheet=await sheetState(optical.page,app,{capture:`${OUT}/${app}-${name}-optical-settings.png`});
     await optical.page.screenshot({path:`${OUT}/${app}-${name}-optical.png`,fullPage:false,animations:'disabled'});
 
     if(!standardState.chrome||!opticalState.chrome)throw new Error('Visible chrome surface missing.');
