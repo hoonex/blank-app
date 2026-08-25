@@ -267,9 +267,9 @@ function renderPicker(){
   }
   if(!box.children.length){const e=document.createElement('div');e.className='widget-picker-empty';e.textContent='검색 결과가 없습니다.';box.append(e)}
 }
-function showWidget(id){
+function showWidget(id,refreshPicker=true){
   const el=grid()?.querySelector(`[data-widget-id="${CSS.escape(id)}"]`);if(!el)return null;
-  el.classList.remove('widget-hidden');persist();renderPicker();return el;
+  el.classList.remove('widget-hidden');persist();if(refreshPicker)renderPicker();return el;
 }
 function pickerClick(e){
   if(Date.now()<Number(e.currentTarget.dataset.suppressUntil||0))return;
@@ -288,7 +288,7 @@ function pickerVisualRect(el,x,y){
 function liftPickerWidget(existing,p,input,id){
   const list=p.b.parentElement;if(list)list.dataset.suppressUntil=String(Date.now()+550);
   try{navigator.vibrate?.(14)}catch{}
-  const el=existing.classList.contains('widget-hidden')?showWidget(p.id):existing;
+  const el=existing.classList.contains('widget-hidden')?showWidget(p.id,false):existing;
   $('#widgetPicker')?.close();
   if(!ensureEditing()||!el)return clearPickerPress();
   const visual=pickerVisualRect(el,p.x,p.y);
