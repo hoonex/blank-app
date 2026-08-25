@@ -26,6 +26,7 @@ jobs:
           node --check university/dashboard-memo-panel.js
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
+          node --check scripts/dashboard-default-composition-audit.mjs
           node --check scripts/widget-home-editing-audit.mjs
           node --check scripts/widget-picker-touch-audit.mjs
           node --check scripts/widget-variant-audit.mjs
@@ -79,6 +80,8 @@ jobs:
           exit 1
       - name: Run widget editor browser audit
         run: node scripts/dashboard-editor-v2-audit.mjs
+      - name: Verify fresh dashboard composition and saved-layout preservation
+        run: node scripts/dashboard-default-composition-audit.mjs
       - name: Run touch home editing and Campus composition audit
         run: node scripts/widget-home-editing-audit.mjs
       - name: Run continuous touch drag from widget gallery audit
