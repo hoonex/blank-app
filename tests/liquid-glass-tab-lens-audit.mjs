@@ -75,9 +75,11 @@ async function interruptLens(page,{nav,item,activeTarget,label}){
   if(before.settling!=='true')throw new Error(`${label}: lens settle ended before interruption probe ${JSON.stringify(before)}`);
   const box=await page.locator(activeTarget).boundingBox();if(!box)throw new Error(`${label}: active target geometry missing during interruption`);
   const point={x:box.x+box.width/2,y:box.y+box.height/2};
-  await page.mouse.move(point.x,point.y);await page.mouse.down();await page.waitForTimeout(18);
+  await page.mouse.move(point.x,point.y);
+  const preGrab=await lens(page,nav,`${item}.active`),preGrabX=matrix(preGrab.transform).x;
+  await page.mouse.down();await page.waitForTimeout(18);
   const grabbed=await lens(page,nav,`${item}.active`),grabbedX=matrix(grabbed.transform).x;
-  if(grabbed.pressed!=='true'||grabbed.settling||Math.abs(grabbedX-beforeX)>6)throw new Error(`${label}: mid-settle lens re-grab jumped away from presentation state ${JSON.stringify({beforeX,grabbedX,before,grabbed})}`);
+  if(grabbed.pressed!=='true'||grabbed.settling||Math.abs(grabbedX-preGrabX)>6)throw new Error(`${label}: mid-settle lens re-grab jumped away from presentation state ${JSON.stringify({beforeX,preGrabX,grabbedX,before,preGrab,grabbed})}`);
 
   await page.mouse.move(point.x-30,point.y,{steps:4});await page.waitForTimeout(24);
   const reversed=await lens(page,nav,`${item}.active`),reversedX=matrix(reversed.transform).x;
@@ -85,7 +87,7 @@ async function interruptLens(page,{nav,item,activeTarget,label}){
   await page.mouse.up();await page.waitForTimeout(470);
   const settled=await lens(page,nav,`${item}.active`);
   if(settled.pressed||settled.dragging||settled.settling||settled.root.scrollWidth>settled.root.clientWidth+3)throw new Error(`${label}: interrupted lens failed to settle cleanly ${JSON.stringify(settled)}`);
-  return{beforeX,grabbedX,reversedX,settled};
+  return{beforeX,preGrabX,grabbedX,reversedX,settled};
 }
 async function assertDirectDrag(page,{nav,item,from,target,label}){
   const source=page.locator(from),destination=page.locator(target);
