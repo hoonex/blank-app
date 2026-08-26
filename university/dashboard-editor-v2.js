@@ -27,6 +27,7 @@ const SIZE_OPTIONS={
 };
 const DEFAULT_MEMO_SIZE='2x1';
 let state=null,resizeSession=null,dragSession=null,pressSession=null,memoSaveTimer=null,moveRaf=0;
+const settleAnimations=new WeakMap();
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 function read(key,fallback=null){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
@@ -76,10 +77,17 @@ function nearestSizeByPixels(id,width,height,m){const options=availableSizes(id,
 function makePlaceholder(el,kind){const [w,h]=sizeParts(el.dataset.size),p=document.createElement('div');p.className=`widget-grid-placeholder widget-${kind}-placeholder`;p.style.gridColumn=`span ${Math.min(w,clampColumns(state?.columns))}`;p.style.gridRow=`span ${h}`;p.setAttribute('aria-hidden','true');el.parentElement?.insertBefore(p,el);return p}
 function liftWidget(el,rect,kind){el.classList.add('widget-direct-floating',`widget-direct-${kind}`);el.style.position='fixed';el.style.left=`${rect.left}px`;el.style.top=`${rect.top}px`;el.style.width=`${rect.width}px`;el.style.height=`${rect.height}px`;el.style.margin='0';el.style.zIndex='10000';el.style.gridColumn='auto';el.style.gridRow='auto';document.body.append(el);document.body.classList.add('widget-direct-active',`widget-${kind}-active`)}
 function clearFloatingStyles(el){el.classList.remove('widget-direct-floating','widget-direct-resize','widget-direct-drag','widget-dragging');for(const prop of ['position','left','top','width','height','margin','z-index','grid-column','grid-row','transform','transform-origin','pointer-events','will-change'])el.style.removeProperty(prop)}
-function animateIntoGrid(el,fromRect){if(!fromRect||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const to=el.getBoundingClientRect();if(!to.width||!to.height)return;const dx=fromRect.left-to.left,dy=fromRect.top-to.top,sx=fromRect.width/to.width,sy=fromRect.height/to.height;if(Math.abs(dx)<1&&Math.abs(dy)<1&&Math.abs(sx-1)<.01&&Math.abs(sy-1)<.01)return;el.animate([{transformOrigin:'top left',transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`},{transformOrigin:'top left',transform:'none'}],{duration:230,easing:'cubic-bezier(.2,.86,.24,1)',fill:'none'})}
+function cancelSettleAnimation(el){const animation=settleAnimations.get(el);if(!animation)return null;const rect=el.getBoundingClientRect();settleAnimations.delete(el);el.removeAttribute('data-widget-settling');try{animation.cancel()}catch{}return rect}
+function presentationRect(el){return cancelSettleAnimation(el)||el.getBoundingClientRect()}
+function animateIntoGrid(el,fromRect){
+  const previous=settleAnimations.get(el);if(previous){settleAnimations.delete(el);el.removeAttribute('data-widget-settling');try{previous.cancel()}catch{}}
+  if(!fromRect||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const to=el.getBoundingClientRect();if(!to.width||!to.height)return;const dx=fromRect.left-to.left,dy=fromRect.top-to.top,sx=fromRect.width/to.width,sy=fromRect.height/to.height;if(Math.abs(dx)<1&&Math.abs(dy)<1&&Math.abs(sx-1)<.01&&Math.abs(sy-1)<.01)return;
+  const animation=el.animate([{transformOrigin:'top left',transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`},{transformOrigin:'top left',transform:'none'}],{duration:230,easing:'cubic-bezier(.2,.86,.24,1)',fill:'none'});settleAnimations.set(el,animation);el.dataset.widgetSettling='1';
+  const clear=()=>{if(settleAnimations.get(el)!==animation)return;settleAnimations.delete(el);el.removeAttribute('data-widget-settling')};animation.addEventListener('finish',clear,{once:true});animation.addEventListener('cancel',clear,{once:true})
+}
 function startResize(e,el){
   if(!editing()||e.button!==0||dragSession)return;e.preventDefault();e.stopPropagation();cancelPress();
-  const m=gridMetrics(),rect=el.getBoundingClientRect(),id=widgetId(el),options=availableSizes(id,m.cols),dims=options.map(size=>({size,w:sizeParts(size)[0],h:sizeParts(size)[1]}));
+  const m=gridMetrics(),rect=presentationRect(el),id=widgetId(el),options=availableSizes(id,m.cols),dims=options.map(size=>({size,w:sizeParts(size)[0],h:sizeParts(size)[1]}));
   const minW=Math.min(...dims.map(x=>spanWidth(x.w,m))),maxW=Math.max(...dims.map(x=>spanWidth(x.w,m))),minH=Math.min(...dims.map(x=>spanHeight(x.h,m))),maxH=Math.max(...dims.map(x=>spanHeight(x.h,m))),placeholder=makePlaceholder(el,'resize');
   resizeSession={el,id,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,startRect:rect,m,placeholder,minW,maxW,minH,maxH,preview:el.dataset.size,moved:false,lastX:e.clientX,lastY:e.clientY};
   el.dataset.directResizing='1';el.dataset.resizePressed='1';e.currentTarget.setPointerCapture?.(e.pointerId);liftWidget(el,rect,'resize');
@@ -99,7 +107,7 @@ function cancelPress(removeEnd=true){if(!pressSession)return;const s=pressSessio
 function snapshotDropTargets(grid,el){return $$('[data-widget-id]',grid).filter(target=>target!==el&&!target.classList.contains('widget-hidden')).map(target=>{const r=target.getBoundingClientRect();return{el:target,left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,cx:r.left+r.width/2,cy:r.top+r.height/2}})}
 function beginDrag(el,pointerId,x,y,fromLongPress=false){
   if(dragSession||resizeSession||!editing()||!el.isConnected)return;cancelPress(false);const grid=getGrid();if(!grid||el.parentElement!==grid)return;
-  const rect=el.getBoundingClientRect(),placeholder=makePlaceholder(el,'drag'),offsetX=Math.max(0,Math.min(rect.width,x-rect.left)),offsetY=Math.max(0,Math.min(rect.height,y-rect.top)),dropTargets=snapshotDropTargets(grid,el);
+  const rect=presentationRect(el),placeholder=makePlaceholder(el,'drag'),offsetX=Math.max(0,Math.min(rect.width,x-rect.left)),offsetY=Math.max(0,Math.min(rect.height,y-rect.top)),dropTargets=snapshotDropTargets(grid,el);
   dragSession={el,pointerId,placeholder,grid,offsetX,offsetY,lastX:x,lastY:y,fromLongPress,moved:fromLongPress,startX:x,startY:y,dropTargets,startScrollX:scrollX,startScrollY:scrollY,lastPlacementKey:''};el.classList.add('widget-dragging');el.dataset.directDragging='1';try{el.setPointerCapture?.(pointerId)}catch{}liftWidget(el,rect,'drag');moveFloatingDrag(x,y);document.addEventListener('pointermove',dragMove,{passive:false});document.addEventListener('pointerup',endDrag,{once:true});document.addEventListener('pointercancel',endDrag,{once:true})
 }
 function moveFloatingDrag(x,y){const s=dragSession;if(!s)return;cancelAnimationFrame(moveRaf);moveRaf=requestAnimationFrame(()=>{if(!dragSession)return;s.el.style.left=`${x-s.offsetX}px`;s.el.style.top=`${y-s.offsetY}px`})}
