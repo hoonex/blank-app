@@ -18,6 +18,21 @@ let glassSupport=null;
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const now=()=>performance.now();
+function presentationState(element,pseudo=null){
+  const style=getComputedStyle(element,pseudo),transform=style.transform||'none';
+  let x=0,y=0,scaleX=1,scaleY=1;
+  if(transform!=='none'&&typeof DOMMatrixReadOnly==='function'){
+    try{
+      const matrix=new DOMMatrixReadOnly(transform);
+      x=Number.isFinite(matrix.m41)?matrix.m41:0;
+      y=Number.isFinite(matrix.m42)?matrix.m42:0;
+      scaleX=Math.hypot(matrix.m11,matrix.m12)||1;
+      scaleY=Math.hypot(matrix.m21,matrix.m22)||1;
+    }catch{}
+  }
+  const parsedOpacity=Number.parseFloat(style.opacity);
+  return{x,y,scaleX,scaleY,opacity:Number.isFinite(parsedOpacity)?parsedOpacity:1};
+}
 
 function installMaterialLayer(){
   const href='/flow-material.css';
@@ -220,14 +235,17 @@ function beginSheetGesture(event){
   if(reducedMotion.matches||!event.isPrimary||(event.pointerType==='mouse'&&event.button!==0))return false;
   const handle=event.target.closest?.(SHEET_HANDLE);const sheet=handle?.closest?.(SHEET_SELECTOR);const dialog=sheet?.closest?.('dialog[open]');
   if(!handle||!sheet||!dialog||sheetFor(dialog)!==sheet)return false;
+  const live=presentationState(sheet),backdrop=getComputedStyle(dialog,'::backdrop');
+  const parsedBackdrop=Number.parseFloat(backdrop.opacity),liveBackdrop=Number.isFinite(parsedBackdrop)?parsedBackdrop:1;
   clearTimeout(sheetTimer);
-  const t=now(),rect=sheet.getBoundingClientRect();
-  sheetGesture={dialog,sheet,handle,pointerId:event.pointerId,startY:event.clientY,lastY:event.clientY,lastT:t,velocity:0,currentY:0,rect,dragging:false};
+  dialog.removeAttribute('data-flow-sheet-settling');dialog.removeAttribute('data-flow-sheet-dismissing');dialog.removeAttribute('data-flow-sheet-resting');dialog.removeAttribute('data-flow-sheet-dragging');
+  const t=now(),rect=sheet.getBoundingClientRect(),baseY=clamp(live.y,-10,Math.max(window.innerHeight,rect.height+90));
+  sheetGesture={dialog,sheet,handle,pointerId:event.pointerId,startY:event.clientY,lastY:event.clientY,lastT:t,velocity:0,currentY:baseY,baseY,rect,dragging:false};
   dialog.dataset.flowSheetGrabbed='true';
-  dialog.style.setProperty('--flow-sheet-y','0px');
-  dialog.style.setProperty('--flow-sheet-scale','1');
-  dialog.style.setProperty('--flow-sheet-opacity','1');
-  dialog.style.setProperty('--flow-sheet-backdrop-opacity','1');
+  dialog.style.setProperty('--flow-sheet-y',`${baseY.toFixed(2)}px`);
+  dialog.style.setProperty('--flow-sheet-scale',clamp(live.scaleY,.96,1.02).toFixed(4));
+  dialog.style.setProperty('--flow-sheet-opacity',clamp(live.opacity,0,1).toFixed(3));
+  dialog.style.setProperty('--flow-sheet-backdrop-opacity',clamp(liveBackdrop,0,1).toFixed(3));
   try{handle.setPointerCapture?.(event.pointerId)}catch{}
   event.preventDefault();
   return true;
@@ -291,7 +309,8 @@ document.addEventListener('pointermove',event=>{
   event.preventDefault();
   const t=now(),dt=Math.max(1,t-state.lastT),instant=(event.clientY-state.lastY)/dt;
   state.velocity=state.velocity*.56+instant*.44;state.lastY=event.clientY;state.lastT=t;
-  const y=dy>=0?(dy<=180?dy:180+(dy-180)*.48):Math.max(-10,dy*.12);
+  const raw=state.baseY+dy;
+  const y=raw>=0?(raw<=180?raw:180+(raw-180)*.48):Math.max(-10,raw*.12);
   setSheetMotion(state,y);
 },{capture:true,passive:false});
 document.addEventListener('pointerup',event=>{releaseSheetGesture(event,false)},{capture:true});
@@ -366,12 +385,14 @@ document.addEventListener('pointerdown',event=>{
   const button=event.target.closest?.(TAB_SELECTOR);const nav=button?.closest?.(NAV_SELECTOR);
   if(!nav||button.parentElement!==nav||!button.classList.contains('active'))return;
   const list=buttons(nav);if(list.length<2)return;
-  const index=activeIndex(list),geo=geometry(nav,list,index),t=now();
+  const index=activeIndex(list),geo=geometry(nav,list,index),t=now(),live=presentationState(nav,'::before');
+  const currentX=clamp(live.x,0,geo.max),liveCenter=geo.rect.left+geo.inset+currentX+geo.slot/2;
   clearTimeout(settleTimer);nav.removeAttribute('data-flow-lens-settling');clearInline(nav);
-  const grabOffset=event.clientX-geo.center;
-  gesture={nav,list,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastT:t,velocity:0,currentX:index*geo.slot,grabOffset,geo,dragging:false};
+  nav.style.setProperty('--flow-lens-x',`${currentX.toFixed(2)}px`);
+  const grabOffset=event.clientX-liveCenter;
+  gesture={nav,list,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastT:t,velocity:0,currentX,grabOffset,geo,dragging:false};
   nav.style.setProperty('--flow-tab-count',String(list.length));
-  const local=clamp(((event.clientX-(geo.center-geo.slot/2))/geo.slot)*100,15,85);
+  const local=clamp(50+(event.clientX-liveCenter)/geo.slot*55,15,85);
   nav.style.setProperty('--flow-lens-light-x',`${local.toFixed(1)}%`);
   setPressed(nav,true);
 },{capture:true});

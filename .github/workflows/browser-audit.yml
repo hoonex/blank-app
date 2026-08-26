@@ -104,6 +104,17 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/kakao-map-audit.mjs
 
+      - name: Verify interruptible native gestures
+        if: success()
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: |
+          node --check flow-native.js
+          node --check tests/native-sheet-drag-audit.mjs
+          node --check tests/liquid-glass-tab-lens-audit.mjs
+          node tests/native-sheet-drag-audit.mjs
+          node tests/liquid-glass-tab-lens-audit.mjs
+
       - name: Verify School calendar week geometry
         if: success()
         run: |
@@ -125,4 +136,5 @@ jobs:
             browser-audit-artifacts
             school-calendar-audit
             contextual-shell-audit
+            native-feel-audit
           retention-days: 7

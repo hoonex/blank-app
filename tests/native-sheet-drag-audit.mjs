@@ -25,11 +25,52 @@ async function state(page,dialog,sheet){
     return{open:Boolean(d?.open),grabbed:d?.dataset.flowSheetGrabbed||'',dragging:d?.dataset.flowSheetDragging||'',settling:d?.dataset.flowSheetSettling||'',dismissing:d?.dataset.flowSheetDismissing||'',resting:d?.dataset.flowSheetResting||'',transform:ss?.transform||'none',opacity:ss?.opacity||'',handleDisplay:hs?.display||'',handleWidth:hs?.width||'',handleHeight:hs?.height||'',closeWidth:cs?.width||'',closeHeight:cs?.height||'',backdropOpacity:bs?.opacity||'',root:{clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}};
   },{dialog,sheet});
 }
-async function drag(page,selector,delta,{hold=0,steps=8}={}){
+async function handlePoint(page,selector){
   const box=await page.locator(`${selector} .flow-sheet-grab-handle`).boundingBox();if(!box)throw new Error(`${selector}: grab handle geometry missing`);
-  const x=box.x+box.width/2,y=box.y+Math.min(16,box.height/2);
+  return{x:box.x+box.width/2,y:box.y+Math.min(16,box.height/2)};
+}
+async function drag(page,selector,delta,{hold=0,steps=8}={}){
+  const {x,y}=await handlePoint(page,selector);
   await page.mouse.move(x,y);await page.mouse.down();if(hold)await page.waitForTimeout(hold);
   await page.mouse.move(x,y+delta,{steps});
+}
+async function liveSyntheticGrab(page,dialog,sheet,pointerId=41){
+  return page.evaluate(({dialog,sheet,pointerId})=>{
+    const d=document.querySelector(dialog),s=document.querySelector(sheet),h=d?.querySelector('.flow-sheet-grab-handle');
+    if(!d||!s||!h)throw new Error('sheet interruption target is missing');
+    const beforeTransform=getComputedStyle(s).transform||'none';
+    const box=h.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+Math.min(16,box.height/2);
+    const event=new PointerEvent('pointerdown',{bubbles:true,composed:true,cancelable:true,pointerId,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1});
+    h.dispatchEvent(event);
+    return{point:{x,y,pointerId},beforeTransform,afterTransform:getComputedStyle(s).transform||'none',grabbed:d.dataset.flowSheetGrabbed||'',settling:d.dataset.flowSheetSettling||'',defaultPrevented:event.defaultPrevented};
+  },{dialog,sheet,pointerId});
+}
+async function dispatchSyntheticPointer(page,type,point,{dx=0,dy=0}={}){
+  return page.evaluate(({type,point,dx,dy})=>{
+    const event=new PointerEvent(type,{bubbles:true,composed:true,cancelable:true,pointerId:point.pointerId,pointerType:'touch',isPrimary:true,clientX:point.x+dx,clientY:point.y+dy,button:0,buttons:type==='pointerup'||type==='pointercancel'?0:1});
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  },{type,point,dx,dy});
+}
+async function interruptReturn(page,dialog,sheet,label){
+  // Keep this pull below every dismiss threshold. The first drag remains a
+  // real Playwright pointer gesture; only the moving-target re-grab is
+  // dispatched directly to the live handle so automation cannot click a
+  // coordinate that became stale while the sheet was returning.
+  await drag(page,dialog,58,{hold:12,steps:8});await page.waitForTimeout(12);await page.mouse.up();await page.waitForTimeout(25);
+  const before=await state(page,dialog,sheet),beforeY=matrixY(before.transform);
+  if(before.settling!=='true'||before.dismissing==='true'||!(beforeY>8))throw new Error(`${label}: return settle was not in flight before interruption ${JSON.stringify({before,beforeY})}`);
+
+  const grab=await liveSyntheticGrab(page,dialog,sheet),preGrabY=matrixY(grab.beforeTransform),grabbedY=matrixY(grab.afterTransform);
+  if(grab.grabbed!=='true'||grab.settling||!grab.defaultPrevented||Math.abs(grabbedY-preGrabY)>6)throw new Error(`${label}: mid-settle re-grab jumped away from presentation state ${JSON.stringify({beforeY,preGrabY,grabbedY,before,grab})}`);
+
+  await dispatchSyntheticPointer(page,'pointermove',grab.point,{dy:-30});await page.waitForTimeout(24);
+  const reversed=await state(page,dialog,sheet),reversedY=matrixY(reversed.transform);
+  if(reversed.dragging!=='true'||!(reversedY<grabbedY-8))throw new Error(`${label}: interrupted sheet could not reverse immediately ${JSON.stringify({grabbedY,reversedY,reversed})}`);
+  await dispatchSyntheticPointer(page,'pointerup',grab.point,{dy:-30});await page.waitForTimeout(330);
+  const settled=await state(page,dialog,sheet);
+  if(!settled.open||settled.resting!=='true'||Math.abs(matrixY(settled.transform))>1)throw new Error(`${label}: interrupted sheet failed to return to rest ${JSON.stringify(settled)}`);
+  return{beforeY,preGrabY,grabbedY,reversedY};
 }
 async function assertSheet(page,{dialog,sheet,label,screenshot}){
   await openDialog(page,dialog);
@@ -46,6 +87,8 @@ async function assertSheet(page,{dialog,sheet,label,screenshot}){
   s=await state(page,dialog,sheet);
   if(!s.open||s.resting!=='true'||Math.abs(matrixY(s.transform))>1)throw new Error(`${label}: short pull did not spring back ${JSON.stringify(s)}`);
 
+  const interruption=await interruptReturn(page,dialog,sheet,label);
+
   const before=await state(page,dialog,sheet);
   const target=page.locator(`${dialog} input:visible`).first();
   if(await target.count()){
@@ -57,7 +100,7 @@ async function assertSheet(page,{dialog,sheet,label,screenshot}){
   await drag(page,dialog,226,{hold:18,steps:9});await page.waitForTimeout(20);await page.mouse.up();await page.waitForTimeout(310);
   s=await state(page,dialog,sheet);
   if(s.open)throw new Error(`${label}: decisive downward pull did not dismiss sheet ${JSON.stringify(s)}`);
-  return s;
+  return{state:s,interruption};
 }
 async function pageFor(path,reducedMotion='no-preference'){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',reducedMotion});
