@@ -34,25 +34,40 @@ async function drag(page,selector,delta,{hold=0,steps=8}={}){
   await page.mouse.move(x,y);await page.mouse.down();if(hold)await page.waitForTimeout(hold);
   await page.mouse.move(x,y+delta,{steps});
 }
+async function liveSyntheticGrab(page,dialog,sheet,pointerId=41){
+  return page.evaluate(({dialog,sheet,pointerId})=>{
+    const d=document.querySelector(dialog),s=document.querySelector(sheet),h=d?.querySelector('.flow-sheet-grab-handle');
+    if(!d||!s||!h)throw new Error('sheet interruption target is missing');
+    const beforeTransform=getComputedStyle(s).transform||'none';
+    const box=h.getBoundingClientRect(),x=box.left+box.width/2,y=box.top+Math.min(16,box.height/2);
+    const event=new PointerEvent('pointerdown',{bubbles:true,composed:true,cancelable:true,pointerId,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1});
+    h.dispatchEvent(event);
+    return{point:{x,y,pointerId},beforeTransform,afterTransform:getComputedStyle(s).transform||'none',grabbed:d.dataset.flowSheetGrabbed||'',settling:d.dataset.flowSheetSettling||'',defaultPrevented:event.defaultPrevented};
+  },{dialog,sheet,pointerId});
+}
+async function dispatchSyntheticPointer(page,type,point,{dx=0,dy=0}={}){
+  return page.evaluate(({type,point,dx,dy})=>{
+    const event=new PointerEvent(type,{bubbles:true,composed:true,cancelable:true,pointerId:point.pointerId,pointerType:'touch',isPrimary:true,clientX:point.x+dx,clientY:point.y+dy,button:0,buttons:type==='pointerup'||type==='pointercancel'?0:1});
+    document.dispatchEvent(event);
+    return event.defaultPrevented;
+  },{type,point,dx,dy});
+}
 async function interruptReturn(page,dialog,sheet,label){
-  // Keep this pull below every dismiss threshold. This probe is specifically
-  // about interrupting the return-to-rest transition, not chasing a sheet
-  // that is already exiting the viewport.
+  // Keep this pull below every dismiss threshold. The first drag remains a
+  // real Playwright pointer gesture; only the moving-target re-grab is
+  // dispatched directly to the live handle so automation cannot click a
+  // coordinate that became stale while the sheet was returning.
   await drag(page,dialog,58,{hold:12,steps:8});await page.waitForTimeout(12);await page.mouse.up();await page.waitForTimeout(25);
   const before=await state(page,dialog,sheet),beforeY=matrixY(before.transform);
   if(before.settling!=='true'||before.dismissing==='true'||!(beforeY>8))throw new Error(`${label}: return settle was not in flight before interruption ${JSON.stringify({before,beforeY})}`);
 
-  const point=await handlePoint(page,dialog);
-  await page.mouse.move(point.x,point.y);
-  const preGrab=await state(page,dialog,sheet),preGrabY=matrixY(preGrab.transform);
-  await page.mouse.down();await page.waitForTimeout(18);
-  const grabbed=await state(page,dialog,sheet),grabbedY=matrixY(grabbed.transform);
-  if(grabbed.grabbed!=='true'||grabbed.settling||Math.abs(grabbedY-preGrabY)>6)throw new Error(`${label}: mid-settle re-grab jumped away from presentation state ${JSON.stringify({beforeY,preGrabY,grabbedY,before,preGrab,grabbed})}`);
+  const grab=await liveSyntheticGrab(page,dialog,sheet),preGrabY=matrixY(grab.beforeTransform),grabbedY=matrixY(grab.afterTransform);
+  if(grab.grabbed!=='true'||grab.settling||!grab.defaultPrevented||Math.abs(grabbedY-preGrabY)>6)throw new Error(`${label}: mid-settle re-grab jumped away from presentation state ${JSON.stringify({beforeY,preGrabY,grabbedY,before,grab})}`);
 
-  await page.mouse.move(point.x,point.y-30,{steps:4});await page.waitForTimeout(24);
+  await dispatchSyntheticPointer(page,'pointermove',grab.point,{dy:-30});await page.waitForTimeout(24);
   const reversed=await state(page,dialog,sheet),reversedY=matrixY(reversed.transform);
   if(reversed.dragging!=='true'||!(reversedY<grabbedY-8))throw new Error(`${label}: interrupted sheet could not reverse immediately ${JSON.stringify({grabbedY,reversedY,reversed})}`);
-  await page.mouse.up();await page.waitForTimeout(330);
+  await dispatchSyntheticPointer(page,'pointerup',grab.point,{dy:-30});await page.waitForTimeout(330);
   const settled=await state(page,dialog,sheet);
   if(!settled.open||settled.resting!=='true'||Math.abs(matrixY(settled.transform))>1)throw new Error(`${label}: interrupted sheet failed to return to rest ${JSON.stringify(settled)}`);
   return{beforeY,preGrabY,grabbedY,reversedY};
