@@ -26,6 +26,7 @@ jobs:
           node --check university/dashboard-memo-panel.js
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
+          node --check scripts/widget-settle-interruption-audit.mjs
           node --check scripts/dashboard-default-composition-audit.mjs
           node --check scripts/widget-home-editing-audit.mjs
           node --check scripts/widget-gallery-composition-audit.mjs
@@ -56,6 +57,8 @@ jobs:
           grep -q "widget-memo-input" university/dashboard-editor-v2.js
           grep -q "data-dashboard-columns" university/dashboard-editor-v2.js
           grep -q "widget-direct-floating" university/dashboard-editor-v2.js
+          grep -q "settleAnimations" university/dashboard-editor-v2.js
+          grep -q "presentationRect" university/dashboard-editor-v2.js
           grep -q "widget-drag-placeholder" university/dashboard-editor-v2.css
           grep -q "DWELL_MS=190" university/dashboard-home-editing.js
           grep -q "touch-action:pan-y" university/dashboard-home-editing.css
@@ -82,6 +85,8 @@ jobs:
           exit 1
       - name: Run widget editor browser audit
         run: node scripts/dashboard-editor-v2-audit.mjs
+      - name: Verify widget settle interruption continuity
+        run: node scripts/widget-settle-interruption-audit.mjs
       - name: Verify fresh dashboard composition and saved-layout preservation
         run: node scripts/dashboard-default-composition-audit.mjs
       - name: Run touch home editing and Campus composition audit
