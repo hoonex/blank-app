@@ -24,6 +24,10 @@ jobs:
           node --check tests/liquid-glass-live-stability-audit.mjs
           node --check tests/optical-chrome-audit.mjs
           node --check tests/optical-ambient-scroll-audit.mjs
+          test ! -f flow-optical-ambient.css
+          ! grep -q 'DeviceOrientationEvent' flow-optical-ambient.js
+          ! grep -q 'requestAnimationFrame' flow-optical-ambient.js
+          ! grep -q 'pointermove' flow-optical-ambient.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -45,7 +49,7 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-chrome-audit.mjs
-      - name: Verify Optical jelly and scroll reversal sync
+      - name: Verify retired jelly surface and Optical scroll reversal sync
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/optical-ambient-scroll-audit.mjs

@@ -15,6 +15,9 @@ if(!document.querySelector('link[data-flow-school-settings-wide]')){
 /* Delight must never block School identity/theme/data startup. */
 void import('/flow-experience.js').catch(()=>{});
 
+/* Monetization is progressive enhancement and stays inert until an AdFit unit is configured. */
+void import('/flow-adfit.js').catch(()=>{});
+
 /* Source-contract anchors retained for existing production audits:
  * school-polish.css
  * recoverSchoolLogo

@@ -61,4 +61,8 @@ export function installUniversityFetchRetry(scope=globalThis,{delays=DEFAULT_DEL
   return true;
 }
 
-if(typeof window!=='undefined')installUniversityFetchRetry(window);
+if(typeof window!=='undefined'){
+  installUniversityFetchRetry(window);
+  /* AdFit stays inert until a University ad unit is configured. */
+  void import('/flow-adfit.js').catch(()=>{});
+}

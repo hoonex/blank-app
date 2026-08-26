@@ -18,7 +18,6 @@ const browser=await chromium.launch({headless:true});
 const report={cases:[],scrollReversal:null,failures:[]};
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-function rectData(rect){return rect?{left:rect.x,top:rect.y,right:rect.x+rect.width,bottom:rect.y+rect.height,width:rect.width,height:rect.height}:null}
 function assert(condition,message){if(!condition)throw new Error(message)}
 
 async function prepare(app,width,height){
@@ -38,72 +37,27 @@ async function prepare(app,width,height){
     await page.addInitScript(({university,glassKey,jellyKey})=>{localStorage.setItem('flow-university-profile-v1',JSON.stringify(university));localStorage.setItem('flow-university-timetable-v1',JSON.stringify({year:2026,semester:'2학기',subjects:[]}));localStorage.setItem('flow-university-theme-v1','light');localStorage.setItem(glassKey,'optical');localStorage.setItem(jellyKey,'true')},{university,glassKey:GLASS_KEY,jellyKey:JELLY_KEY});
     await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await page.locator('#appView:not(.hidden)').waitFor({timeout:12000});
   }
-  await page.waitForFunction(()=>document.documentElement.dataset.flowGlassMode==='optical'&&document.documentElement.dataset.flowOpticalJelly==='true'&&document.querySelector('.flow-optical-jelly'),null,{timeout:8000});
-  await page.waitForTimeout(100);
+  await page.waitForFunction(()=>document.documentElement.dataset.flowGlassMode==='optical'&&window.__flowOpticalAmbientInstalled===true,null,{timeout:8000});
   return{context,page};
 }
 
-async function openSettings(page,app){
-  const trigger=app==='school'?page.locator('#mobileSettingsBtn:visible,#settingsBtn:visible').first():page.locator('.flow-mobile-settings:visible,.flow-university-settings-button:visible').first();
-  await trigger.waitFor({timeout:5000});await trigger.click();
-  const panel=app==='school'?'#flowSchoolSettingsView:not(.hidden)':'#flowUniversitySettingsView:not(.hidden)';
-  await page.locator(`${panel} [data-flow-jelly-toggle]`).waitFor({timeout:5000});
-  return panel;
-}
-async function closeSettings(page){const today=page.locator('[data-view="today"]:visible').first();await today.click();await page.waitForTimeout(180)}
-
-async function exerciseJelly(page){
-  const before=await page.locator('.flow-optical-jelly').evaluate(node=>getComputedStyle(node).transform);
-  const hasOrientation=await page.evaluate(()=>typeof DeviceOrientationEvent!=='undefined');
-  if(hasOrientation){
-    await page.evaluate(()=>{
-      const fire=(beta,gamma)=>{const event=new Event('deviceorientation');Object.defineProperties(event,{beta:{value:beta},gamma:{value:gamma}});window.dispatchEvent(event)};
-      fire(22,3);fire(42,18);
-    });
-  }else{
-    const size=page.viewportSize();await page.mouse.move(size.width*.18,size.height*.74);
-  }
-  await page.waitForTimeout(330);
-  const after=await page.locator('.flow-optical-jelly').evaluate(node=>({transform:getComputedStyle(node).transform,lightX:node.style.getPropertyValue('--flow-jelly-light-x'),lightY:node.style.getPropertyValue('--flow-jelly-light-y'),placement:node.dataset.flowJellyPlacement,placementOverlap:Number(node.dataset.flowJellyOverlap||NaN)}));
-  assert(after.transform!==before,`jelly did not respond to ${hasOrientation?'orientation':'pointer'} input`);
-  assert(Number.isFinite(after.placementOverlap)&&after.placementOverlap===0,`jelly placement envelope overlaps a visible control by ${after.placementOverlap}`);
-  return{input:hasOrientation?'orientation':'pointer',before,after};
-}
-async function visibleControlCollisions(page){
-  return page.evaluate(()=>{
-    const jelly=document.querySelector('.flow-optical-jelly');if(!jelly)return['missing jelly'];
-    const jr=jelly.getBoundingClientRect(),selector='button:enabled,a[href],input:not([type="hidden"]):not(:disabled),select:not(:disabled),textarea:not(:disabled),[role="button"],[role="switch"]';
-    const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
-    return [...document.querySelectorAll(selector)].filter(node=>{
-      if(node.closest('.flow-optical-jelly,.flow-refraction-copy-lens'))return false;
-      const style=getComputedStyle(node),r=node.getBoundingClientRect();
-      if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||r.width<=1||r.height<=1||r.bottom<=0||r.top>=innerHeight||r.right<=0||r.left>=innerWidth)return false;
-      return overlap(jr,r)>.5;
-    }).map(node=>({tag:node.tagName,id:node.id||'',text:(node.textContent||node.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ').slice(0,48),rect:rectData(node.getBoundingClientRect())}));
-  });
-}
-
-async function auditCase(app,name,width,height){
+async function auditRetirement(app,name,width,height){
   const {context,page}=await prepare(app,width,height);
   try{
-    const jelly=page.locator('.flow-optical-jelly');
-    const jellyBox=await jelly.boundingBox();assert(jellyBox,`${app}/${name}: jelly hidden`);
-    const jr=rectData(jellyBox);assert(jr.left>=-1&&jr.right<=width+1&&jr.top>=-1&&jr.bottom<=height+1,`${app}/${name}: jelly outside viewport ${JSON.stringify(jr)}`);
-    assert(await jelly.evaluate(node=>getComputedStyle(node).pointerEvents)==='none',`${app}/${name}: jelly captures input`);
-    const panel=await openSettings(page,app),toggle=page.locator(`${panel} [data-flow-jelly-toggle]`);
-    const switchState=await toggle.evaluate(node=>{const style=getComputedStyle(node),thumb=getComputedStyle(node.firstElementChild);return{checked:node.getAttribute('aria-checked'),disabled:node.disabled,background:style.backgroundImage,backdrop:style.backdropFilter||style.webkitBackdropFilter||'',thumbTransform:thumb.transform,status:node.parentElement?.querySelector('[data-flow-jelly-status]')?.textContent||''}});
-    assert(switchState.checked==='true'&&!switchState.disabled,`${app}/${name}: Optical jelly switch not enabled ${JSON.stringify(switchState)}`);
-    assert(switchState.background.includes('gradient'),`${app}/${name}: switch has no Optical specular gradient`);
-    assert(/blur\(/.test(switchState.backdrop),`${app}/${name}: switch has no glass backdrop ${switchState.backdrop}`);
-    await page.screenshot({path:`${OUT}/${app}-${name}-settings.png`,fullPage:false,animations:'disabled'});
-    await closeSettings(page);
-    const motion=await exerciseJelly(page),collisions=await visibleControlCollisions(page);
-    assert(collisions.length===0,`${app}/${name}: moved jelly covers visible controls ${JSON.stringify(collisions)}`);
-    const finalBox=rectData(await jelly.boundingBox());assert(finalBox&&finalBox.left>=-1&&finalBox.right<=width+1&&finalBox.top>=-1&&finalBox.bottom<=height+1,`${app}/${name}: moved jelly outside viewport ${JSON.stringify(finalBox)}`);
-    const scroll=await page.evaluate(()=>({client:document.documentElement.clientWidth,width:document.documentElement.scrollWidth}));
-    assert(scroll.width<=scroll.client+3,`${app}/${name}: horizontal overflow ${JSON.stringify(scroll)}`);
-    await page.screenshot({path:`${OUT}/${app}-${name}-jelly.png`,fullPage:false,animations:'disabled'});
-    return{app,name,viewport:{width,height},jelly:jr,finalJelly:finalBox,switchState,motion,collisions,scroll};
+    const state=await page.evaluate(jellyKey=>({
+      jelly:document.querySelectorAll('.flow-optical-jelly').length,
+      setting:document.querySelectorAll('[data-flow-jelly-setting],[data-flow-jelly-toggle]').length,
+      jellyDataset:document.documentElement.getAttribute('data-flow-optical-jelly'),
+      stored:localStorage.getItem(jellyKey),
+      glassMode:document.documentElement.dataset.flowGlassMode,
+      refraction:document.documentElement.dataset.flowGlassRefraction||'',
+      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+    }),JELLY_KEY);
+    assert(state.glassMode==='optical',`${app}/${name}: Optical mode was not preserved`);
+    assert(state.jelly===0&&state.setting===0,`${app}/${name}: retired jelly UI still exists ${JSON.stringify(state)}`);
+    assert(state.jellyDataset===null&&state.stored===null,`${app}/${name}: stale jelly state was not cleaned ${JSON.stringify(state)}`);
+    assert(state.overflow<=3,`${app}/${name}: horizontal overflow ${state.overflow}`);
+    return{app,name,viewport:{width,height},...state};
   }finally{await context.close()}
 }
 
@@ -121,24 +75,18 @@ async function scrollReversalAudit(){
       const nav=document.querySelector('.mobile-bottom-nav'),source=document.querySelector('.product-main'),navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect();
       const actual=Number.parseFloat(nav.style.getPropertyValue('--flow-refraction-scene-top'));return{actual,expected:sourceRect.top-(navRect.top+5),scrollY:window.scrollY};
     });
-    await page.evaluate(()=>window.scrollTo({top:720,behavior:'instant'}));await page.waitForTimeout(22);
-    const down=await read();
-    await page.evaluate(()=>window.scrollTo({top:535,behavior:'instant'}));
-    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    const reverse=await read();
-    await page.evaluate(()=>window.scrollTo({top:760,behavior:'instant'}));await page.waitForTimeout(18);await page.evaluate(()=>window.scrollTo({top:610,behavior:'instant'}));
-    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    const reverseAgain=await read();
+    await page.evaluate(()=>window.scrollTo({top:720,behavior:'instant'}));await page.waitForTimeout(22);const down=await read();
+    await page.evaluate(()=>window.scrollTo({top:535,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const reverse=await read();
+    await page.evaluate(()=>window.scrollTo({top:760,behavior:'instant'}));await page.waitForTimeout(18);await page.evaluate(()=>window.scrollTo({top:610,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const reverseAgain=await read();
     for(const [label,state] of [['down',down],['reverse',reverse],['reverseAgain',reverseAgain]])assert(Math.abs(state.actual-state.expected)<=1.25,`${label}: refracted scene stale by ${Math.abs(state.actual-state.expected).toFixed(2)}px ${JSON.stringify(state)}`);
-    await page.waitForTimeout(230);const settledA=await read();await page.waitForTimeout(120);const settledB=await read();
-    assert(Math.abs(settledA.actual-settledB.actual)<=.05,'scroll follower did not settle after bounded follow-through');
+    await page.waitForTimeout(230);const settledA=await read();await page.waitForTimeout(120);const settledB=await read();assert(Math.abs(settledA.actual-settledB.actual)<=.05,'scroll follower did not settle after bounded follow-through');
     await page.screenshot({path:`${OUT}/school-mobile-scroll-reversal.png`,fullPage:false,animations:'disabled'});
     return{down,reverse,reverseAgain,settledA,settledB};
   }finally{await context.close()}
 }
 
 for(const app of ['school','university'])for(const [name,width,height] of viewports){
-  try{report.cases.push(await auditCase(app,name,width,height))}catch(error){report.failures.push(`${app}/${name}: ${error.message}`)}
+  try{report.cases.push(await auditRetirement(app,name,width,height))}catch(error){report.failures.push(`${app}/${name}: ${error.message}`)}
 }
 try{report.scrollReversal=await scrollReversalAudit()}catch(error){report.failures.push(`scroll-reversal: ${error.message}`)}
 await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));

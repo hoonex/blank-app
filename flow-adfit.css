@@ -1,0 +1,13 @@
+.flow-adfit-slot{
+  box-sizing:border-box;
+  max-width:100%;
+  margin:26px auto 18px!important;
+  text-align:center;
+  overflow:visible;
+}
+@media(max-width:900px){
+  .flow-adfit-slot{margin-top:22px!important;margin-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
+}
+@media(max-width:430px){
+  .flow-adfit-slot{margin-top:18px!important}
+}

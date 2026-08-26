@@ -1,0 +1,62 @@
+import {FLOW_ADFIT_CONFIG} from '/flow-adfit-config.js';
+
+const STYLE_HREF='/flow-adfit.css';
+const SDK_SELECTOR='script[data-flow-adfit-sdk]';
+
+function appKind(){
+  if(document.querySelector('#dashboard')&&document.querySelector('#todayView'))return'school';
+  if(document.querySelector('#appView')&&document.querySelector('#todayView'))return'university';
+  return'';
+}
+function configFor(kind){
+  const override=globalThis.__FLOW_ADFIT_CONFIG?.[kind]||{};
+  const base=FLOW_ADFIT_CONFIG[kind]||{};
+  return{...base,...override};
+}
+function validConfig(config){
+  const unit=String(config?.unit||'').trim(),width=Number(config?.width),height=Number(config?.height);
+  return Boolean(unit)&&Number.isFinite(width)&&width>0&&Number.isFinite(height)&&height>0;
+}
+function ensureStyle(){
+  if([...document.querySelectorAll('link[rel="stylesheet"]')].some(node=>{try{return new URL(node.href,location.href).pathname===STYLE_HREF}catch{return false}}))return;
+  const link=document.createElement('link');link.rel='stylesheet';link.href=STYLE_HREF;link.dataset.flowAdfitStyle='true';document.head.append(link);
+}
+function anchorFor(kind){
+  return kind==='school'?document.querySelector('#todayView .today-grid'):document.querySelector('#todayView .content-grid');
+}
+function ensureSlot(kind,config){
+  let slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${kind}"]`);
+  if(slot)return slot;
+  const anchor=anchorFor(kind);if(!anchor)return null;
+  slot=document.createElement('ins');
+  slot.className='kakao_ad_area flow-adfit-slot';
+  slot.style.cssText='display:none;width:100%;';
+  slot.dataset.adUnit=String(config.unit).trim();
+  slot.dataset.adWidth=String(config.width);
+  slot.dataset.adHeight=String(config.height);
+  slot.dataset.flowAdfitKind=kind;
+  slot.setAttribute('aria-label','광고');
+  anchor.insertAdjacentElement('afterend',slot);
+  return slot;
+}
+function ensureSdk(src){
+  if(document.querySelector(SDK_SELECTOR))return;
+  const script=document.createElement('script');
+  script.async=true;script.src=src;script.dataset.flowAdfitSdk='true';
+  document.head.append(script);
+}
+function init(){
+  if(document.documentElement.dataset.flowAdfit==='ready')return;
+  const kind=appKind();if(!kind)return;
+  const config=configFor(kind);
+  if(!validConfig(config)){
+    document.documentElement.dataset.flowAdfit='unconfigured';
+    return;
+  }
+  ensureStyle();
+  if(!ensureSlot(kind,config))return;
+  ensureSdk(String(globalThis.__FLOW_ADFIT_CONFIG?.sdk||FLOW_ADFIT_CONFIG.sdk));
+  document.documentElement.dataset.flowAdfit='ready';
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
