@@ -10,6 +10,9 @@ const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light'});
 const page=await context.newPage();
 page.setDefaultTimeout(10000);
+const consoleErrors=[],pageErrors=[];
+page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});
+page.on('pageerror',error=>pageErrors.push(String(error)));
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 await page.route('**/functions/v1/university-data**',route=>{
@@ -92,8 +95,9 @@ const final=await page.evaluate(()=>({
   scrollWidth:document.documentElement.scrollWidth,
 }));
 if(final.settling||final.floating||final.placeholder||final.scrollWidth>final.width+3)throw new Error(`Interrupted widget did not settle cleanly: ${JSON.stringify(final)}`);
+if(consoleErrors.length||pageErrors.length)throw new Error(`Widget interruption browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
 
-const report={sourceBox,targetBox,settling,preGrab,grabbed,jump,reversed,final};
+const report={sourceBox,targetBox,settling,preGrab,grabbed,jump,reversed,final,consoleErrors,pageErrors};
 await writeFile(`${OUT}/widget-settle-interruption-report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 await context.close();
