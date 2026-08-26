@@ -35,14 +35,19 @@ async function drag(page,selector,delta,{hold=0,steps=8}={}){
   await page.mouse.move(x,y+delta,{steps});
 }
 async function interruptReturn(page,dialog,sheet,label){
-  await drag(page,dialog,118,{hold:12,steps:8});await page.waitForTimeout(12);await page.mouse.up();await page.waitForTimeout(25);
+  // Keep this pull below every dismiss threshold. This probe is specifically
+  // about interrupting the return-to-rest transition, not chasing a sheet
+  // that is already exiting the viewport.
+  await drag(page,dialog,58,{hold:12,steps:8});await page.waitForTimeout(12);await page.mouse.up();await page.waitForTimeout(25);
   const before=await state(page,dialog,sheet),beforeY=matrixY(before.transform);
-  if(before.settling!=='true'||!(beforeY>8))throw new Error(`${label}: return settle was not in flight before interruption ${JSON.stringify({before,beforeY})}`);
+  if(before.settling!=='true'||before.dismissing==='true'||!(beforeY>8))throw new Error(`${label}: return settle was not in flight before interruption ${JSON.stringify({before,beforeY})}`);
 
   const point=await handlePoint(page,dialog);
-  await page.mouse.move(point.x,point.y);await page.mouse.down();await page.waitForTimeout(18);
+  await page.mouse.move(point.x,point.y);
+  const preGrab=await state(page,dialog,sheet),preGrabY=matrixY(preGrab.transform);
+  await page.mouse.down();await page.waitForTimeout(18);
   const grabbed=await state(page,dialog,sheet),grabbedY=matrixY(grabbed.transform);
-  if(grabbed.grabbed!=='true'||grabbed.settling||Math.abs(grabbedY-beforeY)>6)throw new Error(`${label}: mid-settle re-grab jumped away from presentation state ${JSON.stringify({beforeY,grabbedY,before,grabbed})}`);
+  if(grabbed.grabbed!=='true'||grabbed.settling||Math.abs(grabbedY-preGrabY)>6)throw new Error(`${label}: mid-settle re-grab jumped away from presentation state ${JSON.stringify({beforeY,preGrabY,grabbedY,before,preGrab,grabbed})}`);
 
   await page.mouse.move(point.x,point.y-30,{steps:4});await page.waitForTimeout(24);
   const reversed=await state(page,dialog,sheet),reversedY=matrixY(reversed.transform);
@@ -50,7 +55,7 @@ async function interruptReturn(page,dialog,sheet,label){
   await page.mouse.up();await page.waitForTimeout(330);
   const settled=await state(page,dialog,sheet);
   if(!settled.open||settled.resting!=='true'||Math.abs(matrixY(settled.transform))>1)throw new Error(`${label}: interrupted sheet failed to return to rest ${JSON.stringify(settled)}`);
-  return{beforeY,grabbedY,reversedY};
+  return{beforeY,preGrabY,grabbedY,reversedY};
 }
 async function assertSheet(page,{dialog,sheet,label,screenshot}){
   await openDialog(page,dialog);
