@@ -7,7 +7,7 @@ await mkdir(OUT,{recursive:true});
 
 const UNIVERSITY={id:'knu',name:'경북대학교',address:'대구광역시 북구 대학로 80'};
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light'});
+const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light',reducedMotion:'no-preference'});
 const page=await context.newPage();
 page.setDefaultTimeout(10000);
 const consoleErrors=[],pageErrors=[];
@@ -15,6 +15,13 @@ page.on('console',message=>{if(message.type()==='error')consoleErrors.push(messa
 page.on('pageerror',error=>pageErrors.push(String(error)));
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
+async function widgetState(){
+  return page.evaluate(()=>{
+    const el=document.querySelector('[data-widget-id="campus"]'),r=el?.getBoundingClientRect(),style=el?getComputedStyle(el):null;
+    const animations=el?[...el.getAnimations()].map(animation=>({playState:animation.playState,currentTime:animation.currentTime,keyframes:animation.effect?.getKeyframes?.().map(frame=>frame.transform).filter(Boolean)||[]})):[];
+    return{settling:el?.dataset.widgetSettling||'',dragging:el?.dataset.directDragging||'',position:style?.position||'',transform:style?.transform||'none',rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},animations,floating:document.querySelectorAll('.widget-direct-floating').length,placeholder:document.querySelectorAll('.widget-drag-placeholder').length};
+  });
+}
 await page.route('**/functions/v1/university-data**',route=>{
   const action=new URL(route.request().url()).searchParams.get('action')||'';
   if(action==='profile')return json(route,{school:UNIVERSITY,metrics:{},partial:false,unavailable:[]});
@@ -55,11 +62,9 @@ await page.mouse.move(drop.x,drop.y,{steps:10});
 await page.mouse.up();
 await page.waitForTimeout(30);
 
-const settling=await page.evaluate(()=>{
-  const el=document.querySelector('[data-widget-id="campus"]'),r=el?.getBoundingClientRect();
-  return{settling:el?.dataset.widgetSettling||'',position:el?getComputedStyle(el).position:'',rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},floating:document.querySelectorAll('.widget-direct-floating').length,placeholder:document.querySelectorAll('.widget-drag-placeholder').length};
-});
-if(settling.settling!=='1'||settling.position==='fixed'||settling.floating||settling.placeholder)throw new Error(`Widget did not enter an in-grid visual settle before re-grab: ${JSON.stringify(settling)}`);
+const settling=await widgetState();
+const transformAnimation=settling.animations.some(animation=>animation.playState==='running'&&animation.keyframes.some(transform=>transform&&transform!=='none'));
+if(settling.position==='fixed'||settling.floating||settling.placeholder||(!transformAnimation&&settling.transform==='none'))throw new Error(`Widget did not enter a rendered in-grid settle before re-grab: ${JSON.stringify(settling)}`);
 
 const live=await source.boundingBox();
 if(!live)throw new Error('Settling widget lost live geometry.');
@@ -70,11 +75,10 @@ if(!preGrab)throw new Error('Widget presentation rect missing immediately before
 await page.mouse.down();
 await page.waitForTimeout(18);
 
-const grabbed=await page.evaluate(()=>{
-  const el=document.querySelector('[data-widget-id="campus"]'),r=el?.getBoundingClientRect();
-  return{settling:el?.dataset.widgetSettling||'',dragging:el?.dataset.directDragging||'',position:el?getComputedStyle(el).position:'',rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height},floating:document.querySelectorAll('.widget-direct-floating').length,placeholder:document.querySelectorAll('.widget-drag-placeholder').length};
-});
-if(grabbed.settling||grabbed.dragging!=='1'||grabbed.position!=='fixed'||grabbed.floating!==1||grabbed.placeholder!==1)throw new Error(`Settling widget was not synchronously converted back to direct manipulation: ${JSON.stringify(grabbed)}`);
+const grabbed=await widgetState();
+if(grabbed.dragging!=='1'||grabbed.position!=='fixed'||grabbed.floating!==1||grabbed.placeholder!==1)throw new Error(`Settling widget was not synchronously converted back to direct manipulation: ${JSON.stringify(grabbed)}`);
+const oldSettleStillRunning=grabbed.animations.some(animation=>animation.playState==='running'&&animation.keyframes.some(transform=>transform&&transform!=='none'));
+if(oldSettleStillRunning)throw new Error(`Old grid settle animation still owns the re-grabbed widget: ${JSON.stringify(grabbed.animations)}`);
 const jump=Math.hypot((grabbed.rect?.left??0)-preGrab.x,(grabbed.rect?.top??0)-preGrab.y);
 if(jump>6)throw new Error(`Widget re-grab jumped ${jump.toFixed(2)}px away from its presentation position: ${JSON.stringify({preGrab,grabbed})}`);
 
