@@ -35,6 +35,7 @@ jobs:
           node --check tests/settings-wide-composition-audit.mjs
           node --check tests/university-page-header-audit.mjs
           node --check tests/flow-experience-audit.mjs
+          node --check tests/date-scrubber-direct-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
           test -f flow-experience.css
@@ -91,6 +92,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/flow-experience-audit.mjs
+      - name: Verify direct date scrubber tracking and edge resistance
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/date-scrubber-direct-audit.mjs
       - name: Exercise School, University, Campus, widgets, and Admin in six viewports
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
