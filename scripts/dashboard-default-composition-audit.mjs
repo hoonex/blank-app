@@ -65,7 +65,7 @@ function validateFresh(name,width,state){
     if(state.rowHeight<150)throw new Error(`${name}: wide dashboard rows are still phone-like and undersized ${JSON.stringify(state)}`);
     if(state.schedule.height<315)throw new Error(`${name}: wide schedule card did not gain enough vertical reading room ${JSON.stringify(state)}`);
     if(state.grid.bottom<620)throw new Error(`${name}: dashboard still ends too early in the first fold ${JSON.stringify(state)}`);
-    if(state.scheduleListClientHeight<205)throw new Error(`${name}: schedule list remains visibly cramped on the wide canvas ${JSON.stringify(state)}`);
+    if(state.scheduleListScrollHeight>state.scheduleListClientHeight+1)throw new Error(`${name}: schedule list still requires internal scrolling on the wide canvas ${JSON.stringify(state)}`);
   }
 }
 
