@@ -186,23 +186,63 @@ type NormalizedRoute = {
   badges: string[];
 };
 
+function offsetCoordinate(x: number, y: number, eastMeters: number, northMeters: number) {
+  const latDelta = northMeters / 111320;
+  const lonScale = Math.max(0.2, Math.cos(y * Math.PI / 180));
+  const lonDelta = eastMeters / (111320 * lonScale);
+  return { x: x + lonDelta, y: y + latDelta };
+}
+
+function normalizeStops(items: any[], originX: number, originY: number) {
+  return items.map((item: any) => {
+    const sx = Number(item.gpslong), sy = Number(item.gpslati);
+    return {
+      id: String(item.nodeid || ""),
+      name: String(item.nodenm || "정류장"),
+      cityCode: String(item.citycode || ""),
+      x: sx,
+      y: sy,
+      distance: Number.isFinite(sx) && Number.isFinite(sy) ? haversineMeters(originX, originY, sx, sy) : 9999,
+    } satisfies Stop;
+  }).filter((stop: Stop) => stop.id && stop.cityCode && Number.isFinite(stop.x) && Number.isFinite(stop.y));
+}
+
+async function stopProbe(originX: number, originY: number, probeX: number, probeY: number) {
+  const items = await tago(TAGO_STOPS_NEAR, { gpsLong: probeX, gpsLati: probeY, numOfRows: 20 });
+  return normalizeStops(items, originX, originY);
+}
+
 async function nearbyStops(x: number, y: number) {
   const key = `near:${x.toFixed(5)}:${y.toFixed(5)}`;
   return cached(key, 10 * 60_000, async () => {
-    const items = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 12 });
-    return items.map((item: any) => {
-      const sx = Number(item.gpslong), sy = Number(item.gpslati);
-      return {
-        id: String(item.nodeid || ""),
-        name: String(item.nodenm || "정류장"),
-        cityCode: String(item.citycode || ""),
-        x: sx,
-        y: sy,
-        distance: Number.isFinite(sx) && Number.isFinite(sy) ? haversineMeters(x, y, sx, sy) : 9999,
-      } satisfies Stop;
-    }).filter((stop: Stop) => stop.id && stop.cityCode && Number.isFinite(stop.x) && Number.isFinite(stop.y))
-      .sort((a: Stop, b: Stop) => a.distance - b.distance)
-      .slice(0, 5);
+    let candidates = await stopProbe(x, y, x, y);
+    if (!candidates.length) {
+      const radius = 420;
+      const cardinal = [
+        offsetCoordinate(x, y, radius, 0),
+        offsetCoordinate(x, y, -radius, 0),
+        offsetCoordinate(x, y, 0, radius),
+        offsetCoordinate(x, y, 0, -radius),
+      ];
+      candidates = (await Promise.all(cardinal.map((point) => stopProbe(x, y, point.x, point.y)))).flat();
+      if (!candidates.length) {
+        const diagonal = radius / Math.sqrt(2);
+        const corners = [
+          offsetCoordinate(x, y, diagonal, diagonal),
+          offsetCoordinate(x, y, diagonal, -diagonal),
+          offsetCoordinate(x, y, -diagonal, diagonal),
+          offsetCoordinate(x, y, -diagonal, -diagonal),
+        ];
+        candidates = (await Promise.all(corners.map((point) => stopProbe(x, y, point.x, point.y)))).flat();
+      }
+    }
+    const unique = new Map<string, Stop>();
+    for (const stop of candidates) {
+      if (stop.distance > 1100) continue;
+      const previous = unique.get(stop.id);
+      if (!previous || stop.distance < previous.distance) unique.set(stop.id, stop);
+    }
+    return [...unique.values()].sort((a, b) => a.distance - b.distance).slice(0, 5);
   });
 }
 
@@ -464,8 +504,8 @@ async function stopLines(stops: Stop[]) {
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number) {
   const [sourceStops, destinationStops] = await Promise.all([nearbyStops(sx, sy), nearbyStops(ex, ey)]);
-  if (!sourceStops.length) throw new Error("현재 위치 500m 안에서 버스 정류장을 찾지 못했습니다.");
-  if (!destinationStops.length) throw new Error("목적지 500m 안에서 버스 정류장을 찾지 못했습니다.");
+  if (!sourceStops.length) throw new Error("현재 위치 약 1km 범위에서 버스 정류장을 찾지 못했습니다.");
+  if (!destinationStops.length) throw new Error("목적지 약 1km 범위에서 버스 정류장을 찾지 못했습니다.");
 
   const [source, destination] = await Promise.all([stopLines(sourceStops), stopLines(destinationStops)]);
   if (!source.length || !destination.length) throw new Error("주변 정류장의 운행 노선 정보를 찾지 못했습니다.");
