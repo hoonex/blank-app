@@ -4,8 +4,8 @@ const STYLE_HREF='/flow-adfit.css';
 const SDK_SELECTOR='script[data-flow-adfit-sdk]';
 
 function appKind(){
-  if(document.querySelector('#dashboard')&&document.querySelector('#todayView'))return'school';
-  if(document.querySelector('#appView')&&document.querySelector('#todayView'))return'university';
+  if(document.querySelector('#dashboard:not(.hidden)')&&document.querySelector('#todayView')&&localStorage.getItem('flow-school-profile-v3'))return'school';
+  if(document.querySelector('#appView:not(.hidden)')&&document.querySelector('#todayView')&&localStorage.getItem('flow-university-profile-v1'))return'university';
   return'';
 }
 function configFor(kind){
@@ -24,7 +24,7 @@ function ensureStyle(){
 function ensureSlot(kind,config){
   let slot=document.querySelector(`body > .flow-adfit-rail .flow-adfit-slot[data-flow-adfit-kind="${kind}"]`);
   if(slot)return slot;
-  const app=kind==='school'?document.querySelector('#dashboard'):document.querySelector('#appView');
+  const app=kind==='school'?document.querySelector('#dashboard:not(.hidden)'):document.querySelector('#appView:not(.hidden)');
   if(!app||!document.body)return null;
   const rail=document.createElement('section');
   rail.className='flow-adfit-rail';
@@ -66,3 +66,4 @@ function init(){
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+document.addEventListener('click',event=>{if(event.target.closest?.('#setupSave'))setTimeout(init,0)},{capture:true,passive:true});
