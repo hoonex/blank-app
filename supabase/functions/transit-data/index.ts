@@ -32,6 +32,7 @@ function reply(body: unknown, status = 200, cache = "no-store") {
 }
 
 function finite(value: string | null, min: number, max: number) {
+  if (value === null || !value.trim()) return null;
   const number = Number(value);
   if (!Number.isFinite(number) || number < min || number > max) return null;
   return number;
