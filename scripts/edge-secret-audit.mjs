@@ -10,7 +10,7 @@ const requiredContract={
   'school-logo':['KAKAO_REST_KEY'],
   'university-campus':['KAKAO_REST_KEY'],
   'university-data':['DATA_GO_KR_SERVICE_KEY'],
-  'transit-data':['DATA_GO_KR_SERVICE_KEY','ODSAY_API_KEY','KAKAO_REST_KEY'],
+  'transit-data':['DATA_GO_KR_SERVICE_KEY','KAKAO_REST_KEY'],
 };
 
 for(const [fn,names] of Object.entries(requiredContract)){
@@ -50,8 +50,13 @@ requireEnv('supabase/functions/school-logo/index.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/university-campus/config.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/university-data/bootstrap.ts','DATA_GO_KR_SERVICE_KEY');
 requireEnv('supabase/functions/transit-data/index.ts','DATA_GO_KR_SERVICE_KEY');
-requireEnv('supabase/functions/transit-data/index.ts','ODSAY_API_KEY');
 requireEnv('supabase/functions/transit-data/index.ts','KAKAO_REST_KEY');
+
+const transit=combined.get('supabase/functions/transit-data/index.ts')||'';
+if(/ODSAY_API_KEY|api\.odsay\.com/.test(transit))throw new Error('transit-data: ODsay dependency must not be required');
+for(const expected of ['getCrdntPrxmtSttnList','getSttnThrghRouteList','getRouteAcctoThrghSttnList','getSttnAcctoArvlPrearngeInfoList']){
+  if(!transit.includes(expected))throw new Error(`transit-data: public routing operation ${expected} missing`);
+}
 
 const university=combined.get('supabase/functions/university-data/index.ts')||'';
 const compatibilityRoutes={
@@ -76,6 +81,7 @@ for(const [file,text] of combined){
 console.log(JSON.stringify({
   ok:true,
   functions:Object.keys(requiredContract),
+  transitProvider:'TAGO-public-data',
   universityCompatibilityRoutes:compatibilityRoutes,
   scannedFiles:sourceFiles.length,
 },null,2));
