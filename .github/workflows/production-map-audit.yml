@@ -39,6 +39,10 @@ jobs:
           grep -q 'flow:campus-current-route' university/campus.js
           grep -q 'flow:campus-current-route' university/campus-interactive.js
           grep -q 'currentRouteRequestDelta' scripts/production-map-audit.mjs
+          grep -q "id:'0000005'" scripts/production-map-audit.mjs
+          grep -q "address:'대구광역시 북구 대학로 80'" scripts/production-map-audit.mjs
+          grep -q "source:'deterministic-production-profile'" scripts/production-map-audit.mjs
+          ! grep -q 'university-data' scripts/production-map-audit.mjs
       - name: Wait for production assets
         if: github.event_name != 'pull_request'
         run: |
