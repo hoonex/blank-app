@@ -10,7 +10,7 @@ let requestAbort=null;
 let loading=false;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
-function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
   const school=profile()?.school||{};
@@ -134,10 +134,20 @@ function segmentDetail(segment){
   const direction=segment.direction?` · ${esc(segment.direction)} 방면`:'';
   return`${esc(line)} · ${esc(segment.startName||'승차')} → ${esc(segment.endName||'하차')}${stations?` · ${stations}`:''}${direction} · 약 ${segment.minutes}분`;
 }
+function routeRealtime(route){
+  const legs=Array.isArray(route?.realtimeLegs)?route.realtimeLegs.filter(Boolean):[];
+  return legs.length?legs:(route?.realtime?[route.realtime]:[]);
+}
+function liveRow(live,index){
+  const transfer=Number(live?.legIndex)>0||index>0;
+  const label=transfer?'환승 실시간':'실시간';
+  const timing=transfer?`환승 후 ${Math.max(0,Number(live.waitAddedMinutes)||0)}분 대기`:`${Math.max(0,Number(live.arrivalMinutes)||0)}분 후`;
+  const stops=Number.isFinite(Number(live?.stops))?` · ${Number(live.stops)}정거장 전`:'';
+  return`<div class="flow-transit-live" data-live-leg="${index}"><b>${label}</b><span>${esc(live?.routeNo||'버스')} · ${timing}${stops}</span></div>`;
+}
 function routeCard(route,index){
   const badges=(route.badges||[]).map(badge=>`<span>${esc(badge)}</span>`).join('');
-  const live=route.realtime;
-  const liveCopy=live?`<div class="flow-transit-live"><b>실시간</b><span>${esc(live.routeNo)} · ${live.arrivalMinutes}분 후${Number.isFinite(Number(live.stops))?` · ${live.stops}정거장 전`:''}</span></div>`:'';
+  const liveCopy=routeRealtime(route).map(liveRow).join('');
   const chips=(route.segments||[]).filter(segment=>segment.minutes||segment.type!=='walk').map(segment=>`<span class="flow-transit-segment-chip ${esc(segment.type)}">${esc(segmentLabel(segment))}</span>`).join('<i aria-hidden="true">›</i>');
   const steps=(route.segments||[]).map((segment,step)=>`<li><b>${step+1}</b><span>${segmentDetail(segment)}</span></li>`).join('');
   return`<article class="content-card neo-panel flow-transit-route${index===0?' is-best':''}" data-transit-route="${index}">
@@ -153,9 +163,15 @@ function routeCard(route,index){
 }
 function renderRoutes(body){
   const routes=Array.isArray(body?.routes)?body.routes:[];if(!routes.length)throw new Error('표시할 교통 경로가 없습니다.');
-  const realtime=routes.some(route=>route.realtime);
+  const realtime=routes.some(route=>routeRealtime(route).length>0);
+  const multi=routes.some(route=>routeRealtime(route).length>1);
   const summary=$('#transitSummary');
-  if(summary){summary.classList.remove('hidden');summary.innerHTML=`<strong>${realtime?'실시간 버스 도착을 일부 반영했습니다.':'예상 소요시간 기준 경로입니다.'}</strong><span>${realtime?'버스 도착정보가 있는 첫 승차 구간은 대기시간까지 보정합니다.':'실시간 도착정보가 없는 구간은 평균 이동시간을 사용합니다.'}</span>`}
+  if(summary){
+    summary.classList.remove('hidden');
+    const title=multi?'환승 버스까지 실시간 도착을 반영했습니다.':realtime?'실시간 버스 도착을 일부 반영했습니다.':'예상 소요시간 기준 경로입니다.';
+    const detail=multi?'환승 지점 도착 이후 탈 수 있는 다음 버스를 골라 대기시간을 보정합니다.':realtime?'버스 도착정보가 있는 승차 구간의 대기시간을 보정합니다.':'실시간 도착정보가 없는 구간은 평균 이동시간을 사용합니다.';
+    summary.innerHTML=`<strong>${title}</strong><span>${detail}</span>`;
+  }
   $('#transitRoutes').innerHTML=routes.map(routeCard).join('');
   const generated=new Date(body.generatedAt||Date.now());
   setState(`${routes.length}개 경로 · ${new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(generated)} 갱신`,realtime?'live':'neutral');
