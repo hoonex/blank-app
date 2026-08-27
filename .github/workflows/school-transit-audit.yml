@@ -43,6 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
+          probe='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-daegu-probe'
           curl -fsSL --connect-timeout 10 --max-time 30 "$base?action=health" > /tmp/transit-health.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
@@ -62,6 +63,10 @@ jobs:
           if [ "$route_status" != "200" ]; then
             echo "Transit route HTTP $route_status"
             cat /tmp/transit-route.json
+            echo
+            echo '--- Modern BusStop/getBusStop probe ---'
+            curl -sS --connect-timeout 10 --max-time 25 "$probe" || true
+            echo
             exit 1
           fi
           node --input-type=module - <<'NODE'
