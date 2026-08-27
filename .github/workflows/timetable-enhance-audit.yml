@@ -26,6 +26,9 @@ jobs:
           node --check university/timetable-enhance.js
           node --check scripts/timetable-enhance-audit.mjs
           test -s university/timetable-enhance.css
+          grep -q "data-time-resize-start-handle" university/timetable-enhance.js
+          grep -q "resizeEdgeForPointer" university/timetable-enhance.js
+          grep -q "data-time-resize-edge" university/timetable-enhance.js
           grep -q "timetable-enhance.js" university/poi-icons.js
           grep -q "timetable-enhance.js" sw.js
           grep -q "timetable-enhance.css" sw.js
