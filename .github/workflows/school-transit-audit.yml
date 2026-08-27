@@ -51,12 +51,17 @@ jobs:
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           console.log('Transit integrations: Public Data + Kakao ready; TAGO public router active');
           NODE
-          curl -fsSL --get --connect-timeout 10 --max-time 50 \
+          route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 50 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6014' \
             --data-urlencode 'sy=35.8714' \
             --data-urlencode 'destination=대구광역시 북구 대학로 80' \
-            "$base" > /tmp/transit-route.json
+            "$base")
+          if [ "$route_status" != "200" ]; then
+            echo "Transit route HTTP $route_status"
+            cat /tmp/transit-route.json
+            exit 1
+          fi
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
           const data=JSON.parse(fs.readFileSync('/tmp/transit-route.json','utf8'));
