@@ -219,7 +219,7 @@ function cloneSource(){
   if(!source||!scene)return;
   ensureIdStyleAliases();
   const kind=sourceKind(source),copy=source.cloneNode(true);copy.classList.add('flow-refraction-source-copy');copy.dataset.flowRefractionSource=kind;copy.setAttribute('aria-hidden','true');copy.setAttribute('inert','');
-  copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics,.flow-optical-jelly').forEach(node=>node.remove());
+  copy.querySelectorAll('script,.flow-refraction-copy-lens,#flow-liquid-optics,.flow-optical-jelly,.flow-adfit-rail').forEach(node=>node.remove());
   /* The School mobile header is sticky viewport chrome. A DOM clone inside the
      bottom lens would make that sticky header re-stick inside the aperture and
      visually refract the Flow wordmark instead of the content actually behind
