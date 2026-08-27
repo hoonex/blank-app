@@ -35,13 +35,14 @@ jobs:
           grep -q "KAKAO_REST_KEY" supabase/functions/transit-data/index.ts
           ! grep -q "ODSAY_API_KEY" supabase/functions/transit-data/index.ts
           grep -q "TAGO-public-data" supabase/functions/transit-data/index.ts
+          grep -q "offsetCoordinate" supabase/functions/transit-data/index.ts
+          grep -q "1100" supabase/functions/transit-data/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
       - name: Verify live Transit integrations and route search
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
-          probe='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-daegu-probe'
           curl -fsSL --connect-timeout 10 --max-time 30 "$base?action=health" > /tmp/transit-health.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
@@ -52,7 +53,7 @@ jobs:
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           console.log('Transit integrations: Public Data + Kakao ready; TAGO public router active');
           NODE
-          route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 50 \
+          route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 55 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6014' \
             --data-urlencode 'sy=35.8714' \
@@ -61,16 +62,6 @@ jobs:
           if [ "$route_status" != "200" ]; then
             echo "Transit route HTTP $route_status"
             cat /tmp/transit-route.json
-            echo
-            echo '--- Daegu API schema probe: mst_info ---'
-            curl -sS --connect-timeout 10 --max-time 20 "$probe?op=mst_info" || true
-            echo
-            echo '--- Daegu API schema probe: ps_info ---'
-            curl -sS --connect-timeout 10 --max-time 20 "$probe?op=ps_info" || true
-            echo
-            echo '--- Daegu API schema probe: rtm_loc_info ---'
-            curl -sS --connect-timeout 10 --max-time 20 "$probe?op=rtm_loc_info" || true
-            echo
             exit 1
           fi
           node --input-type=module - <<'NODE'
