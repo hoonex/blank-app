@@ -282,6 +282,20 @@ function compactRegion(value = "") {
   return value.replace(/\s+/g, "").replace(/특별자치도|특별자치시|광역시|특별시|도$/g, "");
 }
 
+async function cityCodeForRegion(regionHint = "") {
+  const region = regionHint.trim();
+  if (!region) return "";
+  const cities = await cityCodes();
+  const compact = compactRegion(region);
+  const exact = cities.find((city) => city.name === region);
+  if (exact) return exact.code;
+  const match = cities.find((city) => {
+    const name = compactRegion(city.name);
+    return Boolean(compact && (name === compact || name.startsWith(compact) || compact.startsWith(name)));
+  });
+  return match?.code || "";
+}
+
 async function cityCodeForCoordinate(x: number, y: number) {
   const [region, cities] = await Promise.all([coordinateRegion(x, y), cityCodes()]);
   const first = compactRegion(region.first), second = compactRegion(region.second);
@@ -310,13 +324,14 @@ async function cityStopMaster(cityCode: string) {
   });
 }
 
-async function nearbyStops(x: number, y: number) {
-  const key = `near:${x.toFixed(5)}:${y.toFixed(5)}`;
+async function nearbyStops(x: number, y: number, regionHint = "") {
+  const key = `near:${x.toFixed(5)}:${y.toFixed(5)}:${compactRegion(regionHint)}`;
   return cached(key, 10 * 60_000, async () => {
     const direct = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 20 });
     let candidates = normalizeStops(direct.items, x, y);
     if (!candidates.length) {
-      const cityCode = await cityCodeForCoordinate(x, y);
+      const hintedCityCode = await cityCodeForRegion(regionHint);
+      const cityCode = hintedCityCode || await cityCodeForCoordinate(x, y);
       if (cityCode) {
         const master = await cityStopMaster(cityCode);
         candidates = normalizeStops(master, x, y, cityCode).filter((stop) => stop.distance <= 1800);
@@ -588,9 +603,9 @@ async function stopLines(stops: Stop[]) {
   });
 }
 
-async function searchRoutes(sx: number, sy: number, ex: number, ey: number) {
+async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
   const sourceStops = await nearbyStops(sx, sy);
-  const destinationStops = await nearbyStops(ex, ey);
+  const destinationStops = await nearbyStops(ex, ey, destinationRegion);
   if (!sourceStops.length) throw new Error("현재 위치 주변에서 버스 정류장을 찾지 못했습니다.");
   if (!destinationStops.length) throw new Error("목적지 주변에서 버스 정류장을 찾지 못했습니다.");
 
@@ -645,7 +660,7 @@ Deno.serve(async (req) => {
     let ex = finite(url.searchParams.get("ex"), -180, 180);
     let ey = finite(url.searchParams.get("ey"), -90, 90);
     const destinationQuery = String(url.searchParams.get("destination") || "").trim();
-    let destination: any = { x: ex, y: ey, name: destinationQuery || "목적지", address: destinationQuery || "" };
+    let destination: any = { x: ex, y: ey, name: destinationQuery || "목적지", address: destinationQuery || "", region: regionFromAddress(destinationQuery) };
     if (ex === null || ey === null) {
       const resolved = await geocode(destinationQuery);
       ex = resolved.x;
@@ -653,7 +668,8 @@ Deno.serve(async (req) => {
       destination = resolved;
     }
 
-    const routes = await searchRoutes(sx, sy, ex, ey);
+    const destinationRegion = String(destination.region || regionFromAddress(destination.address || destinationQuery));
+    const routes = await searchRoutes(sx, sy, ex, ey, destinationRegion);
     return reply({
       generatedAt: new Date().toISOString(),
       destination,
