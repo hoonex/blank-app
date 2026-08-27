@@ -7,23 +7,25 @@ Production credential values belong only in Supabase Edge Function Secrets. Neve
 | Secret | Used by | Public-data service / purpose |
 | --- | --- | --- |
 | `NEIS_KEY` | `school-data` | NEIS school info, classes, timetable, meals, schedules |
-| `KAKAO_REST_KEY` | `school-data`, `school-logo`, `university-campus` | Kakao local/search/image/routing/static-map REST APIs |
-| `UNIVERSITY_SCHOOL_INFO_KEY` | `university-data` | `SchoolInfoService` university search/profile |
-| `UNIVERSITY_MAJOR_INFO_KEY` | `university-data` | `SchoolMajorInfoService` major/department data |
-| `UNIVERSITY_FINANCES_KEY` | `university-data` | `FinancesService` tuition/scholarship metrics |
-| `UNIVERSITY_EDUCATION_CONDITION_KEY` | `university-data` | `EducationConditionService` dormitory/library metrics |
+| `KAKAO_REST_KEY` | `school-data`, `school-logo`, `university-campus`, `transit-data` | Kakao local/search/image/routing/static-map REST APIs and transit destination geocoding |
+| `DATA_GO_KR_SERVICE_KEY` | `university-data`, `transit-data` | Shared Public Data Portal account credential for approved university/TAGO APIs |
+| `ODSAY_API_KEY` | `transit-data` | Public-transit route candidates and stop metadata |
 
-`UNIVERSITY_DATA_KEY` exists only as a temporary compatibility alias in the versioned `university-data` source. New production configuration should set all four service-specific university keys above. After production has been verified with all four keys, remove the compatibility alias.
+`DATA_GO_KR_SERVICE_KEY` is the canonical Public Data Portal credential. The university function still accepts the historical `UNIVERSITY_DATA_KEY`, `UNIVERSITY_SCHOOL_INFO_KEY`, `UNIVERSITY_MAJOR_INFO_KEY`, `UNIVERSITY_FINANCES_KEY`, and `UNIVERSITY_EDUCATION_CONDITION_KEY` names as optional compatibility overrides, but new production configuration does not require duplicate copies of the same account key.
+
+For Public Data Portal credentials, store the decoded/raw key value. The Edge Functions encode query parameters when making requests, which avoids accidental double encoding.
 
 ## Deployment gate
 
-Do not deploy the env-only versions of `school-data`, `school-logo`, `university-campus`, or `university-data` until the required production secrets are present. Once configured, deploy the versioned sources and verify:
+Do not deploy env-only versions until the required production secrets are present. Once configured, deploy the versioned sources and verify:
 
 1. School search/dashboard data from NEIS.
 2. School Kakao place resolution.
 3. School logo Kakao search plus favicon fallback.
-4. University search and majors.
+4. University search and majors through the shared Public Data Portal key.
 5. University finance and education-condition profile metrics.
 6. University campus resolution, route, and static map.
+7. Transit `health` reports ODsay, Public Data Portal, and Kakao integrations configured without exposing credential values.
+8. Transit route search returns up to five normalized bus/subway/walk routes and gracefully degrades when real-time arrival enrichment is unavailable.
 
 The repository audit `scripts/edge-secret-audit.mjs` enforces the expected variable names and rejects credential-like literal assignments in versioned Edge Function TypeScript sources.
