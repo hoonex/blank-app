@@ -60,7 +60,7 @@ async function inspect(page){return page.evaluate(()=>{
   return{
     scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,pageHeight:document.documentElement.scrollHeight,
     toggles:document.querySelectorAll('.flow-transit-map-toggle').length,shells:document.querySelectorAll('.flow-transit-map-shell').length,inlinePanels:document.querySelectorAll('[data-transit-route] .flow-transit-map-shell,[data-transit-route] .flow-transit-map-sheet').length,
-    shell:rect(shell),sheet:rect(sheet),canvas:rect(canvas),cardHeight:cardRect?.height||0,ready:shell?.dataset.mapReady||'',vehicles:shell?.dataset.vehicleCount||'',pins:document.querySelectorAll('.flow-transit-map-pin').length,vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,lines:document.querySelectorAll('.fixture-route-line').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',legs:document.querySelectorAll('.flow-transit-map-leg').length,
+    shell:rect(shell),sheet:rect(sheet),canvas:rect(canvas),cardHeight:cardRect?.height||0,ready:shell?.dataset.mapReady||'',vehicles:shell?.dataset.vehicleCount||'',pins:document.querySelectorAll('.flow-transit-map-pin').length,transferPins:document.querySelectorAll('.flow-transit-map-pin.transfer').length,vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,lines:document.querySelectorAll('.fixture-route-line').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',legs:document.querySelectorAll('.flow-transit-map-leg').length,
     bodyLocked:document.body.classList.contains('flow-transit-map-open')&&getComputedStyle(document.body).overflow==='hidden',shellPosition:shell?getComputedStyle(shell).position:'',bottomCovered:Boolean(bottomHit?.closest?.('.flow-transit-map-shell')),navVisible:Boolean(nav&&getComputedStyle(nav).display!=='none'),markerSpreadX:spread,viewport:{width:innerWidth,height:innerHeight},activeTag:document.activeElement?.className||'',
   };
 })}
@@ -95,7 +95,7 @@ for(const testCase of cases){
   if(testCase.name==='mobile-portrait'){
     await page.locator('[data-transit-route="1"] .flow-transit-map-toggle').click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await page.waitForTimeout(80);
     const transfer=await inspect(page);report[testCase.name].transfer={...transfer,mapRequests:counters.map};
-    if(counters.map!==3||transfer.lines<2||transfer.pins<4||transfer.legs!==2)throw new Error(`mobile-portrait: transfer map must render two bus legs ${JSON.stringify(transfer)}`);
+    if(counters.map!==3||transfer.lines<2||transfer.pins!==3||transfer.transferPins!==1||transfer.legs!==2)throw new Error(`mobile-portrait: transfer map must render two bus legs with one shared transfer marker ${JSON.stringify(transfer)}`);
     await page.screenshot({path:`${OUT}/school-transit-map-mobile-portrait-transfer.png`,fullPage:false});
     await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.flow-transit-map-shell'));
   }
