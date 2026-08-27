@@ -62,7 +62,7 @@ async function run(name,viewport){
 
   releaseDashboard();
   await page.waitForFunction(()=>!document.querySelector('#loadingLine')?.classList.contains('active'));
-  await page.locator('#timetable .period-row, #timetable .empty').first().waitFor({state:'visible'});
+  await page.locator('#timetable .period-button, #timetable .timetable-state').first().waitFor({state:'visible'});
   await page.waitForFunction(()=>document.documentElement.dataset.flowRefractionCopy==='true');
   await page.locator(`.flow-adfit-slot[data-ad-unit="${AD_UNIT}"]`).waitFor({state:'visible',timeout:8000});
   await page.waitForTimeout(280);
