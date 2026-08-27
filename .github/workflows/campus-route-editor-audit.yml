@@ -9,6 +9,7 @@ on:
       - 'university/campus-route-editor.js'
       - 'university/campus-route-editor.css'
       - 'tests/campus-route-editor-audit.mjs'
+      - 'tests/campus-route-autoscroll-audit.mjs'
       - 'tests/school-timetable-polish-audit.mjs'
       - '.github/workflows/campus-route-editor-audit.yml'
   workflow_dispatch:
@@ -29,6 +30,7 @@ jobs:
           node --check university/campus-route-editor.js
           node --check tests/school-timetable-polish-audit.mjs
           node --check tests/campus-route-editor-audit.mjs
+          node --check tests/campus-route-autoscroll-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -50,6 +52,10 @@ jobs:
         env:
           FLOW_TEST_URL: http://127.0.0.1:4173
         run: node tests/campus-route-editor-audit.mjs
+      - name: Verify long Campus route edge auto-scroll
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173
+        run: node tests/campus-route-autoscroll-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
