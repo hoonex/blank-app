@@ -2,16 +2,15 @@ import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const base=process.env.FLOW_PRODUCTION_URL||'https://flow-student-blush.vercel.app';
-const universityEdge='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data';
 const out='production-map-audit';
+const profile=Object.freeze({
+  id:'0000005',
+  name:'경북대학교',
+  address:'대구광역시 북구 대학로 80',
+  surveyYear:'2025'
+});
 await mkdir(out,{recursive:true});
-
-const searchUrl=new URL(universityEdge);searchUrl.searchParams.set('action','search');searchUrl.searchParams.set('q','경북대학교');
-const searchResponse=await fetch(searchUrl,{signal:AbortSignal.timeout(15000)});
-const searchBody=await searchResponse.json().catch(()=>({}));
-if(!searchResponse.ok)throw new Error(`University fixture search failed: ${searchResponse.status} ${searchBody?.error||''}`.trim());
-const profile=(searchBody.schools||[]).find(x=>x.name==='경북대학교')||searchBody.schools?.[0];
-if(!profile?.id||!profile?.name)throw new Error(`University fixture is missing a real id/name: ${JSON.stringify(profile||null)}`);
+if(!profile.id||!profile.name||!profile.address)throw new Error(`Production map fixture is incomplete: ${JSON.stringify(profile)}`);
 
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:412,height:915},locale:'ko-KR',timezoneId:'Asia/Seoul',isMobile:true,hasTouch:true,colorScheme:'light',geolocation:{latitude:35.8888,longitude:128.6103},permissions:['geolocation']});
@@ -65,7 +64,7 @@ const initial=await page.evaluate(()=>({
   routeCount:document.querySelectorAll('#campusRouteList .campus-route').length,
   routeTexts:[...document.querySelectorAll('#campusRouteList .campus-route')].map(x=>x.textContent.replace(/\s+/g,' ').trim()),
   mapOpacity:getComputedStyle(document.querySelector('.campus-interactive-map')).opacity,
-  fallbackOpacity:document.querySelector('#campusMapWrap>img')?getComputedStyle(document.querySelector('#campusMapWrap>img')).opacity:null,
+  fallbackOpacity:document.querySelector('#campusMapWrap>img')?getComputedStyle(document.querySelector('#campusMapWrap>img').opacity):null,
   badge:document.querySelector('.campus-map-badge')?.textContent?.trim()||'',
   bodyBackground:getComputedStyle(document.body).backgroundColor
 }));
@@ -99,7 +98,7 @@ await page.waitForTimeout(500);
 await page.screenshot({path:`${out}/desktop-interactive-campus.png`,fullPage:true});
 
 const firstPartyHttpErrors=httpErrors.filter(x=>x.url.startsWith(base)||x.url.includes('.supabase.co/functions/v1/'));
-const report={fixtureProfile:{id:profile.id,name:profile.name,surveyYear:profile.surveyYear||searchBody.surveyYear||''},...initial,currentRoute,routeRequestsBeforeCurrent,routeRequestsAfterCurrent,currentRouteRequestDelta:routeRequestsAfterCurrent-routeRequestsBeforeCurrent,poiCount,poiUi,httpErrors,firstPartyHttpErrors,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
+const report={fixtureProfile:{id:profile.id,name:profile.name,surveyYear:profile.surveyYear,source:'deterministic-production-profile'},...initial,currentRoute,routeRequestsBeforeCurrent,routeRequestsAfterCurrent,currentRouteRequestDelta:routeRequestsAfterCurrent-routeRequestsBeforeCurrent,poiCount,poiUi,httpErrors,firstPartyHttpErrors,consoleErrors,pageErrors,failed:failed.filter(x=>!x.url.includes('dge.hs.kr'))};
 await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 
