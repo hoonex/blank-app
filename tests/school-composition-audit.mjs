@@ -58,6 +58,26 @@ async function inspectVisibleHierarchy(page){
     return{visibleKickers,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
   });
 }
+async function inspectSchedule(page){
+  return page.evaluate(()=>{
+    const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+    const layout=document.querySelector('#scheduleView .schedule-layout');
+    const calendar=layout?.querySelector('.calendar-card');
+    const eventsCard=calendar?.nextElementSibling||null;
+    const firstRow=document.querySelector('#scheduleGrid .schedule-row');
+    const days=[...document.querySelectorAll('#scheduleView .calendar-day')];
+    const dayHeights=days.map(node=>node.getBoundingClientRect().height);
+    const headControls=[...document.querySelectorAll('#scheduleView .calendar-head button')];
+    const controlHeights=headControls.map(node=>node.getBoundingClientRect().height);
+    return{
+      layout:rect(layout),calendar:rect(calendar),eventsCard:rect(eventsCard),firstRow:rect(firstRow),
+      minDayHeight:dayHeights.length?Math.min(...dayHeights):0,
+      maxDayHeight:dayHeights.length?Math.max(...dayHeights):0,
+      minHeadControlHeight:controlHeights.length?Math.min(...controlHeights):0,
+      viewportHeight:innerHeight,
+    };
+  });
+}
 async function inspectInfo(page){
   return page.evaluate(()=>{
     const grid=document.querySelector('#schoolInfoGrid'),tiles=[...grid.children],last=tiles.at(-1);
@@ -85,7 +105,25 @@ for(const testCase of cases){
     if(hierarchy.visibleKickers.length)throw new Error(`${testCase.name}/${view}: redundant product kicker visible ${JSON.stringify(hierarchy.visibleKickers)}`);
     if(hierarchy.scrollWidth>hierarchy.clientWidth+1)throw new Error(`${testCase.name}/${view}: horizontal overflow ${JSON.stringify(hierarchy)}`);
     views[view]=hierarchy;
-    if(view==='schedule')await page.screenshot({path:`${OUT}/school-composition-${testCase.name}-schedule.png`,fullPage:false});
+    if(view==='schedule'){
+      const schedule=await inspectSchedule(page);
+      views[view]={...hierarchy,schedule};
+      if(testCase.name==='mobile-landscape'){
+        if(!schedule.calendar||!schedule.eventsCard||schedule.eventsCard.left<schedule.calendar.right-2||Math.abs(schedule.eventsCard.top-schedule.calendar.top)>4){
+          throw new Error(`${testCase.name}/schedule: calendar and event context should share the landscape row ${JSON.stringify(schedule)}`);
+        }
+        if(schedule.minDayHeight<43.4||schedule.maxDayHeight>44.6){
+          throw new Error(`${testCase.name}/schedule: landscape day targets should remain 44px ${JSON.stringify(schedule)}`);
+        }
+        if(schedule.minHeadControlHeight<43.4){
+          throw new Error(`${testCase.name}/schedule: month controls lost touch target size ${JSON.stringify(schedule)}`);
+        }
+        if(!schedule.firstRow||schedule.firstRow.top>schedule.viewportHeight-16){
+          throw new Error(`${testCase.name}/schedule: event context is still pushed below the first fold ${JSON.stringify(schedule)}`);
+        }
+      }
+      await page.screenshot({path:`${OUT}/school-composition-${testCase.name}-schedule.png`,fullPage:false});
+    }
   }
 
   await page.waitForSelector('#rankCard:not([hidden])');
