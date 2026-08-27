@@ -11,6 +11,7 @@ const KAKAO_ADDRESS = "https://dapi.kakao.com/v2/local/search/address.json";
 const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
 const KAKAO_COORD_REGION = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json";
 const TAGO_MAX_CONCURRENCY = 3;
+const TAGO_CITY_STOP_PAGE_SIZE = 1000;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -81,7 +82,11 @@ async function fetchJson(url: URL | string, init: RequestInit = {}, timeout = 10
   const text = await response.text();
   let body: any = null;
   try { body = JSON.parse(text); } catch {}
-  if (!response.ok) throw new Error(body?.response?.header?.resultMsg || `외부 교통 데이터 응답 오류 (${response.status})`);
+  if (!response.ok) {
+    const path = typeof url === "string" ? new URL(url).pathname : url.pathname;
+    const message = body?.response?.header?.resultMsg || body?.error || `HTTP ${response.status}`;
+    throw new Error(`${path}: ${message}`);
+  }
   if (!body) throw new Error("외부 교통 데이터가 JSON 형식으로 응답하지 않았습니다.");
   return body;
 }
@@ -293,15 +298,13 @@ async function cityCodeForCoordinate(x: number, y: number) {
 
 async function cityStopMaster(cityCode: string) {
   return cached(`city-stop-master:${cityCode}`, 6 * 60 * 60_000, async () => {
-    const first = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: 1, numOfRows: 5000 }, 20000);
+    const first = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: 1, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000);
     const all = [...first.items];
     const total = Math.max(first.totalCount, all.length);
-    if (total > all.length) {
-      const pages = Math.min(5, Math.ceil(total / 5000));
-      for (let pageNo = 2; pageNo <= pages; pageNo += 1) {
-        const next = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo, numOfRows: 5000 }, 20000);
-        all.push(...next.items);
-      }
+    const pages = Math.min(20, Math.ceil(total / TAGO_CITY_STOP_PAGE_SIZE));
+    for (let pageNo = 2; pageNo <= pages; pageNo += 1) {
+      const next = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000);
+      all.push(...next.items);
     }
     return all;
   });
