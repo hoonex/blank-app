@@ -22,13 +22,10 @@ function ensureStyle(){
   const link=document.createElement('link');link.rel='stylesheet';link.href=STYLE_HREF;link.dataset.flowAdfitStyle='true';document.head.append(link);
 }
 function anchorFor(kind){
-  return kind==='school'?document.querySelector('#todayView .today-grid'):document.querySelector('#todayView .content-grid');
+  return kind==='school'?document.querySelector('#todayView .school-hero'):document.querySelector('#todayView .content-grid');
 }
-function ensureSlot(kind,config){
-  let slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${kind}"]`);
-  if(slot)return slot;
-  const anchor=anchorFor(kind);if(!anchor)return null;
-  slot=document.createElement('ins');
+function createSlot(kind,config){
+  const slot=document.createElement('ins');
   slot.className='kakao_ad_area flow-adfit-slot';
   slot.style.cssText='display:none;width:100%;';
   slot.dataset.adUnit=String(config.unit).trim();
@@ -36,7 +33,26 @@ function ensureSlot(kind,config){
   slot.dataset.adHeight=String(config.height);
   slot.dataset.flowAdfitKind=kind;
   slot.setAttribute('aria-label','광고');
-  anchor.insertAdjacentElement('afterend',slot);
+  return slot;
+}
+function ensureSlot(kind,config){
+  let slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${kind}"]`);
+  if(slot)return slot;
+  const anchor=anchorFor(kind);if(!anchor)return null;
+  slot=createSlot(kind,config);
+  if(kind==='school'){
+    const rail=document.createElement('section');
+    rail.className='flow-adfit-rail flow-adfit-rail--school-top';
+    rail.dataset.flowAdfitKind=kind;
+    rail.setAttribute('aria-label','광고 영역');
+    const label=document.createElement('span');
+    label.className='flow-adfit-label';
+    label.textContent='광고';
+    rail.append(label,slot);
+    anchor.insertAdjacentElement('afterend',rail);
+  }else{
+    anchor.insertAdjacentElement('afterend',slot);
+  }
   return slot;
 }
 function ensureSdk(src){
