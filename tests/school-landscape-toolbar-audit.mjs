@@ -30,7 +30,7 @@ function validate(label,state){
   if(state.nav.right>state.school.left-8)throw new Error(`${label}: nav overlaps School identity ${JSON.stringify({school:state.school,nav:state.nav})}`);
   if(state.nav.bottom>state.content.top-5)throw new Error(`${label}: nav still covers page content ${JSON.stringify({nav:state.nav,content:state.content})}`);
   if(state.weekInNav)throw new Error(`${label}: Week control unexpectedly remained in destination nav`);
-  if(state.items.length!==4||state.items.filter(item=>item.settings).length!==1)throw new Error(`${label}: expected four School destinations ${JSON.stringify(state.items)}`);
+  if(state.items.length!==5||state.items.filter(item=>item.settings).length!==1||!state.items.some(item=>item.view==='transit'))throw new Error(`${label}: expected five School destinations including Transit ${JSON.stringify(state.items)}`);
   if(state.items.some(item=>item.rect.width<44||item.rect.height<30))throw new Error(`${label}: compact landscape target is clipped/undersized ${JSON.stringify(state.items)}`);
   if(state.scrollWidth>state.clientWidth+2)throw new Error(`${label}: horizontal overflow ${JSON.stringify({clientWidth:state.clientWidth,scrollWidth:state.scrollWidth})}`);
   if(state.productPaddingBottom>30)throw new Error(`${label}: obsolete bottom-nav reserve remains ${state.productPaddingBottom}px`);
@@ -43,7 +43,7 @@ for(const glassMode of ['standard','optical']){
   try{
     await routes(page);
     await page.addInitScript(({school,glassMode})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2',glassMode)},{school:SCHOOL,glassMode});
-    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('link[data-flow-school-landscape-toolbar]').waitFor({state:'attached'});await page.waitForFunction(()=>document.querySelector('#bottomNav')?.children.length>=4);
+    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('link[data-flow-school-landscape-toolbar]').waitFor({state:'attached'});await page.waitForFunction(()=>document.querySelector('#bottomNav')?.children.length>=5&&document.querySelector('#bottomNav>[data-view="transit"]'));
     await page.waitForTimeout(180);
 
     const today=await inspect(page,'#schoolHero');validate(`${glassMode}/today`,today);
