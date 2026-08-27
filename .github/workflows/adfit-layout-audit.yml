@@ -24,7 +24,8 @@ jobs:
           node --check tests/adfit-layout-audit.mjs
           grep -q 't1.kakaocdn.net/kas/static/ba.min.js' flow-adfit-config.js
           grep -q 'kakao_ad_area' flow-adfit.js
-          grep -q "unit:''" flow-adfit-config.js
+          grep -q "school:Object.freeze({unit:'DAN-ovpJn5XCBs1n1owQ'" flow-adfit-config.js
+          grep -q "university:Object.freeze({unit:''" flow-adfit-config.js
           ! grep -q 'flow-optical-jelly-v1' flow-adfit-config.js
       - name: Install Playwright Chromium
         run: |
