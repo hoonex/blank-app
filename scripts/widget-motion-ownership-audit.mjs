@@ -81,6 +81,16 @@ await page.mouse.move(grab.x-40,grab.y-30,{steps:5});await page.waitForTimeout(3
 const reversed=await source.boundingBox();if(!reversed||!(reversed.x<(dragRegrab.rect?.left??0)-22&&reversed.y<(dragRegrab.rect?.top??0)-14))throw new Error(`Re-grabbed widget did not reverse immediately: ${JSON.stringify({dragRegrab,reversed})}`);
 await page.mouse.up();
 const secondSettle=await requireRenderedSettle('Reversed drag');
+const pausedDragSettle=await page.evaluate(()=>{
+  const el=document.querySelector('[data-widget-id="campus"]');let paused=0;
+  for(const animation of el?.getAnimations?.()||[]){
+    const frames=animation.effect?.getKeyframes?.()||[];
+    if(!['running','pending'].includes(animation.playState)||!frames.some(frame=>frame?.transform&&frame.transform!=='none'))continue;
+    animation.pause();paused++;
+  }
+  const r=el?.getBoundingClientRect();return{paused,rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height}};
+});
+if(pausedDragSettle.paused<1)throw new Error(`Could not freeze proven drag settle for stable resize hit-testing: ${JSON.stringify({secondSettle,pausedDragSettle})}`);
 
 const resizeHandle=source.locator('.widget-v2-resize');const handleBox=await resizeHandle.boundingBox(),beforeResizeTakeover=await source.boundingBox();
 if(!handleBox||!beforeResizeTakeover)throw new Error('Resize takeover geometry is missing.');
@@ -106,7 +116,7 @@ const final=await state();
 if(final.floating||final.dragPlaceholder||final.resizePlaceholder||final.scrollWidth>final.width+3)throw new Error(`Widget motion ownership did not cleanly settle: ${JSON.stringify(final)}`);
 if(consoleErrors.length||pageErrors.length)throw new Error(`Widget motion ownership browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
 
-const report={sourceBox,targetBox,firstSettle,beforeDragRegrab,dragRegrab,dragJump,reversed,secondSettle,beforeResizeTakeover,resizeTakeover,resizeJump,resizeSettle,beforeResizeRegrab,resizeRegrab,resizeToDragJump,final,consoleErrors,pageErrors};
+const report={sourceBox,targetBox,firstSettle,beforeDragRegrab,dragRegrab,dragJump,reversed,secondSettle,pausedDragSettle,beforeResizeTakeover,resizeTakeover,resizeJump,resizeSettle,beforeResizeRegrab,resizeRegrab,resizeToDragJump,final,consoleErrors,pageErrors};
 await writeFile(`${OUT}/widget-motion-ownership-report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 await context.close();await browser.close();
