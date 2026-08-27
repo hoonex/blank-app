@@ -43,6 +43,14 @@ jobs:
           cat /tmp/flow-server.log
           exit 1
 
+      - name: Verify stable School first paint, loading, Optical Glass, and approved AdFit
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check school-boot.js
+          node --check tests/school-boot-loading-audit.mjs
+          node tests/school-boot-loading-audit.mjs
+
       - name: Run browser interaction + performance audit
         env:
           FLOW_TEST_URL: http://127.0.0.1:4173/
@@ -137,4 +145,5 @@ jobs:
             school-calendar-audit
             contextual-shell-audit
             native-feel-audit
+            school-boot-audit
           retention-days: 7
