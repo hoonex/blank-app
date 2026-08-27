@@ -12,6 +12,9 @@ const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
 const KAKAO_COORD_REGION = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json";
 const TAGO_MAX_CONCURRENCY = 3;
 const TAGO_CITY_STOP_PAGE_SIZE = 1000;
+const DEFAULT_BUS_WAIT_MINUTES = 5;
+const TRANSFER_BUFFER_MINUTES = 1;
+const SECOND_LEG_REALTIME_LIMIT = 8;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -231,6 +234,8 @@ type LiveArrival = {
   waitAddedMinutes: number;
   source: string;
   checkedAt: string;
+  stopName: string;
+  legIndex: number;
 };
 
 type NormalizedRoute = {
@@ -244,9 +249,18 @@ type NormalizedRoute = {
   stationCount: number;
   segments: Segment[];
   realtime: LiveArrival | null;
+  realtimeLegs: LiveArrival[];
   arrivalAt: string;
   badges: string[];
 };
+
+type SecondLegPlan = {
+  stop: Stop;
+  line: Line;
+  readyMinutes: number;
+};
+
+const secondLegPlans = new WeakMap<NormalizedRoute, SecondLegPlan>();
 
 function normalizeStops(items: any[], originX: number, originY: number, fallbackCityCode = "") {
   return items.map((item: any) => {
@@ -391,11 +405,12 @@ function normalizeRouteNo(value: unknown) {
   return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "");
 }
 
-async function arrivalAtStop(stop: Stop, line: Line): Promise<LiveArrival | null> {
+async function arrivalAtStop(stop: Stop, line: Line, notBeforeSeconds = 0, legIndex = 0): Promise<LiveArrival | null> {
   try {
     const arrivals = await cached(`arrival:${stop.cityCode}:${stop.id}`, 18_000, async () =>
       (await tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000)).items);
     const targetNo = normalizeRouteNo(line.no);
+    const threshold = Math.max(0, Number(notBeforeSeconds) || 0);
     const candidates = arrivals.filter((item: any) =>
       String(item.routeid || "") === line.id || (targetNo && normalizeRouteNo(item.routeno) === targetNo))
       .map((item: any) => ({
@@ -404,16 +419,18 @@ async function arrivalAtStop(stop: Stop, line: Line): Promise<LiveArrival | null
         stops: Number(item.arrprevstationcnt),
         vehicleType: String(item.vehicletp || ""),
       }))
-      .filter((item: any) => Number.isFinite(item.seconds) && item.seconds >= 0)
+      .filter((item: any) => Number.isFinite(item.seconds) && item.seconds >= threshold)
       .sort((a: any, b: any) => a.seconds - b.seconds);
     if (!candidates.length) return null;
     const best = candidates[0];
     return {
       ...best,
       arrivalMinutes: Math.max(0, Math.ceil(best.seconds / 60)),
-      waitAddedMinutes: 0,
+      waitAddedMinutes: Math.max(0, Math.ceil((best.seconds - threshold) / 60)),
       source: "TAGO",
       checkedAt: new Date().toISOString(),
+      stopName: stop.name,
+      legIndex,
     };
   } catch (error) {
     console.warn(`arrival unavailable: ${error instanceof Error ? error.message : String(error)}`);
@@ -486,11 +503,11 @@ async function directCandidates(source: StopLine[], destination: StopLine[], sx:
       const a = indexOfStop(stops, start.stop), b = indexOfStop(stops, end.stop);
       if (a < 0 || b <= a) continue;
       const stations = b - a;
-      const live = await arrivalAtStop(start.stop, start.line);
+      const live = await arrivalAtStop(start.stop, start.line, 0, 0);
       const startWalk = haversineMeters(sx, sy, start.stop.x, start.stop.y);
       const endWalk = haversineMeters(end.stop.x, end.stop.y, ex, ey);
-      const wait = live ? live.arrivalMinutes : 5;
-      const baselineMinutes = walkingMinutes(startWalk) + 5 + rideMinutes(stations) + walkingMinutes(endWalk);
+      const wait = live ? live.waitAddedMinutes : DEFAULT_BUS_WAIT_MINUTES;
+      const baselineMinutes = walkingMinutes(startWalk) + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(stations) + walkingMinutes(endWalk);
       const totalMinutes = walkingMinutes(startWalk) + wait + rideMinutes(stations) + walkingMinutes(endWalk);
       candidates.push(finalizeRoute({
         id: "",
@@ -507,6 +524,7 @@ async function directCandidates(source: StopLine[], destination: StopLine[], sx:
           walkSegment(end.stop.name, "목적지", endWalk),
         ],
         realtime: live,
+        realtimeLegs: live ? [live] : [],
       }, candidates.length));
     }
   }
@@ -551,12 +569,13 @@ async function transferCandidates(source: StopLine[], destination: StopLine[], s
       const secondCount = alight - transfer.secondIndex;
       const startWalk = haversineMeters(sx, sy, first.stop.x, first.stop.y);
       const endWalk = haversineMeters(second.stop.x, second.stop.y, ex, ey);
-      const live = await arrivalAtStop(first.stop, first.line);
-      const firstWait = live ? live.arrivalMinutes : 5;
-      const secondWait = 5;
-      const baselineMinutes = walkingMinutes(startWalk) + 5 + rideMinutes(firstCount) + secondWait + rideMinutes(secondCount) + walkingMinutes(endWalk);
-      const totalMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + secondWait + rideMinutes(secondCount) + walkingMinutes(endWalk);
-      candidates.push(finalizeRoute({
+      const live = await arrivalAtStop(first.stop, first.line, 0, 0);
+      const firstWait = live ? live.waitAddedMinutes : DEFAULT_BUS_WAIT_MINUTES;
+      const transferReadyMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES;
+      const secondBoard = secondStops[transfer.secondIndex];
+      const baselineMinutes = walkingMinutes(startWalk) + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const totalMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const route = finalizeRoute({
         id: "",
         pathType: 3,
         baselineMinutes,
@@ -568,15 +587,41 @@ async function transferCandidates(source: StopLine[], destination: StopLine[], s
         segments: [
           walkSegment("현재 위치", first.stop.name, startWalk),
           busSegment(first.line, first.stop, transfer.stop, firstCount),
-          busSegment(second.line, transfer.stop, second.stop, secondCount),
+          busSegment(second.line, secondBoard, second.stop, secondCount),
           walkSegment(second.stop.name, "목적지", endWalk),
         ],
         realtime: live,
-      }, candidates.length));
+        realtimeLegs: live ? [live] : [],
+      }, candidates.length);
+      secondLegPlans.set(route, {
+        stop: {
+          id: secondBoard.id,
+          name: secondBoard.name,
+          cityCode: second.line.cityCode,
+          x: secondBoard.x,
+          y: secondBoard.y,
+          distance: 0,
+        },
+        line: second.line,
+        readyMinutes: transferReadyMinutes,
+      });
+      candidates.push(route);
       if (candidates.length >= 12) return candidates;
     }
   }
   return candidates;
+}
+
+async function enrichSecondLegRealtime(routes: NormalizedRoute[]) {
+  const targets = routes.filter((route) => secondLegPlans.has(route)).slice(0, SECOND_LEG_REALTIME_LIMIT);
+  await Promise.all(targets.map(async (route) => {
+    const plan = secondLegPlans.get(route);
+    if (!plan) return;
+    const live = await arrivalAtStop(plan.stop, plan.line, plan.readyMinutes * 60, 1);
+    if (!live) return;
+    route.totalMinutes = Math.max(1, route.totalMinutes + live.waitAddedMinutes - DEFAULT_BUS_WAIT_MINUTES);
+    route.realtimeLegs.push(live);
+  }));
 }
 
 function assignBadges(routes: NormalizedRoute[]) {
@@ -606,6 +651,10 @@ async function stopLines(stops: Stop[]) {
   });
 }
 
+function routeSort(a: NormalizedRoute, b: NormalizedRoute) {
+  return a.totalMinutes - b.totalMinutes || a.transfers - b.transfers || a.walkMeters - b.walkMeters;
+}
+
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
   const sourceStops = await nearbyStops(sx, sy, destinationRegion);
   const destinationStops = await nearbyStops(ex, ey, destinationRegion);
@@ -620,6 +669,9 @@ async function searchRoutes(sx: number, sy: number, ex: number, ey: number, dest
   let routes = direct;
   if (routes.length < 5) routes = [...routes, ...await transferCandidates(source, destination, sx, sy, ex, ey)];
 
+  routes.sort(routeSort);
+  await enrichSecondLegRealtime(routes);
+
   const deduped = new Map<string, NormalizedRoute>();
   for (const route of routes) {
     const key = route.segments.filter((segment) => segment.type === "bus").map((segment) => `${segment.lines.join(',')}:${segment.startId}:${segment.endId}`).join('|');
@@ -627,11 +679,16 @@ async function searchRoutes(sx: number, sy: number, ex: number, ey: number, dest
     if (!existing || route.totalMinutes < existing.totalMinutes) deduped.set(key, route);
   }
   const finalRoutes = [...deduped.values()]
-    .sort((a, b) => a.totalMinutes - b.totalMinutes || a.transfers - b.transfers || a.walkMeters - b.walkMeters)
+    .sort(routeSort)
     .slice(0, 5);
   if (!finalRoutes.length) throw new Error("공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.");
   assignBadges(finalRoutes);
   return finalRoutes;
+}
+
+function realtimeCoverage(routes: NormalizedRoute[]) {
+  if (!routes.some((route) => route.realtimeLegs.length)) return "none";
+  return routes.some((route) => route.realtimeLegs.length > 1) ? "multi-leg" : "partial";
 }
 
 Deno.serve(async (req) => {
@@ -651,6 +708,7 @@ Deno.serve(async (req) => {
         routingProvider: "TAGO-public-data",
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ["bus-direct", "bus-one-transfer"],
+        realtimeRouting: "per-bus-leg-when-available",
         plannedGtfsUpgrade: "2026-09-07",
       }, 200, "no-store");
     }
@@ -677,7 +735,7 @@ Deno.serve(async (req) => {
       generatedAt: new Date().toISOString(),
       destination,
       provider: "TAGO-public-data",
-      realtimeCoverage: routes.some((route) => route.realtime) ? "partial" : "none",
+      realtimeCoverage: realtimeCoverage(routes),
       routeModes: ["bus-direct", "bus-one-transfer"],
       routes,
     }, 200, "public, max-age=15");

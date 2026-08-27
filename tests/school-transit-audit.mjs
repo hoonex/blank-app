@@ -8,19 +8,27 @@ await fs.mkdir(OUT,{recursive:true});
 const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 용계동 54'},grade:2,className:'6'};
 const today=(()=>{const d=new Date();return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`})();
 const dashboard={school:profile.school,selected:today,from:today,to:today,timetable:[],meals:[],events:[],scheduleMeta:{mode:'month',count:0}};
-const baseSegments=[
-  {type:'walk',minutes:4,distance:270,stationCount:0,startName:'',endName:'정류장',startId:'',endId:'',lines:[],direction:''},
-  {type:'bus',minutes:21,distance:6900,stationCount:12,startName:'혁신도시입구',endName:'동구청앞',startId:'123',endId:'456',lines:['708'],direction:''},
-  {type:'walk',minutes:5,distance:330,stationCount:0,startName:'동구청앞',endName:'정동고등학교',startId:'',endId:'',lines:[],direction:''},
-];
-const route=(index,overrides={})=>({
-  id:`route-${index+1}`,pathType:index%3===0?2:3,baselineMinutes:30+index*3,totalMinutes:32+index*3,
-  walkMeters:600-index*45,payment:1500+index*50,transfers:index%3,stationCount:12+index,
-  segments:index===1?[baseSegments[0],{type:'subway',minutes:16,distance:6200,stationCount:8,startName:'안심역',endName:'동대구역',startId:'1',endId:'2',lines:['1호선'],direction:'설화명곡'},baseSegments[2]]:baseSegments,
-  realtime:index<3?{routeNo:index===0?'708':'814',seconds:360+index*120,stops:4+index,arrivalMinutes:6+index*2,waitAddedMinutes:2+index,source:'TAGO',checkedAt:new Date().toISOString()}:null,
-  arrivalAt:new Date(Date.now()+(32+index*3)*60000).toISOString(),badges:index===0?['추천']:index===1?['걷기 적음']:index===2?['환승 적음']:[],...overrides,
-});
-const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7,y:35.87},realtimeCoverage:'partial',routes:Array.from({length:5},(_,i)=>route(i))};
+const walkStart={type:'walk',minutes:4,distance:270,stationCount:0,startName:'',endName:'혁신도시입구',startId:'',endId:'',lines:[],direction:''};
+const walkEnd={type:'walk',minutes:5,distance:330,stationCount:0,startName:'동구청앞',endName:'정동고등학교',startId:'',endId:'',lines:[],direction:''};
+const directBus={type:'bus',minutes:21,distance:6900,stationCount:12,startName:'혁신도시입구',endName:'동구청앞',startId:'123',endId:'456',lines:['708'],direction:'동구청'};
+const transferBusA={type:'bus',minutes:11,distance:3400,stationCount:6,startName:'혁신도시입구',endName:'동대구역환승센터',startId:'123',endId:'789',lines:['708'],direction:'동대구역'};
+const transferBusB={type:'bus',minutes:10,distance:3100,stationCount:5,startName:'동대구역환승센터',endName:'동구청앞',startId:'789',endId:'456',lines:['814'],direction:'범물동'};
+const subway={type:'subway',minutes:16,distance:6200,stationCount:8,startName:'안심역',endName:'동대구역',startId:'1',endId:'2',lines:['1호선'],direction:'설화명곡'};
+function live(routeNo,index,overrides={}){
+  return{routeNo,seconds:360+index*120,stops:4+index,arrivalMinutes:6+index*2,waitAddedMinutes:2+index,source:'TAGO',checkedAt:new Date().toISOString(),stopName:index?'동대구역환승센터':'혁신도시입구',legIndex:index,...overrides};
+}
+const route=(index,overrides={})=>{
+  const first=index<3?live(index===0?'708':'814',0):null;
+  const second=index===1?live('814',1,{seconds:1560,stops:3,arrivalMinutes:26,waitAddedMinutes:3}):null;
+  const segments=index===1?[walkStart,transferBusA,transferBusB,walkEnd]:index===2?[walkStart,subway,walkEnd]:[walkStart,directBus,walkEnd];
+  return{
+    id:`route-${index+1}`,pathType:index===1?3:index===2?1:2,baselineMinutes:30+index*3,totalMinutes:32+index*3,
+    walkMeters:600-index*45,payment:1500+index*50,transfers:index===1?1:0,stationCount:12+index,
+    segments,realtime:first,realtimeLegs:[first,second].filter(Boolean),
+    arrivalAt:new Date(Date.now()+(32+index*3)*60000).toISOString(),badges:index===0?['추천']:index===1?['걷기 적음']:index===2?['환승 적음']:[],...overrides,
+  };
+};
+const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7,y:35.87},realtimeCoverage:'multi-leg',routes:Array.from({length:5},(_,i)=>route(i))};
 
 const cases=[
   {name:'mobile-portrait',viewport:{width:390,height:844},isMobile:true,hasTouch:true},
@@ -55,6 +63,8 @@ async function inspect(page){
       routeCount:document.querySelectorAll('[data-transit-route]').length,
       first:rect(first),viewportHeight:innerHeight,
       liveCount:document.querySelectorAll('.flow-transit-live').length,
+      transferLiveCount:document.querySelectorAll('.flow-transit-live[data-live-leg="1"]').length,
+      summary:document.querySelector('#transitSummary')?.textContent.trim()||'',
       bottom,
       transitActive:document.querySelector('[data-flow-transit-nav].active')?.textContent.trim()||'',
       viewVisible:!document.querySelector('#transitView')?.classList.contains('hidden'),
@@ -82,7 +92,9 @@ for(const testCase of cases){
   const state=await inspect(page);report[testCase.name]={...state,pageErrors};
   if(state.path!=='/transit'||!state.viewVisible)throw new Error(`${testCase.name}: transit route/view state failed ${JSON.stringify(state)}`);
   if(state.routeCount!==5)throw new Error(`${testCase.name}: expected five route cards ${JSON.stringify(state)}`);
-  if(state.liveCount<1)throw new Error(`${testCase.name}: realtime arrival enrichment is not visible ${JSON.stringify(state)}`);
+  if(state.liveCount<2)throw new Error(`${testCase.name}: realtime arrival enrichment is not visible ${JSON.stringify(state)}`);
+  if(state.transferLiveCount<1)throw new Error(`${testCase.name}: transfer-leg realtime arrival is not visible ${JSON.stringify(state)}`);
+  if(!state.summary.includes('환승 버스까지 실시간 도착'))throw new Error(`${testCase.name}: multi-leg realtime summary is missing ${JSON.stringify(state)}`);
   if(state.scrollWidth>state.clientWidth+1)throw new Error(`${testCase.name}: horizontal overflow ${JSON.stringify(state)}`);
   if(testCase.viewport.width<=900&&state.bottom.length!==5)throw new Error(`${testCase.name}: School bottom navigation should have five destinations ${JSON.stringify(state.bottom)}`);
   if(testCase.name==='mobile-landscape'&&(!state.first||state.first.top>state.viewportHeight-24))throw new Error(`${testCase.name}: first transit route is pushed below the first fold ${JSON.stringify(state)}`);
