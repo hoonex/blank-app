@@ -47,7 +47,7 @@ async function fixture(page){
 async function inspect(page){
   return page.evaluate(()=>{
     const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
-    const bottom=[...document.querySelectorAll('#bottomNav>:scope')].filter(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0}).map(node=>node.textContent.trim());
+    const bottom=[...document.querySelectorAll('#bottomNav>*')].filter(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0}).map(node=>node.textContent.trim());
     const first=document.querySelector('[data-transit-route="0"]');
     return{
       path:location.pathname,
@@ -73,6 +73,7 @@ for(const testCase of cases){
   await fixture(page);await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
   await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
+  await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>String(sheet.href||'').includes('school-transit.css')));
   await page.locator('[data-flow-transit-nav]:visible').first().click();
   await page.waitForSelector('#transitView:not(.hidden)');
   await page.locator('#transitLocateBtn').click();
