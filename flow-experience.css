@@ -80,7 +80,8 @@ html[data-flow-ambient="on"] :where(.content-card,.status-card,.panel,.summary-c
   min-width:62px;
   padding:5px 7px;
   border-radius:9px;
-  transform:translate(-50%,-50%);
+  transform:translate(calc(-50% + var(--flow-date-drag,0px)),-50%);
+  will-change:transform;
   background:rgba(28,36,48,.88);
   color:#fff;
   font-size:.58rem;
@@ -104,9 +105,6 @@ html[data-flow-ambient="on"] :where(.content-card,.status-card,.panel,.summary-c
 .flow-date-detents i{display:block;width:2px;height:5px;border-radius:2px;background:currentColor;opacity:.34}
 .flow-date-detents i:nth-child(4){height:9px;opacity:.72}
 .flow-date-controller:has(.date-label[data-flow-scrubbing="true"]) .flow-date-detents{opacity:1}
-.flow-date-controller:has(.date-label[data-flow-scrubbing="true"]) .flow-date-detents{
-  background-position-x:calc(50% + var(--flow-date-drag,0px));
-}
 
 /* Settings: preferences are explicit; delight is never mandatory. */
 .flow-experience-settings-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 16px;align-items:center}
