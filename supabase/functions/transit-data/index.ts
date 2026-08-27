@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const TAGO_STOPS_NEAR = "https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
-const TAGO_ROUTES_AT_STOP = "https://apis.data.go.kr/1613000/BusRouteInfoInqireService/getSttnThrghRouteList";
+const TAGO_ROUTES_AT_STOP = "https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getSttnThrghRouteList";
 const TAGO_ROUTE_STOPS = "https://apis.data.go.kr/1613000/BusRouteInfoInqireService/getRouteAcctoThrghSttnList";
 const TAGO_ARRIVAL = "https://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
 const KAKAO_ADDRESS = "https://dapi.kakao.com/v2/local/search/address.json";
