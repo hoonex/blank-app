@@ -1,0 +1,64 @@
+/* Short-phone landscape shell: move University tabs into the fixed header instead of covering content. */
+@media (max-width:900px) and (max-height:520px) and (orientation:landscape){
+  .main{padding:62px 12px 18px!important}
+  .mobile-header{overflow:visible!important}
+  .mobile-header .brand{position:relative;z-index:2;flex:0 0 auto}
+  .mobile-header .flow-theme-cycle{display:none!important}
+  .mobile-school{position:relative;z-index:2;flex:0 1 auto;max-width:23vw!important;min-width:112px;padding:5px 9px!important}
+
+  .bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    z-index:70!important;
+    top:max(7px,env(safe-area-inset-top))!important;
+    bottom:auto!important;
+    left:50%!important;
+    right:auto!important;
+    width:clamp(300px,45vw,380px)!important;
+    height:40px!important;
+    transform:translateX(-50%)!important;
+    grid-template-columns:none!important;
+    grid-auto-flow:column!important;
+    grid-auto-columns:minmax(0,1fr)!important;
+    gap:2px!important;
+    padding:3px!important;
+    border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
+    border-radius:15px!important;
+    background:color-mix(in srgb,var(--surface) 88%,transparent)!important;
+    box-shadow:0 5px 18px rgba(28,38,58,.10)!important;
+    backdrop-filter:blur(18px) saturate(135%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(135%)!important;
+  }
+  .bottom-nav>.bottom-item{
+    min-width:0!important;
+    height:32px!important;
+    padding:0 5px!important;
+    border:0!important;
+    border-radius:11px!important;
+    background:transparent!important;
+    color:var(--muted)!important;
+    box-shadow:none!important;
+    font-size:.66rem!important;
+    font-weight:800!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .bottom-nav>.bottom-item.active{
+    background:color-mix(in srgb,var(--accent) 11%,var(--surface))!important;
+    color:var(--accent)!important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 12%,transparent)!important;
+  }
+}
+
+/* Keep the header layout safe on narrower landscape phones as well. */
+@media (max-width:700px) and (max-height:520px) and (orientation:landscape){
+  .mobile-header{padding-left:max(8px,env(safe-area-inset-left))!important;padding-right:max(8px,env(safe-area-inset-right))!important}
+  .mobile-header .brand-word{font-size:1.08rem!important}
+  .brand-mode{font-size:.48rem!important}
+  .mobile-school{max-width:21vw!important;min-width:98px!important;padding-left:7px!important;padding-right:7px!important}
+  .mobile-school small{display:none!important}
+  .bottom-nav{width:clamp(286px,48vw,336px)!important}
+  .bottom-nav>.bottom-item{font-size:.61rem!important;padding-left:3px!important;padding-right:3px!important}
+}
