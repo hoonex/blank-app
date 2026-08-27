@@ -18,7 +18,7 @@ function region(){return String(profile()?.school?.address||'').trim().split(/\s
 function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function installStyle(){
   if($('link[data-flow-transit-map]'))return;
-  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit-map.css?v=20260828-2';link.dataset.flowTransitMap='';document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit-map.css?v=20260828-3';link.dataset.flowTransitMap='';document.head.append(link);
 }
 function loadSdk(){
   if(window.kakao?.maps?.Map)return Promise.resolve(true);
@@ -68,6 +68,13 @@ function point(item){
   const x=Number(item?.x),y=Number(item?.y);
   return Number.isFinite(x)&&Number.isFinite(y)&&window.kakao?.maps?new kakao.maps.LatLng(y,x):null;
 }
+function sameStop(a,b){
+  if(!a||!b)return false;
+  const aid=String(a.id||'').trim(),bid=String(b.id||'').trim();if(aid&&bid&&aid===bid)return true;
+  const ax=Number(a.x),ay=Number(a.y),bx=Number(b.x),by=Number(b.y);
+  if(![ax,ay,bx,by].every(Number.isFinite))return false;
+  return Math.hypot(ax-bx,ay-by)<=0.00035;
+}
 function pinNode(kind,label='',station=''){
   const node=document.createElement('span');node.className=`flow-transit-map-pin ${kind}`;
   node.innerHTML=`<i aria-hidden="true"></i><b><span>${esc(label)}</span>${station?`<small>${esc(station)}</small>`:''}</b>`;
@@ -97,6 +104,7 @@ function legChip(bus,index,total){
 function mapSheet(route,index){
   const buses=(route.segments||[]).filter(segment=>segment.type==='bus');
   const lines=buses.map(bus=>bus.lines?.[0]).filter(Boolean).join(' · ')||'버스';
+  const transferLegend=buses.length>1?'<span class="transfer"><i></i>환승</span>':'';
   const root=document.createElement('div');root.className='flow-transit-map-shell';root.id='flowTransitMapDialog';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','flowTransitMapTitle');root.dataset.transitMapPanel=String(index);
   root.innerHTML=`
     <button class="flow-transit-map-backdrop" type="button" data-transit-map-dismiss aria-label="지도 닫기"></button>
@@ -110,22 +118,29 @@ function mapSheet(route,index){
       <div class="flow-transit-map-stage"><div class="flow-transit-map-canvas" aria-label="버스 노선 지도"></div></div>
       <footer class="flow-transit-map-footer">
         <div class="flow-transit-map-status" role="status" aria-live="polite">노선과 운행 차량을 불러오는 중…</div>
-        <div class="flow-transit-map-legend" aria-label="지도 범례"><span class="board"><i></i>승차</span><span class="alight"><i></i>하차</span><span class="vehicle"><i></i>운행 버스</span></div>
+        <div class="flow-transit-map-legend" aria-label="지도 범례"><span class="board"><i></i>승차</span>${transferLegend}<span class="alight"><i></i>하차</span><span class="vehicle"><i></i>운행 버스</span></div>
       </footer>
     </section>`;
   root.querySelector('[data-transit-map-close]')?.addEventListener('click',()=>closeMap());
   root.querySelector('[data-transit-map-dismiss]')?.addEventListener('click',()=>closeMap());
   return root;
 }
-function drawLeg(map,bounds,data,line,index,total){
+function drawLeg(map,bounds,data,line,index,total,previousEnd,nextStart){
   const stops=Array.isArray(data?.route?.stops)?data.route.stops:[];
   const path=stops.map(point).filter(Boolean);if(path.length<2)return{stops:0,vehicles:0};
   const palette=['#1769e0','#5b67c8','#008f7a'];
   const polyline=new kakao.maps.Polyline({map,path,strokeWeight:index?5:6,strokeColor:palette[index%palette.length],strokeOpacity:index?.78:.9});currentLayers.push(polyline);path.forEach(position=>bounds.extend(position));
   stops.slice(1,-1).forEach(stop=>{const position=point(stop);if(!position)return;const overlay=new kakao.maps.CustomOverlay({map,position,content:stopDot(),xAnchor:.5,yAnchor:.5,zIndex:3});currentLayers.push(overlay)});
-  const start=point(stops[0]),end=point(stops.at(-1));
-  if(start){const overlay=new kakao.maps.CustomOverlay({map,position:start,content:pinNode('board',index?'환승 승차':'승차',stops[0]?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
-  if(end){const label=index===total-1?'하차':'환승';const overlay=new kakao.maps.CustomOverlay({map,position:end,content:pinNode('alight',label,stops.at(-1)?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
+  const firstStop=stops[0],lastStop=stops.at(-1),start=point(firstStop),end=point(lastStop);
+  const joinedFromPrevious=index>0&&sameStop(previousEnd,firstStop);
+  const joinsNext=index<total-1&&sameStop(lastStop,nextStart);
+  if(start&&!joinedFromPrevious){const overlay=new kakao.maps.CustomOverlay({map,position:start,content:pinNode('board',index?'환승 승차':'승차',firstStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
+  if(end){
+    const final=index===total-1;
+    const kind=final?'alight':joinsNext?'transfer':'alight';
+    const label=final?'하차':joinsNext?'환승':'환승 하차';
+    const overlay=new kakao.maps.CustomOverlay({map,position:end,content:pinNode(kind,label,lastStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay);
+  }
   const vehicles=Array.isArray(data?.vehicles)?data.vehicles:[];
   for(const vehicle of vehicles){const position=point(vehicle);if(!position)continue;const overlay=new kakao.maps.CustomOverlay({map,position,content:vehicleNode(line),xAnchor:.5,yAnchor:.65,zIndex:8});currentLayers.push(overlay);bounds.extend(position)}
   return{stops:stops.length,vehicles:vehicles.length};
@@ -151,7 +166,11 @@ async function openMap(index,button){
   const canvas=$('.flow-transit-map-canvas',sheet);currentMap=new kakao.maps.Map(canvas,{center:firstPoint,level:5});
   try{currentMap.setZoomable?.(true);currentMap.setDraggable?.(true)}catch{}
   const bounds=new kakao.maps.LatLngBounds();let stopCount=0,vehicleCount=0;
-  successful.forEach(({data,bus},i)=>{const count=drawLeg(currentMap,bounds,data,String(bus.lines?.[0]||''),i,successful.length);stopCount+=count.stops;vehicleCount+=count.vehicles});
+  successful.forEach(({data,bus},i)=>{
+    const previousEnd=i?successful[i-1].data.route.stops.at(-1):null;
+    const nextStart=i<successful.length-1?successful[i+1].data.route.stops[0]:null;
+    const count=drawLeg(currentMap,bounds,data,String(bus.lines?.[0]||''),i,successful.length,previousEnd,nextStart);stopCount+=count.stops;vehicleCount+=count.vehicles;
+  });
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     if(token!==renderToken||!currentMap)return;
     try{currentMap.relayout?.();if(stopCount>1)currentMap.setBounds(bounds,54,54,54,54)}catch{try{if(stopCount>1)currentMap.setBounds(bounds)}catch{}}
