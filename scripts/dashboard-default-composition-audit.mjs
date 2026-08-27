@@ -34,13 +34,17 @@ async function snapshot(page){
     const grid=document.querySelector('#widgetDashboard');
     const memo=grid?.querySelector('[data-widget-id="memo"]');
     const schedule=grid?.querySelector('[data-widget-id="schedule"]');
+    const scheduleList=schedule?.querySelector('.today-list');
     const rect=el=>{const r=el?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null};
-    const gr=rect(grid),mr=rect(memo),sr=rect(schedule);
+    const gr=rect(grid),mr=rect(memo),sr=rect(schedule),style=grid?getComputedStyle(grid):null;
     return{
       columns:grid?.dataset.columns||'',memoSize:memo?.dataset.size||'',memoCols:memo?.dataset.widgetCols||'',
       grid:gr,memo:mr,schedule:sr,
+      rowHeight:parseFloat(style?.gridAutoRows||'0')||0,
+      scheduleListClientHeight:scheduleList?.clientHeight||0,
+      scheduleListScrollHeight:scheduleList?.scrollHeight||0,
       visible:[...grid.querySelectorAll('[data-widget-id]:not(.widget-hidden)')].map(el=>({id:el.dataset.widgetId,size:el.dataset.size||''})),
-      clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+      clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,viewportHeight:innerHeight,
     };
   });
 }
@@ -56,6 +60,12 @@ function validateFresh(name,width,state){
     if(state.columns!=='4'||ratio<.47||ratio>.53)throw new Error(`${name}: fresh desktop memo should occupy two of four columns ${JSON.stringify(state)}`);
     if(Math.abs(state.memo.right-state.grid.right)>3)throw new Error(`${name}: fresh desktop memo leaves an orphan slot on the right ${JSON.stringify(state)}`);
     if(state.memo.left<state.schedule.right-3)throw new Error(`${name}: memo overlaps the schedule half instead of completing the lower-right composition ${JSON.stringify(state)}`);
+  }
+  if(width===1920){
+    if(state.rowHeight<150)throw new Error(`${name}: wide dashboard rows are still phone-like and undersized ${JSON.stringify(state)}`);
+    if(state.schedule.height<315)throw new Error(`${name}: wide schedule card did not gain enough vertical reading room ${JSON.stringify(state)}`);
+    if(state.grid.bottom<620)throw new Error(`${name}: dashboard still ends too early in the first fold ${JSON.stringify(state)}`);
+    if(state.scheduleListClientHeight<205)throw new Error(`${name}: schedule list remains visibly cramped on the wide canvas ${JSON.stringify(state)}`);
   }
 }
 
@@ -82,12 +92,14 @@ for(const c of cases){
   await context.close();
 }
 
+if(report.fresh['desktop-1920'].rowHeight<report.fresh['desktop-1366'].rowHeight+24)throw new Error(`wide adaptive row height did not materially exceed 1366 density: ${JSON.stringify(report.fresh)}`);
+
 /* A user-chosen 1x1 memo must remain 1x1. This change is a fresh-state default, not a migration. */
 {
   const context=await browser.newContext({viewport:{width:1366,height:768},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
   const page=await context.newPage();
   await seed(page);
-  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
   await page.locator('[data-widget-id="memo"]').waitFor({timeout:10000});
   await page.evaluate(key=>{
     const grid=document.querySelector('#widgetDashboard'),widgets={};
