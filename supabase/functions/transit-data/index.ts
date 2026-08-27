@@ -1,11 +1,15 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const TAGO_STOPS_NEAR = "https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
-const TAGO_ROUTES_AT_STOP = "https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getSttnThrghRouteList";
-const TAGO_ROUTE_STOPS = "https://apis.data.go.kr/1613000/BusRouteInfoInqireService/getRouteAcctoThrghSttnList";
-const TAGO_ARRIVAL = "https://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
+const TAGO_BASE = "https://apis.data.go.kr/1613000";
+const TAGO_STOPS_NEAR = `${TAGO_BASE}/BusSttnInfoInqireService/getCrdntPrxmtSttnList`;
+const TAGO_CITY_CODES = `${TAGO_BASE}/BusSttnInfoInqireService/getCtyCodeList`;
+const TAGO_STOPS_BY_CITY = `${TAGO_BASE}/BusSttnInfoInqireService/getSttnNoList`;
+const TAGO_ROUTES_AT_STOP = `${TAGO_BASE}/BusSttnInfoInqireService/getSttnThrghRouteList`;
+const TAGO_ROUTE_STOPS = `${TAGO_BASE}/BusRouteInfoInqireService/getRouteAcctoThrghSttnList`;
+const TAGO_ARRIVAL = `${TAGO_BASE}/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList`;
 const KAKAO_ADDRESS = "https://dapi.kakao.com/v2/local/search/address.json";
 const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
+const KAKAO_COORD_REGION = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json";
 const TAGO_MAX_CONCURRENCY = 3;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
@@ -65,7 +69,7 @@ async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Pr
   if (hit && hit.expires > Date.now()) return hit.value as T;
   const value = await load();
   memoryCache.set(key, { expires: Date.now() + ttlMs, value });
-  if (memoryCache.size > 220) {
+  if (memoryCache.size > 260) {
     const now = Date.now();
     for (const [cacheKey, entry] of memoryCache) if (entry.expires <= now) memoryCache.delete(cacheKey);
   }
@@ -74,21 +78,27 @@ async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Pr
 
 async function fetchJson(url: URL | string, init: RequestInit = {}, timeout = 10000) {
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(timeout) });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(`외부 교통 데이터 응답 오류 (${response.status})`);
+  const text = await response.text();
+  let body: any = null;
+  try { body = JSON.parse(text); } catch {}
+  if (!response.ok) throw new Error(body?.response?.header?.resultMsg || `외부 교통 데이터 응답 오류 (${response.status})`);
+  if (!body) throw new Error("외부 교통 데이터가 JSON 형식으로 응답하지 않았습니다.");
   return body;
 }
 
-function tagoItems(body: any) {
+function tagoResult(body: any) {
   const header = body?.response?.header;
   if (header?.resultCode && String(header.resultCode) !== "00") {
     throw new Error(header.resultMsg || "공공 교통데이터 조회에 실패했습니다.");
   }
-  const item = body?.response?.body?.items?.item;
-  return Array.isArray(item) ? item : item ? [item] : [];
+  const raw = body?.response?.body?.items?.item;
+  return {
+    items: Array.isArray(raw) ? raw : raw ? [raw] : [],
+    totalCount: Number(body?.response?.body?.totalCount || 0),
+  };
 }
 
-async function tago(endpoint: string, params: Record<string, string | number>, timeout = 10000) {
+async function tago(endpoint: string, params: Record<string, string | number> = {}, timeout = 10000) {
   if (!DATA_GO_KR_SERVICE_KEY) throw new Error("공공데이터포털 인증키가 아직 설정되지 않았습니다.");
   const url = new URL(endpoint);
   url.searchParams.set("serviceKey", publicDataKey());
@@ -100,37 +110,45 @@ async function tago(endpoint: string, params: Record<string, string | number>, t
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await withTagoSlot(async () => tagoItems(await fetchJson(url, {}, timeout)));
+      return await withTagoSlot(async () => tagoResult(await fetchJson(url, {}, timeout)));
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : String(error);
-      const sessionBusy = /가용한 세션|30\/30/.test(message);
-      if (!sessionBusy || attempt === 2) throw error;
+      const temporary = /가용한 세션|30\/30|초당|timeout|시간이 초과/i.test(message);
+      if (!temporary || attempt === 2) throw error;
       await sleep(350 * (2 ** attempt));
     }
   }
   throw lastError instanceof Error ? lastError : new Error("공공 교통데이터 조회에 실패했습니다.");
 }
 
+async function kakaoJson(endpoint: string, params: Record<string, string>, timeout = 9000) {
+  if (!KAKAO_REST_KEY) throw new Error("카카오 위치 API가 아직 설정되지 않았습니다.");
+  const url = new URL(endpoint);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return fetchJson(url, { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } }, timeout);
+}
+
+function regionFromAddress(value = "") {
+  return value.trim().split(/\s+/)[0] || "";
+}
+
 async function geocode(query: string) {
-  if (!KAKAO_REST_KEY) throw new Error("목적지 좌표 검색 API가 아직 설정되지 않았습니다.");
   const normalized = query.trim();
   if (!normalized) throw new Error("목적지가 필요합니다.");
   return cached(`geo:${normalized}`, 30 * 60_000, async () => {
     for (const endpoint of [KAKAO_ADDRESS, KAKAO_KEYWORD]) {
-      const url = new URL(endpoint);
-      url.searchParams.set("query", normalized);
-      url.searchParams.set("size", "5");
-      const body = await fetchJson(url, { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } });
+      const body = await kakaoJson(endpoint, { query: normalized, size: "5" });
       const document = body?.documents?.[0];
-      if (document) {
-        return {
-          x: Number(document.x),
-          y: Number(document.y),
-          name: document.place_name || document.road_address?.address_name || document.address_name || normalized,
-          address: document.road_address?.address_name || document.address?.address_name || document.address_name || normalized,
-        };
-      }
+      if (!document) continue;
+      const address = document.road_address?.address_name || document.road_address_name || document.address?.address_name || document.address_name || normalized;
+      return {
+        x: Number(document.x),
+        y: Number(document.y),
+        name: document.place_name || address || normalized,
+        address,
+        region: document.road_address?.region_1depth_name || document.address?.region_1depth_name || regionFromAddress(address),
+      };
     }
     throw new Error("목적지 위치를 찾지 못했습니다.");
   });
@@ -219,59 +237,90 @@ type NormalizedRoute = {
   badges: string[];
 };
 
-function offsetCoordinate(x: number, y: number, eastMeters: number, northMeters: number) {
-  const latDelta = northMeters / 111320;
-  const lonScale = Math.max(0.2, Math.cos(y * Math.PI / 180));
-  const lonDelta = eastMeters / (111320 * lonScale);
-  return { x: x + lonDelta, y: y + latDelta };
-}
-
-function normalizeStops(items: any[], originX: number, originY: number) {
+function normalizeStops(items: any[], originX: number, originY: number, fallbackCityCode = "") {
   return items.map((item: any) => {
     const sx = Number(item.gpslong), sy = Number(item.gpslati);
     return {
-      id: String(item.nodeid || ""),
-      name: String(item.nodenm || "정류장"),
-      cityCode: String(item.citycode || ""),
+      id: String(item.nodeid || item.nodeId || ""),
+      name: String(item.nodenm || item.nodeNm || "정류장"),
+      cityCode: String(item.citycode || item.cityCode || fallbackCityCode),
       x: sx,
       y: sy,
-      distance: Number.isFinite(sx) && Number.isFinite(sy) ? haversineMeters(originX, originY, sx, sy) : 9999,
+      distance: Number.isFinite(sx) && Number.isFinite(sy) ? haversineMeters(originX, originY, sx, sy) : 999999,
     } satisfies Stop;
   }).filter((stop: Stop) => stop.id && stop.cityCode && Number.isFinite(stop.x) && Number.isFinite(stop.y));
 }
 
-async function stopProbe(originX: number, originY: number, probeX: number, probeY: number) {
-  const items = await tago(TAGO_STOPS_NEAR, { gpsLong: probeX, gpsLati: probeY, numOfRows: 20 });
-  return normalizeStops(items, originX, originY);
+async function coordinateRegion(x: number, y: number) {
+  return cached(`coord-region:${x.toFixed(4)}:${y.toFixed(4)}`, 60 * 60_000, async () => {
+    const body = await kakaoJson(KAKAO_COORD_REGION, { x: String(x), y: String(y) });
+    const docs = Array.isArray(body?.documents) ? body.documents : [];
+    const preferred = docs.find((item: any) => item.region_type === "H") || docs.find((item: any) => item.region_type === "B") || docs[0];
+    return {
+      first: String(preferred?.region_1depth_name || ""),
+      second: String(preferred?.region_2depth_name || ""),
+    };
+  });
+}
+
+async function cityCodes() {
+  return cached("tago-city-codes", 24 * 60 * 60_000, async () => {
+    const response = await tago(TAGO_CITY_CODES, { numOfRows: 200 }, 12000);
+    return response.items.map((item: any) => ({
+      code: String(item.citycode || item.cityCode || ""),
+      name: String(item.cityname || item.cityName || ""),
+    })).filter((item) => item.code && item.name);
+  });
+}
+
+function compactRegion(value = "") {
+  return value.replace(/\s+/g, "").replace(/특별자치도|특별자치시|광역시|특별시|도$/g, "");
+}
+
+async function cityCodeForCoordinate(x: number, y: number) {
+  const [region, cities] = await Promise.all([coordinateRegion(x, y), cityCodes()]);
+  const first = compactRegion(region.first), second = compactRegion(region.second);
+  const exact = cities.find((city) => city.name === region.first || city.name === region.second);
+  if (exact) return exact.code;
+  const secondToken = second.split(/[시군구]/)[0];
+  const match = cities.find((city) => {
+    const name = compactRegion(city.name);
+    return Boolean((first && (name === first || name.startsWith(first) || first.startsWith(name))) ||
+      (secondToken && (name.startsWith(secondToken) || second.startsWith(name))));
+  });
+  return match?.code || "";
+}
+
+async function cityStopMaster(cityCode: string) {
+  return cached(`city-stop-master:${cityCode}`, 6 * 60 * 60_000, async () => {
+    const first = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: 1, numOfRows: 5000 }, 20000);
+    const all = [...first.items];
+    const total = Math.max(first.totalCount, all.length);
+    if (total > all.length) {
+      const pages = Math.min(5, Math.ceil(total / 5000));
+      for (let pageNo = 2; pageNo <= pages; pageNo += 1) {
+        const next = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo, numOfRows: 5000 }, 20000);
+        all.push(...next.items);
+      }
+    }
+    return all;
+  });
 }
 
 async function nearbyStops(x: number, y: number) {
   const key = `near:${x.toFixed(5)}:${y.toFixed(5)}`;
   return cached(key, 10 * 60_000, async () => {
-    let candidates = await stopProbe(x, y, x, y);
+    const direct = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 20 });
+    let candidates = normalizeStops(direct.items, x, y);
     if (!candidates.length) {
-      const radius = 420;
-      const cardinal = [
-        offsetCoordinate(x, y, radius, 0),
-        offsetCoordinate(x, y, -radius, 0),
-        offsetCoordinate(x, y, 0, radius),
-        offsetCoordinate(x, y, 0, -radius),
-      ];
-      candidates = (await Promise.all(cardinal.map((point) => stopProbe(x, y, point.x, point.y)))).flat();
-      if (!candidates.length) {
-        const diagonal = radius / Math.sqrt(2);
-        const corners = [
-          offsetCoordinate(x, y, diagonal, diagonal),
-          offsetCoordinate(x, y, diagonal, -diagonal),
-          offsetCoordinate(x, y, -diagonal, diagonal),
-          offsetCoordinate(x, y, -diagonal, -diagonal),
-        ];
-        candidates = (await Promise.all(corners.map((point) => stopProbe(x, y, point.x, point.y)))).flat();
+      const cityCode = await cityCodeForCoordinate(x, y);
+      if (cityCode) {
+        const master = await cityStopMaster(cityCode);
+        candidates = normalizeStops(master, x, y, cityCode).filter((stop) => stop.distance <= 1800);
       }
     }
     const unique = new Map<string, Stop>();
     for (const stop of candidates) {
-      if (stop.distance > 1100) continue;
       const previous = unique.get(stop.id);
       if (!previous || stop.distance < previous.distance) unique.set(stop.id, stop);
     }
@@ -281,14 +330,14 @@ async function nearbyStops(x: number, y: number) {
 
 async function routesAtStop(stop: Stop) {
   return cached(`stop-routes:${stop.cityCode}:${stop.id}`, 10 * 60_000, async () => {
-    const items = await tago(TAGO_ROUTES_AT_STOP, {
+    const response = await tago(TAGO_ROUTES_AT_STOP, {
       cityCode: stop.cityCode,
       nodeId: stop.id,
       nodeid: stop.id,
       numOfRows: 100,
     });
     const seen = new Set<string>();
-    return items.map((item: any) => ({
+    return response.items.map((item: any) => ({
       id: String(item.routeid || item.routeId || ""),
       no: String(item.routeno || item.routeNo || ""),
       type: String(item.routetp || item.routeTp || ""),
@@ -299,14 +348,14 @@ async function routesAtStop(stop: Stop) {
       if (!line.id || seen.has(line.id)) return false;
       seen.add(line.id);
       return true;
-    }).slice(0, 16);
+    }).slice(0, 18);
   });
 }
 
 async function routeStops(line: Line) {
   return cached(`route-stops:${line.cityCode}:${line.id}`, 30 * 60_000, async () => {
-    const items = await tago(TAGO_ROUTE_STOPS, { cityCode: line.cityCode, routeId: line.id, numOfRows: 300 }, 12000);
-    return items.map((item: any, index: number) => ({
+    const response = await tago(TAGO_ROUTE_STOPS, { cityCode: line.cityCode, routeId: line.id, numOfRows: 500 }, 14000);
+    return response.items.map((item: any, index: number) => ({
       id: String(item.nodeid || item.nodeId || ""),
       name: String(item.nodenm || item.nodeNm || "정류장"),
       order: Number(item.nodeord ?? item.nodeOrd ?? index + 1),
@@ -324,7 +373,7 @@ function normalizeRouteNo(value: unknown) {
 async function arrivalAtStop(stop: Stop, line: Line): Promise<LiveArrival | null> {
   try {
     const arrivals = await cached(`arrival:${stop.cityCode}:${stop.id}`, 18_000, async () =>
-      tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000));
+      (await tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000)).items);
     const targetNo = normalizeRouteNo(line.no);
     const candidates = arrivals.filter((item: any) =>
       String(item.routeid || "") === line.id || (targetNo && normalizeRouteNo(item.routeno) === targetNo))
@@ -443,7 +492,7 @@ async function directCandidates(source: StopLine[], destination: StopLine[], sx:
   return candidates;
 }
 
-async function transferCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number, limit = 8) {
+async function transferCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number, limit = 10) {
   const candidates: NormalizedRoute[] = [];
   const sourceSlim = source.slice(0, limit), destinationSlim = destination.slice(0, limit);
   const stopCache = new Map<string, RouteStop[]>();
@@ -503,7 +552,7 @@ async function transferCandidates(source: StopLine[], destination: StopLine[], s
         ],
         realtime: live,
       }, candidates.length));
-      if (candidates.length >= 10) return candidates;
+      if (candidates.length >= 12) return candidates;
     }
   }
   return candidates;
@@ -525,7 +574,8 @@ function assignBadges(routes: NormalizedRoute[]) {
 }
 
 async function stopLines(stops: Stop[]) {
-  const groups = await Promise.all(stops.map(async (stop) => (await routesAtStop(stop)).map((line) => ({ stop, line }))));
+  const groups: StopLine[][] = [];
+  for (const stop of stops) groups.push((await routesAtStop(stop)).map((line) => ({ stop, line })));
   const seen = new Set<string>();
   return groups.flat().filter((item) => {
     const key = `${item.stop.id}:${item.line.id}`;
@@ -536,11 +586,13 @@ async function stopLines(stops: Stop[]) {
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number) {
-  const [sourceStops, destinationStops] = await Promise.all([nearbyStops(sx, sy), nearbyStops(ex, ey)]);
-  if (!sourceStops.length) throw new Error("현재 위치 약 1km 범위에서 버스 정류장을 찾지 못했습니다.");
-  if (!destinationStops.length) throw new Error("목적지 약 1km 범위에서 버스 정류장을 찾지 못했습니다.");
+  const sourceStops = await nearbyStops(sx, sy);
+  const destinationStops = await nearbyStops(ex, ey);
+  if (!sourceStops.length) throw new Error("현재 위치 주변에서 버스 정류장을 찾지 못했습니다.");
+  if (!destinationStops.length) throw new Error("목적지 주변에서 버스 정류장을 찾지 못했습니다.");
 
-  const [source, destination] = await Promise.all([stopLines(sourceStops), stopLines(destinationStops)]);
+  const source = await stopLines(sourceStops);
+  const destination = await stopLines(destinationStops);
   if (!source.length || !destination.length) throw new Error("주변 정류장의 운행 노선 정보를 찾지 못했습니다.");
 
   const direct = await directCandidates(source, destination, sx, sy, ex, ey);
@@ -576,6 +628,7 @@ Deno.serve(async (req) => {
           kakao: Boolean(KAKAO_REST_KEY),
         },
         routingProvider: "TAGO-public-data",
+        stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ["bus-direct", "bus-one-transfer"],
         plannedGtfsUpgrade: "2026-09-07",
       }, 200, "no-store");
@@ -589,7 +642,7 @@ Deno.serve(async (req) => {
     let ex = finite(url.searchParams.get("ex"), -180, 180);
     let ey = finite(url.searchParams.get("ey"), -90, 90);
     const destinationQuery = String(url.searchParams.get("destination") || "").trim();
-    let destination = { x: ex, y: ey, name: destinationQuery || "목적지", address: destinationQuery || "" };
+    let destination: any = { x: ex, y: ey, name: destinationQuery || "목적지", address: destinationQuery || "" };
     if (ex === null || ey === null) {
       const resolved = await geocode(destinationQuery);
       ex = resolved.x;
