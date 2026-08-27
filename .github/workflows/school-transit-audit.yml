@@ -38,13 +38,14 @@ jobs:
           grep -q "getCtyCodeList" supabase/functions/transit-data/index.ts
           grep -q "getSttnNoList" supabase/functions/transit-data/index.ts
           grep -q "city-stop-master" supabase/functions/transit-data/index.ts
+          grep -q "realtimeLegs" supabase/functions/transit-data/index.ts
+          grep -q "per-bus-leg-when-available" supabase/functions/transit-data/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
       - name: Verify live Transit integrations and route search
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
-          probe='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-daegu-probe'
           curl -fsSL --connect-timeout 10 --max-time 30 "$base?action=health" > /tmp/transit-health.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
@@ -54,7 +55,8 @@ jobs:
           if(!data?.ok||missing.length) throw new Error(`Transit integrations are not ready: ${missing.join(', ')||'health failed'}`);
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
-          console.log('Transit integrations: Public Data + Kakao ready; TAGO city-stop fallback active');
+          if(data?.realtimeRouting!=='per-bus-leg-when-available') throw new Error(`Transit per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
+          console.log('Transit integrations: Public Data + Kakao ready; per-bus-leg realtime routing active');
           NODE
           route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
@@ -66,9 +68,6 @@ jobs:
             echo "Transit route HTTP $route_status"
             cat /tmp/transit-route.json
             echo
-            echo '--- Daegu stop master pagination probe ---'
-            curl -fsSL --connect-timeout 10 --max-time 90 "$probe" || true
-            echo
             exit 1
           fi
           node --input-type=module - <<'NODE'
@@ -78,6 +77,7 @@ jobs:
           if(routes.length<1||routes.length>5) throw new Error(`Expected 1-5 live routes, got ${routes.length}: ${data?.error||'unknown response'}`);
           if(data?.provider!=='TAGO-public-data') throw new Error(`Unexpected route provider: ${data?.provider}`);
           if(!routes.every(route=>Number(route.totalMinutes)>0&&Array.isArray(route.segments)&&route.segments.length)) throw new Error('Live route normalization is incomplete');
+          if(!routes.every(route=>Array.isArray(route.realtimeLegs))) throw new Error('Per-leg realtime shape is missing from live routes');
           console.log(`Live Transit public-data route search: ${routes.length} route(s), realtime coverage ${data.realtimeCoverage||'none'}`);
           NODE
       - name: Install Playwright Chromium
