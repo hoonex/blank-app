@@ -10,8 +10,8 @@ function installStyles(){
   const style=document.createElement('style');
   style.id='flow-school-ia-style';
   style.textContent=`
-/* School information architecture: Week is a representation of the Today timetable, not a fifth destination. */
-html[data-theme] body .mobile-bottom-nav{--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+/* School information architecture: Week is a representation of the Today timetable, not a separate destination. */
+html[data-theme] body .mobile-bottom-nav{--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
 .side-nav>[data-view="week"]{display:none!important}
 .timetable-mode-toggle{display:inline-grid;grid-template-columns:1fr 1fr;min-width:92px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid color-mix(in srgb,var(--text) 6%,transparent)}
 .timetable-mode-toggle button{min-width:0;min-height:32px;padding:0 9px;border:0;border-radius:9px;background:transparent!important;box-shadow:none!important;color:var(--muted);font-size:.61rem;font-weight:800;cursor:pointer;position:relative!important;z-index:auto!important;overflow:visible!important}
