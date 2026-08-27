@@ -71,9 +71,9 @@ async function schoolStandard(){
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.addInitScript(({school,key})=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem(key,'standard')},{school,key:GLASS_KEY});
   await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();
-  await page.waitForFunction(()=>!document.querySelector('#bottomNav > [data-view="week"]')&&document.querySelector('#bottomNav > .flow-mobile-settings'));
-  let state=await navState(page,'#bottomNav');assertOrder(state,['today','schedule','school','settings'],'school standard');
-  if(state.settingsRect.grid!=='4')throw new Error(`school standard: settings grid column drifted ${JSON.stringify(state.settingsRect)}`);
+  await page.waitForFunction(()=>!document.querySelector('#bottomNav > [data-view="week"]')&&document.querySelector('#bottomNav > [data-view="transit"]')&&document.querySelector('#bottomNav > .flow-mobile-settings'));
+  let state=await navState(page,'#bottomNav');assertOrder(state,['today','schedule','transit','school','settings'],'school standard');
+  if(state.settingsRect.grid!=='5')throw new Error(`school standard: settings grid column drifted ${JSON.stringify(state.settingsRect)}`);
   if(state.rootMode!=='standard'||state.helper)throw new Error(`school standard: Optical helper leaked into Standard ${JSON.stringify(state)}`);
   await page.locator('#mobileSettingsBtn').click();await page.waitForTimeout(280);state=await navState(page,'#bottomNav');assertSettledSettings(state,'school standard');
   await page.locator('#bottomNav > [data-view="today"]').click();await page.waitForTimeout(280);
