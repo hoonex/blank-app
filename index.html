@@ -12,10 +12,32 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style id="flow-school-brand-critical">.flow-logo{display:inline-flex;align-items:baseline;gap:7px}.flow-logo-mark{display:none!important}.flow-logo-copy{display:inline-flex;align-items:baseline;gap:6px}.flow-logo-copy strong{font-size:1.32rem;font-weight:820;letter-spacing:-.055em;line-height:1}.flow-logo-copy small{font-size:.66rem;font-weight:760;letter-spacing:.015em;line-height:1}</style>
+  <script id="flow-school-first-paint">(()=>{const r=document.documentElement;try{const saved=localStorage.getItem('flow-school-profile-v3')||localStorage.getItem('flow-school-profile-v2');const mode=localStorage.getItem('flow-school-theme-v3')||'light';const effective=mode==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):(mode==='dark'?'dark':'light');r.dataset.flowSchoolBoot=saved?'saved':'landing';r.dataset.theme=effective;r.dataset.themeMode=mode;r.dataset.flowGlassMode=localStorage.getItem('flow-glass-mode-v2')==='optical'?'optical':'standard'}catch{r.dataset.flowSchoolBoot='landing'}})();</script>
   <link rel="stylesheet" href="./school.css">
+  <link rel="stylesheet" href="./school-v5.css" data-flow-school-layer="v5">
+  <link rel="stylesheet" href="./school-hotfix.css" data-flow-school-layer="hotfix">
+  <link rel="stylesheet" href="./school-polish.css" data-flow-school-layer="polish">
+  <link rel="stylesheet" href="./school-settings-wide.css" data-flow-school-settings-wide>
+  <link rel="stylesheet" href="./flow-refraction.css">
+  <link rel="stylesheet" href="./flow-experience.css">
+  <link rel="stylesheet" href="./flow-material.css">
+  <link rel="stylesheet" href="./school-boot.css" data-flow-school-boot-style>
 </head>
 <body>
   <div class="loading-line" id="loadingLine" aria-hidden="true"></div>
+  <div class="flow-school-boot" id="flowSchoolBoot" aria-hidden="true">
+    <div class="flow-school-boot-shell">
+      <aside class="flow-school-boot-side">
+        <div class="flow-school-boot-wordmark"><strong>Flow</strong><small>School</small></div>
+        <div class="flow-school-boot-side-lines"><i></i><i></i><i></i><i></i><i></i></div>
+      </aside>
+      <main class="flow-school-boot-main">
+        <div class="flow-school-boot-card flow-school-boot-hero"></div>
+        <div class="flow-school-boot-metrics"><div class="flow-school-boot-card"></div><div class="flow-school-boot-card"></div><div class="flow-school-boot-card"></div><div class="flow-school-boot-card"></div></div>
+        <div class="flow-school-boot-content"><div class="flow-school-boot-card"></div><div class="flow-school-boot-stack"><div class="flow-school-boot-card"></div><div class="flow-school-boot-card"></div></div></div>
+      </main>
+    </div>
+  </div>
 
   <section class="onboarding" id="landing">
     <div class="onboarding-orb orb-a" aria-hidden="true"></div>
@@ -255,5 +277,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./school.js"></script>
   <script type="module" src="./school-metrics.js"></script>
+  <script type="module" src="./school-boot.js"></script>
 </body>
 </html>
