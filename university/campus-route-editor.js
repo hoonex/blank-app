@@ -1,8 +1,10 @@
 const ROUTE_PREFIX='flow-university-campus-route-v1:';
 const TOUCH_REORDER_THRESHOLD=8;
+const TOUCH_SCROLL_ZONE=92;
+const TOUCH_SCROLL_MAX=16;
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
-let draft=[],draftMode='default',currentDay=null,pendingEditIndex=null,dragIndex=null,touchReorder=null,initialized=false;
+let draft=[],draftMode='default',currentDay=null,pendingEditIndex=null,dragIndex=null,touchReorder=null,touchScrollRaf=0,initialized=false;
 
 function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function bridge(){return window.flowCampusRouteBridge||null}
@@ -102,6 +104,28 @@ function touchReorderSlot(state=touchReorder){
   const children=[...list.children],index=children.indexOf(placeholder);
   return children.slice(0,Math.max(0,index)).filter(node=>node.classList?.contains('campus-route-stop')).length;
 }
+function touchViewportBottom(){
+  const nav=$('.bottom-nav'),rect=nav?.getBoundingClientRect(),style=nav?getComputedStyle(nav):null;
+  return rect?.width&&rect?.height&&style?.display!=='none'&&style?.visibility!=='hidden'&&rect.top<innerHeight&&rect.bottom>0?rect.top:innerHeight;
+}
+function touchAutoScrollSpeed(clientY){
+  const bottom=touchViewportBottom(),zone=Math.min(TOUCH_SCROLL_ZONE,Math.max(56,bottom*.14));
+  if(clientY<zone)return-TOUCH_SCROLL_MAX*(1-Math.max(0,clientY)/zone);
+  if(clientY>bottom-zone)return TOUCH_SCROLL_MAX*(1-Math.max(0,bottom-clientY)/zone);
+  return 0;
+}
+function startTouchAutoScroll(){if(!touchScrollRaf)touchScrollRaf=requestAnimationFrame(touchAutoScrollStep)}
+function stopTouchAutoScroll(){if(touchScrollRaf)cancelAnimationFrame(touchScrollRaf);touchScrollRaf=0;document.documentElement.removeAttribute('data-campus-route-auto-scroll')}
+function touchAutoScrollStep(){
+  const state=touchReorder;if(!state?.active)return stopTouchAutoScroll();
+  const speed=touchAutoScrollSpeed(state.clientY);
+  if(Math.abs(speed)>.35){
+    const before=scrollY;scrollBy(0,speed);
+    if(Math.abs(scrollY-before)>.1){document.documentElement.dataset.campusRouteAutoScroll=speed<0?'up':'down';moveTouchPlaceholder(state,state.clientY)}
+    else document.documentElement.removeAttribute('data-campus-route-auto-scroll');
+  }else document.documentElement.removeAttribute('data-campus-route-auto-scroll');
+  touchScrollRaf=requestAnimationFrame(touchAutoScrollStep);
+}
 function beginTouchReorder(state){
   if(state.active)return;
   const {row,list,rect}=state,placeholder=document.createElement('div');
@@ -109,18 +133,18 @@ function beginTouchReorder(state){
   list.insertBefore(placeholder,row);state.placeholder=placeholder;state.active=true;state.slot=state.from;
   row.draggable=false;row.classList.add('campus-route-touch-floating');row.dataset.routeTouchDragging='true';
   Object.assign(row.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:`${rect.height}px`,margin:'0',zIndex:'10000',transform:'translate3d(0,0,0)'});
-  document.body.append(row);list.dataset.touchReordering='true';
+  document.body.append(row);list.dataset.touchReordering='true';startTouchAutoScroll();
 }
 function touchReorderVisualTop(state,clientY){
-  const rawTop=state.rect.top+(clientY-state.startY),nav=$('.bottom-nav'),navRect=nav?.getBoundingClientRect(),navStyle=nav?getComputedStyle(nav):null;
-  const navVisible=Boolean(navRect?.width&&navRect?.height&&navStyle?.display!=='none'&&navStyle?.visibility!=='hidden'&&navRect.top<innerHeight&&navRect.bottom>0);
-  const upper=8,lower=Math.max(upper,(navVisible?navRect.top:innerHeight)-state.rect.height-8);
+  const rawTop=state.rect.top+(clientY-state.startY),bottom=touchViewportBottom();
+  const upper=8,lower=Math.max(upper,bottom-state.rect.height-8);
   if(rawTop<upper){const over=upper-rawTop;return upper-Math.min(8,over*.18)}
   if(rawTop>lower){const over=rawTop-lower;return lower+Math.min(8,over*.18)}
   return rawTop;
 }
 function moveTouchPlaceholder(state,clientY){
   const {list,placeholder,row,rect}=state;if(!list||!placeholder||!row)return;
+  state.clientY=clientY;
   const rawDy=clientY-state.startY,visualTop=touchReorderVisualTop(state,clientY),visualDy=visualTop-rect.top;row.style.transform=`translate3d(0,${visualDy}px,0)`;
   const center=rect.top+rawDy+rect.height/2,rows=$$('.campus-route-stop',list);let placed=false;
   for(const candidate of rows){const r=candidate.getBoundingClientRect();if(center<r.top+r.height/2){list.insertBefore(placeholder,candidate);placed=true;break}}
@@ -132,16 +156,16 @@ function onTouchReorderDown(event){
   const grip=event.target.closest?.('[data-route-grip]'),row=grip?.closest?.('[data-route-index]'),list=$('#campusRouteEditorList');
   if(!grip||!row||!list||row.parentElement!==list)return;
   const rect=row.getBoundingClientRect();if(!rect.width||!rect.height)return;
-  event.preventDefault();touchReorder={id:event.pointerId,row,list,from:Number(row.dataset.routeIndex),startX:event.clientX,startY:event.clientY,rect,active:false,placeholder:null,slot:Number(row.dataset.routeIndex)};
+  event.preventDefault();touchReorder={id:event.pointerId,row,list,from:Number(row.dataset.routeIndex),startX:event.clientX,startY:event.clientY,clientY:event.clientY,rect,active:false,placeholder:null,slot:Number(row.dataset.routeIndex)};
 }
 function onTouchReorderMove(event){
   const state=touchReorder;if(!state||event.pointerId!==state.id)return;
-  const dx=event.clientX-state.startX,dy=event.clientY-state.startY;
+  state.clientY=event.clientY;const dx=event.clientX-state.startX,dy=event.clientY-state.startY;
   if(!state.active&&Math.hypot(dx,dy)<TOUCH_REORDER_THRESHOLD)return;
   event.preventDefault();if(!state.active)beginTouchReorder(state);moveTouchPlaceholder(state,event.clientY)
 }
 function finishTouchReorder(cancel=false){
-  const state=touchReorder;if(!state)return;touchReorder=null;
+  const state=touchReorder;if(!state)return;stopTouchAutoScroll();touchReorder=null;
   if(!state.active)return;
   const to=Math.max(0,Math.min(draft.length-1,touchReorderSlot(state)));
   state.row.remove();state.placeholder?.remove();state.list?.removeAttribute('data-touch-reordering');
