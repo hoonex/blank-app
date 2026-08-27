@@ -10,7 +10,7 @@ const profile={id:'knu',name:'경북대학교',address:'대구광역시 북구 �
 function timetable(){
   const day=(new Date().getDay()+6)%7;
   const make=(name,start,end,place)=>({name,professor:'테스트',credit:3,times:[{day,start,end,startMinutes:Number(start.slice(0,2))*60+Number(start.slice(3)),endMinutes:Number(end.slice(0,2))*60+Number(end.slice(3)),place}]});
-  return{year:2026,semester:'2학기',subjects:[make('자료구조','09:00','10:15','IT대학1호관'),make('운영체제','11:00','12:15','공대9호관'),make('네트워크','14:00','15:15','IT융합산업빌딩')]};
+  return{year:2026,semester:'2학기',subjects:[make('자료구조','09:00','10:15','IT대학1호관'),make('운영체제','11:00','12:15','공대9호관'),make('네트워크','14:00','15:15','IT융합산업빌딩'),make('야간 스터디','23:00','23:30','IT대학1호관')]};
 }
 
 async function seed(page){
@@ -34,13 +34,17 @@ async function snapshot(page){
     const grid=document.querySelector('#widgetDashboard');
     const memo=grid?.querySelector('[data-widget-id="memo"]');
     const schedule=grid?.querySelector('[data-widget-id="schedule"]');
+    const scheduleList=schedule?.querySelector('.today-list');
     const rect=el=>{const r=el?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null};
-    const gr=rect(grid),mr=rect(memo),sr=rect(schedule);
+    const gr=rect(grid),mr=rect(memo),sr=rect(schedule),style=grid?getComputedStyle(grid):null;
     return{
       columns:grid?.dataset.columns||'',memoSize:memo?.dataset.size||'',memoCols:memo?.dataset.widgetCols||'',
       grid:gr,memo:mr,schedule:sr,
+      rowHeight:parseFloat(style?.gridAutoRows||'0')||0,
+      scheduleListClientHeight:scheduleList?.clientHeight||0,
+      scheduleListScrollHeight:scheduleList?.scrollHeight||0,
       visible:[...grid.querySelectorAll('[data-widget-id]:not(.widget-hidden)')].map(el=>({id:el.dataset.widgetId,size:el.dataset.size||''})),
-      clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
+      clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,viewportHeight:innerHeight,
     };
   });
 }
@@ -57,6 +61,13 @@ function validateFresh(name,width,state){
     if(Math.abs(state.memo.right-state.grid.right)>3)throw new Error(`${name}: fresh desktop memo leaves an orphan slot on the right ${JSON.stringify(state)}`);
     if(state.memo.left<state.schedule.right-3)throw new Error(`${name}: memo overlaps the schedule half instead of completing the lower-right composition ${JSON.stringify(state)}`);
   }
+  if(width>=1366){
+    if(state.rowHeight<150)throw new Error(`${name}: desktop dashboard rows remain too shallow for a four-class day ${JSON.stringify(state)}`);
+    if(state.schedule.height<315)throw new Error(`${name}: desktop schedule card did not gain enough vertical reading room ${JSON.stringify(state)}`);
+    if(state.scheduleListScrollHeight>state.scheduleListClientHeight+1)throw new Error(`${name}: four-class schedule still requires internal scrolling ${JSON.stringify(state)}`);
+  }
+  if(width===1366&&state.grid.bottom<620)throw new Error(`${name}: dashboard still ends too early in the 768px first fold ${JSON.stringify(state)}`);
+  if(width===1920&&state.grid.bottom<620)throw new Error(`${name}: dashboard still ends too early in the 1080px first fold ${JSON.stringify(state)}`);
 }
 
 const browser=await chromium.launch({headless:true});
@@ -82,12 +93,14 @@ for(const c of cases){
   await context.close();
 }
 
-/* A user-chosen 1x1 memo must remain 1x1. This change is a fresh-state default, not a migration. */
+if(report.fresh['desktop-1920'].rowHeight<report.fresh['desktop-1366'].rowHeight+6)throw new Error(`wide adaptive row height did not scale with viewport height: ${JSON.stringify(report.fresh)}`);
+
+/* A user-chosen 1x1 memo must remain 1x1. This change is responsive geometry, not a layout migration. */
 {
   const context=await browser.newContext({viewport:{width:1366,height:768},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
   const page=await context.newPage();
   await seed(page);
-  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
   await page.locator('[data-widget-id="memo"]').waitFor({timeout:10000});
   await page.evaluate(key=>{
     const grid=document.querySelector('#widgetDashboard'),widgets={};
