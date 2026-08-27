@@ -10,7 +10,7 @@ let requestAbort=null;
 let loading=false;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
-function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
   const school=profile()?.school||{};
@@ -173,6 +173,7 @@ function renderRoutes(body){
     summary.innerHTML=`<strong>${title}</strong><span>${detail}</span>`;
   }
   $('#transitRoutes').innerHTML=routes.map(routeCard).join('');
+  window.dispatchEvent(new CustomEvent('flow:transit-routes-rendered',{detail:{routes,generatedAt:body?.generatedAt||new Date().toISOString()}}));
   const generated=new Date(body.generatedAt||Date.now());
   setState(`${routes.length}개 경로 · ${new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(generated)} 갱신`,realtime?'live':'neutral');
 }
