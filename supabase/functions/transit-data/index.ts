@@ -6,6 +6,7 @@ const TAGO_ROUTE_STOPS = "https://apis.data.go.kr/1613000/BusRouteInfoInqireServ
 const TAGO_ARRIVAL = "https://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
 const KAKAO_ADDRESS = "https://dapi.kakao.com/v2/local/search/address.json";
 const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
+const TAGO_MAX_CONCURRENCY = 3;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -18,6 +19,8 @@ const CORS = {
 };
 
 const memoryCache = new Map<string, { expires: number; value: unknown }>();
+let tagoActive = 0;
+const tagoWaiters: Array<() => void> = [];
 
 function reply(body: unknown, status = 200, cache = "no-store") {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, "Cache-Control": cache } });
@@ -37,6 +40,23 @@ function publicDataKey() {
       : DATA_GO_KR_SERVICE_KEY;
   } catch {
     return DATA_GO_KR_SERVICE_KEY;
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTagoSlot<T>(task: () => Promise<T>): Promise<T> {
+  if (tagoActive >= TAGO_MAX_CONCURRENCY) {
+    await new Promise<void>((resolve) => tagoWaiters.push(resolve));
+  }
+  tagoActive += 1;
+  try {
+    return await task();
+  } finally {
+    tagoActive = Math.max(0, tagoActive - 1);
+    tagoWaiters.shift()?.();
   }
 }
 
@@ -76,7 +96,20 @@ async function tago(endpoint: string, params: Record<string, string | number>, t
   url.searchParams.set("numOfRows", "100");
   url.searchParams.set("_type", "json");
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
-  return tagoItems(await fetchJson(url, {}, timeout));
+
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await withTagoSlot(async () => tagoItems(await fetchJson(url, {}, timeout)));
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      const sessionBusy = /가용한 세션|30\/30/.test(message);
+      if (!sessionBusy || attempt === 2) throw error;
+      await sleep(350 * (2 ** attempt));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("공공 교통데이터 조회에 실패했습니다.");
 }
 
 async function geocode(query: string) {
