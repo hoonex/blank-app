@@ -15,7 +15,6 @@ async function routes(page){
   await page.route('**/functions/v1/school-data**',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard());if(action==='media')return json(route,{media:{},homepage:SCHOOL.homepage});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6']});if(action==='place')return json(route,{provider:'kakao',place:{id:'fixture',name:SCHOOL.name,url:'https://place.map.kakao.com/fixture',address:SCHOOL.address,roadAddress:SCHOOL.address,x:'128.687',y:'35.875'}});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
 }
-function rect(node){if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}}
 async function inspect(page,contentSelector){return page.evaluate(({contentSelector})=>{
   const r=node=>{if(!node)return null;const x=node.getBoundingClientRect();return{left:x.left,right:x.right,top:x.top,bottom:x.bottom,width:x.width,height:x.height}};
   const visible=node=>{if(!node)return false;const s=getComputedStyle(node),x=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&x.width>0&&x.height>0};
@@ -44,7 +43,7 @@ for(const glassMode of ['standard','optical']){
   try{
     await routes(page);
     await page.addInitScript(({school,glassMode})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2',glassMode)},{school:SCHOOL,glassMode});
-    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('link[data-flow-school-landscape-toolbar]').waitFor({state:'attached'});await page.waitForFunction(()=>document.querySelectorAll('#bottomNav>:scope').length>=4);
+    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('link[data-flow-school-landscape-toolbar]').waitFor({state:'attached'});await page.waitForFunction(()=>document.querySelector('#bottomNav')?.children.length>=4);
     await page.waitForTimeout(180);
 
     const today=await inspect(page,'#schoolHero');validate(`${glassMode}/today`,today);
