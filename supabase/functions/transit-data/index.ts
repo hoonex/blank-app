@@ -1,11 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const ODSAY_BASE = "https://api.odsay.com/v1/api";
+const TAGO_STOPS_NEAR = "https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
+const TAGO_ROUTES_AT_STOP = "https://apis.data.go.kr/1613000/BusRouteInfoInqireService/getSttnThrghRouteList";
+const TAGO_ROUTE_STOPS = "https://apis.data.go.kr/1613000/BusRouteInfoInqireService/getRouteAcctoThrghSttnList";
 const TAGO_ARRIVAL = "https://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
 const KAKAO_ADDRESS = "https://dapi.kakao.com/v2/local/search/address.json";
 const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
 
-const ODSAY_API_KEY = Deno.env.get("ODSAY_API_KEY") || "";
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
 
@@ -14,29 +15,6 @@ const CORS = {
   "Access-Control-Allow-Headers": "content-type, apikey, authorization",
   "Access-Control-Allow-Methods": "GET,OPTIONS",
   "Content-Type": "application/json; charset=utf-8",
-};
-
-const CITY_CODE_BY_REGION: Record<string, string> = {
-  "서울특별시": "11",
-  "부산광역시": "21",
-  "대구광역시": "22",
-  "인천광역시": "23",
-  "광주광역시": "24",
-  "대전광역시": "25",
-  "울산광역시": "26",
-  "세종특별자치시": "29",
-  "경기도": "31",
-  "강원특별자치도": "32",
-  "강원도": "32",
-  "충청북도": "33",
-  "충청남도": "34",
-  "전북특별자치도": "35",
-  "전라북도": "35",
-  "전라남도": "36",
-  "경상북도": "37",
-  "경상남도": "38",
-  "제주특별자치도": "39",
-  "제주도": "39",
 };
 
 const memoryCache = new Map<string, { expires: number; value: unknown }>();
@@ -67,7 +45,7 @@ async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Pr
   if (hit && hit.expires > Date.now()) return hit.value as T;
   const value = await load();
   memoryCache.set(key, { expires: Date.now() + ttlMs, value });
-  if (memoryCache.size > 160) {
+  if (memoryCache.size > 220) {
     const now = Date.now();
     for (const [cacheKey, entry] of memoryCache) if (entry.expires <= now) memoryCache.delete(cacheKey);
   }
@@ -81,16 +59,24 @@ async function fetchJson(url: URL | string, init: RequestInit = {}, timeout = 10
   return body;
 }
 
-async function odsay(operation: string, params: Record<string, string | number>) {
-  if (!ODSAY_API_KEY) throw new Error("대중교통 경로 API가 아직 설정되지 않았습니다.");
-  const url = new URL(`${ODSAY_BASE}/${operation}`);
-  url.searchParams.set("apiKey", ODSAY_API_KEY);
-  url.searchParams.set("lang", "0");
+function tagoItems(body: any) {
+  const header = body?.response?.header;
+  if (header?.resultCode && String(header.resultCode) !== "00") {
+    throw new Error(header.resultMsg || "공공 교통데이터 조회에 실패했습니다.");
+  }
+  const item = body?.response?.body?.items?.item;
+  return Array.isArray(item) ? item : item ? [item] : [];
+}
+
+async function tago(endpoint: string, params: Record<string, string | number>, timeout = 10000) {
+  if (!DATA_GO_KR_SERVICE_KEY) throw new Error("공공데이터포털 인증키가 아직 설정되지 않았습니다.");
+  const url = new URL(endpoint);
+  url.searchParams.set("serviceKey", publicDataKey());
+  url.searchParams.set("pageNo", "1");
+  url.searchParams.set("numOfRows", "100");
+  url.searchParams.set("_type", "json");
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
-  const body = await fetchJson(url);
-  const error = Array.isArray(body?.error) ? body.error[0] : body?.error;
-  if (error) throw new Error(error.message || "대중교통 경로를 찾지 못했습니다.");
-  return body;
+  return tagoItems(await fetchJson(url, {}, timeout));
 }
 
 async function geocode(query: string) {
@@ -117,82 +103,49 @@ async function geocode(query: string) {
   });
 }
 
-function normalizeRouteNo(value: unknown) {
-  return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "");
+function haversineMeters(ax: number, ay: number, bx: number, by: number) {
+  const rad = Math.PI / 180;
+  const lat1 = ay * rad, lat2 = by * rad;
+  const dLat = (by - ay) * rad, dLon = (bx - ax) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
-function firstBus(route: NormalizedRoute) {
-  return route.segments.find((segment) => segment.type === "bus" && segment.startId);
+function walkingMinutes(meters: number) {
+  return Math.max(1, Math.ceil(Math.max(0, meters) / 78));
 }
 
-function walkBeforeFirstBus(route: NormalizedRoute) {
-  let minutes = 0;
-  for (const segment of route.segments) {
-    if (segment.type === "bus") break;
-    if (segment.type === "walk") minutes += segment.minutes;
-  }
-  return minutes;
+function rideMinutes(stations: number) {
+  return Math.max(3, Math.round(Math.max(1, stations) * 2.05));
 }
 
-async function stationRealtime(route: NormalizedRoute) {
-  if (!DATA_GO_KR_SERVICE_KEY) return null;
-  const bus = firstBus(route);
-  if (!bus?.startId || !bus.lines?.length) return null;
+type Stop = {
+  id: string;
+  name: string;
+  cityCode: string;
+  x: number;
+  y: number;
+  distance: number;
+};
 
-  try {
-    const station = await cached(`odsay-station:${bus.startId}`, 10 * 60_000, async () => {
-      const body = await odsay("busStationInfo", { stationID: bus.startId });
-      return body?.result || null;
-    });
-    const localStationId = String((station as any)?.localStationID || "").trim();
-    const region = String((station as any)?.do || "").trim();
-    const cityCode = CITY_CODE_BY_REGION[region];
-    if (!localStationId || !cityCode) return null;
+type Line = {
+  id: string;
+  no: string;
+  type: string;
+  cityCode: string;
+  startName: string;
+  endName: string;
+};
 
-    const arrivals = await cached(`tago-arrival:${cityCode}:${localStationId}`, 18_000, async () => {
-      const url = new URL(TAGO_ARRIVAL);
-      url.searchParams.set("serviceKey", publicDataKey());
-      url.searchParams.set("pageNo", "1");
-      url.searchParams.set("numOfRows", "100");
-      url.searchParams.set("_type", "json");
-      url.searchParams.set("cityCode", cityCode);
-      url.searchParams.set("nodeId", localStationId);
-      const body = await fetchJson(url, {}, 9000);
-      const header = body?.response?.header;
-      if (header?.resultCode && header.resultCode !== "00") throw new Error(header.resultMsg || "버스 도착정보 오류");
-      const item = body?.response?.body?.items?.item;
-      return Array.isArray(item) ? item : item ? [item] : [];
-    }) as any[];
+type RouteStop = {
+  id: string;
+  name: string;
+  order: number;
+  x: number;
+  y: number;
+};
 
-    const lineSet = new Set(bus.lines.map(normalizeRouteNo));
-    const candidates = arrivals
-      .filter((item) => lineSet.has(normalizeRouteNo(item?.routeno)))
-      .map((item) => ({
-        routeNo: String(item.routeno || ""),
-        seconds: Number(item.arrtime),
-        stops: Number(item.arrprevstationcnt),
-        vehicleType: String(item.vehicletp || ""),
-      }))
-      .filter((item) => Number.isFinite(item.seconds) && item.seconds >= 0)
-      .sort((a, b) => a.seconds - b.seconds);
-    if (!candidates.length) return null;
-
-    const best = candidates[0];
-    const walkMinutes = walkBeforeFirstBus(route);
-    const arrivalMinutes = Math.max(0, Math.ceil(best.seconds / 60));
-    const waitAddedMinutes = Math.max(0, arrivalMinutes - walkMinutes);
-    return {
-      ...best,
-      arrivalMinutes,
-      waitAddedMinutes,
-      source: "TAGO",
-      checkedAt: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.warn(`transit realtime unavailable: ${error instanceof Error ? error.message : String(error)}`);
-    return null;
-  }
-}
+type StopLine = { stop: Stop; line: Line };
 
 type Segment = {
   type: "walk" | "bus" | "subway";
@@ -207,6 +160,17 @@ type Segment = {
   direction: string;
 };
 
+type LiveArrival = {
+  routeNo: string;
+  seconds: number;
+  stops: number;
+  vehicleType: string;
+  arrivalMinutes: number;
+  waitAddedMinutes: number;
+  source: string;
+  checkedAt: string;
+};
+
 type NormalizedRoute = {
   id: string;
   pathType: number;
@@ -217,57 +181,259 @@ type NormalizedRoute = {
   transfers: number;
   stationCount: number;
   segments: Segment[];
-  realtime: null | Record<string, unknown>;
+  realtime: LiveArrival | null;
   arrivalAt: string;
   badges: string[];
 };
 
-function normalizeSegment(raw: any): Segment {
-  const trafficType = Number(raw?.trafficType);
-  const type = trafficType === 1 ? "subway" : trafficType === 2 ? "bus" : "walk";
-  const lanes = Array.isArray(raw?.lane) ? raw.lane : raw?.lane ? [raw.lane] : [];
-  const lines = lanes.map((lane: any) => String(type === "subway" ? lane?.name : lane?.busNo || "").trim()).filter(Boolean);
+async function nearbyStops(x: number, y: number) {
+  const key = `near:${x.toFixed(5)}:${y.toFixed(5)}`;
+  return cached(key, 10 * 60_000, async () => {
+    const items = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 12 });
+    return items.map((item: any) => {
+      const sx = Number(item.gpslong), sy = Number(item.gpslati);
+      return {
+        id: String(item.nodeid || ""),
+        name: String(item.nodenm || "정류장"),
+        cityCode: String(item.citycode || ""),
+        x: sx,
+        y: sy,
+        distance: Number.isFinite(sx) && Number.isFinite(sy) ? haversineMeters(x, y, sx, sy) : 9999,
+      } satisfies Stop;
+    }).filter((stop: Stop) => stop.id && stop.cityCode && Number.isFinite(stop.x) && Number.isFinite(stop.y))
+      .sort((a: Stop, b: Stop) => a.distance - b.distance)
+      .slice(0, 5);
+  });
+}
+
+async function routesAtStop(stop: Stop) {
+  return cached(`stop-routes:${stop.cityCode}:${stop.id}`, 10 * 60_000, async () => {
+    const items = await tago(TAGO_ROUTES_AT_STOP, {
+      cityCode: stop.cityCode,
+      nodeId: stop.id,
+      nodeid: stop.id,
+      numOfRows: 100,
+    });
+    const seen = new Set<string>();
+    return items.map((item: any) => ({
+      id: String(item.routeid || item.routeId || ""),
+      no: String(item.routeno || item.routeNo || ""),
+      type: String(item.routetp || item.routeTp || ""),
+      cityCode: stop.cityCode,
+      startName: String(item.startnodenm || item.startNodeNm || ""),
+      endName: String(item.endnodenm || item.endNodeNm || ""),
+    } satisfies Line)).filter((line: Line) => {
+      if (!line.id || seen.has(line.id)) return false;
+      seen.add(line.id);
+      return true;
+    }).slice(0, 16);
+  });
+}
+
+async function routeStops(line: Line) {
+  return cached(`route-stops:${line.cityCode}:${line.id}`, 30 * 60_000, async () => {
+    const items = await tago(TAGO_ROUTE_STOPS, { cityCode: line.cityCode, routeId: line.id, numOfRows: 300 }, 12000);
+    return items.map((item: any, index: number) => ({
+      id: String(item.nodeid || item.nodeId || ""),
+      name: String(item.nodenm || item.nodeNm || "정류장"),
+      order: Number(item.nodeord ?? item.nodeOrd ?? index + 1),
+      x: Number(item.gpslong ?? item.gpsLong),
+      y: Number(item.gpslati ?? item.gpsLati),
+    } satisfies RouteStop)).filter((stop: RouteStop) => stop.id)
+      .sort((a: RouteStop, b: RouteStop) => a.order - b.order);
+  });
+}
+
+function normalizeRouteNo(value: unknown) {
+  return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "");
+}
+
+async function arrivalAtStop(stop: Stop, line: Line): Promise<LiveArrival | null> {
+  try {
+    const arrivals = await cached(`arrival:${stop.cityCode}:${stop.id}`, 18_000, async () =>
+      tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000));
+    const targetNo = normalizeRouteNo(line.no);
+    const candidates = arrivals.filter((item: any) =>
+      String(item.routeid || "") === line.id || (targetNo && normalizeRouteNo(item.routeno) === targetNo))
+      .map((item: any) => ({
+        routeNo: String(item.routeno || line.no || "버스"),
+        seconds: Number(item.arrtime),
+        stops: Number(item.arrprevstationcnt),
+        vehicleType: String(item.vehicletp || ""),
+      }))
+      .filter((item: any) => Number.isFinite(item.seconds) && item.seconds >= 0)
+      .sort((a: any, b: any) => a.seconds - b.seconds);
+    if (!candidates.length) return null;
+    const best = candidates[0];
+    return {
+      ...best,
+      arrivalMinutes: Math.max(0, Math.ceil(best.seconds / 60)),
+      waitAddedMinutes: 0,
+      source: "TAGO",
+      checkedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.warn(`arrival unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+function indexOfStop(stops: RouteStop[], target: Stop) {
+  let index = stops.findIndex((stop) => stop.id === target.id);
+  if (index >= 0) return index;
+  const normalized = target.name.replace(/\s+/g, "");
+  return stops.findIndex((stop) => stop.name.replace(/\s+/g, "") === normalized);
+}
+
+function busSegment(line: Line, start: RouteStop | Stop, end: RouteStop | Stop, stations: number): Segment {
   return {
-    type,
-    minutes: Math.max(0, Number(raw?.sectionTime) || 0),
-    distance: Math.max(0, Number(raw?.distance) || 0),
-    stationCount: Math.max(0, Number(raw?.stationCount) || 0),
-    startName: String(raw?.startName || ""),
-    endName: String(raw?.endName || ""),
-    startId: String(raw?.startID || ""),
-    endId: String(raw?.endID || ""),
-    lines,
-    direction: String(raw?.way || ""),
+    type: "bus",
+    minutes: rideMinutes(stations),
+    distance: 0,
+    stationCount: stations,
+    startName: start.name,
+    endName: end.name,
+    startId: start.id,
+    endId: end.id,
+    lines: [line.no || "버스"],
+    direction: line.endName,
   };
 }
 
-function normalizeRoutes(body: any): NormalizedRoute[] {
-  const rawPaths = body?.result?.path;
-  const list = Array.isArray(rawPaths) ? rawPaths : rawPaths ? [rawPaths] : [];
-  return list
-    .map((raw: any, index: number) => {
-      const info = raw?.info || raw?.Info || {};
-      const baselineMinutes = Math.max(1, Number(info?.totalTime) || 0);
-      const segmentsRaw = Array.isArray(raw?.subPath) ? raw.subPath : raw?.subPath ? [raw.subPath] : [];
-      const segments = segmentsRaw.map(normalizeSegment).filter((segment: Segment) => segment.minutes || segment.lines.length || segment.startName || segment.endName);
-      return {
-        id: `route-${index + 1}`,
-        pathType: Number(raw?.pathType) || 0,
+function walkSegment(startName: string, endName: string, meters: number): Segment {
+  return {
+    type: "walk",
+    minutes: walkingMinutes(meters),
+    distance: Math.round(meters),
+    stationCount: 0,
+    startName,
+    endName,
+    startId: "",
+    endId: "",
+    lines: [],
+    direction: "",
+  };
+}
+
+function finalizeRoute(route: Omit<NormalizedRoute, "arrivalAt" | "badges">, index: number): NormalizedRoute {
+  return {
+    ...route,
+    id: `route-${index + 1}`,
+    arrivalAt: new Date(Date.now() + route.totalMinutes * 60_000).toISOString(),
+    badges: [],
+  };
+}
+
+async function directCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number) {
+  const destinationByLine = new Map<string, StopLine[]>();
+  for (const item of destination) {
+    const list = destinationByLine.get(item.line.id) || [];
+    list.push(item);
+    destinationByLine.set(item.line.id, list);
+  }
+  const candidates: NormalizedRoute[] = [];
+  const seen = new Set<string>();
+  for (const start of source) {
+    const endOptions = destinationByLine.get(start.line.id) || [];
+    for (const end of endOptions) {
+      const signature = `${start.line.id}:${start.stop.id}:${end.stop.id}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      const stops = await routeStops(start.line);
+      const a = indexOfStop(stops, start.stop), b = indexOfStop(stops, end.stop);
+      if (a < 0 || b <= a) continue;
+      const stations = b - a;
+      const live = await arrivalAtStop(start.stop, start.line);
+      const startWalk = haversineMeters(sx, sy, start.stop.x, start.stop.y);
+      const endWalk = haversineMeters(end.stop.x, end.stop.y, ex, ey);
+      const wait = live ? live.arrivalMinutes : 5;
+      const baselineMinutes = walkingMinutes(startWalk) + 5 + rideMinutes(stations) + walkingMinutes(endWalk);
+      const totalMinutes = walkingMinutes(startWalk) + wait + rideMinutes(stations) + walkingMinutes(endWalk);
+      candidates.push(finalizeRoute({
+        id: "",
+        pathType: 2,
         baselineMinutes,
-        totalMinutes: baselineMinutes,
-        walkMeters: Math.max(0, Number(info?.totalWalk) || 0),
-        payment: Math.max(0, Number(info?.payment) || 0),
-        transfers: Math.max(0, (Number(info?.busTransitCount) || 0) + (Number(info?.subwayTransitCount) || 0)),
-        stationCount: Math.max(0, Number(info?.totalStationCount || info?.toatlStationCount) || 0),
-        segments,
-        realtime: null,
-        arrivalAt: "",
-        badges: [],
-      } satisfies NormalizedRoute;
-    })
-    .filter((route: NormalizedRoute) => route.segments.length)
-    .sort((a: NormalizedRoute, b: NormalizedRoute) => a.baselineMinutes - b.baselineMinutes)
-    .slice(0, 5);
+        totalMinutes,
+        walkMeters: Math.round(startWalk + endWalk),
+        payment: 0,
+        transfers: 0,
+        stationCount: stations,
+        segments: [
+          walkSegment("현재 위치", start.stop.name, startWalk),
+          busSegment(start.line, start.stop, end.stop, stations),
+          walkSegment(end.stop.name, "목적지", endWalk),
+        ],
+        realtime: live,
+      }, candidates.length));
+    }
+  }
+  return candidates;
+}
+
+async function transferCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number, limit = 8) {
+  const candidates: NormalizedRoute[] = [];
+  const sourceSlim = source.slice(0, limit), destinationSlim = destination.slice(0, limit);
+  const stopCache = new Map<string, RouteStop[]>();
+  const getStops = async (line: Line) => {
+    if (!stopCache.has(line.id)) stopCache.set(line.id, await routeStops(line));
+    return stopCache.get(line.id)!;
+  };
+  const seen = new Set<string>();
+
+  for (const first of sourceSlim) {
+    const firstStops = await getStops(first.line);
+    const board = indexOfStop(firstStops, first.stop);
+    if (board < 0) continue;
+    const afterBoard = new Map(firstStops.slice(board + 1).map((stop, offset) => [stop.id, { stop, index: board + 1 + offset }]));
+
+    for (const second of destinationSlim) {
+      if (first.line.id === second.line.id) continue;
+      const secondStops = await getStops(second.line);
+      const alight = indexOfStop(secondStops, second.stop);
+      if (alight <= 0) continue;
+      let transfer: { stop: RouteStop; firstIndex: number; secondIndex: number } | null = null;
+      for (let j = 0; j < alight; j++) {
+        const hit = afterBoard.get(secondStops[j].id);
+        if (!hit) continue;
+        const score = (hit.index - board) + (alight - j);
+        if (!transfer || score < (transfer.firstIndex - board) + (alight - transfer.secondIndex)) {
+          transfer = { stop: hit.stop, firstIndex: hit.index, secondIndex: j };
+        }
+      }
+      if (!transfer) continue;
+      const signature = `${first.line.id}:${second.line.id}:${first.stop.id}:${transfer.stop.id}:${second.stop.id}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      const firstCount = transfer.firstIndex - board;
+      const secondCount = alight - transfer.secondIndex;
+      const startWalk = haversineMeters(sx, sy, first.stop.x, first.stop.y);
+      const endWalk = haversineMeters(second.stop.x, second.stop.y, ex, ey);
+      const live = await arrivalAtStop(first.stop, first.line);
+      const firstWait = live ? live.arrivalMinutes : 5;
+      const secondWait = 5;
+      const baselineMinutes = walkingMinutes(startWalk) + 5 + rideMinutes(firstCount) + secondWait + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const totalMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + secondWait + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      candidates.push(finalizeRoute({
+        id: "",
+        pathType: 3,
+        baselineMinutes,
+        totalMinutes,
+        walkMeters: Math.round(startWalk + endWalk),
+        payment: 0,
+        transfers: 1,
+        stationCount: firstCount + secondCount,
+        segments: [
+          walkSegment("현재 위치", first.stop.name, startWalk),
+          busSegment(first.line, first.stop, transfer.stop, firstCount),
+          busSegment(second.line, transfer.stop, second.stop, secondCount),
+          walkSegment(second.stop.name, "목적지", endWalk),
+        ],
+        realtime: live,
+      }, candidates.length));
+      if (candidates.length >= 10) return candidates;
+    }
+  }
+  return candidates;
 }
 
 function assignBadges(routes: NormalizedRoute[]) {
@@ -280,34 +446,46 @@ function assignBadges(routes: NormalizedRoute[]) {
     if (route.walkMeters === minWalk && index !== 0) badges.push("걷기 적음");
     if (route.transfers === minTransfers && index !== 0 && badges.length < 2) badges.push("환승 적음");
     route.badges = badges;
+    route.id = `route-${index + 1}`;
+    route.arrivalAt = new Date(Date.now() + route.totalMinutes * 60_000).toISOString();
+  });
+}
+
+async function stopLines(stops: Stop[]) {
+  const groups = await Promise.all(stops.map(async (stop) => (await routesAtStop(stop)).map((line) => ({ stop, line }))));
+  const seen = new Set<string>();
+  return groups.flat().filter((item) => {
+    const key = `${item.stop.id}:${item.line.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number) {
-  const cacheKey = `route:${sx.toFixed(5)}:${sy.toFixed(5)}:${ex.toFixed(5)}:${ey.toFixed(5)}`;
-  const raw = await cached(cacheKey, 18_000, () => odsay("searchPubTransPathT", {
-    SX: sx,
-    SY: sy,
-    EX: ex,
-    EY: ey,
-    OPT: 0,
-    SearchType: 0,
-    SearchPathType: 0,
-  }));
-  const routes = normalizeRoutes(raw);
-  if (!routes.length) throw new Error("이 위치에서 이용 가능한 대중교통 경로를 찾지 못했습니다.");
+  const [sourceStops, destinationStops] = await Promise.all([nearbyStops(sx, sy), nearbyStops(ex, ey)]);
+  if (!sourceStops.length) throw new Error("현재 위치 500m 안에서 버스 정류장을 찾지 못했습니다.");
+  if (!destinationStops.length) throw new Error("목적지 500m 안에서 버스 정류장을 찾지 못했습니다.");
 
-  const realtime = await Promise.all(routes.map((route) => stationRealtime(route)));
-  const baseTime = Date.now();
-  routes.forEach((route, index) => {
-    const live = realtime[index];
-    route.realtime = live;
-    route.totalMinutes = route.baselineMinutes + Number((live as any)?.waitAddedMinutes || 0);
-    route.arrivalAt = new Date(baseTime + route.totalMinutes * 60_000).toISOString();
-  });
-  routes.sort((a, b) => a.totalMinutes - b.totalMinutes || a.walkMeters - b.walkMeters);
-  assignBadges(routes);
-  return routes;
+  const [source, destination] = await Promise.all([stopLines(sourceStops), stopLines(destinationStops)]);
+  if (!source.length || !destination.length) throw new Error("주변 정류장의 운행 노선 정보를 찾지 못했습니다.");
+
+  const direct = await directCandidates(source, destination, sx, sy, ex, ey);
+  let routes = direct;
+  if (routes.length < 5) routes = [...routes, ...await transferCandidates(source, destination, sx, sy, ex, ey)];
+
+  const deduped = new Map<string, NormalizedRoute>();
+  for (const route of routes) {
+    const key = route.segments.filter((segment) => segment.type === "bus").map((segment) => `${segment.lines.join(',')}:${segment.startId}:${segment.endId}`).join('|');
+    const existing = deduped.get(key);
+    if (!existing || route.totalMinutes < existing.totalMinutes) deduped.set(key, route);
+  }
+  const finalRoutes = [...deduped.values()]
+    .sort((a, b) => a.totalMinutes - b.totalMinutes || a.transfers - b.transfers || a.walkMeters - b.walkMeters)
+    .slice(0, 5);
+  if (!finalRoutes.length) throw new Error("공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.");
+  assignBadges(finalRoutes);
+  return finalRoutes;
 }
 
 Deno.serve(async (req) => {
@@ -319,12 +497,14 @@ Deno.serve(async (req) => {
   try {
     if (action === "health") {
       return reply({
-        ok: true,
+        ok: Boolean(DATA_GO_KR_SERVICE_KEY && KAKAO_REST_KEY),
         integrations: {
-          odsay: Boolean(ODSAY_API_KEY),
           publicData: Boolean(DATA_GO_KR_SERVICE_KEY),
           kakao: Boolean(KAKAO_REST_KEY),
         },
+        routingProvider: "TAGO-public-data",
+        routeModes: ["bus-direct", "bus-one-transfer"],
+        plannedGtfsUpgrade: "2026-09-07",
       }, 200, "no-store");
     }
 
@@ -348,7 +528,9 @@ Deno.serve(async (req) => {
     return reply({
       generatedAt: new Date().toISOString(),
       destination,
+      provider: "TAGO-public-data",
       realtimeCoverage: routes.some((route) => route.realtime) ? "partial" : "none",
+      routeModes: ["bus-direct", "bus-one-transfer"],
       routes,
     }, 200, "public, max-age=15");
   } catch (error) {
