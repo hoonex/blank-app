@@ -3,6 +3,9 @@ const AMBIENT_KEY='flow-ambient-v1';
 const STYLE='/flow-experience.css';
 const DAY_STEP_PX=34;
 const MAX_DAY_STEP=7;
+const DATE_BUBBLE_HALF=40;
+const DATE_EDGE_GAP=10;
+const DATE_EDGE_RESERVE=22;
 const CONTACT_SELECTOR='button,.neo-button,.primary-button,.soft-button,.mobile-tab,.bottom-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.calendar-day,.result-btn,.result-button,.widget-link';
 const COMPLEX_GESTURE_SELECTOR='#widgetDashboard,[data-widget-id],.widget-picker,.widget-gallery-sheet,.widget-v2-controls,.widget-controls,.widget-v2-resize';
 const SELECT_HAPTIC_SELECTOR='.mobile-tab,.bottom-item,.nav-item,.day-chip,.meal-tab,.choice-chip,.subject-chip,.allergy-chip,.flow-settings-segment button,.flow-setting-segment button';
@@ -66,6 +69,17 @@ function parsePickerDate(input){
 }
 function ymd(date){return`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
 function scrubLabel(step){if(!step)return'오늘';return step>0?`${step}일 후`:`${Math.abs(step)}일 전`}
+function resistedDateOvershoot(distance){return DATE_EDGE_RESERVE*(1-Math.exp(-Math.max(0,distance)/DATE_EDGE_RESERVE))}
+function datePresentationOffset(label,dx){
+  const rect=label?.getBoundingClientRect?.();if(!rect?.width)return dx;
+  const center=rect.left+rect.width/2;
+  const min=DATE_EDGE_GAP+DATE_BUBBLE_HALF+DATE_EDGE_RESERVE-center;
+  const max=innerWidth-DATE_EDGE_GAP-DATE_BUBBLE_HALF-DATE_EDGE_RESERVE-center;
+  if(min>max)return clamp(dx,max,min);
+  if(dx<min)return min-resistedDateOvershoot(min-dx);
+  if(dx>max)return max+resistedDateOvershoot(dx-max);
+  return dx
+}
 function clearDateGesture(){
   if(!dateGesture)return;const {label,controller}=dateGesture;label.removeAttribute('data-flow-scrubbing');label.removeAttribute('data-flow-scrub-label');controller?.style.removeProperty('--flow-date-drag');dateGesture=null
 }
@@ -91,7 +105,7 @@ function installDateScrubber(){
     const g=dateGesture;if(!g||event.pointerId!==g.id)return;const dx=event.clientX-g.startX,dy=event.clientY-g.startY;
     if(!g.dragging){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.1){g.cancelled=true;return finishDateGesture(event,true)}if(Math.abs(dx)<9)return;g.dragging=true;label.dataset.flowScrubbing='true'}
     if(g.cancelled)return;event.preventDefault();const next=clamp(Math.round(dx/DAY_STEP_PX),-MAX_DAY_STEP,MAX_DAY_STEP);
-    controller.style.setProperty('--flow-date-drag',`${clamp(dx,-DAY_STEP_PX*MAX_DAY_STEP,DAY_STEP_PX*MAX_DAY_STEP)}px`);
+    controller.style.setProperty('--flow-date-drag',`${datePresentationOffset(label,dx).toFixed(2)}px`);
     if(next!==g.step){g.step=next;label.dataset.flowScrubLabel=scrubLabel(next);haptic('detent')}
   });
   label.addEventListener('pointerup',event=>finishDateGesture(event));label.addEventListener('pointercancel',event=>finishDateGesture(event,true));
