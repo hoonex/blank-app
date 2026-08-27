@@ -53,12 +53,18 @@ async function inspect(page,view){
     const nearby=v==='campus'?panel.querySelector('.campus-nearby-quick'):null;
     const filter=v==='campus'?panel.querySelector('#campusFilter'):null;
     const filterButtons=filter?[...filter.querySelectorAll('button')].filter(node=>getComputedStyle(node).display!=='none').map(rect):[];
+    const bottomNav=document.querySelector('.bottom-nav'),brand=mobileHeader?.querySelector('.brand'),mobileSchool=mobileHeader?.querySelector('.mobile-school');
+    const navItems=bottomNav?[...bottomNav.querySelectorAll('.bottom-item')].filter(node=>getComputedStyle(node).display!=='none').map(rect):[];
     return{
       view:v,
       title:title?.textContent?.trim()||'',
       titleRect:rect(title),
       headerRect:rect(header),
       mobileHeaderRect:rect(mobileHeader),
+      bottomNavRect:rect(bottomNav),
+      brandRect:rect(brand),
+      mobileSchoolRect:rect(mobileSchool),
+      navItems,
       actionRect:rect(action),
       buttonRects:visibleButtons.map(rect),
       visibleEnglishLabels,
@@ -81,6 +87,14 @@ function validateViewport(name,states){
     if(!state.actionRect)throw new Error(`${name}/${state.view}: missing canonical page action ${JSON.stringify(state)}`);
     if(state.actionRect.right>state.clientWidth+1)throw new Error(`${name}/${state.view}: action escapes viewport ${JSON.stringify(state)}`);
     if(state.buttonRects.some(r=>r.height<39))throw new Error(`${name}/${state.view}: page action height is inconsistent/undersized ${JSON.stringify(state.buttonRects)}`);
+    if(name==='mobile-landscape'){
+      if(!state.mobileHeaderRect||!state.bottomNavRect||!state.brandRect||!state.mobileSchoolRect)throw new Error(`${name}/${state.view}: landscape command bar geometry missing ${JSON.stringify(state)}`);
+      if(state.bottomNavRect.top<state.mobileHeaderRect.top-1||state.bottomNavRect.bottom>state.mobileHeaderRect.bottom+1)throw new Error(`${name}/${state.view}: navigation is not contained by the mobile header ${JSON.stringify({header:state.mobileHeaderRect,nav:state.bottomNavRect})}`);
+      if(state.bottomNavRect.left<state.brandRect.right+8)throw new Error(`${name}/${state.view}: navigation overlaps the Flow brand ${JSON.stringify({brand:state.brandRect,nav:state.bottomNavRect})}`);
+      if(state.bottomNavRect.right>state.mobileSchoolRect.left-8)throw new Error(`${name}/${state.view}: navigation overlaps university identity ${JSON.stringify({school:state.mobileSchoolRect,nav:state.bottomNavRect})}`);
+      if(state.bottomNavRect.bottom>state.titleRect.top-5)throw new Error(`${name}/${state.view}: landscape navigation still covers page content ${JSON.stringify({nav:state.bottomNavRect,title:state.titleRect})}`);
+      if(state.navItems.length<3||state.navItems.some(r=>r.height<30||r.width<44))throw new Error(`${name}/${state.view}: landscape navigation targets are clipped/undersized ${JSON.stringify(state.navItems)}`);
+    }
     if(state.view==='campus'){
       if(!state.toolsRect||!state.nearbyRect||!state.filterRect||state.filterButtons.length!==4)throw new Error(`${name}/campus: contextual toolbar is missing ${JSON.stringify(state)}`);
       const widths=state.filterButtons.map(r=>r.width),widthSpread=Math.max(...widths)-Math.min(...widths);
@@ -123,6 +137,7 @@ for(const testCase of cases){
   await page.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('#appView:not(.hidden)');
   await page.waitForSelector('link[href*="/university/page-header.css"]',{state:'attached'});
+  await page.waitForSelector('link[href*="/university/landscape-toolbar.css"]',{state:'attached'});
   await page.waitForSelector('#dashboardEditBtn');
   const states=[];
   for(const view of ['today','timetable','campus']){
