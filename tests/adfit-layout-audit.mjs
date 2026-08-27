@@ -63,11 +63,14 @@ async function auditConfigured(app,name,width,height){
     else await slot.scrollIntoViewIfNeeded();
     await page.waitForTimeout(100);
     const geometry=await page.evaluate(app=>{
-      const slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${app}"]`),creative=slot?.querySelector('.flow-adfit-mock'),nav=[...document.querySelectorAll('.mobile-bottom-nav,.bottom-nav')].find(node=>getComputedStyle(node).display!=='none');
-      const s=slot?.getBoundingClientRect(),c=creative?.getBoundingClientRect(),n=nav?.getBoundingClientRect();
-      return{slot:s?{left:s.left,top:s.top,right:s.right,bottom:s.bottom,width:s.width,height:s.height}:null,creative:c?{left:c.left,top:c.top,right:c.right,bottom:c.bottom,width:c.width,height:c.height}:null,nav:n?{left:n.left,top:n.top,right:n.right,bottom:n.bottom}:null,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,sdkCount:document.querySelectorAll('script[data-flow-adfit-sdk]').length,slotCount:document.querySelectorAll('.flow-adfit-slot').length,unit:slot?.dataset.adUnit||'',width:slot?.dataset.adWidth||'',height:slot?.dataset.adHeight||''};
+      const slot=document.querySelector(`.flow-adfit-slot[data-flow-adfit-kind="${app}"]`),creative=slot?.querySelector('.flow-adfit-mock'),rail=slot?.closest('.flow-adfit-rail'),host=app==='school'?document.querySelector('#dashboard .product-main'):document.querySelector('#appView .main'),nav=[...document.querySelectorAll('.mobile-bottom-nav,.bottom-nav')].find(node=>getComputedStyle(node).display!=='none');
+      const s=slot?.getBoundingClientRect(),c=creative?.getBoundingClientRect(),r=rail?.getBoundingClientRect(),n=nav?.getBoundingClientRect();
+      return{slot:s?{left:s.left,top:s.top,right:s.right,bottom:s.bottom,width:s.width,height:s.height}:null,creative:c?{left:c.left,top:c.top,right:c.right,bottom:c.bottom,width:c.width,height:c.height}:null,rail:r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null,nav:n?{left:n.left,top:n.top,right:n.right,bottom:n.bottom}:null,footerOwned:rail?.parentElement===host&&host?.lastElementChild===rail,label:rail?.querySelector(':scope > .flow-adfit-label')?.textContent?.trim()||'',overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,sdkCount:document.querySelectorAll('script[data-flow-adfit-sdk]').length,slotCount:document.querySelectorAll('.flow-adfit-slot').length,unit:slot?.dataset.adUnit||'',width:slot?.dataset.adWidth||'',height:slot?.dataset.adHeight||''};
     },app);
-    assert(geometry.slot&&geometry.creative,`${app}/${name}: rendered AdFit slot missing`);
+    assert(geometry.slot&&geometry.creative&&geometry.rail,`${app}/${name}: rendered AdFit footer missing`);
+    assert(geometry.footerOwned,`${app}/${name}: AdFit is not the final app-content rail ${JSON.stringify(geometry)}`);
+    assert(geometry.label==='광고',`${app}/${name}: AdFit disclosure label missing ${JSON.stringify(geometry)}`);
+    assert(geometry.rail.width<=420.5||width<=900,`${app}/${name}: footer rail became too wide ${geometry.rail.width}`);
     assert(geometry.creative.width<=width+1&&geometry.creative.left>=-1&&geometry.creative.right<=width+1,`${app}/${name}: creative outside viewport ${JSON.stringify(geometry.creative)}`);
     assert(Math.abs(geometry.creative.width-Math.min(320,width))<=2||geometry.creative.width===320,`${app}/${name}: unexpected creative width ${geometry.creative.width}`);
     assert(Math.abs(geometry.creative.height-100)<=2,`${app}/${name}: unexpected creative height ${geometry.creative.height}`);
@@ -83,8 +86,8 @@ async function auditConfigured(app,name,width,height){
 async function auditUnconfigured(app){
   const {context,page,consoleErrors,pageErrors}=await prepare(app,390,844,false);
   try{
-    const state=await page.evaluate(()=>({mode:document.documentElement.dataset.flowAdfit,slots:document.querySelectorAll('.flow-adfit-slot').length,sdk:document.querySelectorAll('script[data-flow-adfit-sdk]').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
-    assert(state.mode==='unconfigured'&&state.slots===0&&state.sdk===0,`${app}: unconfigured AdFit should be zero-cost ${JSON.stringify(state)}`);assert(state.overflow<=3,`${app}: unconfigured overflow ${state.overflow}`);assert(consoleErrors.length===0&&pageErrors.length===0,`${app}: unconfigured errors ${JSON.stringify({consoleErrors,pageErrors})}`);return{app,...state};
+    const state=await page.evaluate(()=>({mode:document.documentElement.dataset.flowAdfit,slots:document.querySelectorAll('.flow-adfit-slot').length,rails:document.querySelectorAll('.flow-adfit-rail').length,sdk:document.querySelectorAll('script[data-flow-adfit-sdk]').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
+    assert(state.mode==='unconfigured'&&state.slots===0&&state.rails===0&&state.sdk===0,`${app}: unconfigured AdFit should be zero-cost ${JSON.stringify(state)}`);assert(state.overflow<=3,`${app}: unconfigured overflow ${state.overflow}`);assert(consoleErrors.length===0&&pageErrors.length===0,`${app}: unconfigured errors ${JSON.stringify({consoleErrors,pageErrors})}`);return{app,...state};
   }finally{await context.close()}
 }
 
