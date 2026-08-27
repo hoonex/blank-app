@@ -23,9 +23,11 @@ jobs:
           node --check university/dashboard-editor-v2.js
           node --check university/dashboard-editor-feedback.js
           node --check university/dashboard-home-editing.js
+          node --check university/dashboard-motion.js
           node --check university/dashboard-memo-panel.js
           node --check university/ui-unify.js
           node --check scripts/dashboard-editor-v2-audit.mjs
+          node --check scripts/widget-motion-ownership-audit.mjs
           node --check scripts/dashboard-default-composition-audit.mjs
           node --check scripts/widget-home-editing-audit.mjs
           node --check scripts/widget-gallery-composition-audit.mjs
@@ -35,6 +37,7 @@ jobs:
           node --check scripts/mobile-stability-audit.mjs
           test -f university/dashboard-editor-v2.css
           test -f university/dashboard-home-editing.css
+          test -f university/dashboard-motion.js
           test -f university/dashboard-variants.css
           test -f university/dashboard-memo-panel.css
           test -f university/ui-unify-v2.css
@@ -45,6 +48,10 @@ jobs:
           grep -q "dashboard-home-editing.js" university/dashboard-editor-feedback.js
           grep -q "dashboard-home-editing.js" sw.js
           grep -q "dashboard-home-editing.css" sw.js
+          grep -q "dashboard-motion.js" university/dashboard-home-editing.js
+          grep -q "dashboard-motion.js" sw.js
+          grep -q "takeWidgetPresentation" university/dashboard-home-editing.js
+          grep -q "installWidgetResizePresentationTakeover" university/dashboard-home-editing.js
           grep -q "dashboard-variants.css" sw.js
           grep -q "dashboard-memo-panel.js" university/dashboard-editor-feedback.js
           grep -q "dashboard-memo-panel.js" sw.js
@@ -82,6 +89,8 @@ jobs:
           exit 1
       - name: Run widget editor browser audit
         run: node scripts/dashboard-editor-v2-audit.mjs
+      - name: Verify shared widget motion ownership
+        run: node scripts/widget-motion-ownership-audit.mjs
       - name: Verify fresh dashboard composition and saved-layout preservation
         run: node scripts/dashboard-default-composition-audit.mjs
       - name: Run touch home editing and Campus composition audit
