@@ -28,7 +28,7 @@
 }
 @media(max-width:900px){
   .flow-adfit-rail{
-    width:calc(100% - 28px);
+    width:min(calc(100% - 28px),420px);
     min-height:126px;
     margin-top:6px;
     margin-bottom:calc(96px + env(safe-area-inset-bottom,0px));
@@ -39,5 +39,5 @@
   .flow-adfit-rail{margin-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
 @media(max-width:430px){
-  .flow-adfit-rail{width:calc(100% - 24px)}
+  .flow-adfit-rail{width:min(calc(100% - 24px),420px)}
 }
