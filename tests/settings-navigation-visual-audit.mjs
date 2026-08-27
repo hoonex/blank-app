@@ -104,7 +104,7 @@ for (const c of CASES) {
       bottomCount: [...document.querySelectorAll('#bottomNav > .mobile-tab')].filter(x => getComputedStyle(x).display !== 'none').length,
       inlineVisible: Boolean(document.querySelector('#inlineWeekTimetable:not(.hidden)')),
     }));
-    if (navState.toastVisible || navState.settingsVisible || !navState.weekActive || navState.weekInBottom || navState.bottomCount !== 4 || !navState.inlineVisible) throw new Error(`${c.name} inline Week navigation carried settings UI across: ${JSON.stringify(navState)}`);
+    if (navState.toastVisible || navState.settingsVisible || !navState.weekActive || navState.weekInBottom || navState.bottomCount !== 5 || !navState.inlineVisible) throw new Error(`${c.name} inline Week navigation carried settings UI across: ${JSON.stringify(navState)}`);
     await page.screenshot({ path: `${OUT}/${c.name}-week-after-settings.png`, fullPage: false, animations: 'disabled' });
 
     if (consoleErrors.length || pageErrors.length) throw new Error(`${c.name} browser errors: ${JSON.stringify({ consoleErrors, pageErrors })}`);

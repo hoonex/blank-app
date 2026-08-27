@@ -9,12 +9,8 @@ const requiredContract={
   'school-data':['NEIS_KEY','KAKAO_REST_KEY'],
   'school-logo':['KAKAO_REST_KEY'],
   'university-campus':['KAKAO_REST_KEY'],
-  'university-data':[
-    'UNIVERSITY_SCHOOL_INFO_KEY',
-    'UNIVERSITY_MAJOR_INFO_KEY',
-    'UNIVERSITY_FINANCES_KEY',
-    'UNIVERSITY_EDUCATION_CONDITION_KEY',
-  ],
+  'university-data':['DATA_GO_KR_SERVICE_KEY'],
+  'transit-data':['DATA_GO_KR_SERVICE_KEY','KAKAO_REST_KEY'],
 };
 
 for(const [fn,names] of Object.entries(requiredContract)){
@@ -24,6 +20,7 @@ for(const [fn,names] of Object.entries(requiredContract)){
     if(!actual.includes(name))throw new Error(`${fn}: ${name} missing from secret contract`);
   }
 }
+if(manifest?.['university-data']?.entrypoint!=='bootstrap.ts')throw new Error('university-data: shared-key bootstrap entrypoint missing');
 
 const sourceFiles=[];
 function walk(dir){
@@ -51,21 +48,31 @@ requireEnv('supabase/functions/school-data/index.ts','NEIS_KEY');
 requireEnv('supabase/functions/school-data/index.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/school-logo/index.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/university-campus/config.ts','KAKAO_REST_KEY');
-for(const name of requiredContract['university-data'])requireEnv('supabase/functions/university-data/index.ts',name);
+requireEnv('supabase/functions/university-data/bootstrap.ts','DATA_GO_KR_SERVICE_KEY');
+requireEnv('supabase/functions/transit-data/index.ts','DATA_GO_KR_SERVICE_KEY');
+requireEnv('supabase/functions/transit-data/index.ts','KAKAO_REST_KEY');
+
+const transit=combined.get('supabase/functions/transit-data/index.ts')||'';
+if(/ODSAY_API_KEY|api\.odsay\.com/.test(transit))throw new Error('transit-data: ODsay dependency must not be required');
+for(const expected of ['getCrdntPrxmtSttnList','getSttnThrghRouteList','getRouteAcctoThrghSttnList','getSttnAcctoArvlPrearngeInfoList']){
+  if(!transit.includes(expected))throw new Error(`transit-data: public routing operation ${expected} missing`);
+}
 
 const university=combined.get('supabase/functions/university-data/index.ts')||'';
-const routes={
+const compatibilityRoutes={
   SchoolInfoService:'UNIVERSITY_SCHOOL_INFO_KEY',
   SchoolMajorInfoService:'UNIVERSITY_MAJOR_INFO_KEY',
   FinancesService:'UNIVERSITY_FINANCES_KEY',
   EducationConditionService:'UNIVERSITY_EDUCATION_CONDITION_KEY',
 };
-for(const [service,key] of Object.entries(routes)){
+for(const [service,key] of Object.entries(compatibilityRoutes)){
   const pattern=new RegExp(`${service}\\s*:\\s*Deno\\.env\\.get\\(["']${key}["']\\)`);
-  if(!pattern.test(university))throw new Error(`university-data: ${service} is not routed to ${key}`);
+  if(!pattern.test(university))throw new Error(`university-data: compatibility route ${service} -> ${key} missing`);
 }
+const universityBootstrap=combined.get('supabase/functions/university-data/bootstrap.ts')||'';
+if(!universityBootstrap.includes('Deno.env.set("UNIVERSITY_DATA_KEY"'))throw new Error('university-data: shared key is not bridged to compatibility alias');
 
-const sensitiveAssignment=/(?:const|let|var)\s+(?:NEIS_KEY|KAKAO_REST_KEY|DATA_KEY|UNIVERSITY_[A-Z_]*KEY)\s*=\s*["'][^"'\n]{12,}["']/g;
+const sensitiveAssignment=/(?:const|let|var)\s+(?:[A-Z][A-Z0-9_]*(?:KEY|SECRET|TOKEN))\s*=\s*["'][^"'\n]{12,}["']/g;
 for(const [file,text] of combined){
   const hits=[...text.matchAll(sensitiveAssignment)];
   if(hits.length)throw new Error(`${file}: hardcoded credential-like assignment detected`);
@@ -74,6 +81,7 @@ for(const [file,text] of combined){
 console.log(JSON.stringify({
   ok:true,
   functions:Object.keys(requiredContract),
-  universityRoutes:routes,
+  transitProvider:'TAGO-public-data',
+  universityCompatibilityRoutes:compatibilityRoutes,
   scannedFiles:sourceFiles.length,
 },null,2));

@@ -47,6 +47,7 @@ jobs:
             '/home|Flow School'
             '/week|Flow School'
             '/schedule|Flow School'
+            '/transit|Flow School'
             '/school|Flow School'
             '/university/timetable|Flow University'
             '/university/campus|Flow University'

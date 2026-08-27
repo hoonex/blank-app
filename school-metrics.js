@@ -3,6 +3,7 @@ import '/flow-settings-view.js';
 import '/flow-refraction.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
+import './school-transit.js';
 
 if(!document.querySelector('link[data-flow-school-settings-wide]')){
   const link=document.createElement('link');

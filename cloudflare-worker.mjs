@@ -2,6 +2,7 @@ export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
   '/week':'/index.html',
   '/schedule':'/index.html',
+  '/transit':'/index.html',
   '/school':'/index.html',
   '/admin':'/admin/index.html',
   '/university':'/university/index.html',

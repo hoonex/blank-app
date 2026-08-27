@@ -26,10 +26,11 @@ async function inspect(page,selector,expectedCount){
     return{nav:{left:nr.left,top:nr.top,width:nr.width,height:nr.height,grid:getComputedStyle(nav).gridTemplateColumns},items:items.map((node,index)=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{index,id:node.id||'',view:node.dataset.view||'',text:node.textContent.trim(),active:node.classList.contains('active'),left:r.left,top:r.top,width:r.width,height:r.height,order:s.order,gridColumn:s.gridColumnStart,gridRow:s.gridRowStart,borderTopWidth:s.borderTopWidth,borderTopStyle:s.borderTopStyle,appearance:s.appearance,backgroundColor:s.backgroundColor}}),lens:{left:lr.left,top:lr.top,width:lr.width,height:lr.height,transform:lensStyle.transform},rimTransform:pseudo.transform,restX:nav.style.getPropertyValue('--flow-refraction-rest-x')};
   },selector);
 }
-function validate(name,state,{count,first,last}){
+function validate(name,state,{count,first,last,requiredView=''}){
   if(state.items.length!==count)throw new Error(`${name}: wrong item count ${JSON.stringify(state)}`);
   if(first&&state.items[0].text!==first)throw new Error(`${name}: first item moved ${JSON.stringify(state)}`);
   if(last&&state.items.at(-1).text!==last)throw new Error(`${name}: last item moved ${JSON.stringify(state)}`);
+  if(requiredView&&!state.items.some(item=>item.view===requiredView))throw new Error(`${name}: required destination ${requiredView} missing ${JSON.stringify(state)}`);
   const tops=state.items.map(x=>x.top),lefts=state.items.map(x=>x.left),topSpread=Math.max(...tops)-Math.min(...tops);
   if(topSpread>2||state.nav.height>72)throw new Error(`${name}: nav wrapped onto multiple rows ${JSON.stringify(state)}`);
   for(let i=1;i<lefts.length;i++)if(!(lefts[i]>lefts[i-1]+20))throw new Error(`${name}: tab order/geometry is not left-to-right ${JSON.stringify(state)}`);
@@ -44,7 +45,7 @@ function validateUniversityButtonSkin(name,state,{requireAppearanceNone=false}={
 }
 
 const browser=await chromium.launch({headless:true});
-const schoolContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const school=await schoolContext.newPage();await schoolFixtures(school);await school.goto(BASE,{waitUntil:'domcontentloaded'});await school.locator('#dashboard:not(.hidden)').waitFor();const schoolState=await inspect(school,'#bottomNav',4);validate('School Optical nav',schoolState,{count:4,first:'오늘',last:'설정'});await school.screenshot({path:`${OUT}/school-optical-nav.png`,fullPage:false});await schoolContext.close();
+const schoolContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const school=await schoolContext.newPage();await schoolFixtures(school);await school.goto(BASE,{waitUntil:'domcontentloaded'});await school.locator('#dashboard:not(.hidden)').waitFor();const schoolState=await inspect(school,'#bottomNav',5);validate('School Optical nav',schoolState,{count:5,first:'오늘',last:'설정',requiredView:'transit'});await school.screenshot({path:`${OUT}/school-optical-nav.png`,fullPage:false});await schoolContext.close();
 
 const universityContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});const university=await universityContext.newPage();await universityFixtures(university);await university.goto(`${BASE}/university/`,{waitUntil:'domcontentloaded'});await university.locator('#appView:not(.hidden)').waitFor();const universityState=await inspect(university,'.bottom-nav',5);validate('University Optical nav',universityState,{count:5,first:'오늘',last:'설정'});validateUniversityButtonSkin('University portrait nav',universityState);await university.screenshot({path:`${OUT}/university-optical-nav.png`,fullPage:false});await universityContext.close();
 
