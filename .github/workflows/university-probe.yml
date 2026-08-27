@@ -27,17 +27,20 @@ jobs:
           node --check tests/university-network-resilience-audit.mjs
           node tests/university-network-resilience-audit.mjs
           node --check scripts/university-audit.mjs
+          node --check scripts/university-audit-search-fixture.mjs
           node --check scripts/campus-audit.mjs
           node --check scripts/campus-map-interaction-audit.mjs
           node --check scripts/vercel-rest.mjs
           test -f university/index.html
           test -f university/campus.css
+          test -f scripts/university-audit-search-fixture.mjs
           test -f supabase/functions/flow-quest-event/index.ts
           test -f supabase/migrations/20260821_flow_university_telemetry.sql
           grep -q 'UNIVERSITY_EVENT_MAP' supabase/functions/flow-quest-event/index.ts
           grep -q 'flow_university_events' supabase/migrations/20260821_flow_university_telemetry.sql
           grep -q "trackUniversity('page_view')" university/university.js
           ! grep -E 'event_name.*(schoolName|universitySearch|everytimeUrl)' university/university.js
+          grep -q "url.searchParams.get('action')!=='search'" scripts/university-audit-search-fixture.mjs
           test -f university/campus-interactive.css
           grep -q 'Flow University' university/index.html
           grep -q 'net-bootstrap.js' university/index.html
@@ -95,7 +98,7 @@ jobs:
           cat /tmp/flow-university-server.log
           exit 1
       - name: Run university browser audit
-        run: node scripts/university-audit.mjs
+        run: node --import ./scripts/university-audit-search-fixture.mjs scripts/university-audit.mjs
       - name: Run campus browser audit
         run: node scripts/campus-audit.mjs
       - name: Run campus map touch and orientation audit
