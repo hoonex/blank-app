@@ -22,7 +22,7 @@ jobs:
           node --check university/ui-unify.js
           node --check scripts/university-theme-audit.mjs
           grep -q 'only light' university/university-polish.css
-          grep -q 'flow-school-shell-v13' sw.js
+          grep -q 'flow-school-shell-v14' sw.js
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
