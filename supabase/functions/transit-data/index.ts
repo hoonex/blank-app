@@ -65,11 +65,16 @@ async function withTagoSlot<T>(task: () => Promise<T>): Promise<T> {
   }
 }
 
-async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+async function cached<T>(
+  key: string,
+  ttlMs: number,
+  load: () => Promise<T>,
+  shouldCache: (value: T) => boolean = () => true,
+): Promise<T> {
   const hit = memoryCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value as T;
   const value = await load();
-  memoryCache.set(key, { expires: Date.now() + ttlMs, value });
+  if (shouldCache(value)) memoryCache.set(key, { expires: Date.now() + ttlMs, value });
   if (memoryCache.size > 260) {
     const now = Date.now();
     for (const [cacheKey, entry] of memoryCache) if (entry.expires <= now) memoryCache.delete(cacheKey);
@@ -340,7 +345,7 @@ async function nearbyStops(x: number, y: number, regionHint = "") {
       if (!previous || stop.distance < previous.distance) unique.set(stop.id, stop);
     }
     return [...unique.values()].sort((a, b) => a.distance - b.distance).slice(0, 5);
-  });
+  }, (stops) => stops.length > 0);
 }
 
 async function routesAtStop(stop: Stop) {
