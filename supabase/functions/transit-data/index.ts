@@ -604,7 +604,7 @@ async function stopLines(stops: Stop[]) {
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
-  const sourceStops = await nearbyStops(sx, sy);
+  const sourceStops = await nearbyStops(sx, sy, destinationRegion);
   const destinationStops = await nearbyStops(ex, ey, destinationRegion);
   if (!sourceStops.length) throw new Error("현재 위치 주변에서 버스 정류장을 찾지 못했습니다.");
   if (!destinationStops.length) throw new Error("목적지 주변에서 버스 정류장을 찾지 못했습니다.");
