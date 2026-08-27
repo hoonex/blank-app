@@ -64,7 +64,7 @@ const initial=await page.evaluate(()=>({
   routeCount:document.querySelectorAll('#campusRouteList .campus-route').length,
   routeTexts:[...document.querySelectorAll('#campusRouteList .campus-route')].map(x=>x.textContent.replace(/\s+/g,' ').trim()),
   mapOpacity:getComputedStyle(document.querySelector('.campus-interactive-map')).opacity,
-  fallbackOpacity:document.querySelector('#campusMapWrap>img')?getComputedStyle(document.querySelector('#campusMapWrap>img').opacity):null,
+  fallbackOpacity:document.querySelector('#campusMapWrap>img')?getComputedStyle(document.querySelector('#campusMapWrap>img')).opacity:null,
   badge:document.querySelector('.campus-map-badge')?.textContent?.trim()||'',
   bodyBackground:getComputedStyle(document.body).backgroundColor
 }));
