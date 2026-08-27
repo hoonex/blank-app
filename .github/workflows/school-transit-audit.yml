@@ -35,15 +35,15 @@ jobs:
           grep -q "KAKAO_REST_KEY" supabase/functions/transit-data/index.ts
           ! grep -q "ODSAY_API_KEY" supabase/functions/transit-data/index.ts
           grep -q "TAGO-public-data" supabase/functions/transit-data/index.ts
-          grep -q "offsetCoordinate" supabase/functions/transit-data/index.ts
-          grep -q "1100" supabase/functions/transit-data/index.ts
+          grep -q "getCtyCodeList" supabase/functions/transit-data/index.ts
+          grep -q "getSttnNoList" supabase/functions/transit-data/index.ts
+          grep -q "city-stop-master" supabase/functions/transit-data/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
       - name: Verify live Transit integrations and route search
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
-          probe='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-daegu-probe'
           curl -fsSL --connect-timeout 10 --max-time 30 "$base?action=health" > /tmp/transit-health.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
@@ -52,9 +52,10 @@ jobs:
           const missing=Object.entries(integrations).filter(([,ready])=>ready!==true).map(([name])=>name);
           if(!data?.ok||missing.length) throw new Error(`Transit integrations are not ready: ${missing.join(', ')||'health failed'}`);
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
-          console.log('Transit integrations: Public Data + Kakao ready; TAGO public router active');
+          if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
+          console.log('Transit integrations: Public Data + Kakao ready; TAGO city-stop fallback active');
           NODE
-          route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 55 \
+          route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6014' \
             --data-urlencode 'sy=35.8714' \
@@ -63,10 +64,6 @@ jobs:
           if [ "$route_status" != "200" ]; then
             echo "Transit route HTTP $route_status"
             cat /tmp/transit-route.json
-            echo
-            echo '--- Modern BusStop/getBusStop probe ---'
-            curl -sS --connect-timeout 10 --max-time 25 "$probe" || true
-            echo
             exit 1
           fi
           node --input-type=module - <<'NODE'
