@@ -64,6 +64,7 @@ async function inspect(page){return page.evaluate(()=>{
     bodyLocked:document.body.classList.contains('flow-transit-map-open')&&getComputedStyle(document.body).overflow==='hidden',shellPosition:shell?getComputedStyle(shell).position:'',bottomCovered:Boolean(bottomHit?.closest?.('.flow-transit-map-shell')),navVisible:Boolean(nav&&getComputedStyle(nav).display!=='none'),markerSpreadX:spread,viewport:{width:innerWidth,height:innerHeight},activeTag:document.activeElement?.className||'',
   };
 })}
+async function waitForSheetMotion(page){await page.waitForFunction(()=>{const sheet=document.querySelector('.flow-transit-map-sheet');return sheet&&getComputedStyle(sheet).transform==='none'},{timeout:1500})}
 const browser=await chromium.launch({headless:true});const report={};
 for(const testCase of cases){
   const context=await browser.newContext({viewport:testCase.viewport,isMobile:testCase.isMobile,hasTouch:testCase.hasTouch,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
@@ -73,7 +74,7 @@ for(const testCase of cases){
   await page.locator('[data-flow-transit-nav]:visible').first().click();await page.locator('#transitLocateBtn').click();await page.waitForFunction(()=>document.querySelectorAll('[data-transit-route]').length===5&&document.querySelectorAll('.flow-transit-map-toggle').length>=4);
   const before=await baseState(page);
   if(counters.map!==0)throw new Error(`${testCase.name}: map data must stay lazy before click, got ${counters.map}`);
-  await page.locator('[data-transit-route="0"] .flow-transit-map-toggle').click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await page.waitForTimeout(100);
+  await page.locator('[data-transit-route="0"] .flow-transit-map-toggle').click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
   const state=await inspect(page);report[testCase.name]={before,...state,mapRequests:counters.map,pageErrors};
   if(counters.map!==1)throw new Error(`${testCase.name}: expected one lazy route-map request, got ${counters.map}`);
   if(state.shells!==1||state.inlinePanels!==0||state.ready!=='true'||state.lines<1||state.pins<2||state.vehiclePins<1)throw new Error(`${testCase.name}: bus map sheet/layers incomplete ${JSON.stringify(state)}`);
@@ -93,7 +94,7 @@ for(const testCase of cases){
   if(closed.locked||closed.expanded!=='false'||!closed.focused||Math.abs(closed.pageHeight-before.pageHeight)>2)throw new Error(`${testCase.name}: close/focus/page restoration failed ${JSON.stringify(closed)}`);
 
   if(testCase.name==='mobile-portrait'){
-    await page.locator('[data-transit-route="1"] .flow-transit-map-toggle').click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await page.waitForTimeout(80);
+    await page.locator('[data-transit-route="1"] .flow-transit-map-toggle').click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
     const transfer=await inspect(page);report[testCase.name].transfer={...transfer,mapRequests:counters.map};
     if(counters.map!==3||transfer.lines<2||transfer.pins!==3||transfer.transferPins!==1||transfer.legs!==2)throw new Error(`mobile-portrait: transfer map must render two bus legs with one shared transfer marker ${JSON.stringify(transfer)}`);
     await page.screenshot({path:`${OUT}/school-transit-map-mobile-portrait-transfer.png`,fullPage:false});
