@@ -11,7 +11,7 @@ const days=Array.from({length:42},(_,i)=>{
   const n=i+1,selected=n===9,event=n===10?'2학기 전국 영어듣기능력평가 및 매우 긴 일정 이름':'';
   return `<button class="calendar-day${selected?' selected':''}" type="button"><strong>${n}</strong>${event?'<span class="calendar-dot"></span><span class="calendar-event-label">'+event+'</span>':''}</button>`;
 }).join('');
-await page.setContent(`<!doctype html><html lang="ko" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${base}/school.css"><link rel="stylesheet" href="${base}/school-v5.css"><style>body{padding:20px}.fixture{width:min(820px,100%);margin:0 auto}.calendar-card{padding:19px}</style></head><body><article class="calendar-card content-card"><div class="calendar-grid">${['일','월','화','수','목','금','토'].map(x=>`<div class="calendar-weekday">${x}</div>`).join('')}${days}</div></article></body></html>`,{waitUntil:'load'});
+await page.setContent(`<!doctype html><html lang="ko" data-theme="light"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${base}/school.css"><link rel="stylesheet" href="${base}/school-v5.css"><link rel="stylesheet" href="${base}/school-landscape-toolbar.css"><style>body{padding:20px}.fixture{width:min(820px,100%);margin:0 auto}.calendar-card{padding:19px}</style></head><body><section id="scheduleView"><article class="calendar-card content-card fixture"><div class="calendar-grid">${['일','월','화','수','목','금','토'].map(x=>`<div class="calendar-weekday">${x}</div>`).join('')}${days}</div></article></section></body></html>`,{waitUntil:'load'});
 
 async function measure(width,height,expected,label){
   await page.setViewportSize({width,height});
@@ -37,7 +37,7 @@ async function measure(width,height,expected,label){
 }
 
 const desktop=await measure(1366,768,82,'desktop');
-const landscape=await measure(844,390,82,'landscape');
+const landscape=await measure(844,390,44,'landscape');
 await page.screenshot({path:`${out}/school-calendar-landscape.png`,fullPage:false});
 const tablet=await measure(768,1024,66,'tablet');
 const mobile=await measure(390,844,54,'mobile');
