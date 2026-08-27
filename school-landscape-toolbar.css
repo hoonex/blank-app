@@ -1,0 +1,71 @@
+/* Short-phone landscape shell: keep School navigation in the fixed/sticky header instead of covering content.
+ * The Week control is already reparented into the Today timetable by school-ia.js, so the visible nav has four destinations. */
+@media (max-width:900px) and (max-height:520px) and (orientation:landscape){
+  html[data-theme] body .product-shell{padding-bottom:18px!important}
+  html[data-theme] body .mobile-topbar{overflow:visible!important}
+  html[data-theme] body .mobile-topbar .flow-logo{position:relative;z-index:2;flex:0 0 auto}
+  html[data-theme] body .mobile-school-button{position:relative;z-index:2;flex:0 1 auto;max-width:22vw!important;min-width:96px}
+
+  html[data-theme] body .mobile-bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    z-index:80!important;
+    top:max(7px,env(safe-area-inset-top))!important;
+    bottom:auto!important;
+    left:50%!important;
+    right:auto!important;
+    width:clamp(248px,42vw,336px)!important;
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+    transform:translateX(-50%)!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    grid-template-rows:32px!important;
+    grid-auto-flow:row!important;
+    grid-auto-columns:auto!important;
+    gap:2px!important;
+    padding:3px!important;
+    border-radius:15px!important;
+    corner-shape:round!important;
+    overflow:hidden!important;
+  }
+  html[data-theme] body .mobile-bottom-nav>.mobile-tab,
+  html[data-theme] body .mobile-bottom-nav>.flow-mobile-settings{
+    min-width:0!important;
+    width:100%!important;
+    height:32px!important;
+    min-height:32px!important;
+    padding:0 5px!important;
+    border:0!important;
+    border-radius:11px!important;
+    background:transparent!important;
+    color:var(--muted)!important;
+    box-shadow:none!important;
+    font-size:.66rem!important;
+    font-weight:800!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  html[data-theme] body .mobile-bottom-nav>.mobile-tab.active,
+  html[data-theme] body .mobile-bottom-nav>.flow-mobile-settings.active{color:var(--accent)!important}
+  html[data-theme] body .mobile-bottom-nav::before{
+    top:3px!important;
+    bottom:3px!important;
+    left:3px!important;
+    width:calc((100% - 6px)/4)!important;
+    border-radius:11px!important;
+  }
+  html[data-theme] body .toast{bottom:12px!important}
+}
+
+@media (max-width:700px) and (max-height:520px) and (orientation:landscape){
+  html[data-theme] body .mobile-topbar{padding-left:max(7px,env(safe-area-inset-left))!important;padding-right:max(7px,env(safe-area-inset-right))!important}
+  html[data-theme] body .mobile-topbar .flow-logo-copy strong{font-size:.82rem!important}
+  html[data-theme] body .mobile-school-button{max-width:20vw!important;min-width:88px!important;padding-left:7px!important;padding-right:7px!important}
+  html[data-theme] body .mobile-school-button small{display:none!important}
+  html[data-theme] body .mobile-bottom-nav{width:clamp(228px,44vw,280px)!important}
+  html[data-theme] body .mobile-bottom-nav>.mobile-tab,
+  html[data-theme] body .mobile-bottom-nav>.flow-mobile-settings{font-size:.61rem!important;padding-left:3px!important;padding-right:3px!important}
+}
