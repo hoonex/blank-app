@@ -11,7 +11,7 @@ permissions:
 jobs:
   school-transit-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,13 +21,19 @@ jobs:
         run: |
           set -euo pipefail
           node --check school-transit.js
+          node --check school-transit-map.js
           node --check tests/school-transit-audit.mjs
+          node --check tests/school-transit-map-audit.mjs
           node scripts/edge-secret-audit.mjs
           test -s school-transit.css
+          test -s school-transit-map.css
           test -s supabase/functions/transit-data/index.ts
+          test -s supabase/functions/transit-map/index.ts
           test -s supabase/functions/university-data/bootstrap.ts
           grep -q "school-transit.js" school-metrics.js
-          grep -q "school-transit.js" sw.js
+          grep -q "school-transit-map.js" school-metrics.js
+          grep -q "school-transit-map.js" sw.js
+          grep -q "school-transit-map.css" sw.js
           grep -q "school-transit.css" sw.js
           grep -q "'/transit':'/index.html'" cloudflare-worker.mjs
           grep -q '"source": "/transit"' vercel.json
@@ -40,13 +46,17 @@ jobs:
           grep -q "city-stop-master" supabase/functions/transit-data/index.ts
           grep -q "realtimeLegs" supabase/functions/transit-data/index.ts
           grep -q "per-bus-leg-when-available" supabase/functions/transit-data/index.ts
+          grep -q "getRouteAcctoBusLcList" supabase/functions/transit-map/index.ts
+          grep -q "route-stop-sequence" supabase/functions/transit-map/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
-      - name: Verify live Transit integrations and route search
+      - name: Verify live Transit integrations, route search, and map adapter
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
+          map_base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-map'
           curl -fsSL --connect-timeout 10 --max-time 30 "$base?action=health" > /tmp/transit-health.json
+          curl -fsSL --connect-timeout 10 --max-time 30 "$map_base?action=health" > /tmp/transit-map-health.json
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
           const data=JSON.parse(fs.readFileSync('/tmp/transit-health.json','utf8'));
@@ -56,7 +66,9 @@ jobs:
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
           if(data?.realtimeRouting!=='per-bus-leg-when-available') throw new Error(`Transit per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
-          console.log('Transit integrations: Public Data + Kakao ready; per-bus-leg realtime routing active');
+          const map=JSON.parse(fs.readFileSync('/tmp/transit-map-health.json','utf8'));
+          if(!map?.ok||map?.provider!=='TAGO-public-data'||map?.geometry!=='route-stop-sequence') throw new Error(`Transit map adapter is not ready: ${JSON.stringify(map)}`);
+          console.log('Transit integrations: routing + per-leg realtime + lazy bus map ready');
           NODE
           route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
@@ -70,7 +82,7 @@ jobs:
             echo
             exit 1
           fi
-          node --input-type=module - <<'NODE'
+          MAP_BASE="$map_base" node --input-type=module - <<'NODE'
           import fs from 'node:fs';
           const data=JSON.parse(fs.readFileSync('/tmp/transit-route.json','utf8'));
           const routes=Array.isArray(data?.routes)?data.routes:[];
@@ -78,7 +90,15 @@ jobs:
           if(data?.provider!=='TAGO-public-data') throw new Error(`Unexpected route provider: ${data?.provider}`);
           if(!routes.every(route=>Number(route.totalMinutes)>0&&Array.isArray(route.segments)&&route.segments.length)) throw new Error('Live route normalization is incomplete');
           if(!routes.every(route=>Array.isArray(route.realtimeLegs))) throw new Error('Per-leg realtime shape is missing from live routes');
-          console.log(`Live Transit public-data route search: ${routes.length} route(s), realtime coverage ${data.realtimeCoverage||'none'}`);
+          const bus=routes.flatMap(route=>route.segments||[]).find(segment=>segment.type==='bus'&&segment.startId&&segment.endId&&segment.lines?.[0]);
+          if(!bus) throw new Error('No live bus segment available for map adapter validation');
+          const params=new URLSearchParams({action:'route-map',region:'대구광역시',line:String(bus.lines[0]),startId:String(bus.startId),endId:String(bus.endId),startName:String(bus.startName||''),endName:String(bus.endName||'')});
+          const response=await fetch(`${process.env.MAP_BASE}?${params}`,{signal:AbortSignal.timeout(45000)});
+          const map=await response.json().catch(()=>({}));
+          if(!response.ok) throw new Error(`Transit map HTTP ${response.status}: ${map?.error||'unknown error'}`);
+          if(!Array.isArray(map?.route?.stops)||map.route.stops.length<2) throw new Error('Transit map route-stop geometry is incomplete');
+          if(!Array.isArray(map?.vehicles)||!['live','unavailable'].includes(map?.vehicleStatus)) throw new Error('Transit map vehicle fallback contract is incomplete');
+          console.log(`Live Transit route search: ${routes.length} route(s); map ${map.route.stops.length} stops; vehicles ${map.vehicles.length}`);
           NODE
       - name: Install Playwright Chromium
         run: |
@@ -94,9 +114,15 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/school-transit-audit.mjs
+      - name: Verify lazy bus maps across six viewports
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-transit-map-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: school-transit-audit
-          path: school-transit-audit/
+          path: |
+            school-transit-audit/
+            school-transit-map-audit/
           retention-days: 7
