@@ -10,6 +10,7 @@ This file is the operating contract for AI/code-agent work in this repository. R
 - If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. Do not stop merely to ask whether to continue.
 - If a real blocker prevents implementation, report the exact failing tool/permission/check and preserve the branch/PR state. Do not substitute hypothetical instructions for work that can still be performed.
 - A user-provided screenshot or concrete UI complaint is an acceptance-test input. Reproduce and fix it in the repository rather than only explaining what should be changed.
+- Keep chat handoffs compact. Put durable history in `FLOW_PROJECT_HISTORY.md` and fast-changing state in `FLOW_CURRENT_STATUS.md`; ordinary ULW updates should normally contain only the current SHA/state, meaningful change, and blocker/result rather than replaying long reasoning history.
 
 ## 1. Never edit `main` directly
 
@@ -23,10 +24,11 @@ This file is the operating contract for AI/code-agent work in this repository. R
 Before each ULW task:
 
 1. Confirm the current `main`/production state.
-2. Identify the smallest files that actually need changes.
-3. Reuse existing data flows/components before adding new runtime layers.
-4. Do not introduce duplicate API requests, duplicate renderers, extra MutationObservers, automatic scroll resets, or hotfix stacks.
-5. Do not expose Vercel, NEIS, Kakao, Supabase, Public Data Portal, or other secret keys in client code or logs.
+2. Read `FLOW_CURRENT_STATUS.md` when present, then use `FLOW_PROJECT_HISTORY.md` only for longer historical context; GitHub current state overrides both if they are stale.
+3. Identify the smallest files that actually need changes.
+4. Reuse existing data flows/components before adding new runtime layers.
+5. Do not introduce duplicate API requests, duplicate renderers, extra MutationObservers, automatic scroll resets, or hotfix stacks.
+6. Do not expose Vercel, NEIS, Kakao, Supabase, Public Data Portal, or other secret keys in client code or logs.
 
 ## 3. Loop prevention
 
