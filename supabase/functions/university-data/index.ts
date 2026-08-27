@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const API = "https://apis.data.go.kr/B340014";
 const YEARS = ["2025", "2024", "2023"];
-const COMMON_DATA_KEY = Deno.env.get("UNIVERSITY_DATA_KEY") || "";
+const COMMON_DATA_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || Deno.env.get("UNIVERSITY_DATA_KEY") || "";
 const SERVICE_KEYS: Record<string, string> = {
   SchoolInfoService: Deno.env.get("UNIVERSITY_SCHOOL_INFO_KEY") || COMMON_DATA_KEY,
   SchoolMajorInfoService: Deno.env.get("UNIVERSITY_MAJOR_INFO_KEY") || COMMON_DATA_KEY,
