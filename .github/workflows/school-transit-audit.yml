@@ -32,8 +32,9 @@ jobs:
           grep -q "'/transit':'/index.html'" cloudflare-worker.mjs
           grep -q '"source": "/transit"' vercel.json
           grep -q "DATA_GO_KR_SERVICE_KEY" supabase/functions/transit-data/index.ts
-          grep -q "ODSAY_API_KEY" supabase/functions/transit-data/index.ts
           grep -q "KAKAO_REST_KEY" supabase/functions/transit-data/index.ts
+          ! grep -q "ODSAY_API_KEY" supabase/functions/transit-data/index.ts
+          grep -q "TAGO-public-data" supabase/functions/transit-data/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
       - name: Verify live Transit integrations and route search
         shell: bash
@@ -47,9 +48,10 @@ jobs:
           const integrations=data?.integrations||{};
           const missing=Object.entries(integrations).filter(([,ready])=>ready!==true).map(([name])=>name);
           if(!data?.ok||missing.length) throw new Error(`Transit integrations are not ready: ${missing.join(', ')||'health failed'}`);
-          console.log('Transit integrations: ODsay + Public Data + Kakao ready');
+          if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
+          console.log('Transit integrations: Public Data + Kakao ready; TAGO public router active');
           NODE
-          curl -fsSL --get --connect-timeout 10 --max-time 40 \
+          curl -fsSL --get --connect-timeout 10 --max-time 50 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6014' \
             --data-urlencode 'sy=35.8714' \
@@ -60,8 +62,9 @@ jobs:
           const data=JSON.parse(fs.readFileSync('/tmp/transit-route.json','utf8'));
           const routes=Array.isArray(data?.routes)?data.routes:[];
           if(routes.length<1||routes.length>5) throw new Error(`Expected 1-5 live routes, got ${routes.length}: ${data?.error||'unknown response'}`);
+          if(data?.provider!=='TAGO-public-data') throw new Error(`Unexpected route provider: ${data?.provider}`);
           if(!routes.every(route=>Number(route.totalMinutes)>0&&Array.isArray(route.segments)&&route.segments.length)) throw new Error('Live route normalization is incomplete');
-          console.log(`Live Transit route search: ${routes.length} route(s), realtime coverage ${data.realtimeCoverage||'none'}`);
+          console.log(`Live Transit public-data route search: ${routes.length} route(s), realtime coverage ${data.realtimeCoverage||'none'}`);
           NODE
       - name: Install Playwright Chromium
         run: |
