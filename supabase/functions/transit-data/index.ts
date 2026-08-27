@@ -313,14 +313,11 @@ async function cityCodeForCoordinate(x: number, y: number) {
 async function cityStopMaster(cityCode: string) {
   return cached(`city-stop-master:${cityCode}`, 6 * 60 * 60_000, async () => {
     const first = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: 1, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000);
-    const all = [...first.items];
-    const total = Math.max(first.totalCount, all.length);
+    const total = Math.max(first.totalCount, first.items.length);
     const pages = Math.min(20, Math.ceil(total / TAGO_CITY_STOP_PAGE_SIZE));
-    for (let pageNo = 2; pageNo <= pages; pageNo += 1) {
-      const next = await tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000);
-      all.push(...next.items);
-    }
-    return all;
+    const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, index) =>
+      tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: index + 2, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000)));
+    return [...first.items, ...rest.flatMap((page) => page.items)];
   });
 }
 
