@@ -1,3 +1,4 @@
+import {takeWidgetPresentation,installWidgetResizePresentationTakeover} from '/university/dashboard-motion.js';
 const STATE_KEY='flow-university-dashboard-layout-v2';
 const HOLD_MS=430,EDIT_HOLD_MS=210,DWELL_MS=190,EDGE=104,EDGE_SPEED=20,PICKER_HOLD_MS=340;
 let press=null,drag=null,edgeRaf=0,moveRaf=0,pickerPress=null;
@@ -58,8 +59,8 @@ function placeholderFor(el){
 }
 function beginDrag(el,x,y,input,id,visualRect=null){
   const g=grid();if(drag||!editing()||!g||el.parentElement!==g)return false;
-  const source=el.getBoundingClientRect();
-  if(!source.width||!source.height)return false;
+  const source=takeWidgetPresentation(el);
+  if(!source?.width||!source?.height)return false;
   const r=visualRect&&visualRect.width&&visualRect.height?visualRect:source,p=placeholderFor(el);
   drag={
     el,g,p,input,id,
@@ -322,7 +323,7 @@ function pickerMove(e){if(pickerPress?.kind==='pointer'&&e.pointerId===pickerPre
 function pickerEnd(e){if(pickerPress?.kind==='pointer'&&e.pointerId===pickerPress.inputId)clearPickerPress()}
 
 function init(){
-  ensureStyle();polishEditorBar();
+  installWidgetResizePresentationTakeover();ensureStyle();polishEditorBar();
   document.addEventListener('pointerdown',pointerDown,{capture:true});
   document.addEventListener('pointermove',pointerMove,{capture:true,passive:false});
   document.addEventListener('pointerup',pointerEnd,{capture:true,passive:false});
