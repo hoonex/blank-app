@@ -1,0 +1,77 @@
+/* Short-phone landscape shell: move University tabs into the fixed header instead of covering content.
+ * Match the global glass-navigation selector weight so this responsive shell owns geometry without disabling glass. */
+@media (max-width:900px) and (max-height:520px) and (orientation:landscape){
+  html[data-theme] body .main{padding:62px 12px 18px!important}
+  html[data-theme] body .mobile-header{overflow:visible!important}
+  html[data-theme] body .mobile-header .brand{position:relative;z-index:2;flex:0 0 auto}
+  html[data-theme] body .mobile-header .flow-theme-cycle{display:none!important}
+  html[data-theme] body .mobile-school{position:relative;z-index:2;flex:0 1 auto;max-width:23vw!important;min-width:112px;padding:5px 9px!important}
+
+  html[data-theme] body .bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    z-index:70!important;
+    top:max(7px,env(safe-area-inset-top))!important;
+    bottom:auto!important;
+    left:50%!important;
+    right:auto!important;
+    width:clamp(300px,45vw,380px)!important;
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+    transform:translateX(-50%)!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-rows:32px!important;
+    grid-auto-flow:row!important;
+    grid-auto-columns:auto!important;
+    gap:2px!important;
+    padding:3px!important;
+    border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
+    border-radius:15px!important;
+    corner-shape:round!important;
+    background:color-mix(in srgb,var(--surface) 88%,transparent)!important;
+    box-shadow:0 5px 18px rgba(28,38,58,.10),inset 0 1px 0 color-mix(in srgb,#fff 55%,transparent)!important;
+    backdrop-filter:blur(18px) saturate(135%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(135%)!important;
+    overflow:hidden!important;
+  }
+  html[data-theme] body .bottom-nav>.bottom-item{
+    min-width:0!important;
+    width:100%!important;
+    height:32px!important;
+    min-height:32px!important;
+    padding:0 5px!important;
+    border:0!important;
+    border-radius:11px!important;
+    background:transparent!important;
+    color:var(--muted)!important;
+    box-shadow:none!important;
+    font-size:.66rem!important;
+    font-weight:800!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  html[data-theme] body .bottom-nav>.bottom-item.active{
+    color:var(--accent)!important;
+  }
+  html[data-theme] body .bottom-nav::before{
+    top:3px!important;
+    bottom:3px!important;
+    left:3px!important;
+    width:calc((100% - 6px)/5)!important;
+    border-radius:11px!important;
+  }
+}
+
+/* Keep the header layout safe on narrower landscape phones as well. */
+@media (max-width:700px) and (max-height:520px) and (orientation:landscape){
+  html[data-theme] body .mobile-header{padding-left:max(8px,env(safe-area-inset-left))!important;padding-right:max(8px,env(safe-area-inset-right))!important}
+  html[data-theme] body .mobile-header .brand-word{font-size:1.08rem!important}
+  html[data-theme] body .brand-mode{font-size:.48rem!important}
+  html[data-theme] body .mobile-school{max-width:21vw!important;min-width:98px!important;padding-left:7px!important;padding-right:7px!important}
+  html[data-theme] body .mobile-school small{display:none!important}
+  html[data-theme] body .bottom-nav{width:clamp(286px,48vw,336px)!important}
+  html[data-theme] body .bottom-nav>.bottom-item{font-size:.61rem!important;padding-left:3px!important;padding-right:3px!important}
+}
