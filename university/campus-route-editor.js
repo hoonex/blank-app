@@ -111,10 +111,18 @@ function beginTouchReorder(state){
   Object.assign(row.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:`${rect.height}px`,margin:'0',zIndex:'10000',transform:'translate3d(0,0,0)'});
   document.body.append(row);list.dataset.touchReordering='true';
 }
+function touchReorderVisualTop(state,clientY){
+  const rawTop=state.rect.top+(clientY-state.startY),nav=$('.bottom-nav'),navRect=nav?.getBoundingClientRect(),navStyle=nav?getComputedStyle(nav):null;
+  const navVisible=Boolean(navRect?.width&&navRect?.height&&navStyle?.display!=='none'&&navStyle?.visibility!=='hidden'&&navRect.top<innerHeight&&navRect.bottom>0);
+  const upper=8,lower=Math.max(upper,(navVisible?navRect.top:innerHeight)-state.rect.height-8);
+  if(rawTop<upper){const over=upper-rawTop;return upper-Math.min(8,over*.18)}
+  if(rawTop>lower){const over=rawTop-lower;return lower+Math.min(8,over*.18)}
+  return rawTop;
+}
 function moveTouchPlaceholder(state,clientY){
   const {list,placeholder,row,rect}=state;if(!list||!placeholder||!row)return;
-  const dy=clientY-state.startY;row.style.transform=`translate3d(0,${dy}px,0)`;
-  const center=rect.top+dy+rect.height/2,rows=$$('.campus-route-stop',list);let placed=false;
+  const rawDy=clientY-state.startY,visualTop=touchReorderVisualTop(state,clientY),visualDy=visualTop-rect.top;row.style.transform=`translate3d(0,${visualDy}px,0)`;
+  const center=rect.top+rawDy+rect.height/2,rows=$$('.campus-route-stop',list);let placed=false;
   for(const candidate of rows){const r=candidate.getBoundingClientRect();if(center<r.top+r.height/2){list.insertBefore(placeholder,candidate);placed=true;break}}
   if(!placed)list.append(placeholder);
   state.slot=touchReorderSlot(state);
