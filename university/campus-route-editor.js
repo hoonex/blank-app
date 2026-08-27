@@ -1,7 +1,8 @@
 const ROUTE_PREFIX='flow-university-campus-route-v1:';
+const TOUCH_REORDER_THRESHOLD=8;
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
-let draft=[],draftMode='default',currentDay=null,pendingEditIndex=null,dragIndex=null,initialized=false;
+let draft=[],draftMode='default',currentDay=null,pendingEditIndex=null,dragIndex=null,touchReorder=null,initialized=false;
 
 function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function bridge(){return window.flowCampusRouteBridge||null}
@@ -56,6 +57,7 @@ function ensureEditor(){
   list?.addEventListener('dragstart',onDragStart);
   list?.addEventListener('dragover',event=>{if(event.target.closest?.('[data-route-index]'))event.preventDefault()});
   list?.addEventListener('drop',onDrop);
+  list?.addEventListener('pointerdown',onTouchReorderDown,{passive:false});
 }
 function ensureSearchDialog(){
   if($('#campusRoutePlaceDialog'))return;
@@ -80,8 +82,9 @@ function refreshContext({force=false}={}){
 }
 function renderDraft(){
   const box=$('#campusRouteEditorList');if(!box)return;
+  if(touchReorder)finishTouchReorder(true);
   if(!draft.length){box.innerHTML='<div class="campus-route-editor-empty">경로에 표시할 장소가 없습니다. 장소를 추가할 수 있습니다.</div>';return}
-  box.innerHTML=draft.map((stop,index)=>`<div class="campus-route-stop" draggable="true" data-route-index="${index}"><span class="campus-route-grip" aria-hidden="true">⋮⋮</span><span class="campus-route-order">${index+1}</span><span class="campus-route-stop-copy"><strong>${esc(stop.label||stop.name)}</strong><small>${esc(stop.name)}${stop.kind==='custom'?' · 직접 추가':''}</small></span><span class="campus-route-stop-actions"><button type="button" data-route-up aria-label="위로 이동" ${index===0?'disabled':''}>↑</button><button type="button" data-route-down aria-label="아래로 이동" ${index===draft.length-1?'disabled':''}>↓</button><button type="button" data-route-edit>수정</button><button type="button" data-route-delete>삭제</button></span></div>`).join('')
+  box.innerHTML=draft.map((stop,index)=>`<div class="campus-route-stop" draggable="true" data-route-index="${index}"><span class="campus-route-grip" data-route-grip aria-hidden="true">⋮⋮</span><span class="campus-route-order">${index+1}</span><span class="campus-route-stop-copy"><strong>${esc(stop.label||stop.name)}</strong><small>${esc(stop.name)}${stop.kind==='custom'?' · 직접 추가':''}</small></span><span class="campus-route-stop-actions"><button type="button" data-route-up aria-label="위로 이동" ${index===0?'disabled':''}>↑</button><button type="button" data-route-down aria-label="아래로 이동" ${index===draft.length-1?'disabled':''}>↓</button><button type="button" data-route-edit>수정</button><button type="button" data-route-delete>삭제</button></span></div>`).join('')
 }
 function move(from,to){if(from===to||from<0||to<0||from>=draft.length||to>=draft.length)return;const [item]=draft.splice(from,1);draft.splice(to,0,item);markDirty();renderDraft()}
 function onListClick(event){
@@ -93,6 +96,59 @@ function onListClick(event){
 }
 function onDragStart(event){const row=event.target.closest?.('[data-route-index]');if(!row)return;dragIndex=Number(row.dataset.routeIndex);event.dataTransfer?.setData('text/plain',String(dragIndex));if(event.dataTransfer)event.dataTransfer.effectAllowed='move'}
 function onDrop(event){const row=event.target.closest?.('[data-route-index]');if(!row)return;event.preventDefault();const from=Number.isFinite(dragIndex)?dragIndex:Number(event.dataTransfer?.getData('text/plain'));const to=Number(row.dataset.routeIndex);dragIndex=null;move(from,to)}
+
+function touchReorderSlot(state=touchReorder){
+  const list=state?.list,placeholder=state?.placeholder;if(!list||!placeholder?.isConnected)return state?.from??0;
+  const children=[...list.children],index=children.indexOf(placeholder);
+  return children.slice(0,Math.max(0,index)).filter(node=>node.classList?.contains('campus-route-stop')).length;
+}
+function beginTouchReorder(state){
+  if(state.active)return;
+  const {row,list,rect}=state,placeholder=document.createElement('div');
+  placeholder.className='campus-route-touch-placeholder';placeholder.setAttribute('aria-hidden','true');placeholder.style.height=`${rect.height}px`;
+  list.insertBefore(placeholder,row);state.placeholder=placeholder;state.active=true;state.slot=state.from;
+  row.draggable=false;row.classList.add('campus-route-touch-floating');row.dataset.routeTouchDragging='true';
+  Object.assign(row.style,{position:'fixed',left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,height:`${rect.height}px`,margin:'0',zIndex:'10000',transform:'translate3d(0,0,0)'});
+  document.body.append(row);list.dataset.touchReordering='true';
+}
+function touchReorderVisualTop(state,clientY){
+  const rawTop=state.rect.top+(clientY-state.startY),nav=$('.bottom-nav'),navRect=nav?.getBoundingClientRect(),navStyle=nav?getComputedStyle(nav):null;
+  const navVisible=Boolean(navRect?.width&&navRect?.height&&navStyle?.display!=='none'&&navStyle?.visibility!=='hidden'&&navRect.top<innerHeight&&navRect.bottom>0);
+  const upper=8,lower=Math.max(upper,(navVisible?navRect.top:innerHeight)-state.rect.height-8);
+  if(rawTop<upper){const over=upper-rawTop;return upper-Math.min(8,over*.18)}
+  if(rawTop>lower){const over=rawTop-lower;return lower+Math.min(8,over*.18)}
+  return rawTop;
+}
+function moveTouchPlaceholder(state,clientY){
+  const {list,placeholder,row,rect}=state;if(!list||!placeholder||!row)return;
+  const rawDy=clientY-state.startY,visualTop=touchReorderVisualTop(state,clientY),visualDy=visualTop-rect.top;row.style.transform=`translate3d(0,${visualDy}px,0)`;
+  const center=rect.top+rawDy+rect.height/2,rows=$$('.campus-route-stop',list);let placed=false;
+  for(const candidate of rows){const r=candidate.getBoundingClientRect();if(center<r.top+r.height/2){list.insertBefore(placeholder,candidate);placed=true;break}}
+  if(!placed)list.append(placeholder);
+  state.slot=touchReorderSlot(state);
+}
+function onTouchReorderDown(event){
+  if(event.pointerType==='mouse'||!event.isPrimary||event.button!==0||touchReorder)return;
+  const grip=event.target.closest?.('[data-route-grip]'),row=grip?.closest?.('[data-route-index]'),list=$('#campusRouteEditorList');
+  if(!grip||!row||!list||row.parentElement!==list)return;
+  const rect=row.getBoundingClientRect();if(!rect.width||!rect.height)return;
+  event.preventDefault();touchReorder={id:event.pointerId,row,list,from:Number(row.dataset.routeIndex),startX:event.clientX,startY:event.clientY,rect,active:false,placeholder:null,slot:Number(row.dataset.routeIndex)};
+}
+function onTouchReorderMove(event){
+  const state=touchReorder;if(!state||event.pointerId!==state.id)return;
+  const dx=event.clientX-state.startX,dy=event.clientY-state.startY;
+  if(!state.active&&Math.hypot(dx,dy)<TOUCH_REORDER_THRESHOLD)return;
+  event.preventDefault();if(!state.active)beginTouchReorder(state);moveTouchPlaceholder(state,event.clientY)
+}
+function finishTouchReorder(cancel=false){
+  const state=touchReorder;if(!state)return;touchReorder=null;
+  if(!state.active)return;
+  const to=Math.max(0,Math.min(draft.length-1,touchReorderSlot(state)));
+  state.row.remove();state.placeholder?.remove();state.list?.removeAttribute('data-touch-reordering');
+  if(!cancel&&Number.isFinite(state.from)&&state.from!==to){const [item]=draft.splice(state.from,1);draft.splice(to,0,item);markDirty()}
+  renderDraft();
+}
+function onTouchReorderEnd(event){const state=touchReorder;if(!state||event.pointerId!==state.id)return;event.preventDefault();finishTouchReorder(event.type==='pointercancel')}
 
 let searchResults=[];
 function openSearch(index){pendingEditIndex=Number.isInteger(index)?index:null;ensureSearchDialog();const dialog=$('#campusRoutePlaceDialog'),input=$('#campusRouteSearchInput'),results=$('#campusRouteSearchResults');if(results)results.innerHTML='';if(input){input.value=pendingEditIndex===null?'':draft[pendingEditIndex]?.name||''}if(dialog&&!dialog.open)dialog.showModal();setTimeout(()=>input?.focus({preventScroll:true}),60)}
@@ -117,6 +173,10 @@ function renderCustomRouteList(detail){
 
 function bindEvents(){
   document.addEventListener('click',event=>{if(event.target.closest?.('#campusDayTabs [data-campus-day]'))setTimeout(()=>refreshContext({force:true}),0)});
+  document.addEventListener('pointermove',onTouchReorderMove,{capture:true,passive:false});
+  document.addEventListener('pointerup',onTouchReorderEnd,{capture:true,passive:false});
+  document.addEventListener('pointercancel',onTouchReorderEnd,{capture:true,passive:false});
+  window.addEventListener('blur',()=>finishTouchReorder(true),{passive:true});
   window.addEventListener('flow:campus-context-ready',()=>refreshContext({force:true}));
   window.addEventListener('flow:campus-custom-route-rendered',event=>renderCustomRouteList(event.detail));
 }

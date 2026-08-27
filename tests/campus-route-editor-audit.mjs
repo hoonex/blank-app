@@ -33,7 +33,7 @@ await page.route('**/functions/v1/university-campus**',async route=>{
     const payload=request.postDataJSON?.()||{},start=payload.start||{},end=payload.end||{};
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({route:{status:'OK',distance:430,time:420,landingUrl:'https://map.kakao.com/test',points:[[String(start.x||'128.6100'),String(start.y||'35.8886')],[String(end.x||'128.6110'),String(end.y||'35.8892')]]}})});
   }
-  if(action==='static-map')return route.fulfill({status:200,contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4z8AAAAASUVORK5CYII=','base64')});
+  if(action==='static-map')return route.fulfill({status:200,contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC0lEQVR42mP8/x8AAusB9Y9Z4z8AAAAASUVORK5CYII=','base64')});
   return route.fulfill({status:404,contentType:'application/json',body:'{}'});
 });
 
@@ -80,6 +80,50 @@ if(initial.routeStops.length!==3)throw new Error(`Default route editor stops mis
 if(initial.overflow>1)throw new Error(`Mobile horizontal overflow: ${initial.overflow}`);
 
 await page.locator('#campusRouteEditor').evaluate(el=>el.open=true);
+const firstRow=page.locator('#campusRouteEditorList [data-route-index="0"]'),firstGrip=firstRow.locator('[data-route-grip]'),thirdRow=page.locator('#campusRouteEditorList [data-route-index="2"]');
+const firstBox=await firstRow.boundingBox(),gripBox=await firstGrip.boundingBox(),thirdBox=await thirdRow.boundingBox();
+if(!firstBox||!gripBox||!thirdBox)throw new Error('Touch route reorder fixture geometry missing');
+const touchStart={x:gripBox.x+gripBox.width/2,y:gripBox.y+gripBox.height/2},safeMove={x:touchStart.x,y:touchStart.y+36},touchEnd={x:touchStart.x,y:thirdBox.y+thirdBox.height*.86},touchDy=touchEnd.y-touchStart.y;
+await firstGrip.dispatchEvent('pointerdown',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:touchStart.x,clientY:touchStart.y,button:0,buttons:1,bubbles:true,cancelable:true});
+await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointermove',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true})),safeMove);
+await page.waitForTimeout(16);
+const safeDuring=await page.evaluate(()=>{
+  const floating=document.querySelector('.campus-route-touch-floating'),placeholder=document.querySelector('.campus-route-touch-placeholder'),r=floating?.getBoundingClientRect();
+  return{floating:document.querySelectorAll('.campus-route-touch-floating').length,placeholder:document.querySelectorAll('.campus-route-touch-placeholder').length,rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height}};
+});
+if(safeDuring.floating!==1||safeDuring.placeholder!==1)throw new Error(`Touch route reorder did not enter direct manipulation: ${JSON.stringify(safeDuring)}`);
+if(Math.abs((safeDuring.rect?.top??0)-(firstBox.y+36))>3)throw new Error(`Touch route row did not follow safe-zone pointer 1:1: ${JSON.stringify({firstBox,safeDuring})}`);
+
+await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointermove',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true})),touchEnd);
+await page.waitForTimeout(24);
+const touchDuring=await page.evaluate(()=>{
+  const floating=document.querySelector('.campus-route-touch-floating'),placeholder=document.querySelector('.campus-route-touch-placeholder'),list=document.querySelector('#campusRouteEditorList'),r=floating?.getBoundingClientRect(),nav=document.querySelector('.bottom-nav'),nr=nav?.getBoundingClientRect();
+  const children=list?[...list.children]:[],pi=children.indexOf(placeholder),slot=pi<0?-1:children.slice(0,pi).filter(x=>x.classList.contains('campus-route-stop')).length;
+  return{floating:document.querySelectorAll('.campus-route-touch-floating').length,placeholder:document.querySelectorAll('.campus-route-touch-placeholder').length,listActive:list?.dataset.touchReordering||'',dragging:floating?.dataset.routeTouchDragging||'',rect:r&&{left:r.left,top:r.top,width:r.width,height:r.height,bottom:r.bottom},navTop:nr?.top??null,slot,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+});
+if(touchDuring.floating!==1||touchDuring.placeholder!==1||touchDuring.listActive!=='true'||touchDuring.dragging!=='true')throw new Error(`Touch route reorder lost direct manipulation state: ${JSON.stringify(touchDuring)}`);
+if(touchDuring.slot!==2)throw new Error(`Touch route placeholder did not reach final slot: ${JSON.stringify(touchDuring)}`);
+if(touchDuring.overflow>1)throw new Error(`Touch route reorder caused horizontal overflow: ${touchDuring.overflow}`);
+if(!Number.isFinite(touchDuring.navTop)||!Number.isFinite(touchDuring.rect?.bottom)||touchDuring.rect.bottom>touchDuring.navTop+9)throw new Error(`Touch route row escaped beneath mobile chrome: ${JSON.stringify(touchDuring)}`);
+const rawBottomExpected=firstBox.y+touchDy+firstBox.height;
+if(rawBottomExpected-(touchDuring.rect?.bottom??rawBottomExpected)<18)throw new Error(`Touch route boundary resistance did not engage near mobile chrome: ${JSON.stringify({rawBottomExpected,touchDuring})}`);
+await page.screenshot({path:`${out}/mobile-campus-route-touch-reorder.png`,fullPage:false});
+await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointerup',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:0,bubbles:true,cancelable:true})),touchEnd);
+await page.waitForTimeout(24);
+const touchOrder=await page.evaluate(()=>({order:[...document.querySelectorAll('#campusRouteEditorList .campus-route-stop strong')].map(x=>x.textContent.trim()),floating:document.querySelectorAll('.campus-route-touch-floating').length,placeholder:document.querySelectorAll('.campus-route-touch-placeholder').length,status:document.querySelector('#campusRouteEditorStatus')?.dataset.state||''}));
+if(JSON.stringify(touchOrder.order)!==JSON.stringify(['자료구조','교양세미나','소프트웨어설계'])||touchOrder.floating||touchOrder.placeholder||touchOrder.status!=='dirty')throw new Error(`Touch route reorder did not commit cleanly: ${JSON.stringify(touchOrder)}`);
+
+await page.locator('#campusRouteResetBtn').click();
+const cancelGrip=page.locator('#campusRouteEditorList [data-route-index="1"] [data-route-grip]'),cancelRow=page.locator('#campusRouteEditorList [data-route-index="1"]');
+const cancelGripBox=await cancelGrip.boundingBox(),cancelRowBox=await cancelRow.boundingBox();if(!cancelGripBox||!cancelRowBox)throw new Error('Touch route cancel fixture geometry missing');
+const cancelStart={x:cancelGripBox.x+cancelGripBox.width/2,y:cancelGripBox.y+cancelGripBox.height/2},cancelMove={x:cancelStart.x,y:cancelStart.y-48};
+await cancelGrip.dispatchEvent('pointerdown',{pointerId:72,pointerType:'touch',isPrimary:true,clientX:cancelStart.x,clientY:cancelStart.y,button:0,buttons:1,bubbles:true,cancelable:true});
+await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointermove',{pointerId:72,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true})),cancelMove);
+await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointercancel',{pointerId:72,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:0,bubbles:true,cancelable:true})),cancelMove);
+await page.waitForTimeout(20);
+const cancelOrder=await page.evaluate(()=>({order:[...document.querySelectorAll('#campusRouteEditorList .campus-route-stop strong')].map(x=>x.textContent.trim()),floating:document.querySelectorAll('.campus-route-touch-floating').length,placeholder:document.querySelectorAll('.campus-route-touch-placeholder').length}));
+if(JSON.stringify(cancelOrder.order)!==JSON.stringify(initial.routeStops)||cancelOrder.floating||cancelOrder.placeholder)throw new Error(`Touch route cancel mutated order or leaked presentation state: ${JSON.stringify(cancelOrder)}`);
+
 await page.locator('#campusRouteEditorList [data-route-index="0"] [data-route-down]').click();
 await page.locator('#campusRouteApplyBtn').click();
 await page.waitForTimeout(80);
@@ -118,7 +162,7 @@ const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWid
 if(desktopOverflow>1)throw new Error(`Desktop horizontal overflow: ${desktopOverflow}`);
 await page.screenshot({path:`${out}/desktop-campus-route-editor.png`,fullPage:true});
 
-const report={initial,reordered:saved?.stops?.map(x=>x.name)||[],consoleErrors,pageErrors};
+const report={initial,safeDuring,touchDuring,touchOrder,cancelOrder,reordered:saved?.stops?.map(x=>x.name)||[],consoleErrors,pageErrors};
 await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 if(consoleErrors.length||pageErrors.length)throw new Error(`Browser errors: ${JSON.stringify({consoleErrors,pageErrors})}`);
