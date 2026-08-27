@@ -12,6 +12,14 @@ if(!document.querySelector('link[data-flow-school-settings-wide]')){
   document.head.append(link);
 }
 
+if(!document.querySelector('link[data-flow-school-landscape-toolbar]')){
+  const link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href='/school-landscape-toolbar.css?v=20260827-1';
+  link.dataset.flowSchoolLandscapeToolbar='';
+  document.head.append(link);
+}
+
 /* Delight must never block School identity/theme/data startup. */
 void import('/flow-experience.js').catch(()=>{});
 
