@@ -21,9 +21,14 @@ jobs:
         run: |
           node --check flow-adfit-config.js
           node --check flow-adfit.js
+          node --check flow-refraction.js
           node --check tests/adfit-layout-audit.mjs
+          node --check tests/adfit-school-top-audit.mjs
           grep -q 't1.kakaocdn.net/kas/static/ba.min.js' flow-adfit-config.js
+          grep -q "school:Object.freeze({unit:'DAN-ovpJn5XCBs1n1owQ'" flow-adfit-config.js
           grep -q 'kakao_ad_area' flow-adfit.js
+          grep -q 'flow-adfit-rail--school-top' flow-adfit.js
+          grep -q 'flow-adfit-rail' flow-refraction.js
           grep -q "unit:''" flow-adfit-config.js
           ! grep -q 'flow-optical-jelly-v1' flow-adfit-config.js
       - name: Install Playwright Chromium
@@ -43,9 +48,15 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/adfit-layout-audit.mjs
+      - name: Verify School top placement and Optical isolation
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/adfit-school-top-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: adfit-layout-audit
-          path: adfit-layout-audit/
+          path: |
+            adfit-layout-audit/
+            adfit-school-top-audit/
           retention-days: 7
