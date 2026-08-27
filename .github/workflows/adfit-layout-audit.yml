@@ -22,6 +22,7 @@ jobs:
           node --check flow-adfit-config.js
           node --check flow-adfit.js
           node --check tests/adfit-layout-audit.mjs
+          node --check tests/adfit-footer-optical-audit.mjs
           grep -q 't1.kakaocdn.net/kas/static/ba.min.js' flow-adfit-config.js
           grep -q "school:Object.freeze({unit:'DAN-ovpJn5XCBs1n1owQ'" flow-adfit-config.js
           grep -q "university:Object.freeze({unit:''" flow-adfit-config.js
@@ -45,9 +46,15 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/adfit-layout-audit.mjs
+      - name: Verify approved School footer stays outside Optical sampling
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/adfit-footer-optical-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: adfit-layout-audit
-          path: adfit-layout-audit/
+          path: |
+            adfit-layout-audit/
+            adfit-footer-optical-audit/
           retention-days: 7
