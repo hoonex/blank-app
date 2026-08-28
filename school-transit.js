@@ -1,4 +1,5 @@
 const TRANSIT_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data';
+const RAIL_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-rail';
 const PROFILE_KEY='flow-school-profile-v3';
 const REFRESH_MS=30000;
 const $=(selector,root=document)=>root.querySelector(selector);
@@ -111,12 +112,63 @@ function locate({maximumAge=15000}={}){
     );
   });
 }
+function routeSort(a,b){return Number(a?.totalMinutes||0)-Number(b?.totalMinutes||0)||Number(a?.transfers||0)-Number(b?.transfers||0)||Number(a?.walkMeters||0)-Number(b?.walkMeters||0)}
+function routeSignature(route){
+  return(route?.segments||[]).filter(segment=>segment.type==='bus'||segment.type==='subway').map(segment=>`${segment.type}:${(segment.lines||[]).join(',')}:${segment.startName||segment.startId||''}:${segment.endName||segment.endId||''}`).join('|');
+}
+function assignMergedBadges(routes){
+  if(!routes.length)return routes;
+  const minWalk=Math.min(...routes.map(route=>Number(route.walkMeters)||0));
+  const minTransfers=Math.min(...routes.map(route=>Number(route.transfers)||0));
+  routes.forEach((route,index)=>{
+    const badges=[];
+    if(index===0)badges.push('추천');
+    if(index!==0&&Number(route.walkMeters||0)===minWalk)badges.push('걷기 적음');
+    if(index!==0&&Number(route.transfers||0)===minTransfers&&badges.length<2)badges.push('환승 적음');
+    route.badges=badges;
+    route.id=`route-${index+1}`;
+    route.arrivalAt=new Date(Date.now()+Math.max(1,Number(route.totalMinutes)||1)*60000).toISOString();
+  });
+  return routes;
+}
+function mergeRouteBodies(busBody,railBody){
+  const combined=[...(Array.isArray(busBody?.routes)?busBody.routes:[]),...(Array.isArray(railBody?.routes)?railBody.routes:[])];
+  const deduped=new Map();
+  for(const route of combined){
+    const key=routeSignature(route)||route.id||String(deduped.size);
+    const previous=deduped.get(key);
+    if(!previous||routeSort(route,previous)<0)deduped.set(key,route);
+  }
+  const routes=assignMergedBadges([...deduped.values()].sort(routeSort).slice(0,5));
+  const railIncluded=routes.some(route=>(route.segments||[]).some(segment=>segment.type==='subway'));
+  return{
+    ...busBody,
+    routes,
+    providers:[busBody?.provider,railBody?.provider].filter(Boolean),
+    railCoverage:railIncluded?'Daegu-1-2-3':'none',
+    railSnapshotDate:railBody?.snapshotDate||null,
+    railWaitModel:railBody?.waitModel||null,
+  };
+}
+async function fetchRailRoutes(coords,destination,signal){
+  const ex=Number(destination?.x),ey=Number(destination?.y);
+  if(!Number.isFinite(ex)||!Number.isFinite(ey))return null;
+  const url=new URL(RAIL_EDGE);url.searchParams.set('action','route');url.searchParams.set('sx',String(coords.x));url.searchParams.set('sy',String(coords.y));url.searchParams.set('ex',String(ex));url.searchParams.set('ey',String(ey));
+  const response=await fetch(url,{signal});const body=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(body.error||'도시철도 경로를 불러오지 못했습니다.');return body;
+}
 async function fetchRoutes(coords){
   const destination=schoolDestination();if(!destination.query)throw new Error('먼저 학교를 선택해주세요.');
   requestAbort?.abort();requestAbort=new AbortController();
   const url=new URL(TRANSIT_EDGE);url.searchParams.set('action','route');url.searchParams.set('sx',String(coords.x));url.searchParams.set('sy',String(coords.y));url.searchParams.set('destination',destination.query);
   const response=await fetch(url,{signal:requestAbort.signal});const body=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(body.error||'교통 경로를 불러오지 못했습니다.');return body;
+  if(!response.ok)throw new Error(body.error||'교통 경로를 불러오지 못했습니다.');
+  let railBody=null;
+  try{railBody=await fetchRailRoutes(coords,body?.destination,requestAbort.signal)}catch(error){
+    if(error?.name==='AbortError')throw error;
+    console.warn(`Transit rail unavailable: ${error instanceof Error?error.message:String(error)}`);
+  }
+  return mergeRouteBodies(body,railBody);
 }
 function clock(iso){
   const date=new Date(iso);if(Number.isNaN(date.getTime()))return'—';return new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false}).format(date);
@@ -165,17 +217,23 @@ function renderRoutes(body){
   const routes=Array.isArray(body?.routes)?body.routes:[];if(!routes.length)throw new Error('표시할 교통 경로가 없습니다.');
   const realtime=routes.some(route=>routeRealtime(route).length>0);
   const multi=routes.some(route=>routeRealtime(route).length>1);
+  const rail=routes.some(route=>(route.segments||[]).some(segment=>segment.type==='subway'));
   const summary=$('#transitSummary');
   if(summary){
     summary.classList.remove('hidden');
-    const title=multi?'환승 버스까지 실시간 도착을 반영했습니다.':realtime?'실시간 버스 도착을 일부 반영했습니다.':'예상 소요시간 기준 경로입니다.';
-    const detail=multi?'환승 지점 도착 이후 탈 수 있는 다음 버스를 골라 대기시간을 보정합니다.':realtime?'버스 도착정보가 있는 승차 구간의 대기시간을 보정합니다.':'실시간 도착정보가 없는 구간은 평균 이동시간을 사용합니다.';
+    let title='예상 소요시간 기준 경로입니다.',detail='실시간 도착정보가 없는 구간은 평균 이동시간을 사용합니다.';
+    if(rail&&multi){title='버스 실시간 도착과 도시철도 경로를 함께 비교했습니다.';detail='환승 버스 대기시간은 실시간으로 보정하고, 지하철은 역 접근거리와 노선 순서를 기준으로 예상합니다.'}
+    else if(rail&&realtime){title='버스 실시간 도착과 도시철도 경로를 함께 비교했습니다.';detail='버스 도착정보가 있는 구간은 실시간으로 보정하고, 지하철 대기시간은 평균값으로 계산합니다.'}
+    else if(rail){title='대구 도시철도 경로도 함께 비교했습니다.';detail='지하철은 2026년 노선 스냅샷과 역 접근거리를 사용하며 대기시간은 평균값으로 계산합니다.'}
+    else if(multi){title='환승 버스까지 실시간 도착을 반영했습니다.';detail='환승 지점 도착 이후 탈 수 있는 다음 버스를 골라 대기시간을 보정합니다.'}
+    else if(realtime){title='실시간 버스 도착을 일부 반영했습니다.';detail='버스 도착정보가 있는 승차 구간의 대기시간을 보정합니다.'}
     summary.innerHTML=`<strong>${title}</strong><span>${detail}</span>`;
   }
   $('#transitRoutes').innerHTML=routes.map(routeCard).join('');
   window.dispatchEvent(new CustomEvent('flow:transit-routes-rendered',{detail:{routes,generatedAt:body?.generatedAt||new Date().toISOString()}}));
   const generated=new Date(body.generatedAt||Date.now());
-  setState(`${routes.length}개 경로 · ${new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(generated)} 갱신`,realtime?'live':'neutral');
+  const mode=rail?' · 버스·도시철도 비교':'';
+  setState(`${routes.length}개 경로${mode} · ${new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(generated)} 갱신`,realtime?'live':'neutral');
 }
 async function locateAndLoad({manual=false,background=false,refresh=false}={}){
   if(loading)return;if(!active()&&!manual)return;
