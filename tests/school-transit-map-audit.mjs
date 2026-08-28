@@ -16,7 +16,7 @@ const subway={type:'subway',minutes:16,distance:6200,stationCount:8,startName:'�
 const live={routeNo:'708',seconds:360,stops:4,arrivalMinutes:6,waitAddedMinutes:6,source:'TAGO',checkedAt:new Date().toISOString(),stopName:'혁신도시입구',legIndex:0};
 const route=(index)=>({
   id:`route-${index+1}`,pathType:index===1?3:index===2?1:2,baselineMinutes:30+index*3,totalMinutes:32+index*3,walkMeters:600-index*45,payment:0,transfers:index===1?1:0,stationCount:12+index,
-  segments:index===1?[walkStart,transferBusA,transferBusB,walkEnd]:index===2?[walkStart,subway,walkEnd]:[walkStart,directBus,walkEnd],realtime:index===0?live:null,realtimeLegs:index===0?[live]:[],arrivalAt:new Date(Date.now()+(32+index*3)*60000).toISOString(),badges:index===0?['추천']:[],
+  segments:index===1?[walkStart,transferBusA,transferBusB,walkEnd]:index===2?[walkStart,subway,walkEnd]:[walkStart,{...directBus,lines:[index===3?'401':index===4?'425':'708']},walkEnd],realtime:index===0?live:null,realtimeLegs:index===0?[live]:[],arrivalAt:new Date(Date.now()+(32+index*3)*60000).toISOString(),badges:index===0?['추천']:[],
 });
 const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7,y:35.87},realtimeCoverage:'partial',routes:Array.from({length:5},(_,i)=>route(i))};
 const stop=(id,name,order,x,y)=>({id,name,order,x,y});
