@@ -71,10 +71,10 @@ for(const testCase of cases){
   const page=await context.newPage(),errors=[],counters={map:0};page.on('pageerror',error=>errors.push(String(error)));await installKakaoFixture(page);await baseFixture(page,'bus',counters);await enterTransit(page);
   const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='지도 보기')throw new Error('bus route must expose 지도 보기');await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
   if(counters.map!==1)throw new Error(`expected one lazy map request at open, got ${counters.map}`);
-  await page.waitForFunction(()=>document.querySelector('.flow-transit-map-status')?.textContent?.includes('갱신'),{timeout:22000});
+  await page.waitForTimeout(16000);
   if(counters.map<2)throw new Error(`live bus map did not refresh: ${counters.map} request(s)`);
   const busState=await page.evaluate(()=>({mode:document.querySelector('.flow-transit-map-shell')?.dataset.mapMode||'',vehicleCount:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleCount||'',updatedAt:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleUpdatedAt||'',status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
-  if(busState.mode!=='bus'||busState.vehicleCount!=='1'||!busState.updatedAt||busState.vehiclePins!==1||busState.overflow>1||errors.length)throw new Error(`live bus map contract failed ${JSON.stringify({busState,counters,errors})}`);
+  if(busState.mode!=='bus'||busState.vehicleCount!=='1'||!busState.updatedAt||!busState.status.includes('갱신')||busState.vehiclePins!==1||busState.overflow>1||errors.length)throw new Error(`live bus map contract failed ${JSON.stringify({busState,counters,errors})}`);
   await page.screenshot({path:`${OUT}/bus-live-mobile-portrait.png`,fullPage:false});report.bus.mobilePortrait={...busState,mapRequests:counters.map,pageErrors:errors};await context.close();
 }
 await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
