@@ -59,7 +59,8 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
 #transitView.is-loading .flow-transit-locate,#transitView.is-loading .flow-transit-refresh{opacity:.58}
 
 @media(max-width:900px){
-  .flow-transit-header{padding-bottom:12px!important}
+  .flow-transit-header{padding-bottom:12px!important;flex-direction:row!important;align-items:center!important;gap:10px!important}
+  .flow-transit-header>div{flex:1}
   .flow-transit-header p{display:none}
   .flow-transit-search{padding:14px;margin-bottom:10px}
   .flow-transit-endpoints{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:7px}
