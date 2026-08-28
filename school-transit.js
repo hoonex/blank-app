@@ -11,7 +11,7 @@ let requestAbort=null;
 let loading=false;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
-function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
   const school=profile()?.school||{};
