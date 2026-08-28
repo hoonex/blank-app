@@ -11,7 +11,7 @@ let requestAbort=null;
 let loading=false;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
-function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
   const school=profile()?.school||{};
@@ -174,7 +174,7 @@ async function fetchRoutes(coords){
   const url=new URL(TRANSIT_EDGE);url.searchParams.set('action','route');url.searchParams.set('sx',String(coords.x));url.searchParams.set('sy',String(coords.y));url.searchParams.set('destination',destination.query);
   const response=await fetch(url,{signal:requestAbort.signal});const body=await response.json().catch(()=>({}));
   let railBody=null;
-  if(body?.destination){
+  if(body?.provider==='TAGO-public-data'&&body?.destination){
     try{railBody=await fetchRailRoutes(coords,body.destination,requestAbort.signal)}catch(error){
       if(error?.name==='AbortError')throw error;
       console.warn(`Transit rail unavailable: ${error instanceof Error?error.message:String(error)}`);
