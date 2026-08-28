@@ -54,12 +54,13 @@ async function enterTransit(page){
   await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready'&&document.documentElement.dataset.flowTransitMap==='ready',{timeout:10000});
   await page.locator('[data-flow-transit-nav]:visible').first().click();await page.locator('#transitLocateBtn').click();await page.waitForSelector('[data-transit-route="0"]',{timeout:10000});await page.waitForSelector('[data-transit-route="0"] .flow-transit-map-toggle',{timeout:5000});
 }
+async function waitForSheetMotion(page){await page.waitForFunction(()=>{const sheet=document.querySelector('.flow-transit-map-sheet');return sheet&&getComputedStyle(sheet).transform==='none'},{timeout:1500})}
 const browser=await chromium.launch({headless:true});const report={rail:{},bus:{}};
 for(const testCase of cases){
   const context=await browser.newContext({viewport:testCase.viewport,isMobile:testCase.isMobile,hasTouch:testCase.hasTouch,locale:'ko-KR',timezoneId:'Asia/Seoul',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
   const page=await context.newPage(),errors=[],counters={map:0};page.on('pageerror',error=>errors.push(String(error)));await baseFixture(page,'rail',counters);await enterTransit(page);
   const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='노선도 보기')throw new Error(`${testCase.name}: rail route must expose 노선도 보기`);
-  await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');
+  await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
   const state=await page.evaluate(()=>({mode:document.querySelector('.flow-transit-map-shell')?.dataset.mapMode||'',sections:document.querySelectorAll('.flow-transit-rail-section').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,sheet:(()=>{const r=document.querySelector('.flow-transit-map-sheet')?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom}:null})()}));
   if(state.mode!=='rail'||state.sections!==2||!state.status.includes('실시간 열차 위치')||counters.map!==0||state.overflow>1)throw new Error(`${testCase.name}: rail sheet contract failed ${JSON.stringify({state,counters,errors})}`);
   if(!state.sheet||state.sheet.left<-1||state.sheet.top<-1||state.sheet.right>testCase.viewport.width+1||state.sheet.bottom>testCase.viewport.height+1)throw new Error(`${testCase.name}: rail sheet outside viewport ${JSON.stringify(state.sheet)}`);
@@ -68,9 +69,8 @@ for(const testCase of cases){
 {
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
   const page=await context.newPage(),errors=[],counters={map:0};page.on('pageerror',error=>errors.push(String(error)));await installKakaoFixture(page);await baseFixture(page,'bus',counters);await enterTransit(page);
-  const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='지도 보기')throw new Error('bus route must expose 지도 보기');await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');
-  if(counters.map!==1)throw new Error(`expected one lazy map request at open, got ${counters.map}`);const firstUpdated=await page.getAttribute('.flow-transit-map-shell','data-vehicle-updated-at');
-  await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.vehicleUpdatedAt,{timeout:22000});await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.vehicleUpdatedAt!==arguments[0],firstUpdated,{timeout:22000}).catch(()=>{});
+  const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='지도 보기')throw new Error('bus route must expose 지도 보기');await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
+  if(counters.map!==1)throw new Error(`expected one lazy map request at open, got ${counters.map}`);
   await page.waitForFunction(()=>document.querySelector('.flow-transit-map-status')?.textContent?.includes('갱신'),{timeout:22000});
   if(counters.map<2)throw new Error(`live bus map did not refresh: ${counters.map} request(s)`);
   const busState=await page.evaluate(()=>({mode:document.querySelector('.flow-transit-map-shell')?.dataset.mapMode||'',vehicleCount:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleCount||'',updatedAt:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleUpdatedAt||'',status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
