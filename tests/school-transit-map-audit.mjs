@@ -46,7 +46,14 @@ async function fixture(page,counters){
   await installKakaoFixture(page);
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
   await page.route('**/functions/v1/transit-data*',route=>json(route,transit));
-  await page.route('**/functions/v1/transit-map*',route=>{counters.map+=1;const line=new URL(route.request().url()).searchParams.get('line');return json(route,line==='814'?map814:map708)});
+  await page.route('**/functions/v1/transit-map*',route=>{
+    counters.map+=1;
+    const url=new URL(route.request().url()),line=url.searchParams.get('line'),startId=url.searchParams.get('startId')||'',endId=url.searchParams.get('endId')||'';
+    const base=line==='814'?map814:map708,stops=base.route.stops;
+    const startIndex=stops.findIndex(item=>item.id===startId),endIndex=stops.findIndex(item=>item.id===endId);
+    const segment=startIndex>=0&&endIndex>=startIndex?stops.slice(startIndex,endIndex+1):stops;
+    return json(route,{...base,route:{...base.route,start:segment[0],end:segment.at(-1),stops:segment}});
+  });
   await page.addInitScript(({profile})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard')},{profile});
 }
 async function baseState(page){return page.evaluate(()=>{const card=document.querySelector('[data-transit-route="0"]');const r=card?.getBoundingClientRect();return{cardHeight:r?.height||0,pageHeight:document.documentElement.scrollHeight,scrollY,routeCount:document.querySelectorAll('[data-transit-route]').length}})}
