@@ -12,6 +12,7 @@ const requiredContract={
   'university-data':['DATA_GO_KR_SERVICE_KEY'],
   'transit-data':['DATA_GO_KR_SERVICE_KEY','KAKAO_REST_KEY'],
   'transit-map':['DATA_GO_KR_SERVICE_KEY'],
+  'transit-rail':['KAKAO_REST_KEY'],
 };
 
 for(const [fn,names] of Object.entries(requiredContract)){
@@ -53,6 +54,7 @@ requireEnv('supabase/functions/university-data/bootstrap.ts','DATA_GO_KR_SERVICE
 requireEnv('supabase/functions/transit-data/index.ts','DATA_GO_KR_SERVICE_KEY');
 requireEnv('supabase/functions/transit-data/index.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/transit-map/index.ts','DATA_GO_KR_SERVICE_KEY');
+requireEnv('supabase/functions/transit-rail/index.ts','KAKAO_REST_KEY');
 
 const transit=combined.get('supabase/functions/transit-data/index.ts')||'';
 if(/ODSAY_API_KEY|api\.odsay\.com/.test(transit))throw new Error('transit-data: ODsay dependency must not be required');
@@ -63,6 +65,11 @@ const transitMap=combined.get('supabase/functions/transit-map/index.ts')||'';
 for(const expected of ['getSttnThrghRouteList','getRouteAcctoThrghSttnList','getRouteAcctoBusLcList']){
   if(!transitMap.includes(expected))throw new Error(`transit-map: public map operation ${expected} missing`);
 }
+const transitRail=combined.get('supabase/functions/transit-rail/index.ts')||'';
+for(const expected of ['SW8','KRIC-snapshot+Kakao-SW8','Daegu-1-2-3','2026-06-30','subway-direct','subway-one-transfer']){
+  if(!transitRail.includes(expected))throw new Error(`transit-rail: rail routing contract ${expected} missing`);
+}
+if(/openapi\.kric\.go\.kr|KRIC_API_KEY|KRIC_SERVICE_KEY/.test(transitRail))throw new Error('transit-rail: unapproved runtime KRIC key dependency must not be introduced');
 
 const university=combined.get('supabase/functions/university-data/index.ts')||'';
 const compatibilityRoutes={
@@ -87,7 +94,7 @@ for(const [file,text] of combined){
 console.log(JSON.stringify({
   ok:true,
   functions:Object.keys(requiredContract),
-  transitProvider:'TAGO-public-data',
+  transitProvider:'TAGO-public-data + Daegu rail snapshot',
   universityCompatibilityRoutes:compatibilityRoutes,
   scannedFiles:sourceFiles.length,
 },null,2));
