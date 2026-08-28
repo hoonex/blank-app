@@ -45,15 +45,19 @@ const cases=[
   {name:'desktop-1920',viewport:{width:1920,height:1080},isMobile:false,hasTouch:false},
 ];
 
-function json(route,body){return route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-async function fixture(page,counters){
+function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
+async function fixture(page,counters,{busFailure=false}={}){
   await page.route('**/functions/v1/school-data*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action')||'';
     if(action==='dashboard')return json(route,dashboard);
     if(action==='media')return json(route,{media:{}});
     return json(route,{});
   });
-  await page.route('**/functions/v1/transit-data*',route=>{counters.bus+=1;return json(route,transit)});
+  await page.route('**/functions/v1/transit-data*',route=>{
+    counters.bus+=1;
+    if(busFailure)return json(route,{error:'공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.',destination:transit.destination,provider:'TAGO-public-data',routes:[]},502);
+    return json(route,transit);
+  });
   await page.route('**/functions/v1/transit-rail*',route=>{counters.rail+=1;return json(route,rail)});
   await page.addInitScript(({profile})=>{
     localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');
@@ -75,6 +79,8 @@ async function inspect(page){
       liveCount:document.querySelectorAll('.flow-transit-live').length,
       transferLiveCount:document.querySelectorAll('.flow-transit-live[data-live-leg="1"]').length,
       summary:document.querySelector('#transitSummary')?.textContent.trim()||'',
+      state:document.querySelector('#transitState')?.textContent.trim()||'',
+      stateKind:document.querySelector('#transitState')?.dataset.kind||'',
       bottom,
       transitActive:document.querySelector('[data-flow-transit-nav].active')?.textContent.trim()||'',
       viewVisible:!document.querySelector('#transitView')?.classList.contains('hidden'),
@@ -115,6 +121,23 @@ for(const testCase of cases){
   await page.screenshot({path:`${OUT}/school-transit-${testCase.name}-full.png`,fullPage:true});
   await context.close();
 }
+
+{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
+  const page=await context.newPage();const pageErrors=[],counters={bus:0,rail:0};page.on('pageerror',error=>pageErrors.push(String(error)));
+  await fixture(page,counters,{busFailure:true});await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
+  await page.locator('[data-flow-transit-nav]:visible').first().click();await page.locator('#transitLocateBtn').click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-transit-route]').length===1);
+  const state=await inspect(page);report['mobile-portrait-bus-failure-rail-fallback']={...state,counters,pageErrors};
+  if(counters.bus!==1||counters.rail!==1)throw new Error(`bus-failure fallback must still request rail once ${JSON.stringify(counters)}`);
+  if(state.routeCount!==1||!state.firstHasSubway||state.stateKind==='error')throw new Error(`bus-failure fallback must preserve the rail route ${JSON.stringify(state)}`);
+  if(!state.summary.includes('버스 경로 대신 도시철도'))throw new Error(`bus-failure fallback summary is missing ${JSON.stringify(state)}`);
+  if(state.scrollWidth>state.clientWidth+1||pageErrors.length)throw new Error(`bus-failure fallback browser regression ${JSON.stringify({state,pageErrors})}`);
+  await page.screenshot({path:`${OUT}/school-transit-mobile-portrait-bus-failure-rail-fallback.png`,fullPage:false});
+  await context.close();
+}
+
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));

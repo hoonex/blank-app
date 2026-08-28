@@ -15,6 +15,9 @@ const TAGO_CITY_STOP_PAGE_SIZE = 1000;
 const DEFAULT_BUS_WAIT_MINUTES = 5;
 const TRANSFER_BUFFER_MINUTES = 1;
 const SECOND_LEG_REALTIME_LIMIT = 8;
+const TRANSFER_MATCH_METERS = 180;
+const TRANSFER_NAME_MATCH_METERS = 260;
+const TRANSFER_LINE_SAMPLE_LIMIT = 16;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -260,6 +263,15 @@ type SecondLegPlan = {
   readyMinutes: number;
 };
 
+type TransferMatch = {
+  firstStop: RouteStop;
+  secondStop: RouteStop;
+  firstIndex: number;
+  secondIndex: number;
+  walkMeters: number;
+  score: number;
+};
+
 const secondLegPlans = new WeakMap<NormalizedRoute, SecondLegPlan>();
 
 function normalizeStops(items: any[], originX: number, originY: number, fallbackCityCode = "") {
@@ -405,6 +417,46 @@ function normalizeRouteNo(value: unknown) {
   return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/[()]/g, "");
 }
 
+function normalizeStopName(value = "") {
+  return value.toLowerCase().replace(/\([^)]*\)/g, "").replace(/정류장/g, "").replace(/[\s·._\-]/g, "");
+}
+
+function transferWalkMeters(first: RouteStop, second: RouteStop) {
+  if (first.id === second.id) return 0;
+  if (![first.x, first.y, second.x, second.y].every(Number.isFinite)) return null;
+  const meters = haversineMeters(first.x, first.y, second.x, second.y);
+  const sameName = Boolean(normalizeStopName(first.name)) && normalizeStopName(first.name) === normalizeStopName(second.name);
+  if (meters <= TRANSFER_MATCH_METERS || (sameName && meters <= TRANSFER_NAME_MATCH_METERS)) return meters;
+  return null;
+}
+
+function sampleTransferLines(items: StopLine[], limit = TRANSFER_LINE_SAMPLE_LIMIT) {
+  const groups = new Map<string, StopLine[]>();
+  for (const item of items) {
+    const list = groups.get(item.stop.id) || [];
+    list.push(item);
+    groups.set(item.stop.id, list);
+  }
+  const pools = [...groups.values()];
+  const selected: StopLine[] = [];
+  const seen = new Set<string>();
+  for (let offset = 0; selected.length < limit; offset += 1) {
+    let added = false;
+    for (const pool of pools) {
+      const item = pool[offset];
+      if (!item) continue;
+      const key = `${item.stop.id}:${item.line.cityCode}:${item.line.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      selected.push(item);
+      added = true;
+      if (selected.length >= limit) break;
+    }
+    if (!added) break;
+  }
+  return selected;
+}
+
 async function arrivalAtStop(stop: Stop, line: Line, notBeforeSeconds = 0, legIndex = 0): Promise<LiveArrival | null> {
   try {
     const arrivals = await cached(`arrival:${stop.cityCode}:${stop.id}`, 18_000, async () =>
@@ -531,13 +583,14 @@ async function directCandidates(source: StopLine[], destination: StopLine[], sx:
   return candidates;
 }
 
-async function transferCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number, limit = 10) {
+async function transferCandidates(source: StopLine[], destination: StopLine[], sx: number, sy: number, ex: number, ey: number, limit = TRANSFER_LINE_SAMPLE_LIMIT) {
   const candidates: NormalizedRoute[] = [];
-  const sourceSlim = source.slice(0, limit), destinationSlim = destination.slice(0, limit);
+  const sourceSlim = sampleTransferLines(source, limit), destinationSlim = sampleTransferLines(destination, limit);
   const stopCache = new Map<string, RouteStop[]>();
   const getStops = async (line: Line) => {
-    if (!stopCache.has(line.id)) stopCache.set(line.id, await routeStops(line));
-    return stopCache.get(line.id)!;
+    const key = `${line.cityCode}:${line.id}`;
+    if (!stopCache.has(key)) stopCache.set(key, await routeStops(line));
+    return stopCache.get(key)!;
   };
   const seen = new Set<string>();
 
@@ -545,51 +598,68 @@ async function transferCandidates(source: StopLine[], destination: StopLine[], s
     const firstStops = await getStops(first.line);
     const board = indexOfStop(firstStops, first.stop);
     if (board < 0) continue;
-    const afterBoard = new Map(firstStops.slice(board + 1).map((stop, offset) => [stop.id, { stop, index: board + 1 + offset }]));
+    const afterBoard = firstStops.slice(board + 1).map((stop, offset) => ({ stop, index: board + 1 + offset }));
 
     for (const second of destinationSlim) {
-      if (first.line.id === second.line.id) continue;
+      if (first.line.id === second.line.id && first.line.cityCode === second.line.cityCode) continue;
       const secondStops = await getStops(second.line);
       const alight = indexOfStop(secondStops, second.stop);
       if (alight <= 0) continue;
-      let transfer: { stop: RouteStop; firstIndex: number; secondIndex: number } | null = null;
-      for (let j = 0; j < alight; j++) {
-        const hit = afterBoard.get(secondStops[j].id);
-        if (!hit) continue;
-        const score = (hit.index - board) + (alight - j);
-        if (!transfer || score < (transfer.firstIndex - board) + (alight - transfer.secondIndex)) {
-          transfer = { stop: hit.stop, firstIndex: hit.index, secondIndex: j };
+      let transfer: TransferMatch | null = null;
+      for (let j = 0; j < alight; j += 1) {
+        const secondStop = secondStops[j];
+        for (const firstOption of afterBoard) {
+          const walkMeters = transferWalkMeters(firstOption.stop, secondStop);
+          if (walkMeters === null) continue;
+          const score = (firstOption.index - board) + (alight - j) + walkMeters / 120;
+          if (!transfer || score < transfer.score) {
+            transfer = {
+              firstStop: firstOption.stop,
+              secondStop,
+              firstIndex: firstOption.index,
+              secondIndex: j,
+              walkMeters,
+              score,
+            };
+          }
         }
       }
       if (!transfer) continue;
-      const signature = `${first.line.id}:${second.line.id}:${first.stop.id}:${transfer.stop.id}:${second.stop.id}`;
+      const signature = `${first.line.cityCode}:${first.line.id}:${second.line.cityCode}:${second.line.id}:${first.stop.id}:${transfer.firstStop.id}:${transfer.secondStop.id}:${second.stop.id}`;
       if (seen.has(signature)) continue;
       seen.add(signature);
       const firstCount = transfer.firstIndex - board;
       const secondCount = alight - transfer.secondIndex;
+      if (firstCount <= 0 || secondCount <= 0) continue;
       const startWalk = haversineMeters(sx, sy, first.stop.x, first.stop.y);
       const endWalk = haversineMeters(second.stop.x, second.stop.y, ex, ey);
+      const transferWalk = Math.round(transfer.walkMeters);
+      const transferMoveMinutes = TRANSFER_BUFFER_MINUTES + (transferWalk > 25 ? walkingMinutes(transferWalk) : 0);
       const live = await arrivalAtStop(first.stop, first.line, 0, 0);
       const firstWait = live ? live.waitAddedMinutes : DEFAULT_BUS_WAIT_MINUTES;
-      const transferReadyMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES;
-      const secondBoard = secondStops[transfer.secondIndex];
-      const baselineMinutes = walkingMinutes(startWalk) + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
-      const totalMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + TRANSFER_BUFFER_MINUTES + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const transferReadyMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + transferMoveMinutes;
+      const secondBoard = transfer.secondStop;
+      const baselineMinutes = walkingMinutes(startWalk) + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(firstCount) + transferMoveMinutes + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const totalMinutes = walkingMinutes(startWalk) + firstWait + rideMinutes(firstCount) + transferMoveMinutes + DEFAULT_BUS_WAIT_MINUTES + rideMinutes(secondCount) + walkingMinutes(endWalk);
+      const segments: Segment[] = [
+        walkSegment("현재 위치", first.stop.name, startWalk),
+        busSegment(first.line, first.stop, transfer.firstStop, firstCount),
+      ];
+      if (transferWalk > 25) segments.push(walkSegment(transfer.firstStop.name, secondBoard.name, transferWalk));
+      segments.push(
+        busSegment(second.line, secondBoard, second.stop, secondCount),
+        walkSegment(second.stop.name, "목적지", endWalk),
+      );
       const route = finalizeRoute({
         id: "",
         pathType: 3,
         baselineMinutes,
         totalMinutes,
-        walkMeters: Math.round(startWalk + endWalk),
+        walkMeters: Math.round(startWalk + transferWalk + endWalk),
         payment: 0,
         transfers: 1,
         stationCount: firstCount + secondCount,
-        segments: [
-          walkSegment("현재 위치", first.stop.name, startWalk),
-          busSegment(first.line, first.stop, transfer.stop, firstCount),
-          busSegment(second.line, secondBoard, second.stop, secondCount),
-          walkSegment(second.stop.name, "목적지", endWalk),
-        ],
+        segments,
         realtime: live,
         realtimeLegs: live ? [live] : [],
       }, candidates.length);
@@ -644,7 +714,7 @@ async function stopLines(stops: Stop[]) {
   for (const stop of stops) groups.push((await routesAtStop(stop)).map((line) => ({ stop, line })));
   const seen = new Set<string>();
   return groups.flat().filter((item) => {
-    const key = `${item.stop.id}:${item.line.id}`;
+    const key = `${item.stop.id}:${item.line.cityCode}:${item.line.id}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -656,7 +726,7 @@ function routeSort(a: NormalizedRoute, b: NormalizedRoute) {
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
-  const sourceStops = await nearbyStops(sx, sy, destinationRegion);
+  const sourceStops = await nearbyStops(sx, sy);
   const destinationStops = await nearbyStops(ex, ey, destinationRegion);
   if (!sourceStops.length) throw new Error("현재 위치 주변에서 버스 정류장을 찾지 못했습니다.");
   if (!destinationStops.length) throw new Error("목적지 주변에서 버스 정류장을 찾지 못했습니다.");
@@ -697,6 +767,7 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const action = url.searchParams.get("action") || "route";
+  let resolvedDestination: any = null;
   try {
     if (action === "health") {
       return reply({
@@ -709,6 +780,8 @@ Deno.serve(async (req) => {
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ["bus-direct", "bus-one-transfer"],
         realtimeRouting: "per-bus-leg-when-available",
+        regionalRouting: "coordinate-owned-source+destination",
+        transferMatching: "node-id+walkable-stop-proximity",
         plannedGtfsUpgrade: "2026-09-07",
       }, 200, "no-store");
     }
@@ -728,6 +801,7 @@ Deno.serve(async (req) => {
       ey = resolved.y;
       destination = resolved;
     }
+    resolvedDestination = destination;
 
     const destinationRegion = String(destination.region || regionFromAddress(destination.address || destinationQuery));
     const routes = await searchRoutes(sx, sy, ex, ey, destinationRegion);
@@ -742,6 +816,9 @@ Deno.serve(async (req) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "교통 정보를 불러오지 못했습니다.";
     console.error(`transit-data: ${message}`);
-    return reply({ error: message }, 502, "no-store");
+    const body = resolvedDestination
+      ? { error: message, destination: resolvedDestination, provider: "TAGO-public-data", routes: [] }
+      : { error: message };
+    return reply(body, 502, "no-store");
   }
 });
