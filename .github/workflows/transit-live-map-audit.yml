@@ -11,6 +11,7 @@ on:
       - 'school-transit.css'
       - 'supabase/functions/transit-map/**'
       - 'tests/transit-live-map-audit.mjs'
+      - 'tests/transit-official-road-visual-audit.mjs'
       - '.github/workflows/transit-live-map-audit.yml'
   workflow_dispatch:
 
@@ -20,7 +21,7 @@ permissions:
 jobs:
   transit-live-map-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +33,7 @@ jobs:
           node --check school-transit.js
           node --check school-transit-map.js
           node --check tests/transit-live-map-audit.mjs
+          node --check tests/transit-official-road-visual-audit.mjs
           test -s school-transit.css
           test -s school-transit-map.css
           test -s school-transit-rail-map.css
@@ -62,9 +64,15 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/transit-live-map-audit.mjs
+      - name: Capture official bus road geometry at six viewports
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/transit-official-road-visual-audit.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: transit-live-map-audit
-          path: transit-live-map-audit/
+          path: |
+            transit-live-map-audit/
+            transit-official-road-visual-audit/
           retention-days: 7
