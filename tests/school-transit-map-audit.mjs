@@ -85,7 +85,7 @@ for(const testCase of cases){
   const state=await inspect(page);report[testCase.name]={before,...state,mapRequests:counters.map,pageErrors};
   if(counters.map!==1)throw new Error(`${testCase.name}: expected one lazy route-map request, got ${counters.map}`);
   if(state.shells!==1||state.inlinePanels!==0||state.ready!=='true'||state.lines<1||state.pins<2||state.vehiclePins<1)throw new Error(`${testCase.name}: bus map sheet/layers incomplete ${JSON.stringify(state)}`);
-  if(!state.status.includes('현재 운행 차량 1대'))throw new Error(`${testCase.name}: live vehicle status missing ${JSON.stringify(state)}`);
+  if(!state.status.includes('운행 버스 1대')||!state.status.includes('15초마다 갱신'))throw new Error(`${testCase.name}: live vehicle refresh status missing ${JSON.stringify(state)}`);
   if(!state.bodyLocked||state.shellPosition!=='fixed')throw new Error(`${testCase.name}: map sheet must lock the page as a fixed dialog ${JSON.stringify(state)}`);
   if(Math.abs(state.cardHeight-before.cardHeight)>2||Math.abs(state.pageHeight-before.pageHeight)>2)throw new Error(`${testCase.name}: opening the map must not expand route cards/page ${JSON.stringify({before,state})}`);
   if(!state.sheet||state.sheet.top<-1||state.sheet.left<-1||state.sheet.right>state.viewport.width+1||state.sheet.bottom>state.viewport.height+1)throw new Error(`${testCase.name}: map sheet clips outside viewport ${JSON.stringify(state)}`);
