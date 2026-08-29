@@ -28,6 +28,7 @@ jobs:
           test -s school-transit.css
           test -s school-transit-map.css
           test -s supabase/functions/transit-data/index.ts
+          test -s supabase/functions/transit-data-core/index.ts
           test -s supabase/functions/transit-map/index.ts
           test -s supabase/functions/transit-rail/index.ts
           test -s supabase/functions/university-data/bootstrap.ts
@@ -38,18 +39,22 @@ jobs:
           grep -q "school-transit.css" sw.js
           grep -q "'/transit':'/index.html'" cloudflare-worker.mjs
           grep -q '"source": "/transit"' vercel.json
-          grep -q "DATA_GO_KR_SERVICE_KEY" supabase/functions/transit-data/index.ts
           grep -q "KAKAO_REST_KEY" supabase/functions/transit-data/index.ts
-          ! grep -q "ODSAY_API_KEY" supabase/functions/transit-data/index.ts
-          grep -q "TAGO-public-data" supabase/functions/transit-data/index.ts
-          grep -q "getCtyCodeList" supabase/functions/transit-data/index.ts
-          grep -q "getSttnNoList" supabase/functions/transit-data/index.ts
-          grep -q "city-stop-master" supabase/functions/transit-data/index.ts
-          grep -q "realtimeLegs" supabase/functions/transit-data/index.ts
-          grep -q "per-bus-leg-when-available" supabase/functions/transit-data/index.ts
-          grep -q "coordinate-owned-source+destination" supabase/functions/transit-data/index.ts
-          grep -q "node-id+walkable-stop-proximity" supabase/functions/transit-data/index.ts
-          grep -q "transferWalkMeters" supabase/functions/transit-data/index.ts
+          grep -q "OUT_OF_SERVICE_AREA" supabase/functions/transit-data/index.ts
+          grep -q "daegu-only-source+destination" supabase/functions/transit-data/index.ts
+          grep -q "대구광역시" supabase/functions/transit-data/index.ts
+          grep -q "DATA_GO_KR_SERVICE_KEY" supabase/functions/transit-data-core/index.ts
+          grep -q "KAKAO_REST_KEY" supabase/functions/transit-data-core/index.ts
+          ! grep -q "ODSAY_API_KEY" supabase/functions/transit-data-core/index.ts
+          grep -q "TAGO-public-data" supabase/functions/transit-data-core/index.ts
+          grep -q "getCtyCodeList" supabase/functions/transit-data-core/index.ts
+          grep -q "getSttnNoList" supabase/functions/transit-data-core/index.ts
+          grep -q "city-stop-master" supabase/functions/transit-data-core/index.ts
+          grep -q "realtimeLegs" supabase/functions/transit-data-core/index.ts
+          grep -q "per-bus-leg-when-available" supabase/functions/transit-data-core/index.ts
+          grep -q "coordinate-owned-source+destination" supabase/functions/transit-data-core/index.ts
+          grep -q "node-id+walkable-stop-proximity" supabase/functions/transit-data-core/index.ts
+          grep -q "transferWalkMeters" supabase/functions/transit-data-core/index.ts
           grep -q "busError" school-transit.js
           grep -q "getRouteAcctoBusLcList" supabase/functions/transit-map/index.ts
           grep -q "route-stop-sequence" supabase/functions/transit-map/index.ts
@@ -57,7 +62,8 @@ jobs:
           grep -q "KRIC-snapshot+Kakao-SW8" supabase/functions/transit-rail/index.ts
           grep -q "Daegu-1-2-3" supabase/functions/transit-rail/index.ts
           grep -q "repeat(5,minmax(0,1fr))" school-transit.css
-      - name: Verify live Transit integrations, route search, rail routing, and map adapter
+          grep -q "지원 지역 · 대구광역시" school-transit.css
+      - name: Verify live Transit integrations, Daegu service boundary, route search, rail routing, and map adapter
         shell: bash
         run: |
           set -euo pipefail
@@ -76,13 +82,14 @@ jobs:
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
           if(data?.realtimeRouting!=='per-bus-leg-when-available') throw new Error(`Transit per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
-          if(data?.regionalRouting!=='coordinate-owned-source+destination') throw new Error(`Transit source region isolation is not active: ${data?.regionalRouting||'missing'}`);
-          if(data?.transferMatching!=='node-id+walkable-stop-proximity') throw new Error(`Transit cross-region transfer matching is not active: ${data?.transferMatching||'missing'}`);
+          if(data?.regionalRouting!=='daegu-only-source+destination') throw new Error(`Transit Daegu-only gate is not active: ${data?.regionalRouting||'missing'}`);
+          if(data?.serviceArea?.id!=='daegu'||data?.serviceArea?.name!=='대구광역시'||data?.serviceArea?.policy!=='source+destination-inside') throw new Error(`Unexpected Transit service area: ${JSON.stringify(data?.serviceArea)}`);
+          if(data?.transferMatching!=='node-id+walkable-stop-proximity') throw new Error(`Transit transfer matching is not active: ${data?.transferMatching||'missing'}`);
           const map=JSON.parse(fs.readFileSync('/tmp/transit-map-health.json','utf8'));
           if(!map?.ok||map?.provider!=='TAGO-public-data'||map?.geometry!=='route-stop-sequence') throw new Error(`Transit map adapter is not ready: ${JSON.stringify(map)}`);
           const rail=JSON.parse(fs.readFileSync('/tmp/transit-rail-health.json','utf8'));
           if(!rail?.ok||rail?.provider!=='KRIC-snapshot+Kakao-SW8'||rail?.coverage!=='Daegu-1-2-3'||rail?.snapshotDate!=='2026-06-30'||rail?.realtime!==false||rail?.waitModel!=='estimated') throw new Error(`Transit rail adapter is not ready: ${JSON.stringify(rail)}`);
-          console.log('Transit integrations: regional bus routing + walkable transfers + per-leg realtime + Daegu rail + lazy bus map ready');
+          console.log('Transit integrations: Daegu-only gate + public bus routing + per-leg realtime + Daegu rail + lazy bus map ready');
           NODE
           route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
@@ -96,15 +103,15 @@ jobs:
             echo
             exit 1
           fi
-          cross_status=$(curl -sSL -o /tmp/transit-cross-region.json -w '%{http_code}' --get --connect-timeout 10 --max-time 120 \
+          outside_status=$(curl -sSL -o /tmp/transit-outside.json -w '%{http_code}' --get --connect-timeout 10 --max-time 30 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.485925' \
             --data-urlencode 'sy=35.955765' \
             --data-urlencode 'destination=대구광역시 동구 용계로1길 49' \
             "$base")
-          if [ "$cross_status" != "200" ]; then
-            echo "Cross-region Transit HTTP $cross_status"
-            cat /tmp/transit-cross-region.json
+          if [ "$outside_status" != "422" ]; then
+            echo "Outside-Daegu Transit expected HTTP 422, got $outside_status"
+            cat /tmp/transit-outside.json
             echo
             exit 1
           fi
@@ -127,15 +134,11 @@ jobs:
           const routes=Array.isArray(data?.routes)?data.routes:[];
           if(routes.length<1||routes.length>5) throw new Error(`Expected 1-5 live routes, got ${routes.length}: ${data?.error||'unknown response'}`);
           if(data?.provider!=='TAGO-public-data') throw new Error(`Unexpected route provider: ${data?.provider}`);
+          if(data?.serviceArea?.name!=='대구광역시') throw new Error(`Route response lost service area: ${JSON.stringify(data?.serviceArea)}`);
           if(!routes.every(route=>Number(route.totalMinutes)>0&&Array.isArray(route.segments)&&route.segments.length)) throw new Error('Live route normalization is incomplete');
           if(!routes.every(route=>Array.isArray(route.realtimeLegs))) throw new Error('Per-leg realtime shape is missing from live routes');
-          const cross=JSON.parse(fs.readFileSync('/tmp/transit-cross-region.json','utf8'));
-          const crossRoutes=Array.isArray(cross?.routes)?cross.routes:[];
-          if(crossRoutes.length<1||crossRoutes.length>5) throw new Error(`Expected cross-region route(s), got ${crossRoutes.length}: ${cross?.error||'unknown response'}`);
-          const crossTransfer=crossRoutes.find(route=>Number(route.transfers)>=1&&(route.segments||[]).filter(segment=>segment.type==='bus').length>=2);
-          if(!crossTransfer) throw new Error(`Cross-region route must contain a real bus transfer: ${JSON.stringify(crossRoutes)}`);
-          const crossLines=(crossTransfer.segments||[]).filter(segment=>segment.type==='bus').flatMap(segment=>segment.lines||[]).map(String);
-          if(!crossLines.some(line=>line.includes('250'))||!crossLines.some(line=>line.includes('708'))) throw new Error(`Expected public 250→708 cross-region connection, got ${crossLines.join(' → ')}`);
+          const outside=JSON.parse(fs.readFileSync('/tmp/transit-outside.json','utf8'));
+          if(outside?.code!=='OUT_OF_SERVICE_AREA'||outside?.position!=='source'||outside?.serviceArea?.name!=='대구광역시') throw new Error(`Outside-Daegu gate contract failed: ${JSON.stringify(outside)}`);
           const rail=JSON.parse(fs.readFileSync('/tmp/transit-rail-route.json','utf8'));
           const railRoutes=Array.isArray(rail?.routes)?rail.routes:[];
           if(railRoutes.length<1||railRoutes.length>5) throw new Error(`Expected 1-5 live Daegu rail routes, got ${railRoutes.length}: ${rail?.error||'unknown response'}`);
@@ -149,7 +152,7 @@ jobs:
           if(!response.ok) throw new Error(`Transit map HTTP ${response.status}: ${map?.error||'unknown error'}`);
           if(!Array.isArray(map?.route?.stops)||map.route.stops.length<2) throw new Error('Transit map route-stop geometry is incomplete');
           if(!Array.isArray(map?.vehicles)||!['live','unavailable'].includes(map?.vehicleStatus)) throw new Error('Transit map vehicle fallback contract is incomplete');
-          console.log(`Live Transit: ${routes.length} local bus route(s); ${crossRoutes.length} cross-region route(s); ${railRoutes.length} rail route(s); map ${map.route.stops.length} stops; vehicles ${map.vehicles.length}`);
+          console.log(`Live Transit: ${routes.length} Daegu bus route(s); outside-Daegu blocked; ${railRoutes.length} rail route(s); map ${map.route.stops.length} stops; vehicles ${map.vehicles.length}`);
           NODE
       - name: Install Playwright Chromium
         run: |
