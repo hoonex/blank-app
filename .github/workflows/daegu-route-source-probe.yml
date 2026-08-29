@@ -1,0 +1,125 @@
+name: Daegu route source probe
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe official public-data landing pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/daegu-probe
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+
+          curl -fsSL --retry 2 -A "$ua" \
+            'https://www.data.go.kr/data/15070487/fileData.do?recommendDataYn=Y' \
+            -o /tmp/daegu-probe/data-go.html
+          curl -fsSL --retry 2 -A "$ua" \
+            'https://data.edmgr.kr/dataView.do?id=www-data-go-kr-data-filedata-15070487' \
+            -o /tmp/daegu-probe/edmgr.html || true
+          curl -fsSL --retry 2 -A "$ua" \
+            'https://data.daegu.go.kr/open/data/dataView.do?dataSetId=15070487&dataSetDetailId=150704871e316b68ded95&provdMethod=FILE' \
+            -o /tmp/daegu-probe/daegu.html || true
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, html, json
+          out=Path('/tmp/daegu-probe')
+          findings={}
+          for name in ['data-go','edmgr','daegu']:
+              p=out/f'{name}.html'
+              if not p.exists():
+                  continue
+              text=p.read_text('utf-8',errors='ignore')
+              decoded=html.unescape(text)
+              urls=sorted(set(re.findall(r'https?://[^\"\'<>\\\s]+', decoded)))
+              scripts=sorted(set(re.findall(r'<script[^>]+src=[\"\']([^\"\']+)', decoded, re.I)))
+              keys={}
+              for token in ['publicDataDetailPk','publicDataPk','fileDetailSn','atchFileId','selectFileDataDownload','fileDownload','download','dataSetDetailId','orignlFileNm']:
+                  snippets=[]
+                  for m in re.finditer(token,decoded,re.I):
+                      a=max(0,m.start()-180); b=min(len(decoded),m.end()+260)
+                      snippets.append(re.sub(r'\s+',' ',decoded[a:b]))
+                      if len(snippets)>=12: break
+                  if snippets: keys[token]=snippets
+              findings[name]={'scripts':scripts,'urls':urls[:200],'tokens':keys}
+          (out/'landing-findings.json').write_text(json.dumps(findings,ensure_ascii=False,indent=2),'utf-8')
+          print((out/'landing-findings.json').read_text('utf-8'))
+          PY
+
+      - name: Inspect D-DataHub JavaScript for attachment endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/daegu-probe/js
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.parse import urljoin
+          import re, subprocess, json
+          p=Path('/tmp/daegu-probe/daegu.html')
+          if not p.exists(): raise SystemExit(0)
+          text=p.read_text('utf-8',errors='ignore')
+          srcs=sorted(set(re.findall(r'<script[^>]+src=["\']([^"\']+)',text,re.I)))
+          urls=[urljoin('https://data.daegu.go.kr/open/data/dataView.do',x) for x in srcs]
+          result=[]
+          for i,url in enumerate(urls):
+              target=Path('/tmp/daegu-probe/js')/f'{i:03d}.js'
+              cp=subprocess.run(['curl','-fsSL','--retry','1','-A','Mozilla/5.0',url,'-o',str(target)])
+              if cp.returncode: continue
+              body=target.read_text('utf-8',errors='ignore')
+              hits=[]
+              for token in ['dataSetDetailInfo','orignlFileNm','atchFile','download','fileDown','dataView','dataSetDetailId']:
+                  for m in re.finditer(token,body,re.I):
+                      hits.append(re.sub(r'\s+',' ',body[max(0,m.start()-250):min(len(body),m.end()+350)]))
+                      if len(hits)>=40: break
+                  if len(hits)>=40: break
+              if hits: result.append({'url':url,'hits':hits})
+          Path('/tmp/daegu-probe/daegu-js-findings.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
+          print(Path('/tmp/daegu-probe/daegu-js-findings.json').read_text('utf-8'))
+          PY
+
+      - name: Try only publicly exposed attachment URLs discovered in markup
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, html, subprocess, urllib.parse, json
+          candidates=[]
+          for base,name in [
+            ('https://www.data.go.kr/','data-go.html'),
+            ('https://data.edmgr.kr/','edmgr.html'),
+            ('https://data.daegu.go.kr/','daegu.html')]:
+              p=Path('/tmp/daegu-probe')/name
+              if not p.exists(): continue
+              text=html.unescape(p.read_text('utf-8',errors='ignore'))
+              for raw in re.findall(r'(?:href|src)=["\']([^"\']+)',text,re.I):
+                  u=urllib.parse.urljoin(base,raw)
+                  low=u.lower()
+                  if any(k in low for k in ['download','filedown','atchfile','15070487']) and u not in candidates:
+                      candidates.append(u)
+          rows=[]
+          for i,u in enumerate(candidates[:80]):
+              target=f'/tmp/daegu-probe/candidate-{i:03d}'
+              cp=subprocess.run(['curl','-sSIL','--max-time','20','-A','Mozilla/5.0',u],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+              rows.append({'url':u,'headers':cp.stdout[-5000:]})
+          Path('/tmp/daegu-probe/candidates.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),'utf-8')
+          print(Path('/tmp/daegu-probe/candidates.json').read_text('utf-8'))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: daegu-route-source-probe
+          path: /tmp/daegu-probe
+          retention-days: 2
