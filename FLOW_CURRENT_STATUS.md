@@ -7,187 +7,167 @@
 ## Repository baseline
 
 - Repository: `hoonex/blank-app`
-- Latest verified runtime release main: `cb323c78ef2a50c7e1ffa6e6fcb9f418af6f5a20`
+- Latest verified runtime release main: `029822091597b1fe667e320cfa7eef84c9ee2965`
 - PR #154 `feat: add Daegu subway routes to Transit`: squash merged
 - PR #156 `fix: restore cross-region School Transit routes`: squash merged
 - PR #158 `feat: show Transit rail sheets and refresh live buses`: squash merged
+- PR #160 `feat: refine Transit map and destination controls`: squash merged
 - A status-only docs follow-up may make current `main` newer than the runtime release anchor above. Verify GitHub before starting new work.
 
 ## Transit current state
 
-School Transit combines TAGO bus candidates and Daegu Metro candidates, then dedupes/reranks the combined set to a maximum of five routes.
+School Transit combines TAGO bus candidates and Daegu Metro candidates, dedupes/reranks them, and exposes up to five routes.
 
 Implemented scope:
 
 - School `교통` destination and `/transit` clean route
 - current-location opt-in only after explicit user action
-- Kakao destination geocoding
+- Transit-specific destination override independent from the selected school
+- inline `변경` → destination search/apply flow and `학교로 되돌리기`
+- custom destination persistence in `flow-school-transit-destination-v1`
+- changing destination reuses the last known coordinates when available instead of prompting for geolocation again
+- Kakao server-side destination geocoding through the existing Transit contract
 - TAGO / Public Data Portal bus routing
 - direct bus + one-transfer bus routing
 - coordinate-owned source/destination region discovery
-- cross-municipality one-transfer continuity through exact TAGO node IDs or short walkable physical stop matching
+- cross-municipality transfer continuity through exact TAGO node IDs or short walkable physical stop matching
 - TAGO per-bus-leg arrival enrichment when available
-- separate `transit-rail` Edge adapter for Daegu Metro 1/2/3
-- nearby subway station discovery with Kakao Local `SW8`
-- 2026-06-30 KRIC station-order snapshot graph
-- direct subway + one-transfer subway candidates
-- bus routing failure can preserve a usable rail fallback
+- Daegu Metro 1/2/3 rail adapter and rail-only route schematic
+- bus-routing failure can preserve a usable rail fallback
 - lazy TAGO bus map
-- rail-only routes expose `노선도 보기` instead of silently losing map affordance
-- real TAGO bus vehicle markers refresh approximately every 15 seconds while the bus map is open and the document is visible
-- bus vehicle refresh stops when the map closes, Transit is left, or the document becomes hidden
-- Daegu Metro rail sheets explicitly do **not** fabricate realtime train movement
-- PWA shell caching retained
+- bus route map uses a restrained smoothed guide through the real TAGO stop sequence instead of rigid stop-to-stop chords
+- real stop coordinates and real TAGO vehicle coordinates remain unchanged
+- the smoothed route line is explicitly labelled as an approximate guide, **not** exact road geometry
+- real TAGO vehicle markers refresh about every 15 seconds only while the bus map is open and the document is visible
+- Daegu Metro rail sheets do **not** fabricate realtime train movement
 
-## Cross-region production hotfix — PR #156
+## Destination contract — PR #160
 
-A real phone request exposed a production failure outside central Daegu: `transit-data` returned HTTP 502 and the client stopped before `transit-rail` could provide a fallback.
+Transit no longer has to use the School profile destination permanently.
 
-Fixed root causes:
+- default remains the currently selected school
+- `변경` opens an inline destination editor
+- user can enter a place name or road address
+- resolved custom destination name/address is stored separately from the School profile
+- `학교로 되돌리기` clears the custom override and restores the selected school
+- if a current coordinate was already obtained, changing/resetting the destination immediately reroutes from that coordinate
+- if no current coordinate exists yet, destination can still be set and the user is asked to press `현재 위치에서 찾기`
+- no automatic geolocation prompt was added
 
-1. Source-stop fallback incorrectly inherited the destination region hint. Source discovery now resolves from the source coordinate region.
-2. One-transfer bus routing required identical TAGO node IDs. Municipality boundaries can represent the same physical transfer area with different IDs.
-3. Transfer sampling could overrepresent one stop and route-stop caching was not scoped by city + route.
-4. A bus 502 discarded resolved destination coordinates before rail fallback.
+## Bus map geometry contract — PR #160
 
-Current transfer contract:
+The previous bus map drew one hard straight chord between every consecutive TAGO stop, which looked artificial when stop spacing was large.
 
-- exact node-ID transfer remains valid
-- otherwise nearby physical stops can connect through an explicit short walk
-- route-stop caches are keyed by city + route
-- nearby-stop line sampling is diversified across stops
-- bus failure responses preserve resolved destination metadata
-- rail fallback is gated to the explicit `TAGO-public-data` contract
+Current behavior:
 
-The live public regression uses a public 신동역-area start toward 정동고 and requires a real `250 → 708` cross-region connection. No real-user coordinates are stored in repository tests or docs.
+- the authoritative geometry remains the existing TAGO route-stop sequence
+- consecutive stop coordinates are sampled into a restrained smooth guide curve for presentation
+- the curve is bounded to limit spline overshoot
+- route bounds are still calculated from actual stop coordinates
+- boarding / transfer / alighting markers remain tied to actual stop coordinates
+- live bus markers remain tied to actual TAGO vehicle coordinates
+- the route line has a subtle halo for legibility over the map
+- the UI states: `노선 선은 정류장 순서를 부드럽게 연결한 안내선입니다. 실제 도로 굴곡과 다를 수 있습니다.`
 
-## Transit map / realtime release — PR #158
+Do not later claim that this line follows the exact roadway unless Flow gains a legitimate road-route geometry provider.
 
-PR #158 fixes the map gap exposed by rail fallback and separates real realtime data from schematic-only rail data.
-
-### Bus map
-
-- provider remains the existing public TAGO adapter
-- route/stop overlays remain stable while vehicle overlays refresh independently
-- actual TAGO vehicle coordinates refresh every 15 seconds while the map is open and visible
-- refresh is suspended on close, navigation away from Transit, and `document.hidden`
-- returning to a visible open bus map schedules a short delayed refresh
-- no MutationObserver or hidden-view continuous polling was added
-- no automatic geolocation behavior changed
-
-### Rail sheet
-
-- rail-only routes are map-capable and show `노선도 보기`
-- the sheet renders line, station count, direction, station order, and transfer structure
-- portrait phone/tablet uses a compact content-height bottom sheet to avoid a large empty canvas
-- landscape/desktop keeps the larger dialog composition
-- the rail path does not load the Kakao map SDK solely to draw the schematic
-- realtime train position is explicitly unavailable and is not simulated
-
-Daegu Metro moving train markers must not be added until Flow has a verified, authorized live train-position source.
-
-## Transit data/provider contract
+## Transit provider contract
 
 ### Bus
 
 - provider: `TAGO-public-data`
 - route depth: direct or one bus transfer
 - realtime arrival/vehicle data: opportunistic when available
-- vehicle-map refresh: ~15 seconds only while open + visible
-- regional source/destination discovery: coordinate-owned
+- vehicle-map refresh: ~15 seconds, open + visible only
+- route-map geometry source: real TAGO stop sequence
+- displayed route trace: smoothed approximate stop-sequence guide
+- regional discovery: coordinate-owned source + destination
 - cross-region transfer matching: node ID + walkable stop proximity
 
 ### Rail
 
-- production adapter: `transit-rail`
 - provider: `KRIC-snapshot+Kakao-SW8`
-- coverage: `Daegu-1-2-3`
+- coverage: Daegu Metro 1/2/3
 - station-order snapshot: `2026-06-30`
-- supported route modes: direct subway + one transfer
+- route depth: direct subway + one transfer
 - realtime train position: `false`
 - wait model: `estimated`
 
-KRIC runtime compatibility finding remains unchanged:
-
-- the existing `DATA_GO_KR_SERVICE_KEY` returns KRIC `resultCode: 30` / unregistered service key
-- this does not mean the Public Data Portal credential is broken
-- KRIC requires separate authorization, so Flow must not claim KRIC realtime/timetable access until that exists
+KRIC runtime authorization remains unavailable with the existing Public Data Portal key (`resultCode: 30` / unregistered service key). Do not claim KRIC realtime/timetable access until separate authorization exists.
 
 ## Supabase production state
 
-Server adapters were not changed by PR #158.
+PR #160 changed client UI/map presentation/tests only; no Edge adapter redeploy was required.
 
 - `transit-data` v15 ACTIVE
-  - imports immutable runtime source from release `54d51dec72b4717a1a7ce32428bddd468d859023`
-  - `verify_jwt=false`, matching the existing public client-call contract
 - `transit-map` v1 ACTIVE
 - `transit-rail` v1 ACTIVE
-- Public Data Portal credential remains `DATA_GO_KR_SERVICE_KEY`
-- Kakao credential remains `KAKAO_REST_KEY`
-- secrets remain server-side
+- Public Data Portal credential remains server-side as `DATA_GO_KR_SERVICE_KEY`
+- Kakao REST credential remains server-side as `KAKAO_REST_KEY`
 - no paid ODsay/TMAP/Kakao Mobility Transit provider is used
 
-## PR #158 validation
+## PR #160 validation
 
-Final PR head: `20959442469a218ea2b2c8307e85874d31088743`
+Final PR head: `0db562d7039e1521afaff6ebdbd54b6912199224`
 
-All relevant final-head checks were GREEN before merge:
+All relevant final-head checks were GREEN before merge, including:
 
-- Transit live map audit #6
-- School Transit audit #70
-- Browser UX audit #528
-- Full Orientation functional audit #312
-- Liquid Glass live stability audit #208
-- Production health check #950
-- Cloudflare clean-route refresh audit #225
-- University mode #517
-- University theme/dashboard audits
+- Transit live map audit #7
+- School Transit audit #72
+- Browser UX audit #530
+- Full Orientation functional audit #314
+- Liquid Glass live stability audit #210
+- Production health check #956
+- Cloudflare clean-route refresh audit #229
+- University mode/theme/dashboard audits
 - Admin / Admin bootstrap & inventory audits
 - Dashboard editor v2 audit
 - School landscape toolbar audit
 - Kakao AdFit layout audit
 - ULW polish audit
 
-The first Full Orientation and University/Campus attempts had isolated REDs. The exact same final head was rerun without a source change; both workflows completed fully GREEN, classifying those failures as transient rather than product regressions.
+School Transit audit #72 initially failed only because the public Transit map upstream returned `가용한 세션이 존재하지 않습니다. (30/30)`. Re-running the exact same job on the exact same PR head completed fully GREEN; no source change was needed.
 
-Focused browser validation confirmed:
+Browser/visual validation:
 
-- rail-only fallback exposes and opens a rail schematic across 390×844, 844×390, 768×1024, 1024×768, 1366×768, and 1920×1080
-- final portrait rail sheets do not leave a giant blank canvas
-- bus map makes a second TAGO request after the refresh interval
-- a real vehicle marker changes position when the returned TAGO coordinates change
-- the status shows running-bus count plus the refresh timestamp
-- no horizontal overflow or first-fold displacement regression
-
-Manual screenshot inspection was performed for the six rail viewports and the live bus-marker state before merge.
+- destination editor inspected at 390×844, 844×390, 768×1024, 1024×768, 1366×768, and 1920×1080
+- no destination-editor horizontal overflow or first-fold explosion
+- rail schematic retained the same six-viewport coverage without regression
+- mobile bus-map screenshot directly inspected after smoothing
+- map regression proves the displayed guide trace contains more sampled points than the raw stop sequence
+- destination regression changes to `동대구역`, confirms the query reaches Transit routing, persists the resolved address, then resets to the School destination
+- live bus regression still makes a second map request after the refresh interval and updates the vehicle marker
+- no browser page errors in the focused Transit audit
 
 Runtime squash merge:
 
-- PR #158 → `cb323c78ef2a50c7e1ffa6e6fcb9f418af6f5a20`
+- PR #160 → `029822091597b1fe667e320cfa7eef84c9ee2965`
+- post-merge Production health #957: success
+- post-merge Cloudflare clean-route #230: success
+- Vercel REST deploy #142 failed, but Vercel REST is explicitly not a Flow release-success criterion unless requested; Production + Cloudflare are the release gates.
 
 ## Current limitations
 
+- the smoothed bus route line is an approximate stop-sequence guide, not exact road geometry
 - Daegu Metro train positions are not realtime and are not animated as if they were
-- rail waiting time is estimated, not realtime
-- no KRIC runtime timetable/realtime integration until separate KRIC authorization exists
+- rail waiting time is estimated
+- no KRIC runtime timetable/realtime integration until separate authorization exists
 - rail routing coverage is Daegu Metro 1/2/3, not nationwide
-- bus search still supports at most one bus transfer; it is not an arbitrary-depth journey planner
-- the candidate merger compares bus itineraries and subway itineraries; it does not yet construct true mixed bus → subway → bus itineraries
-- live bus arrival/vehicle coverage remains dependent on public TAGO availability
+- bus search supports at most one bus transfer
+- candidate merging compares bus itineraries and subway itineraries; it does not yet build a true bus → subway → bus journey
+- live bus arrival/vehicle coverage depends on public TAGO availability
 - active-trip guidance such as remaining-stop progress is not yet implemented
 
 ## Preserved product contracts
 
-Do not regress these while extending Transit or the rest of Flow:
-
 - real Optical Glass/refraction; do not replace it with blur-only imitation
-- School Week stays a timetable toggle, not a restored primary nav destination
-- School AdFit remains where currently approved; do not add or move ads without explicit user direction
+- School Week stays a timetable toggle, not a primary nav destination
+- School AdFit remains where currently approved; do not add/move ads without explicit user direction
 - secrets stay server-side
 - no automatic geolocation prompt on page load
 - hidden views do not continuously rerender or poll
 - no duplicate API fetch/runtime/MutationObserver layer without structural need
-- main is never edited directly
+- `main` is never edited directly
 - relevant RED CI blocks merge
 - UI changes require six-viewport screenshot inspection, not CI-only approval
 
@@ -195,13 +175,12 @@ Do not regress these while extending Transit or the rest of Flow:
 
 Recommended order unless the user directs otherwise:
 
-1. design true mixed-mode bus ↔ subway journey construction without a paid provider
-2. improve live arrival/vehicle quality and reranking signals without fabricating rail realtime
-3. add active-trip guidance (`N stops remaining`, boarding/alighting progress)
-4. expand regional adapters only where public-provider contracts are legitimate
-5. integrate useful Transit context more deeply into School Today
+1. if exact road-following bus geometry becomes necessary, find a legitimate public/provider contract instead of presenting the smooth guide as exact
+2. design true mixed-mode bus ↔ subway journey construction without a paid provider
+3. improve live arrival/vehicle quality and reranking without fabricating rail realtime
+4. add active-trip guidance (`N stops remaining`, boarding/alighting progress)
+5. integrate useful Transit context into School Today
 6. remove remaining English UI residue across visible + hidden views
-7. keep `FLOW_PROJECT_HISTORY.md` for durable history and this file for fast-changing state
 
 ## Minimal future-chat handoff
 
