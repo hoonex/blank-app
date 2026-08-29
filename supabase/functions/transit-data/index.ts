@@ -11,6 +11,7 @@ const CORE_URL = "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-
 const KAKAO_LOCAL = "https://dapi.kakao.com/v2/local";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 type KakaoDocument = {
   x?: string;
@@ -109,6 +110,7 @@ async function resolveDestination(query: string, ex: number | null, ey: number |
 }
 
 async function proxyCore(url: URL, destination: ResolvedDestination) {
+  if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("Transit 내부 라우터 인증 설정이 준비되지 않았습니다.");
   const core = new URL(CORE_URL);
   core.searchParams.set("action", "route");
   core.searchParams.set("sx", String(url.searchParams.get("sx") || ""));
@@ -118,7 +120,10 @@ async function proxyCore(url: URL, destination: ResolvedDestination) {
   const query = String(url.searchParams.get("destination") || "").trim();
   if (query) core.searchParams.set("destination", query);
 
-  const response = await fetch(core, { signal: AbortSignal.timeout(125_000) });
+  const response = await fetch(core, {
+    headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+    signal: AbortSignal.timeout(125_000),
+  });
   const body = await response.json().catch(() => ({}));
   const normalized = {
     ...body,
@@ -137,10 +142,11 @@ Deno.serve(async (req: Request) => {
   try {
     if (action === "health") {
       return reply({
-        ok: Boolean(DATA_GO_KR_SERVICE_KEY && KAKAO_REST_KEY),
+        ok: Boolean(DATA_GO_KR_SERVICE_KEY && KAKAO_REST_KEY && SUPABASE_SERVICE_ROLE_KEY),
         integrations: {
           publicData: Boolean(DATA_GO_KR_SERVICE_KEY),
           kakao: Boolean(KAKAO_REST_KEY),
+          coreAuth: Boolean(SUPABASE_SERVICE_ROLE_KEY),
         },
         routingProvider: "TAGO-public-data",
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
@@ -149,6 +155,7 @@ Deno.serve(async (req: Request) => {
         regionalRouting: "daegu-only-source+destination",
         transferMatching: "node-id+walkable-stop-proximity",
         serviceArea: SERVICE_AREA,
+        coreAccess: "service-role-jwt-only",
         plannedGtfsUpgrade: "2026-09-07",
       });
     }
