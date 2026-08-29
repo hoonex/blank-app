@@ -11,6 +11,7 @@ on:
       - 'school-transit.css'
       - 'supabase/functions/transit-map/**'
       - 'tests/transit-live-map-audit.mjs'
+      - 'tests/transit-marker-anchor-audit.mjs'
       - 'tests/transit-official-road-visual-audit.mjs'
       - '.github/workflows/transit-live-map-audit.yml'
   workflow_dispatch:
@@ -33,6 +34,7 @@ jobs:
           node --check school-transit.js
           node --check school-transit-map.js
           node --check tests/transit-live-map-audit.mjs
+          node --check tests/transit-marker-anchor-audit.mjs
           node --check tests/transit-official-road-visual-audit.mjs
           test -s school-transit.css
           test -s school-transit-map.css
@@ -54,6 +56,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
+      - name: Verify stop-marker coordinate anchoring
+        run: node tests/transit-marker-anchor-audit.mjs
       - name: Start local Flow server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/flow-transit-live-map.log 2>&1 &
