@@ -1,118 +1,123 @@
 # Flow Current Status
 
-> Updated: 2026-08-29 KST
+> Updated: 2026-08-30 KST
 >
-> **Purpose:** compact source for the latest Flow state. `FLOW_PROJECT_HISTORY.md` remains the long-form historical record. GitHub current repository state is always the final source of truth; re-check main/open PRs/CI before writes.
+> **Purpose:** compact source for the latest Flow state. `FLOW_PROJECT_HISTORY.md` is the long-form historical record. GitHub current repository state is always the final source of truth; re-check `main`, open PRs, CI, and deployed Edge versions before writes.
 
 ## Repository baseline
 
 - Repository: `hoonex/blank-app`
-- Latest verified current main: `12b66d38c3683612c5ce3a0de7498ac88e9b2908`
-- Latest Transit product/runtime release anchor: PR #162 → `76cdeb25a0dd3fc226e6a8b6064e03e6bea9052d`
-- PR #154 `feat: add Daegu subway routes to Transit`: squash merged
-- PR #156 `fix: restore cross-region School Transit routes`: squash merged historically; the public Transit entrypoint is now intentionally Daegu-only under PR #162
-- PR #158 `feat: show Transit rail sheets and refresh live buses`: squash merged
-- PR #160 `feat: refine Transit map and destination controls`: squash merged
-- PR #162 `fix: enforce Daegu-only Transit coverage`: squash merged
-- PR #163 `fix: make Vercel REST deploy self-contained`: squash merged
-- A status-only docs follow-up may make current `main` newer than the runtime/workflow anchors above. Verify GitHub before starting new work.
+- Latest verified product/runtime main: `efdd77d3c2980f911831d94aa1eb0316e9f2bf78`
+- PR #165 `feat: draw Transit buses on official Daegu road links`: merged on 2026-08-30 KST
+- PR #165 final head: `01c7128ccdc8e05b526f00731a09c99d86dcfe6f`
+- PR #165 merge commit: `efdd77d3c2980f911831d94aa1eb0316e9f2bf78`
+- PR #165 was merged with a normal merge commit, not squash.
+- Open PR count immediately after the runtime release: `0`
+- A later docs-only merge may make `main` newer than the runtime anchor above. Treat the PR #165 merge commit as the current Transit runtime release anchor until another product/runtime PR supersedes it.
 
 ## Transit current state
 
-School Transit combines TAGO bus candidates and Daegu Metro candidates, dedupes/reranks them, and exposes up to five routes **only when both source and destination are inside Daegu Metropolitan City**.
+School Transit combines public TAGO bus candidates and Daegu Metro candidates, dedupes/reranks them, and exposes up to five routes **only when both source and destination are inside Daegu Metropolitan City**.
 
 Implemented scope:
 
 - School `교통` destination and `/transit` clean route
 - UI service-area label: `지원 지역 · 대구광역시`
-- current-location opt-in only after explicit user action
+- explicit current-location action only; no automatic geolocation prompt
 - Transit-specific destination override independent from the selected school
-- inline `변경` → destination search/apply flow and `학교로 되돌리기`
+- inline destination search/apply and `학교로 되돌리기`
 - custom destination persistence in `flow-school-transit-destination-v1`
-- changing destination reuses the last known coordinates when available instead of prompting for geolocation again
 - Kakao server-side destination geocoding and coordinate-to-administrative-region lookup
-- source and destination must both resolve inside Daegu before bus routing starts
-- outside-area request returns structured HTTP 422 `OUT_OF_SERVICE_AREA`
-- an outside-area rejection stops the client before the rail fallback is attempted
-- TAGO / Public Data Portal bus routing
-- direct bus + one-transfer bus routing
+- Daegu source + destination service-area gate before public routing
+- structured HTTP 422 `OUT_OF_SERVICE_AREA` outside Daegu with no rail fallback bypass
+- TAGO / Public Data Portal direct bus + one-transfer bus routing
 - TAGO per-bus-leg arrival enrichment when available
 - Daegu Metro 1/2/3 rail adapter and rail-only route schematic
-- in-area bus-routing failure can preserve a usable rail fallback
-- lazy TAGO bus map
-- bus route map uses a restrained smoothed guide through the real TAGO stop sequence instead of rigid stop-to-stop chords
-- real stop coordinates and real TAGO vehicle coordinates remain unchanged
-- the smoothed route line is explicitly labelled as an approximate guide, **not** exact road geometry
-- real TAGO vehicle markers refresh about every 15 seconds only while the bus map is open and the document is visible
-- Daegu Metro rail sheets do **not** fabricate realtime train movement
+- lazy bus route map
+- official Daegu bus-road link geometry for supported Daegu bus legs
+- raw TAGO stop-sequence fallback only when the official graph cannot safely reconstruct a leg
+- actual TAGO boarding/alighting stops remain authoritative
+- actual TAGO vehicle coordinates remain authoritative
+- live vehicle refresh is about 15 seconds only while the map sheet is open and the document is visible
+- Daegu Metro does **not** fabricate realtime train positions
 
-## Service-area contract — PR #162
+## Service-area contract
 
 Public School Transit is intentionally scoped to `대구광역시`.
 
 - service-area ID: `daegu`
 - service-area policy: `source+destination-inside`
-- source coordinate is resolved to the current administrative first-level region through Kakao Local
-- a text destination is geocoded, then its resolved coordinate is independently converted back to the administrative region before the gate decision
+- source coordinate is resolved to the current first-level administrative region through Kakao Local
+- text destinations are geocoded, then their resolved coordinates are region-checked independently
 - coordinate destinations are also region-checked
 - both `대구광역시` and Kakao's shortened first-depth value `대구` are treated as Daegu
 - source outside Daegu → HTTP 422 `OUT_OF_SERVICE_AREA`, `position: source`
 - destination outside Daegu → HTTP 422 `OUT_OF_SERVICE_AREA`, `position: destination`
 - outside-area rejection returns no routes and does not fall through to the rail adapter
-- the public `transit-data` Edge function owns this gate
-- the preserved TAGO router lives behind `transit-data-core`
-- `transit-data-core` has Supabase JWT verification enabled, preventing direct anonymous bypass of the public Daegu gate
-- the public gate calls the core with server-side `SUPABASE_SERVICE_ROLE_KEY`
+- public `transit-data` owns this gate
+- preserved TAGO routing core lives behind `transit-data-core`
+- `transit-data-core` requires Supabase JWT verification and is called server-side with the service role key
 - no service-role credential is exposed to the browser
 
-Do not re-enable public cross-region routing without an explicit product decision. The preserved core may still contain the earlier cross-region TAGO logic, but it is not the public service contract.
+Do not re-enable public cross-region routing without an explicit product decision.
 
-## Destination contract — PR #160
+## Official bus-road geometry contract — PR #165
 
-Transit does not have to use the School profile destination permanently.
+The old client-side smoothed stop interpolation is no longer the primary Daegu bus trace.
 
-- default remains the currently selected school
-- `변경` opens an inline destination editor
-- user can enter a place name or road address
-- resolved custom destination name/address is stored separately from the School profile
-- `학교로 되돌리기` clears the custom override and restores the selected school
-- if a current coordinate was already obtained, changing/resetting the destination immediately reroutes from that coordinate
-- if no current coordinate exists yet, destination can still be set and the user is asked to press `현재 위치에서 찾기`
-- no automatic geolocation prompt was added
-- PR #162 additionally applies the Daegu service-area gate to both the current coordinate and the resolved destination
+Official source:
 
-## Bus map geometry contract — PR #160
+- dataset: `대구광역시_버스 노선 공간정보_20250903`
+- publisher: Daegu Metropolitan City / Public Data Portal
+- snapshot: `2025-09-03`
+- source format: SHP
+- original CRS: EPSG:5187
+- original archive SHA-256: `98d6a7725e3fddbcd65c58af3fadc217378ee8bfec82e29e2931341e19f86a1e`
+- recovered layers: bus stops / nodes / bus-road links
+- official bus-road links: `9,927`
+- compact runtime network: about `876 KB`
+- deterministic builder: `scripts/build-daegu-bus-network.py`
+- generated runtime snapshot: `supabase/functions/transit-map/daegu-official-network.ts`
+- graph reconstruction: `supabase/functions/transit-map/official-route-geometry.ts`
 
-The previous bus map drew one hard straight chord between every consecutive TAGO stop, which looked artificial when stop spacing was large.
+Accuracy contract:
 
-Current behavior:
+- the official link layer does **not** directly label every road link with route numbers such as `708` or `805`
+- Flow therefore must not claim that the SHP directly declares per-route link membership
+- current TAGO route stop order is the route constraint
+- each adjacent TAGO stop pair is matched to compatible official nodes when possible, with coordinate proximity as a controlled fallback
+- the path between those matched stops is reconstructed over the official Daegu bus-road link graph
+- if mapping is unsafe or a pair is disconnected, Flow uses the raw TAGO stop sequence instead of inventing road geometry
 
-- the authoritative geometry remains the existing TAGO route-stop sequence
-- consecutive stop coordinates are sampled into a restrained smooth guide curve for presentation
-- the curve is bounded to limit spline overshoot
-- route bounds are still calculated from actual stop coordinates
-- boarding / transfer / alighting markers remain tied to actual stop coordinates
-- live bus markers remain tied to actual TAGO vehicle coordinates
-- the route line has a subtle halo for legibility over the map
-- the UI states: `노선 선은 정류장 순서를 부드럽게 연결한 안내선입니다. 실제 도로 굴곡과 다를 수 있습니다.`
+Runtime response contract:
 
-Do not later claim that this line follows the exact roadway unless Flow imports or obtains a legitimate bus-route road geometry source.
+- provider: `TAGO-public-data+Daegu-official-SHP`
+- primary geometry: `daegu-official-bus-link-snapshot`
+- geometry snapshot: `2025-09-03`
+- fallback: `route-stop-sequence`
+- `route.path` contains the official reconstructed road path when available
+- frontend renders `route.path` directly; it does not manufacture Catmull-Rom curvature
+- route trace dataset is `official-road-geometry` or the explicit fallback state
 
-The identified official source for a future exact-geometry upgrade is Public Data Portal dataset `대구광역시_버스 노선 공간정보_20250903` (SHP; cpg/dbf/prj/qpj/shp/shx; Daegu Metropolitan City / 교통정보운영과). The portal's original-file download currently presents an anti-automation CAPTCHA, so the repository does not contain or pretend to contain that SHP yet.
+Freshness:
+
+- as verified on 2026-08-30 KST, the latest publicly posted official Daegu bus spatial snapshot remained `2025-09-03`
+- Public Data Portal indicated the next scheduled registration date as `2026-09-01`
+- after that date, check whether a newer snapshot is actually published before refreshing the generated network
 
 ## Transit provider contract
 
 ### Bus
 
-- public provider: `TAGO-public-data`
+- public routing provider: `TAGO-public-data`
+- road geometry provider: Daegu official SHP snapshot
 - public service area: Daegu source + Daegu destination only
 - route depth: direct or one bus transfer
-- realtime arrival/vehicle data: opportunistic when available
+- realtime arrival/vehicle data: opportunistic when TAGO provides it
+- live vehicle positioning: actual TAGO coordinates only
 - vehicle-map refresh: ~15 seconds, open + visible only
-- route-map geometry source: real TAGO stop sequence
-- displayed route trace: smoothed approximate stop-sequence guide
-- service-area discovery: Kakao coordinate → first-level administrative region before routing
-- internal preserved core can still perform the earlier TAGO regional discovery/transfer logic, but it is protected and not a public cross-region endpoint
+- hidden/closed map polling: stopped
+- fake vehicle interpolation: forbidden
 
 ### Rail
 
@@ -127,91 +132,77 @@ KRIC runtime authorization remains unavailable with the existing Public Data Por
 
 ## Supabase production state
 
+Latest verified production Edge state after PR #165:
+
 - `transit-data` v18 ACTIVE, `verify_jwt=false`: public Daegu service-area gate
 - `transit-data-core` v2 ACTIVE, `verify_jwt=true`: protected preserved TAGO router
-- `transit-map` v1 ACTIVE
+- `transit-map` v4 ACTIVE, `verify_jwt=false`
+- `transit-map` v4 wrapper pins exactly `efdd77d3c2980f911831d94aa1eb0316e9f2bf78/supabase/functions/transit-map/index.ts`
 - `transit-rail` v1 ACTIVE
 - Public Data Portal credential remains server-side as `DATA_GO_KR_SERVICE_KEY`
 - Kakao REST credential remains server-side as `KAKAO_REST_KEY`
-- the gate-to-core call uses server-side `SUPABASE_SERVICE_ROLE_KEY`
+- gate-to-core service role credential remains server-side
 - no paid ODsay/TMAP/Kakao Mobility Transit provider is used
 
-## PR #162 validation — Daegu service area
+`transit-map` intentionally retains `verify_jwt=false` because it was already a public endpoint; do not silently change that existing public contract without reviewing all callers.
 
-Final PR head: `b512a58752bac8eba058b3710fcff103e25aaf5f`
+## PR #165 validation and release gates
 
-All 16 final-head PR workflows were GREEN before merge, including:
+PR #165 final head:
 
-- School Transit audit #78
-- Transit live map audit #12
-- Browser UX audit #536
-- Full Orientation functional audit #320
-- Liquid Glass live stability audit #216
-- Production health check #964
-- Cloudflare clean-route refresh audit #237
-- University mode/theme/dashboard audits
-- Admin / Admin bootstrap & inventory audits
-- Dashboard editor v2 audit
-- School landscape toolbar audit
-- Kakao AdFit layout audit
-- ULW polish audit
+`01c7128ccdc8e05b526f00731a09c99d86dcfe6f`
 
-Focused service-area validation proved:
+Final-head pull-request workflows were all GREEN. Important gates included:
 
-- live in-Daegu route search returns normal TAGO candidates
-- live outside-Daegu source is rejected with HTTP 422 before routing
-- browser outside-area regression makes one bus request, zero rail requests, and renders zero route cards
-- `지원 지역 · 대구광역시` renders across 390×844, 844×390, 768×1024, 1024×768, 1366×768, and 1920×1080
-- direct screenshot inspection found no horizontal overflow or mobile-landscape first-fold regression
-- protected-core contract is included in the Edge secret audit
+- Transit live map audit #26: success
+- School transit audit #103: success
+- Full orientation functional audit #345: success
+- Browser UX audit #561: success
+- Production health check #994: success
+- Cloudflare clean-route refresh audit #265: success
+- Liquid Glass live stability audit #241: success
+- Dashboard editor v2 audit #464: success
+- University mode/theme/dashboard audits: success
+- Admin / bootstrap inventory audits: success
+- School landscape toolbar audit: success
+- Kakao AdFit layout audit: success
+- ULW polish audit: success
+- Vercel REST deploy #159: success
 
-Runtime squash merge:
+Responsive visual verification covered:
 
-- PR #162 → `76cdeb25a0dd3fc226e6a8b6064e03e6bea9052d`
-- post-merge Production health #965: success
-- post-merge Cloudflare clean-route #238: success
+- 390×844
+- 844×390
+- 768×1024
+- 1024×768
+- 1366×768
+- 1920×1080
 
-## PR #163 validation — Vercel REST deployment
+The dedicated official-road visual audit confirmed no map modal clipping or horizontal overflow across those viewports. The Playwright Kakao fixture is not a real road-tile accuracy proof; geometry correctness is grounded in official SHP provenance, graph reconstruction, and live `route.path` behavior.
 
-PR #163 did not change product UI/runtime behavior. It fixed the standalone Vercel REST deployment path that had repeatedly reported RED despite the primary Flow release gates being healthy.
+Live integration validation observed a current Daegu bus candidate whose map response contained 4 TAGO stops and 25 official path points, proving the runtime returned official-road geometry instead of merely echoing the stop sequence.
 
-Root cause of the previous Vercel RED:
+Post-merge release state:
 
-- Vercel project build command is `node scripts/vercel-static-build.mjs`
-- the REST collector excluded the entire `scripts/` directory
-- deployment `dpl_22roSGWcoGXpsfpueDVC372bf1W9` therefore failed with `MODULE_NOT_FOUND` for `/vercel/path1/scripts/vercel-static-build.mjs`
-
-Current deployment contract:
-
-- REST manifest explicitly includes `scripts/vercel-static-build.mjs`
-- token-free `manifest` mode runs on pull requests
-- manifest CI requires the build helper, `transit/index.html`, and `/transit` clean-route verification
-- actual production deployment remains main-push/workflow-dispatch only
-- `/transit` is also required by `scripts/vercel-static-build.mjs`
-
-PR #163 final head: `822ca46cfb3efde3483c3628f1717f8f08bfc619`
-
-- all 16 PR workflows: GREEN
-- Vercel REST manifest audit #144: success
-- squash merge → `12b66d38c3683612c5ce3a0de7498ac88e9b2908`
-- main-push Vercel REST deploy #145: success
-- Vercel deployment `dpl_69348G7pnkv1aBwtiapcMGtYLqRy`: `READY`
-- production alias reported by the workflow: `https://flow-student-blush.vercel.app`
-- verified HTTP 200 clean routes: `/home`, `/week`, `/schedule`, `/transit`, `/school`, `/university`, `/university/timetable`, `/university/campus`, `/university/school`
-- post-merge Production health #967: success
-- post-merge Cloudflare clean-route refresh #240: success
+- PR #165 merge commit: `efdd77d3c2980f911831d94aa1eb0316e9f2bf78`
+- Production health #995: success
+- Vercel REST deploy #160: success
+- Cloudflare clean-route refresh audit #266: success
+- `transit-map` redeployed after merge and pinned to the exact merge commit
+- post-redeploy Transit live map audit was manually re-run and completed successfully, including the live destination/rail/bus refresh check and six-viewport official-road capture
 
 ## Current limitations
 
-- the smoothed bus route line is an approximate stop-sequence guide, not exact road geometry
-- exact Daegu bus road geometry is not imported until a legitimate SHP source file is available to the build process
+- the official 2025-09-03 GIS snapshot can become stale relative to later road/route changes until a newer official snapshot is published and ingested
+- official bus-road links do not directly carry per-route numbers, so TAGO stop order remains the route constraint
+- disconnected/unsafe official graph matches fall back to the raw stop sequence
 - Daegu Metro train positions are not realtime and are not animated as if they were
 - rail waiting time is estimated
 - no KRIC runtime timetable/realtime integration until separate authorization exists
 - rail routing coverage is Daegu Metro 1/2/3, not nationwide
 - public Transit routing is intentionally Daegu-only
 - bus search supports at most one bus transfer
-- candidate merging compares bus itineraries and subway itineraries; it does not yet build a true bus → subway → bus journey
+- candidate merging compares bus itineraries and subway itineraries; it does not yet construct a true bus → subway → bus journey
 - live bus arrival/vehicle coverage depends on public TAGO availability
 - active-trip guidance such as remaining-stop progress is not yet implemented
 
@@ -223,16 +214,21 @@ PR #163 final head: `822ca46cfb3efde3483c3628f1717f8f08bfc619`
 - secrets stay server-side
 - no automatic geolocation prompt on page load
 - hidden views do not continuously rerender or poll
+- no fake realtime bus or train movement
 - no duplicate API fetch/runtime/MutationObserver layer without structural need
 - `main` is never edited directly
 - relevant RED CI blocks merge
 - UI changes require six-viewport screenshot inspection, not CI-only approval
 
+## Tooling note
+
+The ChatGPT GitHub connector action for marking a draft PR ready for review currently fails because its GraphQL wrapper requests the nonexistent `Repository.fullDatabaseId` field. This is a connector wrapper issue, not a repository permission issue. If it persists, use GitHub's web UI only for the `Ready for review` transition; do not treat the failure as a product blocker or weaken merge checks.
+
 ## Next likely product work
 
 Recommended order unless the user directs otherwise:
 
-1. ingest the official Daegu bus-route SHP when legitimately obtainable, then replace the approximate map guide with route geometry sliced to the selected boarding/alighting legs
+1. after 2026-09-01, check whether Daegu publishes a newer official bus spatial snapshot and refresh the generated network only if a newer file actually exists
 2. design true mixed-mode bus ↔ subway journey construction without a paid provider
 3. improve live arrival/vehicle quality and reranking without fabricating rail realtime
 4. add active-trip guidance (`N stops remaining`, boarding/alighting progress)
@@ -245,7 +241,7 @@ Recommended order unless the user directs otherwise:
 Repository: https://github.com/hoonex/blank-app
 ULW.
 GitHub current state is source of truth.
-Read AGENTS.md, FLOW_CURRENT_STATUS.md, and FLOW_PROJECT_HISTORY.md first.
-Re-check main HEAD, open PRs and current CI before changes.
+Read AGENTS.md and FLOW_CURRENT_STATUS.md first; use FLOW_PROJECT_HISTORY.md only for older context.
+Re-check main HEAD, open PRs, current CI, and deployed Supabase Edge versions before changes.
 Continue autonomously from repository state; do not reconstruct stale chat history.
 ```
