@@ -9,6 +9,7 @@ on:
       - 'school-transit-rail-map.css'
       - 'school-transit.js'
       - 'school-transit.css'
+      - 'supabase/functions/transit-map/**'
       - 'tests/transit-live-map-audit.mjs'
       - '.github/workflows/transit-live-map-audit.yml'
   workflow_dispatch:
@@ -34,10 +35,15 @@ jobs:
           test -s school-transit.css
           test -s school-transit-map.css
           test -s school-transit-rail-map.css
+          test -s supabase/functions/transit-map/official-route-geometry.ts
+          test -s supabase/functions/transit-map/daegu-official-network.ts
           grep -q "DESTINATION_KEY='flow-school-transit-destination-v1'" school-transit.js
-          grep -q "smoothStopPath" school-transit-map.js
-          grep -q "smooth-stop-guide" school-transit-map.js
-          grep -q "실제 도로 굴곡" school-transit-map.js
+          grep -q "official-road-geometry" school-transit-map.js
+          grep -q "공식 버스 노선 공간정보" school-transit-map.js
+          ! grep -q "smoothStopPath" school-transit-map.js
+          ! grep -q "smooth-stop-guide" school-transit-map.js
+          grep -q "daegu-official-bus-link-snapshot" supabase/functions/transit-map/index.ts
+          grep -q 'OFFICIAL_ROUTE_SNAPSHOT="2025-09-03"' supabase/functions/transit-map/daegu-official-network.ts
           grep -q "VEHICLE_REFRESH_MS=15000" school-transit-map.js
           grep -q "railMapCapable" school-transit-map.js
           grep -q "visibilitychange" school-transit-map.js
