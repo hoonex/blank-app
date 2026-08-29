@@ -14,6 +14,7 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
 .flow-transit-header p{max-width:36rem}
 .flow-transit-refresh{flex:none}
 .flow-transit-search{padding:20px;margin-bottom:12px}
+.flow-transit-search::before{content:"지원 지역 · 대구광역시";display:inline-flex;align-items:center;min-height:24px;margin:0 0 10px;padding:0 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 9%,var(--surface-2));color:color-mix(in srgb,var(--accent) 78%,var(--text));font-size:.57rem;font-weight:820;letter-spacing:-.01em}
 .flow-transit-endpoints{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);gap:12px;align-items:center}
 .flow-transit-endpoints>div{min-width:0;padding:14px 15px;border-radius:16px;background:var(--surface-2)}
 .flow-transit-endpoints span{display:block;color:var(--muted);font-size:.6rem;font-weight:800}
@@ -77,6 +78,7 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
   .flow-transit-header>div{flex:1}
   .flow-transit-header p{display:none}
   .flow-transit-search{padding:14px;margin-bottom:10px}
+  .flow-transit-search::before{min-height:22px;margin-bottom:8px;padding:0 8px;font-size:.54rem}
   .flow-transit-endpoints{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:7px}
   .flow-transit-endpoints>div{padding:11px 10px;border-radius:13px}
   .flow-transit-endpoints strong{font-size:.76rem}
@@ -113,6 +115,7 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
   #transitView>.view-header{padding:5px 3px 7px!important}
   #transitView>.view-header h1{font-size:1.65rem!important;line-height:1!important}
   .flow-transit-search{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:7px 10px;align-items:center;padding:9px 10px!important;margin-bottom:7px}
+  .flow-transit-search::before{grid-column:1/-1;justify-self:start;min-height:18px;margin:0;padding:0 7px;font-size:.46rem}
   .flow-transit-endpoints{grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:5px}
   .flow-transit-endpoints>div{padding:7px 8px;border-radius:10px}
   .flow-transit-endpoints span{font-size:.52rem}.flow-transit-endpoints strong{margin-top:2px;font-size:.68rem}.flow-transit-endpoints small{display:none}

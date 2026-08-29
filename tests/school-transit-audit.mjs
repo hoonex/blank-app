@@ -27,7 +27,7 @@ const busRoute=(index)=>{
     arrivalAt:new Date(Date.now()+(32+index*3)*60000).toISOString(),badges:[],
   };
 };
-const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7004,y:35.8467},provider:'TAGO-public-data',realtimeCoverage:'multi-leg',routes:Array.from({length:5},(_,i)=>busRoute(i))};
+const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7004,y:35.8467},serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},provider:'TAGO-public-data',realtimeCoverage:'multi-leg',routes:Array.from({length:5},(_,i)=>busRoute(i))};
 const railWalkStart={type:'walk',minutes:3,distance:210,stationCount:0,startName:'현재 위치',endName:'안심(혁신도시.첨복단지)',startId:'',endId:'',lines:[],direction:''};
 const subway={type:'subway',minutes:16,distance:0,stationCount:8,startName:'안심(혁신도시.첨복단지)',endName:'동대구역',startId:'DG-1-32',endId:'DG-1-21',lines:['1호선'],direction:'설화명곡'};
 const railWalkEnd={type:'walk',minutes:4,distance:260,stationCount:0,startName:'동대구역',endName:'목적지',startId:'',endId:'',lines:[],direction:''};
@@ -46,7 +46,7 @@ const cases=[
 ];
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-async function fixture(page,counters,{busFailure=false}={}){
+async function fixture(page,counters,{busFailure=false,outsideFailure=false}={}){
   await page.route('**/functions/v1/school-data*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action')||'';
     if(action==='dashboard')return json(route,dashboard);
@@ -55,6 +55,7 @@ async function fixture(page,counters,{busFailure=false}={}){
   });
   await page.route('**/functions/v1/transit-data*',route=>{
     counters.bus+=1;
+    if(outsideFailure)return json(route,{code:'OUT_OF_SERVICE_AREA',error:'출발 위치가 대구광역시 밖입니다. Flow 교통은 현재 대구광역시 안에서만 경로를 검색합니다.',position:'source',detectedRegion:'경상북도',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},routes:[]},422);
     if(busFailure)return json(route,{error:'공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.',destination:transit.destination,provider:'TAGO-public-data',routes:[]},502);
     return json(route,transit);
   });
@@ -68,6 +69,7 @@ async function inspect(page){
     const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
     const bottom=[...document.querySelectorAll('#bottomNav>*')].filter(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0}).map(node=>node.textContent.trim());
     const first=document.querySelector('[data-transit-route="0"]');
+    const search=document.querySelector('.flow-transit-search');
     return{
       path:location.pathname,
       scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,
@@ -81,6 +83,7 @@ async function inspect(page){
       summary:document.querySelector('#transitSummary')?.textContent.trim()||'',
       state:document.querySelector('#transitState')?.textContent.trim()||'',
       stateKind:document.querySelector('#transitState')?.dataset.kind||'',
+      serviceAreaLabel:search?getComputedStyle(search,'::before').content.replace(/^['"]|['"]$/g,''):'',
       bottom,
       transitActive:document.querySelector('[data-flow-transit-nav].active')?.textContent.trim()||'',
       viewVisible:!document.querySelector('#transitView')?.classList.contains('hidden'),
@@ -108,6 +111,7 @@ for(const testCase of cases){
   const state=await inspect(page);report[testCase.name]={...state,counters,pageErrors};
   if(counters.bus!==1||counters.rail!==1)throw new Error(`${testCase.name}: Transit should request bus once then rail once ${JSON.stringify(counters)}`);
   if(state.path!=='/transit'||!state.viewVisible)throw new Error(`${testCase.name}: transit route/view state failed ${JSON.stringify(state)}`);
+  if(!state.serviceAreaLabel.includes('대구광역시'))throw new Error(`${testCase.name}: Daegu service-area label is not rendered ${JSON.stringify(state)}`);
   if(state.routeCount!==5)throw new Error(`${testCase.name}: expected five merged route cards ${JSON.stringify(state)}`);
   if(state.subwayCount<1||!state.firstHasSubway||state.firstBadge!=='추천')throw new Error(`${testCase.name}: fastest subway route must join merged recommendations ${JSON.stringify(state)}`);
   if(state.liveCount<2)throw new Error(`${testCase.name}: realtime bus enrichment is not visible after rail merge ${JSON.stringify(state)}`);
@@ -135,6 +139,22 @@ for(const testCase of cases){
   if(!state.summary.includes('버스 경로 대신 도시철도'))throw new Error(`bus-failure fallback summary is missing ${JSON.stringify(state)}`);
   if(state.scrollWidth>state.clientWidth+1||pageErrors.length)throw new Error(`bus-failure fallback browser regression ${JSON.stringify({state,pageErrors})}`);
   await page.screenshot({path:`${OUT}/school-transit-mobile-portrait-bus-failure-rail-fallback.png`,fullPage:false});
+  await context.close();
+}
+
+{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',geolocation:{longitude:128.485925,latitude:35.955765},permissions:['geolocation']});
+  const page=await context.newPage();const pageErrors=[],counters={bus:0,rail:0};page.on('pageerror',error=>pageErrors.push(String(error)));
+  await fixture(page,counters,{outsideFailure:true});await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
+  await page.locator('[data-flow-transit-nav]:visible').first().click();await page.locator('#transitLocateBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#transitState')?.dataset.kind==='error');
+  const state=await inspect(page);report['mobile-portrait-outside-daegu-cutoff']={...state,counters,pageErrors};
+  if(counters.bus!==1||counters.rail!==0)throw new Error(`outside-Daegu cutoff must stop before rail fallback ${JSON.stringify(counters)}`);
+  if(state.routeCount!==0||state.stateKind!=='error'||!state.state.includes('대구광역시 밖'))throw new Error(`outside-Daegu error state is incomplete ${JSON.stringify(state)}`);
+  if(!state.serviceAreaLabel.includes('대구광역시'))throw new Error(`outside-Daegu view lost service-area label ${JSON.stringify(state)}`);
+  if(state.scrollWidth>state.clientWidth+1||pageErrors.length)throw new Error(`outside-Daegu browser regression ${JSON.stringify({state,pageErrors})}`);
+  await page.screenshot({path:`${OUT}/school-transit-mobile-portrait-outside-daegu-cutoff.png`,fullPage:false});
   await context.close();
 }
 
