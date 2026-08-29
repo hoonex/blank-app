@@ -13,7 +13,7 @@ let gridObserver=null;
 let densityApplied=false;
 
 function clamp(value,min,max){return Math.max(min,Math.min(max,value))}
-function readDensity(){const value=Number(localStorage.getItem(DENSITY_KEY));return Number.isFinite(value)?clamp(value,DENSITY_MIN,DENSITY_MAX):1}
+function readDensity(){const raw=localStorage.getItem(DENSITY_KEY);if(raw===null||String(raw).trim()==='')return 1;const value=Number(raw);return Number.isFinite(value)?clamp(value,DENSITY_MIN,DENSITY_MAX):1}
 function persistDensity(){localStorage.setItem(DENSITY_KEY,String(Number(density.toFixed(4))))}
 function timeMinutes(value){const match=String(value||'').trim().match(/^(\d{2}):(\d{2})$/);if(!match)return NaN;return Number(match[1])*60+Number(match[2])}
 function baseHourPx(){return matchMedia('(max-width:820px)').matches?72:74}
