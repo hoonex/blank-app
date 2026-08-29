@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 const css=await fs.readFile('school-transit-map.css','utf8');
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:640,height:480}});
-await page.setContent(`<!doctype html><style>${css}</style><div id="stage" style="position:relative;width:640px;height:480px"><span id="pin" class="flow-transit-map-pin board" style="position:absolute;left:320px;top:240px;transform:translate(-50%,-105%)"><i></i><b><span>승차</span><small>정류장 이름이 길어져도 좌표는 움직이지 않아야 합니다</small></b></span></div>`);
+await page.setContent(`<!doctype html><style>*{box-sizing:border-box}${css}</style><div id="stage" style="position:relative;width:640px;height:480px"><span id="pin" class="flow-transit-map-pin board" style="position:absolute;left:320px;top:240px;transform:translate(-50%,-105%)"><i></i><b><span>승차</span><small>정류장 이름이 길어져도 좌표는 움직이지 않아야 합니다</small></b></span></div>`);
 const geometry=await page.evaluate(()=>{
   const pin=document.querySelector('#pin');
   const dot=pin?.querySelector(':scope>i');
@@ -22,6 +22,7 @@ await browser.close();
 if(!geometry.pin||!geometry.dot||!geometry.label)throw new Error(`Transit marker DOM missing: ${JSON.stringify(geometry)}`);
 const dx=Math.abs(geometry.dot.cx-320),dy=Math.abs(geometry.dot.cy-240);
 if(dx>.25||dy>.25)throw new Error(`Transit stop dot is not anchored to the map coordinate: ${JSON.stringify({dx,dy,geometry})}`);
-if(Math.abs(geometry.pin.width-19)>.25||geometry.pin.height>.25)throw new Error(`Transit pin anchor box must be 19px wide and zero-height: ${JSON.stringify(geometry.pin)}`);
+if(Math.abs(geometry.pin.width-13)>.25||geometry.pin.height>.25)throw new Error(`Transit pin anchor box must be 13px wide and zero-height: ${JSON.stringify(geometry.pin)}`);
+if(Math.abs(geometry.dot.width-13)>.25||Math.abs(geometry.dot.height-13)>.25)throw new Error(`Transit stop dot size changed unexpectedly: ${JSON.stringify(geometry.dot)}`);
 if(geometry.label.left<=geometry.dot.cx)throw new Error(`Transit label must stay outside the coordinate anchor box: ${JSON.stringify(geometry)}`);
 console.log(JSON.stringify({ok:true,coordinate:{x:320,y:240},dotCenter:{x:geometry.dot.cx,y:geometry.dot.cy},anchorBox:geometry.pin,labelLeft:geometry.label.left},null,2));
