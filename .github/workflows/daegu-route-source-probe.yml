@@ -42,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import shapefile, heapq, math
+          import shapefile, heapq
           from pathlib import Path
           from scipy.spatial import cKDTree
           root=Path('/tmp/daegu-source')
@@ -77,17 +77,6 @@ jobs:
           if not 1800 <= dist[b] <= 2800: raise SystemExit(f'Unexpected 805 corridor distance: {dist[b]}')
           print({'distanceMeters':round(dist[b],1),'linkCount':len(route),'roads':names})
           PY
-      - name: Fetch live 805 stop sequence for compatibility
-        shell: bash
-        run: |
-          set -euo pipefail
-          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-map'
-          status=$(curl -sSL -o /tmp/route-805.json -w '%{http_code}' --get --connect-timeout 10 --max-time 45 \
-            --data-urlencode 'action=route-map' --data-urlencode 'region=대구광역시' --data-urlencode 'line=805' \
-            --data-urlencode 'startId=7011018400' --data-urlencode 'endId=7011015400' \
-            --data-urlencode 'startName=반야월역(4번출구)1' --data-urlencode 'endName=정동고등학교앞' "$base")
-          test "$status" = 200 || { cat /tmp/route-805.json; exit 1; }
-          node -e "const d=require('/tmp/route-805.json'); if(!Array.isArray(d.route?.stops)||d.route.stops.length<2) process.exit(1); console.log(d.route.stops.map(x=>x.name).join(' -> '))"
       - name: Commit generated snapshot to branch
         shell: bash
         run: |
