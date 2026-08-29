@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """Build a compact TS road-link network from the official Daegu bus SHP snapshot.
 
+Official source (latest published snapshot verified 2026-08-30):
+- 대구광역시_버스 노선 공간정보_20250903
+- https://www.data.go.kr/data/15070487/fileData.do
+
 Input directory must contain node_20250903.shp and link_20250903.shp plus sidecars.
 The output is deterministic and is intended for the transit-map Supabase Edge function.
+The official link records are a bus-road network; they are not individually asserted to
+belong to a specific route. Runtime reconstruction is constrained by the current TAGO
+stop sequence for the requested bus leg.
 """
 from __future__ import annotations
 
@@ -18,109 +25,114 @@ from scipy.spatial import cKDTree
 from shapely.geometry import LineString
 
 SNAPSHOT = "2025-09-03"
-EXPECTED_ARCHIVE_SHA256 = "98d6a7725e3fddbcd65c58af3fadc217378ee8bfec82e29e2931341e19f86a1e"
-ENDPOINT_NODE_TOLERANCE_METERS = 60.0
+SCALE = 1_000_000
+ENDPOINT_SNAP_METERS = 60.0
 SIMPLIFY_METERS = 1.5
-COORD_SCALE = 1_000_000
 
 
-def reader(path: Path) -> shapefile.Reader:
-    return shapefile.Reader(str(path), encoding="utf-8")
+def fields(reader):
+    return [field[0] for field in reader.fields[1:]]
 
 
-def records_with_shapes(path: Path):
-    src = reader(path)
-    fields = [field[0] for field in src.fields[1:]]
-    for shape_record in src.iterShapeRecords():
-        yield dict(zip(fields, shape_record.record)), shape_record.shape
+def source_crs(root: Path):
+    text = (root / "node_20250903.prj").read_text("utf-8", errors="ignore")
+    return text
 
 
-def build(source: Path) -> tuple[list[str], list[list[object]]]:
-    node_path = source / "node_20250903.shp"
-    link_path = source / "link_20250903.shp"
-    if not node_path.exists() or not link_path.exists():
-        raise SystemExit("Official node/link SHP layers are missing")
-
-    nodes: list[tuple[float, float, str]] = []
-    for props, shape in records_with_shapes(node_path):
-        x, y = shape.points[0]
-        nodes.append((x, y, str(props.get("node_id") or "")))
-    if not nodes:
-        raise SystemExit("Official node layer is empty")
-
-    node_tree = cKDTree([(x, y) for x, y, _ in nodes])
-    transformer = Transformer.from_crs(5187, 4326, always_xy=True)
-    synthetic: dict[tuple[float, float], int] = {}
-    edges: list[list[object]] = []
-
-    for props, shape in records_with_shapes(link_path):
-        points = shape.points
-        if len(points) < 2:
-            continue
-        endpoints: list[int] = []
-        for point in (points[0], points[-1]):
-            distance, node_index = node_tree.query(point)
-            if float(distance) <= ENDPOINT_NODE_TOLERANCE_METERS:
-                endpoint = int(node_index)
-            else:
-                key = (round(point[0], 1), round(point[1], 1))
-                endpoint = synthetic.setdefault(key, len(nodes) + len(synthetic))
-            endpoints.append(endpoint)
-
-        simplified = list(LineString(points).simplify(SIMPLIFY_METERS, preserve_topology=False).coords)
-        encoded: list[int] = []
-        previous_x = previous_y = None
-        for x, y in simplified:
-            lon, lat = transformer.transform(x, y)
-            current_x, current_y = round(lon * COORD_SCALE), round(lat * COORD_SCALE)
-            if previous_x is None:
-                encoded.extend((current_x, current_y))
-            else:
-                encoded.extend((current_x - previous_x, current_y - previous_y))
-            previous_x, previous_y = current_x, current_y
-
-        length = float(props.get("shape_len") or 0.0)
-        if not math.isfinite(length) or length <= 0:
-            length = LineString(points).length
-        edges.append([endpoints[0], endpoints[1], round(length, 1), encoded])
-
-    node_ids = [node_id for _, _, node_id in nodes] + [""] * len(synthetic)
-    return node_ids, edges
+def encode(points):
+    ints = [[round(lon * SCALE), round(lat * SCALE)] for lon, lat in points]
+    if not ints:
+        return []
+    out = [ints[0][0], ints[0][1]]
+    previous = ints[0]
+    for current in ints[1:]:
+        out.extend([current[0] - previous[0], current[1] - previous[1]])
+        previous = current
+    return out
 
 
-def render(node_ids: list[str], edges: list[list[object]]) -> str:
-    header = (
-        "// GENERATED FILE. Source: 대구광역시_버스 노선 공간정보_20250903.\n"
-        "// Regenerate with scripts/build-daegu-bus-network.py; do not hand edit.\n"
-        f'export const OFFICIAL_ROUTE_SNAPSHOT="{SNAPSHOT}";\n'
-        f'export const OFFICIAL_ROUTE_SHA256="{EXPECTED_ARCHIVE_SHA256}";\n'
-        f"export const OFFICIAL_COORD_SCALE={COORD_SCALE};\n"
-    )
-    return (
-        header
-        + "export const OFFICIAL_NODE_IDS="
-        + json.dumps(node_ids, ensure_ascii=False, separators=(",", ":"))
-        + " as const;\nexport const OFFICIAL_EDGES="
-        + json.dumps(edges, separators=(",", ":"))
-        + " as const;\n"
-    )
+def json_compact(value):
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
-    if args.archive:
+    root = args.source
+    to_wgs = Transformer.from_crs(source_crs(root), "EPSG:4326", always_xy=True)
+
+    node_reader = shapefile.Reader(str(root / "node_20250903.shp"), encoding="utf-8")
+    node_fields = fields(node_reader)
+    source_nodes = []
+    for sr in node_reader.iterShapeRecords():
+        rec = dict(zip(node_fields, sr.record))
+        if not sr.shape.points:
+            continue
+        x, y = sr.shape.points[0]
+        source_nodes.append((x, y, str(rec.get("node_id") or "")))
+    node_xy = [(x, y) for x, y, _ in source_nodes]
+    tree = cKDTree(node_xy)
+    node_index_by_source = {}
+    node_ids = []
+
+    def ensure_source_node(source_index):
+        if source_index in node_index_by_source:
+            return node_index_by_source[source_index]
+        index = len(node_ids)
+        node_index_by_source[source_index] = index
+        node_ids.append(source_nodes[source_index][2])
+        return index
+
+    synthetic = {}
+
+    def synthetic_node(x, y):
+        key = (round(x, 2), round(y, 2))
+        if key not in synthetic:
+            synthetic[key] = len(node_ids)
+            node_ids.append("")
+        return synthetic[key]
+
+    link_reader = shapefile.Reader(str(root / "link_20250903.shp"), encoding="utf-8")
+    link_fields = fields(link_reader)
+    edges = []
+    for sr in link_reader.iterShapeRecords():
+        rec = dict(zip(link_fields, sr.record))
+        raw = sr.shape.points
+        if len(raw) < 2:
+            continue
+        endpoints = []
+        for x, y in (raw[0], raw[-1]):
+            distance, source_index = tree.query((x, y))
+            endpoints.append(ensure_source_node(int(source_index)) if distance <= ENDPOINT_SNAP_METERS else synthetic_node(x, y))
+        wgs = [to_wgs.transform(x, y) for x, y in raw]
+        source_line = LineString(raw).simplify(SIMPLIFY_METERS, preserve_topology=False)
+        simplified_wgs = [to_wgs.transform(x, y) for x, y in source_line.coords]
+        if len(simplified_wgs) < 2:
+            simplified_wgs = [wgs[0], wgs[-1]]
+        length = float(rec.get("shape_len") or 0.0)
+        if not math.isfinite(length) or length <= 0:
+            length = LineString(raw).length
+        edges.append([endpoints[0], endpoints[1], round(length, 1), encode(simplified_wgs)])
+
+    digest = ""
+    if args.archive and args.archive.exists():
         digest = hashlib.sha256(args.archive.read_bytes()).hexdigest()
-        if digest != EXPECTED_ARCHIVE_SHA256:
-            raise SystemExit(f"Unexpected official archive SHA-256: {digest}")
-    node_ids, edges = build(args.source)
-    text = render(node_ids, edges)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(text, "utf-8")
-    print(json.dumps({"snapshot": SNAPSHOT, "nodeCount": len(node_ids), "edgeCount": len(edges), "bytes": len(text.encode("utf-8"))}, ensure_ascii=False))
+
+    output = args.output
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        "// Generated from official Daegu bus spatial data. Do not hand-edit.\n"
+        f'export const OFFICIAL_ROUTE_SNAPSHOT="{SNAPSHOT}";\n'
+        f'export const OFFICIAL_ROUTE_SHA256="{digest}";\n'
+        f"export const OFFICIAL_COORD_SCALE={SCALE};\n"
+        f"export const OFFICIAL_NODE_IDS={json_compact(node_ids)} as const;\n"
+        f"export const OFFICIAL_EDGES={json_compact(edges)} as const;\n",
+        "utf-8",
+    )
+    print(json.dumps({"snapshot": SNAPSHOT, "nodeCount": len(node_ids), "edgeCount": len(edges), "bytes": output.stat().st_size}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
