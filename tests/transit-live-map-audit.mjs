@@ -15,6 +15,7 @@ const railRoute={id:'rail-1',pathType:1,baselineMinutes:34,totalMinutes:34,walkM
 const busSegment={type:'bus',minutes:21,distance:6900,stationCount:5,startName:'혁신도시입구',endName:'동구청앞',startId:'DGB7010001',endId:'DGB7010006',lines:['708'],direction:'동구청'};
 const busRoute={id:'route-1',pathType:2,baselineMinutes:30,totalMinutes:31,walkMeters:520,payment:0,transfers:0,stationCount:5,segments:[walk('현재 위치','혁신도시입구'),busSegment,walk('동구청앞','정동고등학교')],realtime:null,realtimeLegs:[],arrivalAt:new Date(Date.now()+31*60000).toISOString(),badges:['추천']};
 const destination={name:'정동고등학교',address:'대구광역시 동구 용계로1길 49',x:128.695,y:35.876};
+const customDestination={name:'동대구역',address:'대구광역시 동구 동대구로 550',x:128.628,y:35.879};
 const stop=(id,name,order,x,y)=>({id,name,order,x,y});
 const routeStops=[stop('DGB7010001','혁신도시입구',10,128.695,35.876),stop('DGB7010002','각산역',11,128.707,35.869),stop('DGB7010003','반야월역',12,128.714,35.866),stop('DGB7010004','동대구역환승센터',13,128.629,35.879),stop('DGB7010005','신암동',14,128.623,35.883),stop('DGB7010006','동구청앞',15,128.626,35.886)];
 const cases=[
@@ -32,7 +33,12 @@ async function baseFixture(page,mode,counters){
     await page.route('**/functions/v1/transit-data*',route=>json(route,{provider:'TAGO-public-data',destination,routes:[],error:'버스 경로 없음'},502));
     await page.route('**/functions/v1/transit-rail*',route=>json(route,{provider:'KRIC-snapshot+Kakao-SW8',snapshotDate:'2026-06-30',waitModel:'estimated',routes:[railRoute]}));
   }else{
-    await page.route('**/functions/v1/transit-data*',route=>json(route,{provider:'TAGO-public-data',destination,routes:[busRoute],generatedAt:new Date().toISOString()}));
+    await page.route('**/functions/v1/transit-data*',route=>{
+      const requested=new URL(route.request().url()).searchParams.get('destination')||'';
+      counters.destinationQueries.push(requested);
+      const resolved=requested.includes('동대구역')?customDestination:destination;
+      return json(route,{provider:'TAGO-public-data',destination:resolved,routes:[busRoute],generatedAt:new Date().toISOString()});
+    });
     await page.route('**/functions/v1/transit-rail*',route=>json(route,{provider:'KRIC-snapshot+Kakao-SW8',snapshotDate:'2026-06-30',waitModel:'estimated',routes:[]}));
     await page.route('**/functions/v1/transit-map*',route=>{counters.map+=1;const moved=counters.map>1;return json(route,{generatedAt:new Date().toISOString(),provider:'TAGO-public-data',geometry:'route-stop-sequence',cityCode:'22',route:{id:'DGB708',no:'708',start:routeStops[0],end:routeStops.at(-1),stops:routeStops},vehicles:[{vehicleNo:'대구70자1234',nodeId:moved?'DGB7010003':'DGB7010002',nodeName:moved?'반야월역':'각산역',nodeOrder:moved?12:11,x:moved?128.713:128.707,y:moved?35.866:35.869}],vehicleStatus:'live'})});
   }
@@ -44,7 +50,7 @@ async function installKakaoFixture(page){
     class LatLngBounds{constructor(){this.points=[]}extend(p){this.points.push(p)}}
     const pos=p=>({left:`${Math.max(8,Math.min(92,10+(p.getLng()-128.60)*520))}%`,top:`${Math.max(8,Math.min(88,82-(p.getLat()-35.85)*900))}%`});
     class Map{constructor(container){this.container=container;container.style.position='relative';const bg=document.createElement('div');bg.style.cssText='position:absolute;inset:0;background:linear-gradient(135deg,#e9eef5,#dfe8f3)';container.append(bg)}setZoomable(){}setDraggable(){}setBounds(){}relayout(){}}
-    class Polyline{constructor({map,path,strokeColor}){this.map=map;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:1';svg.setAttribute('viewBox','0 0 100 100');const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');line.setAttribute('fill','none');line.setAttribute('stroke',strokeColor||'#1769e0');line.setAttribute('stroke-width','2');line.setAttribute('points',path.map(p=>{const q=pos(p);return`${parseFloat(q.left)},${parseFloat(q.top)}`}).join(' '));svg.append(line);map.container.append(svg);this.node=svg}setMap(next){if(!next)this.node?.remove();this.map=next}}
+    class Polyline{constructor({map,path,strokeColor,strokeWeight}){this.map=map;const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:1';svg.setAttribute('viewBox','0 0 100 100');const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');line.setAttribute('fill','none');line.setAttribute('stroke',strokeColor||'#1769e0');line.setAttribute('stroke-width',String(strokeWeight||2));line.dataset.pathPoints=String(path.length);line.setAttribute('points',path.map(p=>{const q=pos(p);return`${parseFloat(q.left)},${parseFloat(q.top)}`}).join(' '));svg.append(line);map.container.append(svg);this.node=svg}setMap(next){if(!next)this.node?.remove();this.map=next}}
     class CustomOverlay{constructor({map,position,content,xAnchor=.5,yAnchor=.5}){this.map=map;this.content=content;content.style.position='absolute';content.style.zIndex='3';const q=pos(position);content.style.left=q.left;content.style.top=q.top;content.style.transform=`translate(${-xAnchor*100}%,${-yAnchor*100}%)`;map.container.append(content)}setMap(next){if(!next)this.content?.remove();this.map=next}}
     window.kakao={maps:{Map,LatLng,LatLngBounds,Polyline,CustomOverlay,load:callback=>callback()}};
   });
@@ -55,10 +61,14 @@ async function enterTransit(page){
   await page.locator('[data-flow-transit-nav]:visible').first().click();await page.locator('#transitLocateBtn').click();await page.waitForSelector('[data-transit-route="0"]',{timeout:10000});await page.waitForSelector('[data-transit-route="0"] .flow-transit-map-toggle',{timeout:5000});
 }
 async function waitForSheetMotion(page){await page.waitForFunction(()=>{const sheet=document.querySelector('.flow-transit-map-sheet');return sheet&&getComputedStyle(sheet).transform==='none'},{timeout:1500})}
-const browser=await chromium.launch({headless:true});const report={rail:{},bus:{}};
+const browser=await chromium.launch({headless:true});const report={rail:{},destination:{},bus:{}};
 for(const testCase of cases){
   const context=await browser.newContext({viewport:testCase.viewport,isMobile:testCase.isMobile,hasTouch:testCase.hasTouch,locale:'ko-KR',timezoneId:'Asia/Seoul',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
-  const page=await context.newPage(),errors=[],counters={map:0};page.on('pageerror',error=>errors.push(String(error)));await baseFixture(page,'rail',counters);await enterTransit(page);
+  const page=await context.newPage(),errors=[],counters={map:0,destinationQueries:[]};page.on('pageerror',error=>errors.push(String(error)));await baseFixture(page,'rail',counters);await enterTransit(page);
+  const edit=page.locator('#transitDestinationEditBtn');await edit.click();
+  const editorState=await page.evaluate(()=>({visible:!document.querySelector('#transitDestinationEditor')?.classList.contains('hidden'),expanded:document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded'),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,rect:(()=>{const r=document.querySelector('#transitDestinationEditor')?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom}:null})()}));
+  if(!editorState.visible||editorState.expanded!=='true'||editorState.overflow>1||!editorState.rect||editorState.rect.left<-1||editorState.rect.right>testCase.viewport.width+1)throw new Error(`${testCase.name}: destination editor contract failed ${JSON.stringify(editorState)}`);
+  await page.screenshot({path:`${OUT}/destination-editor-${testCase.name}.png`,fullPage:false});report.destination[testCase.name]=editorState;await edit.click();
   const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='노선도 보기')throw new Error(`${testCase.name}: rail route must expose 노선도 보기`);
   await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
   const state=await page.evaluate(()=>({mode:document.querySelector('.flow-transit-map-shell')?.dataset.mapMode||'',sections:document.querySelectorAll('.flow-transit-rail-section').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,sheet:(()=>{const r=document.querySelector('.flow-transit-map-sheet')?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom}:null})()}));
@@ -68,13 +78,20 @@ for(const testCase of cases){
 }
 {
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
-  const page=await context.newPage(),errors=[],counters={map:0};page.on('pageerror',error=>errors.push(String(error)));await installKakaoFixture(page);await baseFixture(page,'bus',counters);await enterTransit(page);
+  const page=await context.newPage(),errors=[],counters={map:0,destinationQueries:[]};page.on('pageerror',error=>errors.push(String(error)));await installKakaoFixture(page);await baseFixture(page,'bus',counters);await enterTransit(page);
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');await page.locator('#transitDestinationEditor button[type="submit"]').click();
+  await page.waitForFunction(()=>{const saved=JSON.parse(localStorage.getItem('flow-school-transit-destination-v1')||'null');return document.querySelector('#transitSchoolName')?.textContent?.trim()==='동대구역'&&saved?.query==='동대구역'&&String(saved?.address||'').includes('동대구로')&&document.querySelector('[data-transit-route="0"]')},{timeout:10000});
+  if(!counters.destinationQueries.some(query=>query==='동대구역'))throw new Error(`custom destination was not sent to transit route API: ${JSON.stringify(counters.destinationQueries)}`);
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationResetBtn').click();
+  await page.waitForFunction(()=>!localStorage.getItem('flow-school-transit-destination-v1')&&document.querySelector('#transitSchoolName')?.textContent?.trim()==='정동고등학교'&&document.querySelector('[data-transit-route="0"]'),{timeout:10000});
   const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='지도 보기')throw new Error('bus route must expose 지도 보기');await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
   if(counters.map!==1)throw new Error(`expected one lazy map request at open, got ${counters.map}`);
+  const traceState=await page.evaluate(()=>({routeTrace:document.querySelector('.flow-transit-map-shell')?.dataset.routeTrace||'',tracePoints:Number(document.querySelector('.flow-transit-map-shell')?.dataset.routeTracePoints||0),stopCount:Number(document.querySelector('.flow-transit-map-shell')?.dataset.stopCount||0),note:document.querySelector('.flow-transit-map-note')?.textContent?.trim()||'',polylinePoints:Math.max(0,...[...document.querySelectorAll('.flow-transit-map-canvas polyline')].map(node=>Number(node.dataset.pathPoints||0)))}));
+  if(traceState.routeTrace!=='smooth-stop-guide'||traceState.tracePoints<=traceState.stopCount||traceState.polylinePoints<=traceState.stopCount||!traceState.note.includes('실제 도로'))throw new Error(`bus trace smoothing contract failed ${JSON.stringify(traceState)}`);
   await page.waitForTimeout(16000);
   if(counters.map<2)throw new Error(`live bus map did not refresh: ${counters.map} request(s)`);
   const busState=await page.evaluate(()=>({mode:document.querySelector('.flow-transit-map-shell')?.dataset.mapMode||'',vehicleCount:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleCount||'',updatedAt:document.querySelector('.flow-transit-map-shell')?.dataset.vehicleUpdatedAt||'',status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
   if(busState.mode!=='bus'||busState.vehicleCount!=='1'||!busState.updatedAt||!busState.status.includes('갱신')||busState.vehiclePins!==1||busState.overflow>1||errors.length)throw new Error(`live bus map contract failed ${JSON.stringify({busState,counters,errors})}`);
-  await page.screenshot({path:`${OUT}/bus-live-mobile-portrait.png`,fullPage:false});report.bus.mobilePortrait={...busState,mapRequests:counters.map,pageErrors:errors};await context.close();
+  await page.screenshot({path:`${OUT}/bus-live-mobile-portrait.png`,fullPage:false});report.bus.mobilePortrait={...busState,...traceState,mapRequests:counters.map,destinationQueries:counters.destinationQueries,pageErrors:errors};await context.close();
 }
 await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
