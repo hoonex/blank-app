@@ -8,6 +8,7 @@ on:
       - 'school-transit-map.css'
       - 'school-transit-rail-map.css'
       - 'school-transit.js'
+      - 'school-transit.css'
       - 'tests/transit-live-map-audit.mjs'
       - '.github/workflows/transit-live-map-audit.yml'
   workflow_dispatch:
@@ -27,10 +28,16 @@ jobs:
       - name: Validate map sources
         run: |
           set -euo pipefail
+          node --check school-transit.js
           node --check school-transit-map.js
           node --check tests/transit-live-map-audit.mjs
+          test -s school-transit.css
           test -s school-transit-map.css
           test -s school-transit-rail-map.css
+          grep -q "DESTINATION_KEY='flow-school-transit-destination-v1'" school-transit.js
+          grep -q "smoothStopPath" school-transit-map.js
+          grep -q "smooth-stop-guide" school-transit-map.js
+          grep -q "실제 도로 굴곡" school-transit-map.js
           grep -q "VEHICLE_REFRESH_MS=15000" school-transit-map.js
           grep -q "railMapCapable" school-transit-map.js
           grep -q "visibilitychange" school-transit-map.js
@@ -45,7 +52,7 @@ jobs:
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep .3; done
           cat /tmp/flow-transit-live-map.log
           exit 1
-      - name: Verify rail sheets and live bus refresh
+      - name: Verify destination editing, rail sheets, and live bus refresh
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/transit-live-map-audit.mjs
