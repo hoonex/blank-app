@@ -50,7 +50,7 @@ for(const rewrite of config.rewrites||[]){
   materialized.push({route:`/${source}`,from:`/${destination}`,file:path.relative(out,targetFile).replaceAll('\\','/')});
 }
 
-const required=['/home','/week','/schedule','/school','/university/timetable','/university/campus','/university/school'];
+const required=['/home','/week','/schedule','/transit','/school','/university/timetable','/university/campus','/university/school'];
 for(const route of required){
   const file=path.join(out,cleanPath(route),'index.html');
   await readFile(file);

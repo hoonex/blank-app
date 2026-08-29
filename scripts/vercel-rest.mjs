@@ -10,9 +10,10 @@ const PROJECT_NAME = process.env.VERCEL_PROJECT_NAME || 'flow-student';
 const DISABLE_AUTH = process.env.VERCEL_DISABLE_AUTH !== 'false';
 const STATUS_FILE = process.env.VERCEL_STATUS_FILE || '';
 const command = process.argv[2] || 'deploy';
-const ROOT_CLEAN_ROUTES = ['home','week','schedule','school'];
+const ROOT_CLEAN_ROUTES = ['home','week','schedule','transit','school'];
 const UNIVERSITY_CLEAN_ROUTES = ['university','university/timetable','university/campus','university/school'];
 const VERIFIED_ROUTES = [...ROOT_CLEAN_ROUTES, ...UNIVERSITY_CLEAN_ROUTES];
+const DEPLOYMENT_SUPPORT_FILES = ['scripts/vercel-static-build.mjs'];
 
 async function writeStatus(payload) {
   if (!STATUS_FILE) return;
@@ -20,7 +21,7 @@ async function writeStatus(payload) {
   await writeFile(STATUS_FILE, `${JSON.stringify(status, null, 2)}\n`, 'utf8');
 }
 
-if (!TOKEN) {
+if (command !== 'manifest' && !TOKEN) {
   console.error('VERCEL_TOKEN is required.');
   await writeStatus({ ok: false, error: 'VERCEL_TOKEN is required.' });
   process.exit(2);
@@ -95,6 +96,15 @@ async function collectFiles(root = process.cwd(), dir = '.') {
   return files;
 }
 
+async function addDeploymentSupportFiles(files, root = process.cwd()) {
+  for (const rel of DEPLOYMENT_SUPPORT_FILES) {
+    if (files.some((file) => file.file === rel)) continue;
+    const data = await readFile(path.join(root, rel), 'utf8');
+    files.push({ file: rel, data });
+  }
+  return files;
+}
+
 function withBase(html) {
   return html.includes('<base ') ? html : html.replace(/<head(\s[^>]*)?>/i, (tag) => `${tag}\n  <base href="/">`);
 }
@@ -117,6 +127,11 @@ function addRouteFallbacks(files) {
     }
   }
   return files;
+}
+
+async function prepareDeploymentFiles() {
+  const files = await addDeploymentSupportFiles(await collectFiles());
+  return addRouteFallbacks(files);
 }
 
 async function waitForDeployment(id) {
@@ -150,10 +165,23 @@ async function verifyCleanRoutes(baseUrl) {
   }
 }
 
+async function manifest() {
+  const files = await prepareDeploymentFiles();
+  const names = files.map((file) => file.file).sort();
+  const result = {
+    fileCount: names.length,
+    supportFiles: DEPLOYMENT_SUPPORT_FILES,
+    cleanRoutes: VERIFIED_ROUTES.map((route) => `/${route}`),
+    files: names,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
 async function deploy() {
   const project = await ensureProject();
-  const files = addRouteFallbacks(await collectFiles());
-  console.log(`Deploying ${files.length} text assets to ${project.name}...`);
+  const files = await prepareDeploymentFiles();
+  console.log(`Deploying ${files.length} source assets to ${project.name}...`);
   const deployment = await request('/v13/deployments', {
     method: 'POST',
     body: JSON.stringify({ name: project.name, project: project.id, target: 'production', files, projectSettings: { framework: null }, meta: { source: 'flow-vercel-rest', commitSha: process.env.GITHUB_SHA || '' } }),
@@ -185,7 +213,8 @@ async function status() {
 }
 
 try {
-  if (command === 'deploy') await deploy();
+  if (command === 'manifest') await manifest();
+  else if (command === 'deploy') await deploy();
   else if (command === 'status') await status();
   else if (command === 'project') console.log(JSON.stringify(await ensureProject(), null, 2));
   else throw new Error(`Unknown command: ${command}`);
