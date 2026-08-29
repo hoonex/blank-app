@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 jobs:
   probe:
@@ -14,118 +15,86 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Download official Daegu bus spatial dataset
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Reuse verified official archive artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: daegu-route-source-analysis
+          path: /tmp/daegu-seed
+          github-token: ${{ github.token }}
+          run-id: 33259103347
+      - name: Verify official archive and build compact network
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/daegu-route/source /tmp/daegu-route/geojson
-          url='https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId=FILE_000000003540272&fileDetailSn=1&insertDataPrcus=N'
-          curl -fL --retry 3 --connect-timeout 15 --max-time 90 \
-            -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/151 Safari/537.36' \
-            "$url" -o /tmp/daegu-route/daegu-bus-spatial-20250903.zip
-          test "$(stat -c%s /tmp/daegu-route/daegu-bus-spatial-20250903.zip)" -gt 2000000
-          sha256sum /tmp/daegu-route/daegu-bus-spatial-20250903.zip | tee /tmp/daegu-route/sha256.txt
-          unzip -q /tmp/daegu-route/daegu-bus-spatial-20250903.zip -d /tmp/daegu-route/source
-          find /tmp/daegu-route/source -maxdepth 1 -type f -printf '%P\t%s bytes\n' | sort | tee /tmp/daegu-route/files.txt
-
-      - name: Install GIS inspection tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends gdal-bin python3-gdal >/dev/null
-          ogrinfo --version
-
-      - name: Inspect and convert official SHP layers
+          archive=/tmp/daegu-seed/daegu-bus-spatial-20250903.zip
+          test -s "$archive"
+          echo '98d6a7725e3fddbcd65c58af3fadc217378ee8bfec82e29e2931341e19f86a1e  '"$archive" | sha256sum -c -
+          rm -rf /tmp/daegu-source && mkdir -p /tmp/daegu-source
+          unzip -q "$archive" -d /tmp/daegu-source
+          python3 -m pip install --quiet pyshp pyproj shapely scipy
+          python3 scripts/build-daegu-bus-network.py /tmp/daegu-source supabase/functions/transit-map/daegu-official-network.ts --archive "$archive"
+          test "$(stat -c%s supabase/functions/transit-map/daegu-official-network.ts)" -gt 700000
+          test "$(stat -c%s supabase/functions/transit-map/daegu-official-network.ts)" -lt 1100000
+      - name: Verify known official 805 corridor exists
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
+          import shapefile, heapq, math
           from pathlib import Path
-          import subprocess, json
-          root=Path('/tmp/daegu-route/source'); out=Path('/tmp/daegu-route')
-          shps=sorted(root.glob('*.shp'))
-          if not shps: raise SystemExit('No official SHP layers found')
-          report=[]
-          for shp in shps:
-              summary=subprocess.run(['ogrinfo','-ro','-so','-al',str(shp)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True).stdout
-              (out/f'{shp.stem}.summary.txt').write_text(summary,'utf-8')
-              target=out/'geojson'/f'{shp.stem}.geojson'
-              subprocess.run(['ogr2ogr','-f','GeoJSON','-t_srs','EPSG:4326','-lco','RFC7946=YES',str(target),str(shp)],check=True)
-              gj=json.loads(target.read_text('utf-8'))
-              feats=gj.get('features',[])
-              fields=sorted({k for f in feats[:100] for k in (f.get('properties') or {}).keys()})
-              types={}
-              samples=[]
-              for f in feats[:4]:
-                  geom=f.get('geometry') or {}; samples.append({'properties':f.get('properties') or {},'geometryType':geom.get('type'),'coordinates':geom.get('coordinates')})
-              for f in feats[:200]:
-                  t=((f.get('geometry') or {}).get('type') or 'null'); types[t]=types.get(t,0)+1
-              report.append({'file':shp.name,'featureCount':len(feats),'fields':fields,'geometryTypesSample':types,'samples':samples,'summary':summary[:12000]})
-          (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
-          print(json.dumps([{k:v for k,v in x.items() if k not in ('summary','samples')} for x in report],ensure_ascii=False,indent=2))
+          from scipy.spatial import cKDTree
+          root=Path('/tmp/daegu-source')
+          nr=shapefile.Reader(str(root/'node_20250903.shp'),encoding='utf-8'); nf=[f[0] for f in nr.fields[1:]]
+          nodes=[]; ids=[]
+          for sr in nr.iterShapeRecords():
+              rec=dict(zip(nf,sr.record)); nodes.append(sr.shape.points[0]); ids.append(str(rec['node_id']))
+          index={v:i for i,v in enumerate(ids)}; tree=cKDTree(nodes)
+          lr=shapefile.Reader(str(root/'link_20250903.shp'),encoding='utf-8'); lf=[f[0] for f in lr.fields[1:]]
+          adj={}; links=[]
+          for sr in lr.iterShapeRecords():
+              rec=dict(zip(lf,sr.record)); pts=sr.shape.points; ep=[]
+              for p in (pts[0],pts[-1]):
+                  d,i=tree.query(p); ep.append(int(i) if d<=60 else None)
+              if None in ep: continue
+              length=float(rec.get('shape_len') or 0); li=len(links); links.append((rec,pts))
+              adj.setdefault(ep[0],[]).append((ep[1],length,li)); adj.setdefault(ep[1],[]).append((ep[0],length,li))
+          a=index['7011018400']; b=index['7011015400']; pq=[(0,a)]; dist={a:0}; prev={}
+          while pq:
+              d,u=heapq.heappop(pq)
+              if d!=dist[u]: continue
+              if u==b: break
+              for v,w,li in adj.get(u,[]):
+                  nd=d+w
+                  if nd<dist.get(v,1e100): dist[v]=nd; prev[v]=(u,li); heapq.heappush(pq,(nd,v))
+          if b not in dist: raise SystemExit('Official 805 corridor is disconnected')
+          route=[]; u=b
+          while u!=a:
+              u0,li=prev[u]; route.append(li); u=u0
+          route.reverse(); names=[links[li][0]['link_nm'] for li in route]
+          if not any(name=='반야월로' for name in names): raise SystemExit(f'805 corridor did not reach 반야월로: {names}')
+          if not 1800 <= dist[b] <= 2800: raise SystemExit(f'Unexpected 805 corridor distance: {dist[b]}')
+          print({'distanceMeters':round(dist[b],1),'linkCount':len(route),'roads':names})
           PY
-
-      - name: Fetch a live TAGO 805 segment through Flow map adapter
+      - name: Fetch live 805 stop sequence for compatibility
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-map'
-          status=$(curl -sSL -o /tmp/daegu-route/route-805.json -w '%{http_code}' --get --connect-timeout 10 --max-time 45 \
-            --data-urlencode 'action=route-map' \
-            --data-urlencode 'region=대구광역시' \
-            --data-urlencode 'line=805' \
-            --data-urlencode 'startId=7011018400' \
-            --data-urlencode 'endId=7011015400' \
-            --data-urlencode 'startName=반야월역(4번출구)1' \
-            --data-urlencode 'endName=정동고등학교앞' \
-            "$base")
-          test "$status" = 200 || { cat /tmp/daegu-route/route-805.json; exit 1; }
-          cat /tmp/daegu-route/route-805.json
-
-      - name: Analyze topology and known route stops
+          status=$(curl -sSL -o /tmp/route-805.json -w '%{http_code}' --get --connect-timeout 10 --max-time 45 \
+            --data-urlencode 'action=route-map' --data-urlencode 'region=대구광역시' --data-urlencode 'line=805' \
+            --data-urlencode 'startId=7011018400' --data-urlencode 'endId=7011015400' \
+            --data-urlencode 'startName=반야월역(4번출구)1' --data-urlencode 'endName=정동고등학교앞' "$base")
+          test "$status" = 200 || { cat /tmp/route-805.json; exit 1; }
+          node -e "const d=require('/tmp/route-805.json'); if(!Array.isArray(d.route?.stops)||d.route.stops.length<2) process.exit(1); console.log(d.route.stops.map(x=>x.name).join(' -> '))"
+      - name: Commit generated snapshot to branch
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import json, math, heapq
-          root=Path('/tmp/daegu-route/geojson'); out=Path('/tmp/daegu-route')
-          bs=json.loads((root/'bs_20250903.geojson').read_text('utf-8'))['features']
-          links=json.loads((root/'link_20250903.geojson').read_text('utf-8'))['features']
-          sample=json.loads((out/'route-805.json').read_text('utf-8'))
-          stops=sample.get('route',{}).get('stops',[])
-          if len(stops)<2: raise SystemExit('805 sample has no stop sequence')
-          known=[]
-          for f in bs:
-              p=f.get('properties') or {}
-              if p.get('bs_id') in {'7011018400','7011015400'} or any(x in str(p.get('route_no') or '').split(', ') for x in ['805']):
-                  known.append({'properties':p,'coordinates':(f.get('geometry') or {}).get('coordinates')})
-          # Measure endpoint connectivity without inventing topology yet.
-          ends=[]
-          for i,f in enumerate(links):
-              c=(f.get('geometry') or {}).get('coordinates') or []
-              if c:
-                  ends.append((c[0][0],c[0][1],i,0)); ends.append((c[-1][0],c[-1][1],i,1))
-          # local brute-force nearest endpoint only for sampled 805 stop positions
-          nearest=[]
-          for stop in stops:
-              sx=float(stop['x']); sy=float(stop['y'])
-              best=(1e9,None)
-              for j,(x,y,li,side) in enumerate(ends):
-                  # WGS84 local approximation, meters
-                  dx=(x-sx)*111320*math.cos(math.radians(sy)); dy=(y-sy)*110540
-                  d=math.hypot(dx,dy)
-                  if d<best[0]: best=(d,{'linkIndex':li,'side':side,'coordinate':[x,y]})
-              nearest.append({'stop':stop,'distanceMeters':best[0],**best[1]})
-          result={'officialLinkCount':len(links),'officialBusStopCount':len(bs),'route805':{'route':sample.get('route'), 'nearestLinkEndpoints':nearest},'805OfficialStopRecords':known[:200]}
-          (out/'topology-analysis.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
-          print(json.dumps(result,ensure_ascii=False,indent=2)[:50000])
-          PY
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: daegu-route-source-analysis
-          path: /tmp/daegu-route
-          retention-days: 3
+          git add supabase/functions/transit-map/daegu-official-network.ts
+          if git diff --cached --quiet; then echo 'Generated snapshot already current'; exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'data: add official Daegu bus link snapshot'
+          git push origin HEAD:${GITHUB_HEAD_REF}
