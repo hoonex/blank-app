@@ -16,14 +16,20 @@ await page.addInitScript(()=>{
     {name:'자료구조',professor:'김교수',place:'IT대학 101호',times:[{day:0,start:'09:00',end:'10:30',startMinutes:540,endMinutes:630,place:'IT대학 101호'}]},
     {name:'운영체제',professor:'이교수',place:'공대9호관',times:[{day:1,start:'13:00',end:'14:30',startMinutes:780,endMinutes:870,place:'공대9호관'}]},
   ]}));
-  localStorage.removeItem('flow-university-timetable-density-v1');
+  if(!sessionStorage.getItem('flow-timetable-density-fixture')){
+    sessionStorage.setItem('flow-timetable-density-fixture','1');
+    localStorage.removeItem('flow-university-timetable-density-v1');
+  }
 });
 
 async function openTimetable(){
-  const tab=page.locator('.bottom-item[data-view="timetable"]');
-  await tab.waitFor({state:'visible',timeout:10000});
-  await tab.click();
-  await page.locator('#timeGrid .course-block').first().waitFor({timeout:10000});
+  const course=page.locator('#timeGrid .course-block').first();
+  if(!await course.isVisible().catch(()=>false)){
+    const tab=page.locator('.bottom-item[data-view="timetable"]');
+    await tab.waitFor({state:'visible',timeout:10000});
+    await tab.click();
+  }
+  await course.waitFor({state:'visible',timeout:10000});
   await page.waitForTimeout(220);
 }
 
