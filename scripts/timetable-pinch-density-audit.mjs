@@ -77,10 +77,10 @@ await page.waitForTimeout(60);
 const afterSingle=await page.locator('#timeGrid').evaluate(grid=>parseFloat(getComputedStyle(grid).getPropertyValue('--hour')));
 if(Math.abs(afterSingle-beforeSingle)>.5)throw new Error(`Single-finger scrolling must not alter timetable density: ${beforeSingle} -> ${afterSingle}`);
 
-await page.reload({waitUntil:'domcontentloaded'});
+await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
 await openTimetable();
 const restored=await page.evaluate(()=>{const grid=document.querySelector('#timeGrid');return{hour:parseFloat(getComputedStyle(grid).getPropertyValue('--hour')),density:Number(grid.dataset.timetableDensity),stored:Number(localStorage.getItem('flow-university-timetable-density-v1')),visualScale:window.visualViewport?.scale||1,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}});
-if(restored.hour<56||restored.hour>59||restored.density<79||restored.density>81||Math.abs(restored.stored-.8)>.02)throw new Error(`Stored timetable density was not restored after reload: ${JSON.stringify(restored)}`);
+if(restored.hour<56||restored.hour>59||restored.density<79||restored.density>81||Math.abs(restored.stored-.8)>.02)throw new Error(`Stored timetable density was not restored after app re-entry: ${JSON.stringify(restored)}`);
 if(restored.overflow>3||restored.visualScale!==initial.visualScale)throw new Error(`Restored density caused viewport regression: ${JSON.stringify(restored)}`);
 
 await page.screenshot({path:'university-audit/mobile-timetable-pinch-density.png',fullPage:false});
