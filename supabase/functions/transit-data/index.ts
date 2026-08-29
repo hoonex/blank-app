@@ -41,7 +41,8 @@ function finite(value: string | null, min: number, max: number) {
 }
 
 function isDaegu(region: unknown) {
-  return String(region || "").trim() === SERVICE_AREA.name;
+  const value=String(region || "").trim();
+  return value === SERVICE_AREA.name || value === "대구";
 }
 
 function outOfArea(position: "source" | "destination", region = "") {
@@ -90,17 +91,21 @@ function destinationFromDocument(doc: KakaoDocument, fallbackName: string): Reso
   };
 }
 
+async function withCoordinateRegion(destination: ResolvedDestination) {
+  return { ...destination, region: await coordinateRegion(destination.x, destination.y) };
+}
+
 async function resolveDestination(query: string, ex: number | null, ey: number | null) {
   if (query) {
     const addressBody = await kakao("/search/address.json", { query });
     const addressDoc = Array.isArray(addressBody?.documents) ? addressBody.documents[0] : null;
     const addressResolved = addressDoc ? destinationFromDocument(addressDoc, query) : null;
-    if (addressResolved) return addressResolved;
+    if (addressResolved) return await withCoordinateRegion(addressResolved);
 
     const keywordBody = await kakao("/search/keyword.json", { query, size: "5" });
     const keywordDoc = Array.isArray(keywordBody?.documents) ? keywordBody.documents[0] : null;
     const keywordResolved = keywordDoc ? destinationFromDocument(keywordDoc, query) : null;
-    if (keywordResolved) return keywordResolved;
+    if (keywordResolved) return await withCoordinateRegion(keywordResolved);
     throw new Error("목적지를 찾지 못했습니다. 장소명이나 도로명 주소를 확인해주세요.");
   }
 
