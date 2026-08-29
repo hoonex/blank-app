@@ -1,8 +1,21 @@
 name: Vercel REST deploy
 
-# Deployment is intentionally triggered on main pushes after VERCEL_TOKEN is configured.
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '*.json'
+      - '*.xml'
+      - '*.txt'
+      - 'university/**'
+      - 'admin/**'
+      - 'scripts/vercel-rest.mjs'
+      - 'scripts/vercel-static-build.mjs'
+      - '.github/workflows/vercel-rest-deploy.yml'
   push:
     branches: [main]
     paths:
@@ -15,6 +28,7 @@ on:
       - 'university/**'
       - 'admin/**'
       - 'scripts/vercel-rest.mjs'
+      - 'scripts/vercel-static-build.mjs'
       - '.github/workflows/vercel-rest-deploy.yml'
 
 permissions:
@@ -22,7 +36,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: flow-vercel-production
+  group: flow-vercel-production-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
 
 jobs:
@@ -38,12 +52,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate deployment module
-        run: node --check scripts/vercel-rest.mjs
+      - name: Validate deployment manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/vercel-rest.mjs
+          node --check scripts/vercel-static-build.mjs
+          node scripts/vercel-rest.mjs manifest > /tmp/vercel-manifest.json
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const manifest=JSON.parse(fs.readFileSync('/tmp/vercel-manifest.json','utf8'));
+          const files=new Set(manifest?.files||[]);
+          const routes=new Set(manifest?.cleanRoutes||[]);
+          if(!files.has('scripts/vercel-static-build.mjs')) throw new Error('Vercel build helper is missing from REST deployment files');
+          if(!files.has('transit/index.html')) throw new Error('Transit clean-route fallback is missing from REST deployment files');
+          if(!routes.has('/transit')) throw new Error('Transit clean route is missing from REST verification');
+          if(!Number.isInteger(manifest?.fileCount)||manifest.fileCount!==files.size) throw new Error('Vercel manifest file count is inconsistent');
+          console.log(`Vercel REST manifest ready: ${manifest.fileCount} source assets; /transit verified`);
+          NODE
 
       - name: Deploy through Vercel REST API
         id: deploy
-        if: env.VERCEL_TOKEN != ''
+        if: github.event_name != 'pull_request' && env.VERCEL_TOKEN != ''
         continue-on-error: true
         shell: bash
         run: |
@@ -51,13 +81,13 @@ jobs:
           node scripts/vercel-rest.mjs deploy 2>&1 | tee /tmp/vercel-deploy.log
 
       - name: Explain missing token
-        if: env.VERCEL_TOKEN == ''
+        if: github.event_name != 'pull_request' && env.VERCEL_TOKEN == ''
         run: |
           echo 'VERCEL_TOKEN is not configured yet.' | tee /tmp/vercel-deploy.log
           echo 'The REST deployment module is installed and validated; production deploy is intentionally skipped.' | tee -a /tmp/vercel-deploy.log
 
       - name: Publish deployment result
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
