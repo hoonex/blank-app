@@ -28,7 +28,7 @@ function finishTouchGesture(){if(!touchGesture)return;touchGesture=null;cancelAn
 function onTouchEnd(event){if(!touchGesture)return;if(event.touches.length>=2)return;finishTouchGesture()}
 function onWheel(event){if(!event.ctrlKey)return;event.preventDefault();const factor=Math.exp(-event.deltaY*DENSITY_WHEEL_FACTOR);scheduleDensity(density*factor,event.clientY);clearTimeout(wheelCommitTimer);wheelCommitTimer=setTimeout(()=>applyDensity(density,{persist:true}),140)}
 function preventNativeGesture(event){event.preventDefault()}
-function bindGrid(){const grid=getGrid();if(!grid)return false;if(grid.dataset.timetableDensityBound!=='true'){grid.dataset.timetableDensityBound='true';grid.style.touchAction='pan-x pan-y';grid.addEventListener('touchstart',onTouchStart,{passive:false});grid.addEventListener('touchmove',onTouchMove,{passive:false});grid.addEventListener('touchend',onTouchEnd,{passive:false});grid.addEventListener('touchcancel',onTouchEnd,{passive:false});grid.addEventListener('wheel',onWheel,{passive:false});grid.addEventListener('gesturestart',preventNativeGesture,{passive:false});grid.addEventListener('gesturechange',preventNativeGesture,{passive:false});grid.addEventListener('gestureend',preventNativeGesture,{passive:false})}if(!gridObserver){gridObserver=new MutationObserver(()=>scheduleReapply(0));gridObserver.observe(grid,{childList:true})}scheduleReapply(0);return true}
+function bindGrid(){const grid=getGrid();if(!grid)return false;if(grid.dataset.timetableDensityBound!=='true'){grid.dataset.timetableDensityBound='true';grid.style.touchAction='pan-x pan-y';grid.addEventListener('touchstart',onTouchStart,{passive:false});grid.addEventListener('touchmove',onTouchMove,{passive:false});grid.addEventListener('touchend',onTouchEnd,{passive:false});grid.addEventListener('touchcancel',onTouchEnd,{passive:false});grid.addEventListener('wheel',onWheel,{passive:false});grid.addEventListener('gesturestart',preventNativeGesture,{passive:false});grid.addEventListener('gesturechange',preventNativeGesture,{passive:false});grid.addEventListener('gestureend',preventNativeGesture,{passive:false})}if(!gridObserver){gridObserver=new MutationObserver(()=>scheduleReapply(0));gridObserver.observe(grid,{childList:true})}return true}
 function scheduleReapply(delay=40){clearTimeout(reapplyTimer);reapplyTimer=setTimeout(()=>{if(!bindGrid())return;applyDensity(density)},delay)}
 
 document.addEventListener('click',event=>{if(event.target.closest?.('[data-view="timetable"],[data-go="timetable"]'))scheduleReapply(70)},{passive:true});
@@ -36,5 +36,5 @@ window.addEventListener('flow:timetable-changed',()=>scheduleReapply(90));
 window.addEventListener('resize',()=>scheduleReapply(220),{passive:true});
 window.addEventListener('blur',finishTouchGesture);
 
-if(!bindGrid()){const observer=new MutationObserver(()=>{if(bindGrid())observer.disconnect()});observer.observe(document.documentElement,{childList:true,subtree:true})}
+if(!bindGrid()){const observer=new MutationObserver(()=>{if(bindGrid()){observer.disconnect();scheduleReapply(0)}});observer.observe(document.documentElement,{childList:true,subtree:true})}
 scheduleReapply(120);
