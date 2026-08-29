@@ -24,11 +24,9 @@ jobs:
             -A 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/151 Safari/537.36' \
             "$url" -o /tmp/daegu-route/daegu-bus-spatial-20250903.zip
           test "$(stat -c%s /tmp/daegu-route/daegu-bus-spatial-20250903.zip)" -gt 2000000
-          file /tmp/daegu-route/daegu-bus-spatial-20250903.zip
           sha256sum /tmp/daegu-route/daegu-bus-spatial-20250903.zip | tee /tmp/daegu-route/sha256.txt
-          unzip -l /tmp/daegu-route/daegu-bus-spatial-20250903.zip | tee /tmp/daegu-route/unzip-list.txt
           unzip -q /tmp/daegu-route/daegu-bus-spatial-20250903.zip -d /tmp/daegu-route/source
-          find /tmp/daegu-route/source -maxdepth 3 -type f -printf '%P\t%s bytes\n' | sort | tee /tmp/daegu-route/files.txt
+          find /tmp/daegu-route/source -maxdepth 1 -type f -printf '%P\t%s bytes\n' | sort | tee /tmp/daegu-route/files.txt
 
       - name: Install GIS inspection tools
         shell: bash
@@ -38,64 +36,91 @@ jobs:
           sudo apt-get install -y --no-install-recommends gdal-bin python3-gdal >/dev/null
           ogrinfo --version
 
-      - name: Inspect SHP schemas, CRS, bounds, and sample records
+      - name: Inspect and convert official SHP layers
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import subprocess, json, os
-          root=Path('/tmp/daegu-route/source')
-          out=Path('/tmp/daegu-route')
-          shps=sorted(root.rglob('*.shp'))
-          if not shps:
-              raise SystemExit('No .shp files found in official archive')
+          import subprocess, json
+          root=Path('/tmp/daegu-route/source'); out=Path('/tmp/daegu-route')
+          shps=sorted(root.glob('*.shp'))
+          if not shps: raise SystemExit('No official SHP layers found')
           report=[]
           for shp in shps:
-              rel=str(shp.relative_to(root))
               summary=subprocess.run(['ogrinfo','-ro','-so','-al',str(shp)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True).stdout
-              sample=subprocess.run(['ogrinfo','-ro','-al','-limit','4',str(shp)],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=True).stdout
               (out/f'{shp.stem}.summary.txt').write_text(summary,'utf-8')
-              (out/f'{shp.stem}.sample.txt').write_text(sample,'utf-8')
               target=out/'geojson'/f'{shp.stem}.geojson'
               subprocess.run(['ogr2ogr','-f','GeoJSON','-t_srs','EPSG:4326','-lco','RFC7946=YES',str(target),str(shp)],check=True)
               gj=json.loads(target.read_text('utf-8'))
               feats=gj.get('features',[])
               fields=sorted({k for f in feats[:100] for k in (f.get('properties') or {}).keys()})
               types={}
+              samples=[]
+              for f in feats[:4]:
+                  geom=f.get('geometry') or {}; samples.append({'properties':f.get('properties') or {},'geometryType':geom.get('type'),'coordinates':geom.get('coordinates')})
               for f in feats[:200]:
-                  t=((f.get('geometry') or {}).get('type') or 'null')
-                  types[t]=types.get(t,0)+1
-              report.append({'file':rel,'featureCount':len(feats),'fields':fields,'geometryTypesSample':types,'summary':summary[:12000]})
+                  t=((f.get('geometry') or {}).get('type') or 'null'); types[t]=types.get(t,0)+1
+              report.append({'file':shp.name,'featureCount':len(feats),'fields':fields,'geometryTypesSample':types,'samples':samples,'summary':summary[:12000]})
           (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
-          print(json.dumps([{k:v for k,v in x.items() if k!='summary'} for x in report],ensure_ascii=False,indent=2))
+          print(json.dumps([{k:v for k,v in x.items() if k not in ('summary','samples')} for x in report],ensure_ascii=False,indent=2))
           PY
 
-      - name: Analyze route identifiers and known bus lines
+      - name: Fetch a live TAGO 805 segment through Flow map adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-map'
+          status=$(curl -sSL -o /tmp/daegu-route/route-805.json -w '%{http_code}' --get --connect-timeout 10 --max-time 45 \
+            --data-urlencode 'action=route-map' \
+            --data-urlencode 'region=대구광역시' \
+            --data-urlencode 'line=805' \
+            --data-urlencode 'startId=7011018400' \
+            --data-urlencode 'endId=7011015400' \
+            --data-urlencode 'startName=반야월역(4번출구)1' \
+            --data-urlencode 'endName=정동고등학교앞' \
+            "$base")
+          test "$status" = 200 || { cat /tmp/daegu-route/route-805.json; exit 1; }
+          cat /tmp/daegu-route/route-805.json
+
+      - name: Analyze topology and known route stops
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import json, re, math
-          root=Path('/tmp/daegu-route/geojson')
-          known=['805','708','250','814','401']
-          result={}
-          for p in sorted(root.glob('*.geojson')):
-              data=json.loads(p.read_text('utf-8'))
-              feats=data.get('features',[])
-              rows=[]
-              for i,f in enumerate(feats):
-                  props=f.get('properties') or {}
-                  text=' | '.join(str(v) for v in props.values() if v is not None)
-                  matches=[line for line in known if re.search(rf'(^|[^0-9]){re.escape(line)}([^0-9]|$)',text)]
-                  if matches:
-                      geom=f.get('geometry') or {}
-                      coords=geom.get('coordinates')
-                      rows.append({'index':i,'matches':matches,'properties':props,'geometryType':geom.get('type'),'coordinateShape':str(type(coords).__name__)})
-              result[p.name]={'featureCount':len(feats),'knownMatches':rows[:100]}
-          Path('/tmp/daegu-route/known-lines.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
-          print(json.dumps(result,ensure_ascii=False,indent=2)[:30000])
+          import json, math, heapq
+          root=Path('/tmp/daegu-route/geojson'); out=Path('/tmp/daegu-route')
+          bs=json.loads((root/'bs_20250903.geojson').read_text('utf-8'))['features']
+          links=json.loads((root/'link_20250903.geojson').read_text('utf-8'))['features']
+          sample=json.loads((out/'route-805.json').read_text('utf-8'))
+          stops=sample.get('route',{}).get('stops',[])
+          if len(stops)<2: raise SystemExit('805 sample has no stop sequence')
+          known=[]
+          for f in bs:
+              p=f.get('properties') or {}
+              if p.get('bs_id') in {'7011018400','7011015400'} or any(x in str(p.get('route_no') or '').split(', ') for x in ['805']):
+                  known.append({'properties':p,'coordinates':(f.get('geometry') or {}).get('coordinates')})
+          # Measure endpoint connectivity without inventing topology yet.
+          ends=[]
+          for i,f in enumerate(links):
+              c=(f.get('geometry') or {}).get('coordinates') or []
+              if c:
+                  ends.append((c[0][0],c[0][1],i,0)); ends.append((c[-1][0],c[-1][1],i,1))
+          # local brute-force nearest endpoint only for sampled 805 stop positions
+          nearest=[]
+          for stop in stops:
+              sx=float(stop['x']); sy=float(stop['y'])
+              best=(1e9,None)
+              for j,(x,y,li,side) in enumerate(ends):
+                  # WGS84 local approximation, meters
+                  dx=(x-sx)*111320*math.cos(math.radians(sy)); dy=(y-sy)*110540
+                  d=math.hypot(dx,dy)
+                  if d<best[0]: best=(d,{'linkIndex':li,'side':side,'coordinate':[x,y]})
+              nearest.append({'stop':stop,'distanceMeters':best[0],**best[1]})
+          result={'officialLinkCount':len(links),'officialBusStopCount':len(bs),'route805':{'route':sample.get('route'), 'nearestLinkEndpoints':nearest},'805OfficialStopRecords':known[:200]}
+          (out/'topology-analysis.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),'utf-8')
+          print(json.dumps(result,ensure_ascii=False,indent=2)[:50000])
           PY
 
       - uses: actions/upload-artifact@v4
