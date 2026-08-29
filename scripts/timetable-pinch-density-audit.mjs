@@ -23,7 +23,7 @@ await page.goto(`${base}/university/timetable`,{waitUntil:'domcontentloaded'});
 await page.locator('#timeGrid .course-block').first().waitFor({timeout:10000});
 await page.waitForTimeout(220);
 
-const initial=await page.evaluate(()=>{const grid=document.querySelector('#timeGrid'),body=grid?.querySelector('.grid-body'),scroll=grid?.closest('.timetable-scroll');if(scroll)scroll.scrollTop=Math.min(100,scroll.scrollHeight-scroll.clientHeight);return{hour:parseFloat(getComputedStyle(grid).getPropertyValue('--hour')),density:grid?.dataset.timetableDensity||'',touchAction:grid?.style.touchAction||'',bodyHeight:body?.getBoundingClientRect().height||0,scrollTop:scroll?.scrollTop||0,visualScale:window.visualViewport?.scale||1}});
+const initial=await page.evaluate(()=>{const grid=document.querySelector('#timeGrid'),body=grid?.querySelector('.grid-body'),scroll=grid?.closest('.timetable-scroll');if(scroll)scroll.scrollTop=Math.min(100,scroll.scrollHeight-scroll.clientHeight);return{hour:parseFloat(getComputedStyle(grid).getPropertyValue('--hour')),density:grid?.dataset.timetableDensity||'',touchAction:getComputedStyle(grid).touchAction||'',bodyHeight:body?.getBoundingClientRect().height||0,scrollTop:scroll?.scrollTop||0,visualScale:window.visualViewport?.scale||1}});
 if(Math.abs(initial.hour-72)>1)throw new Error(`Unexpected initial mobile hour height: ${JSON.stringify(initial)}`);
 if(initial.touchAction!=='pan-x pan-y')throw new Error(`Timetable must preserve one-finger panning while disabling native pinch zoom: ${JSON.stringify(initial)}`);
 
