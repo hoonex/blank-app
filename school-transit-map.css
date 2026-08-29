@@ -35,12 +35,13 @@ body.flow-transit-map-open{overflow:hidden!important;overscroll-behavior:none}
 .flow-transit-map-legend .transfer i{background:#5b67c8}
 .flow-transit-map-legend .alight i{background:var(--text)}
 .flow-transit-map-legend .vehicle i{width:12px;height:8px;border-radius:3px;background:var(--accent)}
-.flow-transit-map-pin,.flow-transit-map-vehicle{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;pointer-events:none}
-.flow-transit-map-pin>i{display:block;flex:none;width:13px;height:13px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.flow-transit-map-pin{position:relative;display:block;width:19px;height:0;pointer-events:none}
+.flow-transit-map-vehicle{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;pointer-events:none}
+.flow-transit-map-pin>i{position:absolute;left:0;top:-9.5px;display:block;width:13px;height:13px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.22)}
 .flow-transit-map-pin.board>i{background:var(--accent)}
 .flow-transit-map-pin.transfer>i{background:#5b67c8}
 .flow-transit-map-pin.alight>i{background:var(--text)}
-.flow-transit-map-pin>b{display:grid;gap:1px;max-width:190px;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.15);color:var(--text);line-height:1.05}
+.flow-transit-map-pin>b{position:absolute;left:25px;top:0;display:grid;gap:1px;max-width:190px;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--surface) 94%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.15);color:var(--text);line-height:1.05;white-space:nowrap;transform:translateY(-50%)}
 .flow-transit-map-pin>b>span{font-size:10px;font-weight:850}
 .flow-transit-map-pin>b>small{max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:9px;font-weight:700}
 .flow-transit-map-stop{display:block;width:7px;height:7px;border:2px solid var(--surface);border-radius:50%;background:color-mix(in srgb,var(--text) 48%,var(--surface));box-shadow:0 1px 4px rgba(0,0,0,.14)}
