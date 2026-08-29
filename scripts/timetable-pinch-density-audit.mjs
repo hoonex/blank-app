@@ -19,9 +19,16 @@ await page.addInitScript(()=>{
   localStorage.removeItem('flow-university-timetable-density-v1');
 });
 
-await page.goto(`${base}/university/timetable`,{waitUntil:'domcontentloaded'});
-await page.locator('#timeGrid .course-block').first().waitFor({timeout:10000});
-await page.waitForTimeout(220);
+async function openTimetable(){
+  const tab=page.locator('.bottom-item[data-view="timetable"]');
+  await tab.waitFor({state:'visible',timeout:10000});
+  await tab.click();
+  await page.locator('#timeGrid .course-block').first().waitFor({timeout:10000});
+  await page.waitForTimeout(220);
+}
+
+await page.goto(`${base}/university/`,{waitUntil:'domcontentloaded'});
+await openTimetable();
 
 const initial=await page.evaluate(()=>{const grid=document.querySelector('#timeGrid'),body=grid?.querySelector('.grid-body'),scroll=grid?.closest('.timetable-scroll');if(scroll)scroll.scrollTop=Math.min(100,scroll.scrollHeight-scroll.clientHeight);return{hour:parseFloat(getComputedStyle(grid).getPropertyValue('--hour')),density:grid?.dataset.timetableDensity||'',touchAction:getComputedStyle(grid).touchAction||'',bodyHeight:body?.getBoundingClientRect().height||0,scrollTop:scroll?.scrollTop||0,visualScale:window.visualViewport?.scale||1}});
 if(Math.abs(initial.hour-72)>1)throw new Error(`Unexpected initial mobile hour height: ${JSON.stringify(initial)}`);
@@ -65,8 +72,7 @@ const afterSingle=await page.locator('#timeGrid').evaluate(grid=>parseFloat(getC
 if(Math.abs(afterSingle-beforeSingle)>.5)throw new Error(`Single-finger scrolling must not alter timetable density: ${beforeSingle} -> ${afterSingle}`);
 
 await page.reload({waitUntil:'domcontentloaded'});
-await page.locator('#timeGrid .course-block').first().waitFor({timeout:10000});
-await page.waitForTimeout(220);
+await openTimetable();
 const restored=await page.evaluate(()=>{const grid=document.querySelector('#timeGrid');return{hour:parseFloat(getComputedStyle(grid).getPropertyValue('--hour')),density:Number(grid.dataset.timetableDensity),stored:Number(localStorage.getItem('flow-university-timetable-density-v1')),visualScale:window.visualViewport?.scale||1,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}});
 if(restored.hour<56||restored.hour>59||restored.density<79||restored.density>81||Math.abs(restored.stored-.8)>.02)throw new Error(`Stored timetable density was not restored after reload: ${JSON.stringify(restored)}`);
 if(restored.overflow>3||restored.visualScale!==initial.visualScale)throw new Error(`Restored density caused viewport regression: ${JSON.stringify(restored)}`);
