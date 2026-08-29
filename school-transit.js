@@ -1,6 +1,7 @@
 const TRANSIT_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data';
 const RAIL_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-rail';
 const PROFILE_KEY='flow-school-profile-v3';
+const DESTINATION_KEY='flow-school-transit-destination-v1';
 const REFRESH_MS=30000;
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
@@ -11,19 +12,43 @@ let requestAbort=null;
 let loading=false;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
+function customDestination(){
+  try{
+    const stored=JSON.parse(localStorage.getItem(DESTINATION_KEY)||'null'),query=String(stored?.query||'').trim();
+    if(!query)return null;
+    return{
+      name:String(stored?.name||query).trim()||query,
+      query,
+      address:String(stored?.address||'').trim(),
+      custom:true,
+    };
+  }catch{return null}
+}
 function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
-  const school=profile()?.school||{};
+  const school=profile()?.school||{},address=[school.address,school.addressDetail].filter(Boolean).join(' ').trim();
   return{
     name:school.name||'선택한 학교',
-    query:[school.address,school.addressDetail].filter(Boolean).join(' ').trim()||school.name||'',
-    address:[school.address,school.addressDetail].filter(Boolean).join(' ').trim(),
+    query:address||school.name||'',
+    address,
+    custom:false,
   };
 }
+function transitDestination(){return customDestination()||schoolDestination()}
+function saveCustomDestination(query,resolved=null){
+  const normalized=String(query||'').trim();if(!normalized)return;
+  const next={
+    query:normalized,
+    name:String(resolved?.name||normalized).trim()||normalized,
+    address:String(resolved?.address||resolved?.roadAddress||'').trim(),
+  };
+  localStorage.setItem(DESTINATION_KEY,JSON.stringify(next));
+}
+function clearCustomDestination(){localStorage.removeItem(DESTINATION_KEY)}
 function installStyle(){
   if($('link[data-flow-school-transit]'))return;
-  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit.css?v=20260827-1';link.dataset.flowSchoolTransit='';document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit.css?v=20260829-1';link.dataset.flowSchoolTransit='';document.head.append(link);
 }
 function navButton(kind){
   const button=document.createElement('button');button.type='button';button.dataset.view='transit';button.dataset.flowTransitNav='';
@@ -53,15 +78,31 @@ function installView(){
   section.className='view hidden';section.id='transitView';section.dataset.viewPanel='transit';
   section.innerHTML=`
     <header class="view-header flow-transit-header">
-      <div><h1>교통</h1><p>현재 위치에서 학교까지 버스 · 지하철 · 도보 경로를 비교합니다.</p></div>
+      <div><h1>교통</h1><p>현재 위치에서 원하는 목적지까지 버스 · 지하철 · 도보 경로를 비교합니다.</p></div>
       <button class="neo-button compact flow-transit-refresh" id="transitRefreshBtn" type="button" disabled>새로고침</button>
     </header>
     <article class="content-card neo-panel flow-transit-search">
       <div class="flow-transit-endpoints" aria-label="이동 구간">
-        <div><span>출발</span><strong>현재 위치</strong><small id="transitLocationCopy">위치 권한은 검색할 때만 사용합니다.</small></div>
+        <div class="flow-transit-endpoint">
+          <span>출발</span><strong>현재 위치</strong><small id="transitLocationCopy">위치 권한은 검색할 때만 사용합니다.</small>
+        </div>
         <i aria-hidden="true"></i>
-        <div><span>도착</span><strong id="transitSchoolName">선택한 학교</strong><small id="transitSchoolAddress"></small></div>
+        <div class="flow-transit-endpoint flow-transit-endpoint-destination">
+          <div class="flow-transit-endpoint-label"><span>도착</span><button id="transitDestinationEditBtn" class="flow-transit-destination-change" type="button" aria-expanded="false" aria-controls="transitDestinationEditor">변경</button></div>
+          <strong id="transitSchoolName">선택한 학교</strong><small id="transitSchoolAddress"></small>
+        </div>
       </div>
+      <form class="flow-transit-destination-editor hidden" id="transitDestinationEditor">
+        <label for="transitDestinationInput">목적지</label>
+        <div class="flow-transit-destination-input-row">
+          <input id="transitDestinationInput" name="destination" type="search" maxlength="120" autocomplete="off" enterkeyhint="go" placeholder="장소명 또는 주소 입력" required>
+          <button class="neo-button compact" type="submit" data-transit-destination-action>적용</button>
+        </div>
+        <div class="flow-transit-destination-editor-foot">
+          <small>학교가 아니어도 됩니다. 장소명 또는 도로명 주소로 검색합니다.</small>
+          <button id="transitDestinationResetBtn" class="flow-transit-destination-reset" type="button" data-transit-destination-action>학교로 되돌리기</button>
+        </div>
+      </form>
       <button class="primary-button flow-transit-locate" id="transitLocateBtn" type="button">현재 위치에서 찾기</button>
       <div class="flow-transit-state" id="transitState" role="status" aria-live="polite">검색하면 최대 5개의 대중교통 경로를 비교합니다.</div>
     </article>
@@ -70,11 +111,29 @@ function installView(){
   if(footer)main.insertBefore(section,footer);else main.append(section);
   $('#transitLocateBtn')?.addEventListener('click',()=>locateAndLoad({manual:true}));
   $('#transitRefreshBtn')?.addEventListener('click',()=>locateAndLoad({manual:true,refresh:true}));
+  $('#transitDestinationEditBtn')?.addEventListener('click',()=>toggleDestinationEditor());
+  $('#transitDestinationResetBtn')?.addEventListener('click',()=>resetDestination());
+  $('#transitDestinationEditor')?.addEventListener('submit',event=>{event.preventDefault();applyDestination($('#transitDestinationInput')?.value||'')});
 }
 function syncDestination(){
-  const destination=schoolDestination();
-  if($('#transitSchoolName'))$('#transitSchoolName').textContent=destination.name;
-  if($('#transitSchoolAddress'))$('#transitSchoolAddress').textContent=destination.address||'학교 위치를 자동으로 찾습니다.';
+  const destination=transitDestination(),name=$('#transitSchoolName'),address=$('#transitSchoolAddress'),input=$('#transitDestinationInput'),reset=$('#transitDestinationResetBtn');
+  if(name)name.textContent=destination.name;
+  if(address)address.textContent=destination.address||(destination.custom?'직접 지정한 목적지':'학교 위치를 자동으로 찾습니다.');
+  if(input&&document.activeElement!==input)input.value=destination.custom?destination.query:'';
+  reset?.classList.toggle('hidden',!destination.custom);
+}
+function toggleDestinationEditor(force){
+  const editor=$('#transitDestinationEditor'),button=$('#transitDestinationEditBtn'),input=$('#transitDestinationInput');if(!editor)return;
+  const open=typeof force==='boolean'?force:editor.classList.contains('hidden');
+  editor.classList.toggle('hidden',!open);button?.setAttribute('aria-expanded',String(open));
+  if(open){
+    const destination=transitDestination();if(input)input.value=destination.custom?destination.query:'';
+    requestAnimationFrame(()=>input?.focus({preventScroll:true}));
+  }
+}
+function clearRenderedRoutes(){
+  const summary=$('#transitSummary');summary?.classList.add('hidden');if(summary)summary.innerHTML='';
+  const routes=$('#transitRoutes');if(routes)routes.innerHTML='';
 }
 function setState(message,kind='neutral'){
   const state=$('#transitState');if(!state)return;state.textContent=message;state.dataset.kind=kind;
@@ -83,6 +142,8 @@ function setLoading(on){
   loading=on;
   $('#transitLocateBtn')?.toggleAttribute('disabled',on);
   $('#transitRefreshBtn')?.toggleAttribute('disabled',on||!lastCoords);
+  $('#transitDestinationEditBtn')?.toggleAttribute('disabled',on);
+  $$('[data-transit-destination-action]').forEach(control=>control.toggleAttribute('disabled',on));
   $('#transitView')?.classList.toggle('is-loading',on);
 }
 function stopRefresh(){clearTimeout(refreshTimer);refreshTimer=0}
@@ -97,7 +158,7 @@ function showTransit({push=true}={}){
   if(push&&location.pathname!=='/transit')history.pushState({view:'transit'},'', '/transit');
   if(lastCoords)scheduleRefresh();
 }
-function leaveTransit(){stopRefresh();requestAbort?.abort();requestAbort=null;$$('[data-flow-transit-nav]').forEach(button=>button.classList.remove('active'))}
+function leaveTransit(){stopRefresh();requestAbort?.abort();requestAbort=null;toggleDestinationEditor(false);$$('[data-flow-transit-nav]').forEach(button=>button.classList.remove('active'))}
 function locate({maximumAge=15000}={}){
   return new Promise((resolve,reject)=>{
     if(!navigator.geolocation)return reject(new Error('이 브라우저에서는 위치 기능을 사용할 수 없습니다.'));
@@ -169,10 +230,13 @@ async function fetchRailRoutes(coords,destination,signal){
   if(!response.ok)throw new Error(body.error||'도시철도 경로를 불러오지 못했습니다.');return body;
 }
 async function fetchRoutes(coords){
-  const destination=schoolDestination();if(!destination.query)throw new Error('먼저 학교를 선택해주세요.');
+  const destination=transitDestination();if(!destination.query)throw new Error('목적지를 입력하거나 먼저 학교를 선택해주세요.');
   requestAbort?.abort();requestAbort=new AbortController();
   const url=new URL(TRANSIT_EDGE);url.searchParams.set('action','route');url.searchParams.set('sx',String(coords.x));url.searchParams.set('sy',String(coords.y));url.searchParams.set('destination',destination.query);
   const response=await fetch(url,{signal:requestAbort.signal});const body=await response.json().catch(()=>({}));
+  if(destination.custom&&body?.destination){
+    saveCustomDestination(destination.query,body.destination);syncDestination();
+  }
   let railBody=null;
   if(body?.provider==='TAGO-public-data'&&body?.destination){
     try{railBody=await fetchRailRoutes(coords,body.destination,requestAbort.signal)}catch(error){
@@ -252,6 +316,24 @@ function renderRoutes(body){
   const mode=rail&&!bus?' · 도시철도 경로':rail?' · 버스·도시철도 비교':'';
   setState(`${routes.length}개 경로${mode} · ${new Intl.DateTimeFormat('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(generated)} 갱신`,realtime?'live':'neutral');
 }
+async function rerouteFromLastCoords(message='새 목적지 경로를 찾는 중…'){
+  if(!lastCoords){setState('목적지를 바꿨습니다. 현재 위치에서 찾기를 눌러 경로를 검색하세요.');return}
+  if(loading)return;
+  setLoading(true);setState(message,'loading');
+  try{
+    const body=await fetchRoutes(lastCoords);renderRoutes(body);
+  }catch(error){
+    if(error?.name==='AbortError')return;
+    setState(error instanceof Error?error.message:'교통 정보를 불러오지 못했습니다.','error');clearRenderedRoutes();
+  }finally{setLoading(false);scheduleRefresh()}
+}
+function applyDestination(value){
+  const query=String(value||'').trim();if(!query){setState('목적지 이름이나 주소를 입력해주세요.','error');$('#transitDestinationInput')?.focus({preventScroll:true});return}
+  saveCustomDestination(query);syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();rerouteFromLastCoords();
+}
+function resetDestination(){
+  clearCustomDestination();syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();rerouteFromLastCoords('학교까지 경로를 다시 찾는 중…');
+}
 async function locateAndLoad({manual=false,background=false,refresh=false}={}){
   if(loading)return;if(!active()&&!manual)return;
   setLoading(true);if(!background)setState(refresh?'현재 위치와 교통 상황을 다시 확인하는 중…':'현재 위치를 확인하는 중…','loading');
@@ -263,7 +345,7 @@ async function locateAndLoad({manual=false,background=false,refresh=false}={}){
   }catch(error){
     if(error?.name==='AbortError')return;
     setState(error instanceof Error?error.message:'교통 정보를 불러오지 못했습니다.','error');
-    if(!background)$('#transitRoutes').innerHTML='';
+    if(!background)clearRenderedRoutes();
   }finally{setLoading(false);scheduleRefresh()}
 }
 function handleNavigationClick(event){
