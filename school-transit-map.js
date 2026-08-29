@@ -3,7 +3,6 @@ const TRANSIT_MAP_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/tr
 const KAKAO_JS_KEY='cc0aae65f94df3b64e5d231dd3a9963a';
 const PROFILE_KEY='flow-school-profile-v3';
 const VEHICLE_REFRESH_MS=15000;
-const TRACE_SAMPLES_PER_SEGMENT=6;
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
 let sdkPromise=null;
@@ -69,32 +68,11 @@ function closeMap({restoreFocus=true}={}){
   if(restoreFocus&&trigger?.isConnected)requestAnimationFrame(()=>trigger.focus({preventScroll:true}));
 }
 function point(item){const x=Number(item?.x),y=Number(item?.y);return Number.isFinite(x)&&Number.isFinite(y)&&window.kakao?.maps?new kakao.maps.LatLng(y,x):null}
-function coordinate(item){
-  const x=Number(item?.x),y=Number(item?.y);return Number.isFinite(x)&&Number.isFinite(y)?{x,y}:null;
-}
-function catmull(a,b,c,d,t){
-  const t2=t*t,t3=t2*t;
-  return .5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
-}
-function restrained(value,a,b){
-  const span=Math.max(Math.abs(b-a),.00012),low=Math.min(a,b)-span*.22,high=Math.max(a,b)+span*.22;
-  return Math.max(low,Math.min(high,value));
-}
-function smoothStopPath(stops){
-  const coords=(stops||[]).map(coordinate).filter(Boolean);
-  if(!window.kakao?.maps||coords.length<2)return[];
-  if(coords.length===2)return coords.map(item=>new kakao.maps.LatLng(item.y,item.x));
-  const trace=[];
-  for(let index=0;index<coords.length-1;index+=1){
-    const p0=coords[Math.max(0,index-1)],p1=coords[index],p2=coords[index+1],p3=coords[Math.min(coords.length-1,index+2)];
-    for(let step=0;step<TRACE_SAMPLES_PER_SEGMENT;step+=1){
-      const t=step/TRACE_SAMPLES_PER_SEGMENT;
-      const x=restrained(catmull(p0.x,p1.x,p2.x,p3.x,t),p1.x,p2.x);
-      const y=restrained(catmull(p0.y,p1.y,p2.y,p3.y,t),p1.y,p2.y);
-      trace.push(new kakao.maps.LatLng(y,x));
-    }
-  }
-  const last=coords.at(-1);trace.push(new kakao.maps.LatLng(last.y,last.x));return trace;
+function routeTrace(data){
+  const official=Array.isArray(data?.route?.path)?data.route.path.map(point).filter(Boolean):[];
+  if(data?.geometry==='daegu-official-bus-link-snapshot'&&official.length>1)return{path:official,kind:'official-road-geometry',official:true};
+  const fallback=(Array.isArray(data?.route?.stops)?data.route.stops:[]).map(point).filter(Boolean);
+  return{path:fallback,kind:'stop-sequence-fallback',official:false};
 }
 function sameStop(a,b){
   if(!a||!b)return false;const aid=String(a.id||'').trim(),bid=String(b.id||'').trim();if(aid&&bid&&aid===bid)return true;
@@ -139,23 +117,23 @@ function mapSheet(route,index){
   const legs=mode==='bus'?buses.map((bus,i)=>legChip(bus,i,buses.length)).join(''):rails.map((rail,i)=>railChip(rail,i,rails.length)).join('');
   const stage=mode==='bus'?'<div class="flow-transit-map-stage"><div class="flow-transit-map-canvas" aria-label="버스 노선 지도"></div></div>':`<div class="flow-transit-map-stage flow-transit-rail-stage" aria-label="지하철 경로 노선도">${railSchematic(route)}</div>`;
   const status=mode==='bus'?'노선과 운행 차량을 불러오는 중…':'지하철 경로를 표시했습니다. 실제 열차 위치는 제공하지 않습니다.';
-  const note=mode==='bus'?'<small class="flow-transit-map-note">노선 선은 정류장 순서를 부드럽게 연결한 안내선입니다. 실제 도로 굴곡과 다를 수 있습니다.</small>':'';
+  const note=mode==='bus'?'<small class="flow-transit-map-note">대구시 공식 버스 도로 링크를 현재 정류장 순서에 맞춰 불러옵니다.</small>':'';
   const legend=mode==='bus'?`<span class="board"><i></i>승차</span>${transferLegend}<span class="alight"><i></i>하차</span><span class="vehicle"><i></i>운행 버스</span>`:`<span class="board"><i></i>승차</span>${transferLegend}<span class="alight"><i></i>하차</span>`;
   const root=document.createElement('div');root.className='flow-transit-map-shell';root.id='flowTransitMapDialog';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','flowTransitMapTitle');root.dataset.transitMapPanel=String(index);root.dataset.mapMode=mode;
   root.innerHTML=`<button class="flow-transit-map-backdrop" type="button" data-transit-map-dismiss aria-label="지도 닫기"></button><section class="flow-transit-map-sheet" tabindex="-1"><div class="flow-transit-map-grabber" aria-hidden="true"></div><header class="flow-transit-map-head"><div class="flow-transit-map-title"><span>${index===0?'추천 경로':`경로 ${index+1}`}</span><h2 id="flowTransitMapTitle">${title}</h2><p>${esc(lines)} · ${Math.max(0,Number(route.totalMinutes)||0)}분</p></div><button type="button" class="flow-transit-map-close" data-transit-map-close aria-label="${mode==='bus'?'버스 지도':'지하철 노선도'} 닫기">닫기</button></header><div class="flow-transit-map-legs" aria-label="${mode==='bus'?'버스':'지하철'} 구간">${legs}</div>${stage}<footer class="flow-transit-map-footer"><div class="flow-transit-map-footer-copy"><div class="flow-transit-map-status" role="status" aria-live="polite">${status}</div>${note}</div><div class="flow-transit-map-legend" aria-label="지도 범례">${legend}</div></footer></section>`;
   root.querySelector('[data-transit-map-close]')?.addEventListener('click',()=>closeMap());root.querySelector('[data-transit-map-dismiss]')?.addEventListener('click',()=>closeMap());return root;
 }
 function drawLeg(map,bounds,data,index,total,previousEnd,nextStart){
-  const stops=Array.isArray(data?.route?.stops)?data.route.stops:[],rawPath=stops.map(point).filter(Boolean),path=smoothStopPath(stops);if(rawPath.length<2||path.length<2)return 0;
+  const stops=Array.isArray(data?.route?.stops)?data.route.stops:[],trace=routeTrace(data),path=trace.path;if(stops.length<2||path.length<2)return{stopCount:0,official:false};
   const palette=['#1769e0','#5b67c8','#008f7a'],color=palette[index%palette.length];
-  const halo=new kakao.maps.Polyline({map,path,strokeWeight:index?9:10,strokeColor:'#ffffff',strokeOpacity:.7});currentLayers.push(halo);
-  const polyline=new kakao.maps.Polyline({map,path,strokeWeight:index?5:6,strokeColor:color,strokeOpacity:index?.8:.92});currentLayers.push(polyline);
-  activeTracePointCount+=path.length;rawPath.forEach(position=>bounds.extend(position));
+  const halo=new kakao.maps.Polyline({map,path,strokeWeight:index?8:9,strokeColor:'#ffffff',strokeOpacity:.68});currentLayers.push(halo);
+  const polyline=new kakao.maps.Polyline({map,path,strokeWeight:index?4:5,strokeColor:color,strokeOpacity:index?.82:.94});currentLayers.push(polyline);
+  activeTracePointCount+=path.length;path.forEach(position=>bounds.extend(position));
   stops.slice(1,-1).forEach(stop=>{const position=point(stop);if(!position)return;const overlay=new kakao.maps.CustomOverlay({map,position,content:stopDot(),xAnchor:.5,yAnchor:.5,zIndex:3});currentLayers.push(overlay)});
   const firstStop=stops[0],lastStop=stops.at(-1),start=point(firstStop),end=point(lastStop),joinedFromPrevious=index>0&&sameStop(previousEnd,firstStop),joinsNext=index<total-1&&sameStop(lastStop,nextStart);
-  if(start&&!joinedFromPrevious){const overlay=new kakao.maps.CustomOverlay({map,position:start,content:pinNode('board',index?'환승 승차':'승차',firstStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
-  if(end){const final=index===total-1,kind=final?'alight':joinsNext?'transfer':'alight',label=final?'하차':joinsNext?'환승':'환승 하차';const overlay=new kakao.maps.CustomOverlay({map,position:end,content:pinNode(kind,label,lastStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
-  return stops.length;
+  if(start&&!joinedFromPrevious){bounds.extend(start);const overlay=new kakao.maps.CustomOverlay({map,position:start,content:pinNode('board',index?'환승 승차':'승차',firstStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
+  if(end){bounds.extend(end);const final=index===total-1,kind=final?'alight':joinsNext?'transfer':'alight',label=final?'하차':joinsNext?'환승':'환승 하차';const overlay=new kakao.maps.CustomOverlay({map,position:end,content:pinNode(kind,label,lastStop?.name||''),xAnchor:.5,yAnchor:1.05,zIndex:6});currentLayers.push(overlay)}
+  return{stopCount:stops.length,official:trace.official};
 }
 function drawVehicles(map,data,line,bounds=null){
   const vehicles=Array.isArray(data?.vehicles)?data.vehicles:[];let count=0;
@@ -196,12 +174,14 @@ async function openMap(index,button){
   if(!successful.length){setStatus(sheet,results.find(x=>x?.error)?.error||'표시할 버스 노선 지도를 찾지 못했습니다.','error');return}
   const firstPoint=point(successful[0].data.route.stops[0]);if(!firstPoint){setStatus(sheet,'노선 좌표를 읽지 못했습니다.','error');return}
   const canvas=$('.flow-transit-map-canvas',sheet);currentMap=new kakao.maps.Map(canvas,{center:firstPoint,level:5});try{currentMap.setZoomable?.(true);currentMap.setDraggable?.(true)}catch{}
-  const bounds=new kakao.maps.LatLngBounds();let stopCount=0;successful.forEach(({data},i)=>{const previousEnd=i?successful[i-1].data.route.stops.at(-1):null,nextStart=i<successful.length-1?successful[i+1].data.route.stops[0]:null;stopCount+=drawLeg(currentMap,bounds,data,i,successful.length,previousEnd,nextStart)});
+  const bounds=new kakao.maps.LatLngBounds();let stopCount=0,officialLegs=0;successful.forEach(({data},i)=>{const previousEnd=i?successful[i-1].data.route.stops.at(-1):null,nextStart=i<successful.length-1?successful[i+1].data.route.stops[0]:null;const drawn=drawLeg(currentMap,bounds,data,i,successful.length,previousEnd,nextStart);stopCount+=drawn.stopCount;if(drawn.official)officialLegs+=1});
   clearVehicleLayers();let vehicleCount=0;successful.forEach(({data,bus})=>{vehicleCount+=drawVehicles(currentMap,data,String(bus.lines?.[0]||''))});
   requestAnimationFrame(()=>requestAnimationFrame(()=>{if(token!==renderToken||!currentMap)return;try{currentMap.relayout?.();if(stopCount>1)currentMap.setBounds(bounds,54,54,54,54)}catch{try{if(stopCount>1)currentMap.setBounds(bounds)}catch{}}}));
   activeBusLegs=successful.map(item=>item.bus);activeStopCount=stopCount;
-  setStatus(sheet,vehicleCount?`정류장 ${stopCount}곳 · 운행 버스 ${vehicleCount}대 · 15초마다 갱신`:`정류장 ${stopCount}곳 · 실시간 차량 위치 없음 · 15초마다 재확인`,vehicleCount?'live':'neutral');
-  sheet.dataset.mapReady='true';sheet.dataset.vehicleCount=String(vehicleCount);sheet.dataset.stopCount=String(stopCount);sheet.dataset.routeTrace='smooth-stop-guide';sheet.dataset.routeTracePoints=String(activeTracePointCount);window.dispatchEvent(new CustomEvent('flow:transit-map-ready',{detail:{mode:'bus',index,vehicleCount}}));scheduleVehicleRefresh();
+  const allOfficial=officialLegs===successful.length;const snapshot=successful.find(item=>item.data?.geometrySnapshot)?.data?.geometrySnapshot||'2025-09-03';
+  const note=$('.flow-transit-map-note',sheet);if(note)note.textContent=allOfficial?`대구시 공식 버스 노선 공간정보(${snapshot})의 도로 링크를 현재 TAGO 정류장 순서에 맞춰 표시합니다.`:'공식 도로 링크를 복원하지 못한 일부 구간은 실제 TAGO 정류장 연결선으로 표시합니다.';
+  setStatus(sheet,vehicleCount?`정류장 ${stopCount}곳 · ${allOfficial?'공식 도로 경로 · ':''}운행 버스 ${vehicleCount}대 · 15초마다 갱신`:`정류장 ${stopCount}곳 · ${allOfficial?'공식 도로 경로 · ':''}실시간 차량 위치 없음 · 15초마다 재확인`,vehicleCount?'live':'neutral');
+  sheet.dataset.mapReady='true';sheet.dataset.vehicleCount=String(vehicleCount);sheet.dataset.stopCount=String(stopCount);sheet.dataset.routeTrace=allOfficial?'official-road-geometry':'stop-sequence-fallback';sheet.dataset.routeTracePoints=String(activeTracePointCount);sheet.dataset.geometrySnapshot=String(snapshot);window.dispatchEvent(new CustomEvent('flow:transit-map-ready',{detail:{mode:'bus',index,vehicleCount,officialGeometry:allOfficial}}));scheduleVehicleRefresh();
 }
 function handleClick(event){const button=event.target.closest?.('[data-transit-map-toggle]');if(button){openMap(Number(button.dataset.transitMapToggle),button);return}const destination=event.target.closest?.('[data-view]');if(destination&&destination.dataset.view!=='transit'&&activeSheet)closeMap({restoreFocus:false})}
 function handleKeydown(event){if(event.key==='Escape'&&activeSheet){event.preventDefault();closeMap()}}

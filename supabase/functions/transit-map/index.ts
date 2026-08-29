@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { buildOfficialRouteGeometry } from "./official-route-geometry.ts";
 
 const TAGO_BASE = "https://apis.data.go.kr/1613000";
 const TAGO_CITY_CODES = `${TAGO_BASE}/BusSttnInfoInqireService/getCtyCodeList`;
@@ -144,8 +145,10 @@ Deno.serve(async (req) => {
   try {
     if (action === "health") return reply({
       ok: Boolean(DATA_GO_KR_SERVICE_KEY),
-      provider: "TAGO-public-data",
-      geometry: "route-stop-sequence",
+      provider: "TAGO-public-data+Daegu-official-SHP",
+      geometry: "daegu-official-bus-link-snapshot",
+      geometrySnapshot: "2025-09-03",
+      geometryFallback: "route-stop-sequence",
       vehiclePositioning: "TAGO-bus-location-when-available",
     });
     if (action !== "route-map") return reply({ error: "지원하지 않는 요청입니다." }, 404);
@@ -165,6 +168,8 @@ Deno.serve(async (req) => {
     const startIndex = stopIndex(stops, startId, startName), endIndex = stopIndex(stops, endId, endName);
     if (startIndex < 0 || endIndex <= startIndex) throw new Error("승차·하차 순서에 맞는 노선 구간을 찾지 못했습니다.");
     const segmentStops = stops.slice(startIndex, endIndex + 1);
+    const official = compactRegion(region) === "대구" ? buildOfficialRouteGeometry(segmentStops) : null;
+    const geometry = official?.ok ? "daegu-official-bus-link-snapshot" : "route-stop-sequence";
     const vehicles = await vehicleLocations(cityCode, route.id);
     const minOrder = Math.max(0, Number(segmentStops[0]?.order || 0) - 6);
     const maxOrder = Number(segmentStops.at(-1)?.order || Number.MAX_SAFE_INTEGER) + 2;
@@ -172,10 +177,24 @@ Deno.serve(async (req) => {
 
     return reply({
       generatedAt: new Date().toISOString(),
-      provider: "TAGO-public-data",
-      geometry: "route-stop-sequence",
+      provider: "TAGO-public-data+Daegu-official-SHP",
+      geometry,
+      geometrySnapshot: official?.snapshot || null,
+      geometrySourceSha256: official?.sourceSha256 || null,
+      geometryFallbackReason: official?.ok ? null : official?.reason || (compactRegion(region) === "대구" ? "official-network-unavailable" : "outside-daegu-snapshot"),
       cityCode,
-      route: { ...route, start: segmentStops[0], end: segmentStops.at(-1), stops: segmentStops },
+      route: {
+        ...route,
+        start: segmentStops[0],
+        end: segmentStops.at(-1),
+        stops: segmentStops,
+        path: official?.ok ? official.path : [],
+        officialGeometry: official ? {
+          matchedStops: official.matchedStops,
+          routedPairs: official.routedPairs,
+          maxSnapMeters: Math.round(official.maxSnapMeters * 10) / 10,
+        } : null,
+      },
       vehicles: visibleVehicles,
       vehicleStatus: visibleVehicles.length ? "live" : "unavailable",
     }, 200, "public, max-age=15");
