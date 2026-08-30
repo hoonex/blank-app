@@ -18,7 +18,7 @@ attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-sy
  * which leaves the counter-positioned source copy a few pixels off once that
  * shell geometry changes. Align from the rendered lens itself so the visual
  * sample remains pixel-locked without changing hit geometry or lens motion. */
-let refractionSyncFrame=0;
+let refractionSyncFrame=0,refractionObserver=null,observedScene=null;
 function syncRefractionCopy(){
   refractionSyncFrame=0;
   if(root.dataset.flowRefractionCopy!=='true')return;
@@ -35,12 +35,27 @@ function syncRefractionCopy(){
   nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-(lensRect.left-tx)).toFixed(2)}px`);
   nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-(lensRect.top-ty)).toFixed(2)}px`);
 }
+function ensureRefractionObserver(){
+  const scene=document.querySelector('#bottomNav.mobile-bottom-nav > .flow-refraction-copy-lens .flow-refraction-scene');
+  if(!scene||scene===observedScene)return;
+  refractionObserver?.disconnect();observedScene=scene;
+  refractionObserver=new MutationObserver(()=>syncRefractionCopy());
+  refractionObserver.observe(scene,{childList:true});
+  syncRefractionCopy();
+}
 function scheduleRefractionSync(){
   if(refractionSyncFrame)return;
-  refractionSyncFrame=requestAnimationFrame(()=>requestAnimationFrame(syncRefractionCopy));
+  refractionSyncFrame=requestAnimationFrame(()=>requestAnimationFrame(()=>{ensureRefractionObserver();syncRefractionCopy()}));
 }
-window.addEventListener('flow:refraction-refresh',()=>setTimeout(scheduleRefractionSync,16),{passive:true});
+function refractionBurst(){
+  scheduleRefractionSync();
+  setTimeout(scheduleRefractionSync,40);
+  setTimeout(scheduleRefractionSync,120);
+}
+window.addEventListener('flow:refraction-refresh',refractionBurst,{passive:true});
+window.addEventListener('flow:glass-mode-changed',refractionBurst,{passive:true});
 window.addEventListener('resize',scheduleRefractionSync,{passive:true});
 window.addEventListener('scroll',scheduleRefractionSync,{passive:true,capture:true});
 document.addEventListener('pointermove',event=>{if(event.target.closest?.('#bottomNav'))scheduleRefractionSync()},{passive:true,capture:true});
-setTimeout(scheduleRefractionSync,180);
+setTimeout(refractionBurst,180);
+setTimeout(refractionBurst,760);
