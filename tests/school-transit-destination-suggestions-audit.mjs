@@ -55,12 +55,11 @@ async function openTransit(page){
   await page.waitForFunction(()=>document.querySelectorAll('[data-destination-suggestion]').length===3);
 }
 async function inspect(page){return page.evaluate(()=>{
-  const panel=document.querySelector('#transitDestinationSuggestions'),input=document.querySelector('#transitDestinationInput');
-  const r=panel?.getBoundingClientRect();
+  const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+  const panel=document.querySelector('#transitDestinationSuggestions'),input=document.querySelector('#transitDestinationInput'),submit=document.querySelector('.flow-transit-destination-submit');
   return{
     scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,
-    panel:r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null,
-    viewportHeight:innerHeight,
+    panel:rect(panel),input:rect(input),submit:rect(submit),viewportHeight:innerHeight,
     expanded:input?.getAttribute('aria-expanded')||'',
     names:[...document.querySelectorAll('.flow-transit-destination-suggestion-main strong')].map(n=>n.textContent.trim()),
     meta:[...document.querySelectorAll('.flow-transit-destination-suggestion-main em')].map(n=>n.textContent.trim()),
@@ -78,6 +77,8 @@ for(const testCase of cases){
   if(state.expanded!=='true'||state.names[0]!=='동대구역'||state.names.length!==3)throw new Error(`${testCase.name}: related place results missing ${JSON.stringify(state)}`);
   if(!state.meta.some(v=>v.includes('기차역'))||!state.addresses[0]?.includes('대구광역시'))throw new Error(`${testCase.name}: real place metadata missing ${JSON.stringify(state)}`);
   if(state.scrollWidth>state.clientWidth+1||!state.panel||state.panel.left<-1||state.panel.right>state.clientWidth+1)throw new Error(`${testCase.name}: suggestion panel overflow ${JSON.stringify(state)}`);
+  if(!state.input||state.panel.top<state.input.bottom-1||state.panel.top-state.input.bottom>14)throw new Error(`${testCase.name}: suggestions must sit directly below the search input ${JSON.stringify(state)}`);
+  if(testCase.name==='mobile-portrait'&&(!state.submit||state.submit.top<state.panel.bottom-1))throw new Error(`${testCase.name}: free-text submit must follow suggestions instead of separating them from the input ${JSON.stringify(state)}`);
   if(testCase.name==='mobile-landscape'&&state.panel.height>120)throw new Error(`${testCase.name}: result list is too tall for landscape ${JSON.stringify(state)}`);
   if(pageErrors.length)throw new Error(`${testCase.name}: page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/destination-suggestions-${testCase.name}.png`,fullPage:false});
