@@ -48,7 +48,7 @@ const browser=await chromium.launch({headless:true});const report={};
 for(const [name,width,height,isMobile] of cases){
   const context=await browser.newContext({viewport:{width,height},isMobile,hasTouch:isMobile,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage(),pageErrors=[],consoleErrors=[],transitRequests=[];
   page.on('pageerror',error=>pageErrors.push(String(error)));page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('request',request=>{const url=request.url();if(transitAsset.test(url))transitRequests.push(url)});await fixture(page);
-  await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForTimeout(100);
+  await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForFunction(()=>document.querySelector('#mealCal')?.textContent?.includes('12:20–13:10'),null,{timeout:5000});
   const home=await homeState(page);
   if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
