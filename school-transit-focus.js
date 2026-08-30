@@ -16,7 +16,8 @@ function routeLines(route){
   for(const segment of route?.segments||[]){
     if(segment?.type!=='bus'&&segment?.type!=='subway')continue;
     const lines=(segment.lines||[]).map(value=>String(value||'').trim()).filter(Boolean);
-    const label=lines[0]||(segment.type==='bus'?'버스':'지하철');
+    const base=lines[0]||(segment.type==='bus'?'버스':'지하철');
+    const label=segment.type==='subway'?`도시철도 ${base}`:base;
     if(label&&!values.includes(label))values.push(label);
   }
   return values.slice(0,3).join(' → ');
