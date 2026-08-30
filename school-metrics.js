@@ -19,6 +19,7 @@ async function bootSchoolSurface(){
     }catch(error){console.warn('[Flow] Transit lab modules failed to load',error)}
   }
   await import('./school-surface-cleanup.js');
+  await import('./school-uiux-v2.js');
 }
 
 /* Keep the entry module non-blocking. Production skips Transit entirely; the
@@ -36,7 +37,7 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
 @media(max-width:900px){
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
