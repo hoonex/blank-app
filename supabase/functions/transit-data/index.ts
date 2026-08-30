@@ -160,6 +160,12 @@ function routeSignature(route: any) {
     .join("|");
 }
 
+function isMixedRoute(route: any) {
+  const segments = Array.isArray(route?.segments) ? route.segments : [];
+  return segments.some((segment: any) => segment?.type === "bus")
+    && segments.some((segment: any) => segment?.type === "subway");
+}
+
 function mergedRoutes(busRoutes: any[], mixedRoutes: any[]) {
   const deduped = new Map<string, any>();
   for (const route of [...busRoutes, ...mixedRoutes]) {
@@ -167,7 +173,14 @@ function mergedRoutes(busRoutes: any[], mixedRoutes: any[]) {
     const previous = deduped.get(signature);
     if (!previous || routeSort(route, previous) < 0) deduped.set(signature, route);
   }
-  const routes = [...deduped.values()].sort(routeSort).slice(0, 5);
+  const ranked = [...deduped.values()].sort(routeSort);
+  const routes = ranked.slice(0, 5);
+  const bestMixed = ranked.find(isMixedRoute) || null;
+  if (bestMixed && !routes.some(isMixedRoute)) {
+    if (routes.length >= 5) routes[routes.length - 1] = bestMixed;
+    else routes.push(bestMixed);
+    routes.sort(routeSort);
+  }
   if (!routes.length) return routes;
   const minWalk = Math.min(...routes.map((route) => Number(route?.walkMeters || 0)));
   const minTransfers = Math.min(...routes.map((route) => Number(route?.transfers || 0)));
