@@ -17,6 +17,27 @@ if(transitLabEnabled()){
   await import('./school-transit-focus.js');
 }
 
+/* Optical/refraction used to assume School always had five destinations because
+ * Transit was one of them. Production now has four, so keep the lens geometry
+ * and semantic tab positions aligned with the visible dormant-Transit nav. */
+if(!document.querySelector('#flow-school-dormant-nav-contract')){
+  const style=document.createElement('style');
+  style.id='flow-school-dormant-nav-contract';
+  style.textContent=`
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
+@media(max-width:900px){
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="school"]{grid-row:1!important;grid-column:3!important}
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>.flow-mobile-settings{grid-row:1!important;grid-column:4!important}
+}`;
+  document.head.append(style);
+}
+
 if(!document.querySelector('link[data-flow-school-settings-wide]')){
   const link=document.createElement('link');
   link.rel='stylesheet';
