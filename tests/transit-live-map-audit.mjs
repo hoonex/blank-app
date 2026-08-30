@@ -38,7 +38,9 @@ async function baseFixture(page,mode,counters){
     await page.route('**/functions/v1/transit-rail*',route=>json(route,{provider:'KRIC-snapshot+Kakao-SW8',snapshotDate:'2026-06-30',waitModel:'estimated',routes:[railRoute]}));
   }else{
     await page.route('**/functions/v1/transit-data*',route=>{
-      const requested=new URL(route.request().url()).searchParams.get('destination')||'';
+      const url=new URL(route.request().url()),action=url.searchParams.get('action')||'route';
+      if(action==='destination-search')return json(route,{query:url.searchParams.get('query')||'',provider:'Kakao-Local',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},suggestions:[{id:'station-main',...customDestination,category:'기차역',distanceMeters:0}]});
+      const requested=url.searchParams.get('destination')||'';
       counters.destinationQueries.push(requested);
       const resolved=requested.includes('동대구역')?customDestination:destination;
       return json(route,{provider:'TAGO-public-data',destination:resolved,routes:[busRoute],generatedAt:new Date().toISOString()});
@@ -83,9 +85,11 @@ for(const testCase of cases){
 {
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
   const page=await context.newPage(),errors=[],counters={map:0,destinationQueries:[]};page.on('pageerror',error=>errors.push(String(error)));await installKakaoFixture(page);await baseFixture(page,'bus',counters);await enterTransit(page);
-  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');await page.locator('#transitDestinationEditor button[type="submit"]').click();
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');
+  await page.waitForFunction(()=>document.querySelector('[data-destination-suggestion]')?.textContent?.includes('동대구역'));
+  await page.locator('[data-destination-suggestion]').first().click();
   await page.waitForFunction(()=>{const saved=JSON.parse(localStorage.getItem('flow-school-transit-destination-v1')||'null');return document.querySelector('#transitSchoolName')?.textContent?.trim()==='동대구역'&&saved?.query==='동대구역'&&String(saved?.address||'').includes('동대구로')&&document.querySelector('[data-transit-route="0"]')},{timeout:10000});
-  if(!counters.destinationQueries.some(query=>query==='동대구역'))throw new Error(`custom destination was not sent to transit route API: ${JSON.stringify(counters.destinationQueries)}`);
+  if(!counters.destinationQueries.some(query=>query==='동대구역'))throw new Error(`verified custom destination was not sent to transit route API: ${JSON.stringify(counters.destinationQueries)}`);
   await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationResetBtn').click();
   await page.waitForFunction(()=>!localStorage.getItem('flow-school-transit-destination-v1')&&document.querySelector('#transitSchoolName')?.textContent?.trim()==='정동고등학교'&&document.querySelector('[data-transit-route="0"]'),{timeout:10000});
   const button=page.locator('[data-transit-route="0"] .flow-transit-map-toggle');if((await button.textContent())?.trim()!=='지도 보기')throw new Error('bus route must expose 지도 보기');await button.click();await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')?.dataset.mapReady==='true');await waitForSheetMotion(page);
