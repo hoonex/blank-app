@@ -111,12 +111,12 @@ function installView(){
           <small>입력하면 대구 안의 실제 장소와 주소를 바로 확인할 수 있습니다.</small>
         </div>
         <div class="flow-transit-destination-input-row">
-          <input id="transitDestinationInput" name="destination" type="search" maxlength="120" autocomplete="off" enterkeyhint="go" placeholder="예: 동대구역, 대구시청, 도로명 주소" required role="combobox" aria-autocomplete="list" aria-controls="transitDestinationSuggestions" aria-expanded="false">
-          <button class="primary-button flow-transit-destination-submit" type="submit" data-transit-destination-action>이곳으로 경로 찾기</button>
+          <input id="transitDestinationInput" name="destination" type="search" maxlength="120" autocomplete="off" enterkeyhint="search" placeholder="예: 동대구역, 대구시청, 도로명 주소" required role="combobox" aria-autocomplete="list" aria-controls="transitDestinationSuggestions" aria-expanded="false">
+          <button class="primary-button flow-transit-destination-submit" type="submit" data-transit-destination-action>장소 검색</button>
         </div>
         <div class="flow-transit-destination-suggestions hidden" id="transitDestinationSuggestions" role="listbox" aria-label="실제 목적지 검색 결과"></div>
         <div class="flow-transit-destination-editor-foot">
-          <small>검색 결과를 선택하면 그 장소의 실제 좌표로 바로 경로를 찾습니다.</small>
+          <small>검색 결과에서 실제 장소를 선택하면 그 좌표로 경로를 찾습니다.</small>
           <button id="transitDestinationResetBtn" class="flow-transit-destination-reset" type="button" data-transit-destination-action>학교를 목적지로</button>
         </div>
       </form>
@@ -130,7 +130,7 @@ function installView(){
   $('#transitRefreshBtn')?.addEventListener('click',()=>locateAndLoad({manual:true,refresh:true}));
   $('#transitDestinationEditBtn')?.addEventListener('click',()=>toggleDestinationEditor());
   $('#transitDestinationResetBtn')?.addEventListener('click',()=>resetDestination());
-  $('#transitDestinationEditor')?.addEventListener('submit',event=>{event.preventDefault();cancelDestinationSearch();applyDestination($('#transitDestinationInput')?.value||'')});
+  $('#transitDestinationEditor')?.addEventListener('submit',event=>{event.preventDefault();applyDestination($('#transitDestinationInput')?.value||'')});
   $('#transitDestinationEditor')?.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#transitDestinationSuggestions')?.classList.contains('hidden')){event.preventDefault();toggleDestinationEditor(false);$('#transitDestinationEditBtn')?.focus({preventScroll:true})}});
   $('#transitDestinationInput')?.addEventListener('input',event=>scheduleDestinationSearch(event.currentTarget?.value||''));
   $('#transitDestinationInput')?.addEventListener('keydown',handleDestinationInputKeydown);
@@ -197,7 +197,7 @@ function cancelDestinationSearch({clear=false}={}){
 }
 async function performDestinationSearch(query){
   const normalized=String(query||'').trim(),input=$('#transitDestinationInput');
-  if(normalized.length<DESTINATION_SEARCH_MIN){clearDestinationSuggestions();return}
+  if(normalized.length<DESTINATION_SEARCH_MIN){clearDestinationSuggestions();return 0}
   destinationSearchAbort?.abort();destinationSearchAbort=new AbortController();const signal=destinationSearchAbort.signal;
   renderDestinationSuggestions([],'실제 장소를 찾는 중…');
   try{
@@ -205,12 +205,14 @@ async function performDestinationSearch(query){
     if(lastCoords){url.searchParams.set('sx',String(lastCoords.x));url.searchParams.set('sy',String(lastCoords.y))}
     const response=await fetch(url,{signal});const body=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(body.error||'목적지 검색 결과를 불러오지 못했습니다.');
-    if(String(input?.value||'').trim()!==normalized)return;
+    if(String(input?.value||'').trim()!==normalized)return null;
     const items=Array.isArray(body?.suggestions)?body.suggestions:[];
     renderDestinationSuggestions(items,items.length?'':'대구광역시 안에서 일치하는 장소를 찾지 못했습니다.');
+    return items.length;
   }catch(error){
-    if(error?.name==='AbortError')return;
+    if(error?.name==='AbortError')return null;
     if(String(input?.value||'').trim()===normalized)renderDestinationSuggestions([],error instanceof Error?error.message:'목적지 검색 결과를 불러오지 못했습니다.');
+    return 0;
   }finally{if(destinationSearchAbort?.signal===signal)destinationSearchAbort=null}
 }
 function scheduleDestinationSearch(value){
@@ -443,9 +445,20 @@ async function rerouteFromLastCoords(message='새 목적지 경로를 찾는 중
 }
 async function applyDestination(value){
   const query=String(value||'').trim();if(!query){setState('목적지 이름이나 주소를 입력해주세요.','error');$('#transitDestinationInput')?.focus({preventScroll:true});return}
-  cancelDestinationSearch({clear:true});saveCustomDestination(query);syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
-  if(lastCoords){await rerouteFromLastCoords(`${query}까지 경로를 찾는 중…`);return}
-  await locateAndLoad({manual:true});
+  if(destinationSuggestions.length){
+    if(destinationSuggestionIndex<0)setDestinationSuggestionIndex(0);
+    setState('검색 결과에서 실제 목적지를 선택해주세요.');
+    return;
+  }
+  cancelDestinationSearch();
+  setState(`${query} 관련 실제 장소를 확인하는 중…`,'loading');
+  const count=await performDestinationSearch(query);if(count===null)return;
+  if(count>0){
+    setDestinationSuggestionIndex(0);
+    setState(`${count}개 실제 장소를 찾았습니다. 원하는 목적지를 선택해주세요.`);
+    return;
+  }
+  setState('대구광역시 안에서 일치하는 실제 장소를 찾지 못했습니다.','error');$('#transitDestinationInput')?.focus({preventScroll:true});
 }
 async function resetDestination(){
   cancelDestinationSearch({clear:true});clearCustomDestination();syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();

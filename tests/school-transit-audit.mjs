@@ -119,7 +119,7 @@ for(const testCase of cases){
   await page.waitForFunction(()=>document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded')==='true'&&!document.querySelector('#transitDestinationEditor')?.classList.contains('hidden'));
   await page.waitForTimeout(50);
   const destinationEditor=await inspect(page);report[`${testCase.name}-destination-editor`]={...destinationEditor,counters:{...counters},pageErrors:[...pageErrors]};
-  if(!destinationEditor.destinationEditorOpen||destinationEditor.destinationSubmit!=='이곳으로 경로 찾기'||!destinationEditor.destinationInputFocused||destinationEditor.locateVisible)throw new Error(`${testCase.name}: destination editor must be a single focused action ${JSON.stringify(destinationEditor)}`);
+  if(!destinationEditor.destinationEditorOpen||destinationEditor.destinationSubmit!=='장소 검색'||!destinationEditor.destinationInputFocused||destinationEditor.locateVisible)throw new Error(`${testCase.name}: destination editor must be a single focused search action ${JSON.stringify(destinationEditor)}`);
   if(!destinationEditor.destinationCard||destinationEditor.destinationCard.left<-1||destinationEditor.destinationCard.right>destinationEditor.clientWidth+1||destinationEditor.scrollWidth>destinationEditor.clientWidth+1)throw new Error(`${testCase.name}: destination editor/card overflow ${JSON.stringify(destinationEditor)}`);
   await page.screenshot({path:`${OUT}/school-transit-destination-${testCase.name}.png`,fullPage:false});
   await page.locator('#transitDestinationEditBtn').click();
@@ -152,11 +152,13 @@ for(const testCase of cases){
   await fixture(page,counters);await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
   await page.locator('[data-flow-transit-nav]:visible').first().click();
-  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');await page.locator('.flow-transit-destination-submit').click();
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');
+  await page.waitForFunction(()=>document.querySelector('[data-destination-suggestion]')?.textContent?.includes('동대구역'));
+  await page.locator('[data-destination-suggestion]').first().click();
   await page.waitForFunction(()=>document.querySelectorAll('[data-transit-route]').length===5&&document.querySelector('#transitSchoolName')?.textContent?.trim()==='동대구역');
   const custom=await inspect(page);const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('flow-school-transit-destination-v1')||'null'));
   report['mobile-portrait-custom-destination']={...custom,counters:{...counters},stored,pageErrors:[...pageErrors]};
-  if(counters.bus!==1||counters.rail!==1)throw new Error(`custom destination submit must directly locate and route once ${JSON.stringify(counters)}`);
+  if(counters.bus!==1||counters.rail!==1)throw new Error(`verified custom destination selection must locate and route once ${JSON.stringify(counters)}`);
   if(custom.destinationName!=='동대구역'||custom.destinationAddress!=='대구광역시 동구 동부로 149'||custom.destinationKind!=='직접 지정'||custom.destinationEditorOpen||!custom.locateVisible||custom.locateAction!=='이 목적지까지 경로 찾기'||!custom.resetVisible)throw new Error(`custom destination resolved state is unclear ${JSON.stringify(custom)}`);
   if(stored?.query!=='동대구역'||stored?.name!=='동대구역'||stored?.address!=='대구광역시 동구 동부로 149')throw new Error(`custom destination persistence is incomplete ${JSON.stringify(stored)}`);
   if(custom.scrollWidth>custom.clientWidth+1||pageErrors.length)throw new Error(`custom destination browser regression ${JSON.stringify({custom,pageErrors})}`);
