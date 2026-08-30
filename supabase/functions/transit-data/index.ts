@@ -13,6 +13,7 @@ const KAKAO_LOCAL = "https://dapi.kakao.com/v2/local";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const MIXED_TIMEOUT_MS = 25_000;
 
 const ROUTE_MODES = [
   "bus-direct",
@@ -50,6 +51,7 @@ function reply(body: unknown, status = 200, cache = "no-store") {
 }
 
 function finite(value: string | null, min: number, max: number) {
+  if (value === null || !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
 }
@@ -128,7 +130,7 @@ async function resolveDestination(query: string, ex: number | null, ey: number |
   return { x: ex, y: ey, name: "목적지", address: "", region } satisfies ResolvedDestination;
 }
 
-async function internalRoute(endpoint: string, sx: number, sy: number, destination: ResolvedDestination, query = ""): Promise<InternalResult> {
+async function internalRoute(endpoint: string, sx: number, sy: number, destination: ResolvedDestination, query = "", timeout = 125_000): Promise<InternalResult> {
   if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("Transit 내부 라우터 인증 설정이 준비되지 않았습니다.");
   const url = new URL(endpoint);
   url.searchParams.set("action", "route");
@@ -139,7 +141,7 @@ async function internalRoute(endpoint: string, sx: number, sy: number, destinati
   if (query && endpoint === CORE_URL) url.searchParams.set("destination", query);
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
-    signal: AbortSignal.timeout(125_000),
+    signal: AbortSignal.timeout(timeout),
   });
   const body = await response.json().catch(() => ({}));
   return { response, body };
@@ -190,22 +192,31 @@ function failureMessage(result: InternalResult | null, fallback: string) {
   return String(result?.body?.error || result?.body?.message || fallback);
 }
 
+function rejectedMessage(result: PromiseSettledResult<InternalResult>) {
+  if (result.status !== "rejected") return null;
+  return String(result.reason instanceof Error ? result.reason.message : result.reason || "");
+}
+
+function timeoutLike(message: string | null) {
+  return Boolean(message && /(timeout|timed out|abort)/i.test(message));
+}
+
 async function routeData(sx: number, sy: number, query: string, destination: ResolvedDestination) {
   const [coreSettled, mixedSettled] = await Promise.allSettled([
     internalRoute(CORE_URL, sx, sy, destination, query),
-    internalRoute(MIXED_URL, sx, sy, destination),
+    internalRoute(MIXED_URL, sx, sy, destination, "", MIXED_TIMEOUT_MS),
   ]);
   const core = coreSettled.status === "fulfilled" ? coreSettled.value : null;
   const mixed = mixedSettled.status === "fulfilled" ? mixedSettled.value : null;
+  const coreFailure = rejectedMessage(coreSettled);
+  const mixedFailure = rejectedMessage(mixedSettled);
   const busRoutes = core?.response.ok && Array.isArray(core.body?.routes) ? core.body.routes : [];
   const mixedRoutes = mixed?.response.ok && Array.isArray(mixed.body?.routes) ? mixed.body.routes : [];
   const routes = mergedRoutes(busRoutes, mixedRoutes);
 
   if (!routes.length) {
     const primary = core || mixed;
-    const message = coreSettled.status === "rejected"
-      ? String(coreSettled.reason instanceof Error ? coreSettled.reason.message : coreSettled.reason || "")
-      : failureMessage(core, "공공 교통데이터에서 연결 가능한 경로를 찾지 못했습니다.");
+    const message = coreFailure || failureMessage(core, "공공 교통데이터에서 연결 가능한 경로를 찾지 못했습니다.");
     return reply({
       ...(primary?.body && typeof primary.body === "object" ? primary.body : {}),
       error: message || "공공 교통데이터에서 연결 가능한 경로를 찾지 못했습니다.",
@@ -213,6 +224,9 @@ async function routeData(sx: number, sy: number, query: string, destination: Res
       provider: "TAGO-public-data",
       serviceArea: SERVICE_AREA,
       routeModes: ROUTE_MODES,
+      mixedRouting: "protected-orchestrator",
+      mixedBudgetMs: MIXED_TIMEOUT_MS,
+      mixedTimedOut: timeoutLike(mixedFailure),
       mixedModeProvider: mixed?.body?.provider || null,
       routes: [],
     }, primary?.response?.status || 502, "no-store");
@@ -231,10 +245,13 @@ async function routeData(sx: number, sy: number, query: string, destination: Res
     realtimeCoverage: realtimeCoverage(routes),
     routeModes: ROUTE_MODES,
     mixedRouting: "protected-orchestrator",
+    mixedBudgetMs: MIXED_TIMEOUT_MS,
+    mixedSearchMs: Number.isFinite(Number(mixed?.body?.searchMs)) ? Number(mixed.body.searchMs) : null,
+    mixedTimedOut: timeoutLike(mixedFailure),
     mixedModeProvider: mixedRoutes.length ? String(mixed?.body?.provider || "TAGO-public-data+KRIC-snapshot+Kakao-SW8") : null,
     mixedAvailable: mixedRoutes.length > 0,
-    busError: core?.response.ok ? null : failureMessage(core, "버스 경로를 찾지 못했습니다."),
-    mixedError: mixed?.response.ok ? null : failureMessage(mixed, "혼합 경로를 만들지 못했습니다."),
+    busError: core?.response.ok ? null : coreFailure || failureMessage(core, "버스 경로를 찾지 못했습니다."),
+    mixedError: mixed?.response.ok ? null : mixedFailure || failureMessage(mixed, "혼합 경로를 만들지 못했습니다."),
     routes,
   }, 200, "public, max-age=15");
 }
@@ -259,6 +276,7 @@ Deno.serve(async (req: Request) => {
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ROUTE_MODES,
         mixedRouting: "protected-orchestrator",
+        mixedBudgetMs: MIXED_TIMEOUT_MS,
         realtimeRouting: "per-bus-leg-when-available",
         railRealtime: false,
         regionalRouting: "daegu-only-source+destination",
