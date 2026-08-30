@@ -31,16 +31,16 @@ function installStyle(){
 html[data-flow-transit-surface="dormant"] .mobile-bottom-nav{--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
 html[data-flow-transit-surface="dormant"] [data-flow-transit-nav],html[data-flow-transit-surface="dormant"] #transitView{display:none!important}
 @media(max-width:900px){
-  #todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:10px 0 12px!important;align-items:stretch}
+  #todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0!important;margin:10px 0 12px!important;align-items:stretch;background:var(--surface)!important;border-radius:18px!important;overflow:hidden!important;box-shadow:0 7px 22px rgba(34,48,72,.055)!important}
   #todayView .clock-card{grid-column:auto!important}
-  #todayView .status-card{min-height:104px!important;padding:12px 13px!important;border-radius:16px!important}
+  #todayView .status-card{min-height:104px!important;padding:12px 13px!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;border:0!important}
+  #todayView .status-card+.status-card:not(.flow-home-noise){border-left:1px solid color-mix(in srgb,var(--text) 9%,transparent)!important}
   #todayView .status-card strong{margin-top:7px!important;font-size:.9rem!important;line-height:1.18}
   #todayView .status-card p{margin-top:4px!important;font-size:.57rem!important;line-height:1.35}
   #todayView .progress-track{margin-top:9px!important}
   #flowSchoolSettingsView .flow-settings-fields.flow-meal-window{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:340px){
-  #todayView .status-grid{gap:6px!important}
   #todayView .status-card{padding:11px!important}
   #todayView .status-card strong{font-size:.84rem!important}
   #todayView .status-card p{font-size:.54rem!important}

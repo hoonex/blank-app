@@ -29,9 +29,12 @@ async function fixture(page){
 async function homeState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
   const visibleStatus=[...document.querySelectorAll('#todayView .status-card')].filter(shown);
+  const statusRects=visibleStatus.map(node=>{const rect=node.getBoundingClientRect();return{label:node.querySelector('.status-label')?.textContent?.trim()||'',left:rect.left,top:rect.top,width:rect.width,height:rect.height}});
+  const grid=document.querySelector('#todayView .status-grid'),gridStyle=grid?getComputedStyle(grid):null,nextStyle=visibleStatus[1]?getComputedStyle(visibleStatus[1]):null;
+  const visualGap=statusRects.length===2?statusRects[1].left-(statusRects[0].left+statusRects[0].width):null;
   return{
-    status:visibleStatus.map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),
-    statusRects:visibleStatus.map(node=>{const rect=node.getBoundingClientRect();return{label:node.querySelector('.status-label')?.textContent?.trim()||'',left:rect.left,top:rect.top,width:rect.width,height:rect.height}}),
+    status:visibleStatus.map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),statusRects,
+    statusShell:gridStyle?{columnGap:parseFloat(gridStyle.columnGap)||0,background:gridStyle.backgroundColor,borderRadius:parseFloat(gridStyle.borderTopLeftRadius)||0,divider:parseFloat(nextStyle?.borderLeftWidth||'0')||0,visualGap}:null,
     lessons:shown(document.querySelector('#quickLessons')?.closest('.status-card')),meal:shown(document.querySelector('#quickMeal')?.closest('.status-card')),
     transitSurface:document.documentElement.dataset.flowTransitSurface||'',transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
     bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
@@ -57,7 +60,9 @@ for(const [name,width,height,isMobile] of cases){
     const sameRow=nowCard&&nextCard&&Math.abs(nowCard.top-nextCard.top)<=2&&nowCard.left<nextCard.left;
     const balanced=nowCard&&nextCard&&Math.abs(nowCard.width-nextCard.width)<=4;
     const compact=nowCard&&nextCard&&Math.max(nowCard.height,nextCard.height)<=145;
-    if(!sameRow||!balanced||!compact)throw new Error(`${name}: Today status cards are not a compact side-by-side pair ${JSON.stringify(home.statusRects)}`);
+    const shell=home.statusShell;
+    const unified=shell&&Math.abs(shell.visualGap)<=1&&shell.columnGap<=1&&shell.divider>=1&&shell.borderRadius>=16&&shell.background!=='rgba(0, 0, 0, 0)';
+    if(!sameRow||!balanced||!compact||!unified)throw new Error(`${name}: Today status pair is not one compact divided shell ${JSON.stringify({statusRects:home.statusRects,statusShell:home.statusShell})}`);
   }
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
   if(transitRequests.length)throw new Error(`${name}: dormant production Transit assets were requested ${JSON.stringify(transitRequests)}`);
@@ -82,4 +87,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'compact-side-by-side',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
