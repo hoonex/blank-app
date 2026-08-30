@@ -24,8 +24,11 @@ jobs:
           node scripts/edge-secret-audit.mjs
           test -s supabase/functions/transit-mixed/index.ts
           grep -q 'MIXED_URL' supabase/functions/transit-data/index.ts
+          grep -q 'MIXED_TIMEOUT_MS = 25_000' supabase/functions/transit-data/index.ts
           grep -q 'protected-orchestrator' supabase/functions/transit-data/index.ts
           grep -q 'bus-subway-bus' supabase/functions/transit-data/index.ts
+          grep -q 'BUS_CORE_TIMEOUT_MS = 22_000' supabase/functions/transit-mixed/index.ts
+          grep -q 'MAX_RAIL_CANDIDATES = 1' supabase/functions/transit-mixed/index.ts
           grep -q 'service-role-jwt-only' supabase/functions/transit-mixed/index.ts
           grep -q 'bus-subway-bus' supabase/functions/transit-mixed/index.ts
           grep -q 'bus-subway-walk' supabase/functions/transit-mixed/index.ts
@@ -47,6 +50,7 @@ jobs:
           if(data?.mixedRouting!=='protected-orchestrator') throw new Error(`Protected mixed orchestrator is not active: ${JSON.stringify(data)}`);
           for(const mode of ['bus-subway-bus','bus-subway-walk','walk-subway-bus']) if(!data?.routeModes?.includes(mode)) throw new Error(`Missing mixed route mode ${mode}`);
           if(data?.mixedAccess!=='service-role-jwt-only'||data?.railRealtime!==false) throw new Error(`Mixed routing safety contract failed: ${JSON.stringify(data)}`);
+          if(data?.mixedBudgetMs!==25000) throw new Error(`Mixed public latency budget is not active: ${JSON.stringify(data)}`);
           console.log('Transit mixed-mode gate contract is active');
           NODE
       - name: Probe live Daegu route through mixed-aware gate
@@ -54,31 +58,35 @@ jobs:
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
-          status=$(curl -sSL -o /tmp/transit-mixed-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 140 \
+          read -r status seconds < <(curl -sSL -o /tmp/transit-mixed-route.json -w '%{http_code} %{time_total}' --get --connect-timeout 10 --max-time 60 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6960' \
             --data-urlencode 'sy=35.8760' \
             --data-urlencode 'destination=대구광역시 북구 대학로 80' \
             "$base")
           if [ "$status" != "200" ]; then
-            echo "Mixed-aware Transit route HTTP $status"
+            echo "Mixed-aware Transit route HTTP $status after ${seconds}s"
             cat /tmp/transit-mixed-route.json
             echo
             exit 1
           fi
-          node --input-type=module - <<'NODE'
+          TRANSIT_ROUTE_SECONDS="$seconds" node --input-type=module - <<'NODE'
           import fs from 'node:fs';
           const data=JSON.parse(fs.readFileSync('/tmp/transit-mixed-route.json','utf8'));
+          const seconds=Number(process.env.TRANSIT_ROUTE_SECONDS||0);
           const routes=Array.isArray(data?.routes)?data.routes:[];
+          if(!Number.isFinite(seconds)||seconds<=0||seconds>35) throw new Error(`Mixed-aware public route exceeded 35s CI ceiling: ${seconds}s`);
           if(routes.length<1||routes.length>5) throw new Error(`Expected 1-5 routes, got ${routes.length}: ${JSON.stringify(data)}`);
           if(data?.serviceArea?.name!=='대구광역시'||data?.mixedRouting!=='protected-orchestrator') throw new Error(`Mixed route response lost gate contract: ${JSON.stringify(data)}`);
+          if(data?.mixedBudgetMs!==25000) throw new Error(`Mixed route response lost latency budget: ${JSON.stringify(data)}`);
           const mixed=routes.filter(route=>(route.segments||[]).some(segment=>segment.type==='bus')&&(route.segments||[]).some(segment=>segment.type==='subway'));
           if(data?.mixedAvailable===true&&mixed.length<1) throw new Error(`mixedAvailable=true without a mixed route: ${JSON.stringify(data)}`);
+          if(data?.mixedTimedOut===true&&data?.mixedAvailable===true) throw new Error(`Timed-out mixed search must not claim a mixed result: ${JSON.stringify(data)}`);
           for(const route of mixed){
             if(route?.estimateMode&&!String(route.estimateMode).startsWith('mixed-static-rail')) throw new Error(`Unexpected mixed estimate mode: ${route.estimateMode}`);
             if(!Array.isArray(route?.realtimeLegs)) throw new Error('Mixed route realtime legs shape is missing');
           }
-          console.log(`Live mixed-aware Transit: ${routes.length} route(s), ${mixed.length} mixed route(s), mixedAvailable=${Boolean(data?.mixedAvailable)}`);
+          console.log(`Live mixed-aware Transit: ${routes.length} route(s), ${mixed.length} mixed route(s), mixedAvailable=${Boolean(data?.mixedAvailable)}, mixedTimedOut=${Boolean(data?.mixedTimedOut)}, ${seconds.toFixed(2)}s`);
           NODE
       - name: Install Playwright Chromium
         run: |
