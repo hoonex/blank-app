@@ -105,7 +105,7 @@ function installMagneticControls(){
   document.addEventListener('pointerdown',event=>{
     if(!motionEnabled()||ownsComplexGesture(event.target))return;
     const host=event.target.closest?.(MAGNET_SELECTOR);if(!host||host.disabled)return;
-    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse ? .11 : .16,coarse?5.5:8);
+    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse?.11:.16,coarse?5.5:8);
     host.classList.add('flow-pressing');setMagnet(host,x,y);activeMagnet={host,id:event.pointerId}
   },{capture:true,passive:true});
   document.addEventListener('pointermove',event=>{
@@ -125,20 +125,18 @@ function installMagneticControls(){
 }
 
 function navActive(nav){return $('.mobile-tab.active,.bottom-item.active',nav)||$('.mobile-tab,.bottom-item',nav)}
-function navField(nav){return $('.flow-nav-field',nav)}
 function setNavFieldForElement(nav,item,instant=false){
-  const field=navField(nav);if(!field||!item)return;const nr=nav.getBoundingClientRect(),ir=item.getBoundingClientRect();if(!nr.width||!ir.width)return;
+  if(!item)return;const nr=nav.getBoundingClientRect(),ir=item.getBoundingClientRect();if(!nr.width||!ir.width)return;
   nav.classList.toggle('flow-nav-instant',instant);nav.style.setProperty('--flow-nav-x',`${(ir.left-nr.left).toFixed(2)}px`);nav.style.setProperty('--flow-nav-w',`${ir.width.toFixed(2)}px`);
   if(instant)requestAnimationFrame(()=>nav.classList.remove('flow-nav-instant'))
 }
 function settleNav(nav,delay=0){setTimeout(()=>setNavFieldForElement(nav,navActive(nav)),delay)}
 function installNavFields(){
   $$(NAV_SELECTOR).forEach(nav=>{
-    if(nav.dataset.flowNavField==='ready')return;nav.dataset.flowNavField='ready';
-    const field=document.createElement('i');field.className='flow-nav-field';field.setAttribute('aria-hidden','true');nav.prepend(field);requestAnimationFrame(()=>setNavFieldForElement(nav,navActive(nav),true));
+    if(nav.dataset.flowNavField==='ready')return;nav.dataset.flowNavField='ready';requestAnimationFrame(()=>setNavFieldForElement(nav,navActive(nav),true));
     let dragId=null;
     nav.addEventListener('pointerdown',event=>{if(!motionEnabled())return;const item=event.target.closest?.('.mobile-tab,.bottom-item');if(!item)return;dragId=event.pointerId;nav.classList.add('flow-nav-dragging');setNavFieldForElement(nav,item)},{passive:true});
-    nav.addEventListener('pointermove',event=>{if(!motionEnabled()||dragId!==event.pointerId)return;const nr=nav.getBoundingClientRect(),fieldEl=navField(nav);if(!fieldEl)return;const width=parseFloat(getComputedStyle(nav).getPropertyValue('--flow-nav-w'))||nr.width/Math.max(1,$$('.mobile-tab,.bottom-item',nav).length);const x=clamp(event.clientX-nr.left-width/2,4,nr.width-width-4);nav.style.setProperty('--flow-nav-x',`${x.toFixed(2)}px`)},{passive:true});
+    nav.addEventListener('pointermove',event=>{if(!motionEnabled()||dragId!==event.pointerId)return;const nr=nav.getBoundingClientRect();const width=parseFloat(getComputedStyle(nav).getPropertyValue('--flow-nav-w'))||nr.width/Math.max(1,$$('.mobile-tab,.bottom-item',nav).length);const x=clamp(event.clientX-nr.left-width/2,4,nr.width-width-4);nav.style.setProperty('--flow-nav-x',`${x.toFixed(2)}px`)},{passive:true});
     const end=event=>{if(dragId!==event.pointerId)return;dragId=null;nav.classList.remove('flow-nav-dragging');settleNav(nav,0);settleNav(nav,120)};
     nav.addEventListener('pointerup',end,{passive:true});nav.addEventListener('pointercancel',end,{passive:true});
     nav.addEventListener('click',()=>{settleNav(nav,0);settleNav(nav,160)},{passive:true});
@@ -231,13 +229,13 @@ function installSceneMotion(){
   let lastY=scrollY,lastT=performance.now();
   addEventListener('scroll',()=>{
     if(!motionEnabled())return;const now=performance.now(),y=scrollY,velocity=clamp((y-lastY)/Math.max(16,now-lastT),-2.2,2.2);lastY=y;lastT=now;
-    const root=document.documentElement;root.style.setProperty('--flow-scroll-v',velocity.toFixed(3));root.style.setProperty('--flow-scroll-y',`${clamp(y*.026,0,18).toFixed(2)}px`);
-    clearTimeout(sceneTimer);sceneTimer=setTimeout(()=>root.style.setProperty('--flow-scroll-v','0'),110)
+    const root=document.documentElement;root.style.setProperty('--flow-scroll-v',velocity.toFixed(3));root.style.setProperty('--flow-scroll-y',`${clamp(y*.026,0,18).toFixed(2)}px`);root.style.setProperty('--flow-scroll-a',`${(velocity*3).toFixed(2)}px`);root.style.setProperty('--flow-scroll-b',`${(velocity*5).toFixed(2)}px`);
+    clearTimeout(sceneTimer);sceneTimer=setTimeout(()=>{root.style.setProperty('--flow-scroll-v','0');root.style.setProperty('--flow-scroll-a','0px');root.style.setProperty('--flow-scroll-b','0px')},110)
   },{passive:true})
 }
 function installTiltResponse(){
   if(!('DeviceOrientationEvent'in window)||typeof DeviceOrientationEvent.requestPermission==='function')return;
-  addEventListener('deviceorientation',event=>{if(!motionEnabled())return;const x=clamp(Number(event.gamma)||0,-18,18)/18,y=clamp((Number(event.beta)||45)-45,-18,18)/18;document.documentElement.style.setProperty('--flow-tilt-x',`${(x*12).toFixed(2)}px`);document.documentElement.style.setProperty('--flow-tilt-y',`${(y*8).toFixed(2)}px`)},{passive:true})
+  addEventListener('deviceorientation',event=>{if(!motionEnabled())return;const x=clamp(Number(event.gamma)||0,-18,18)/18,y=clamp((Number(event.beta)||45)-45,-18,18)/18;document.documentElement.style.setProperty('--flow-tilt-x',`${(x*12).toFixed(2)}px`);document.documentElement.style.setProperty('--flow-tilt-y',`${(y*8).toFixed(2)}px`);document.documentElement.style.setProperty('--flow-tilt-soft-x',`${(x*5.4).toFixed(2)}px`)},{passive:true})
 }
 
 function init(){
