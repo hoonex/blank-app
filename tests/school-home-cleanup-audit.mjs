@@ -21,7 +21,6 @@ const cases=[
   ['mobile-portrait',390,844,true],['mobile-landscape',844,390,true],['tablet-portrait',768,1024,true],
   ['tablet-landscape',1024,768,true],['desktop-1366',1366,768,false],['desktop-1920',1920,1080,false],
 ];
-const visible=node=>node?true:false;
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixture(page){
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
@@ -32,7 +31,7 @@ async function homeState(page){return page.evaluate(()=>{
   return{
     status:[...document.querySelectorAll('#todayView .status-card')].filter(shown).map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),
     lessons:shown(document.querySelector('#quickLessons')?.closest('.status-card')),meal:shown(document.querySelector('#quickMeal')?.closest('.status-card')),
-    transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
+    transitSurface:document.documentElement.dataset.flowTransitSurface||'',transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
     bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
     mealFooter:document.querySelector('#mealCal')?.textContent?.trim()||'',overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
   }
@@ -51,7 +50,7 @@ for(const [name,width,height,isMobile] of cases){
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForTimeout(100);
   const home=await homeState(page);
   if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
-  if(home.transitNav||home.transitView||document.documentElement.dataset.flowTransitSurface!=='dormant')throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
+  if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
   if(width<=900&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
   if(!home.mealFooter.includes('12:20–13:10')||home.overflow>1)throw new Error(`${name}: Today meal window/overflow failed ${JSON.stringify(home)}`);
   await page.screenshot({path:`${OUT}/home-${name}.png`,fullPage:false});await page.screenshot({path:`${OUT}/home-${name}-full.png`,fullPage:true});
