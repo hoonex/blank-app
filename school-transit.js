@@ -138,6 +138,11 @@ function installView(){
     const button=event.target.closest?.('[data-destination-suggestion]');if(!button)return;
     const index=Number(button.dataset.destinationSuggestion);if(Number.isInteger(index))selectDestinationSuggestion(index);
   });
+  section.addEventListener('click',event=>{
+    const editor=$('#transitDestinationEditor');if(!editor||editor.classList.contains('hidden'))return;
+    if(event.target.closest?.('#transitDestinationEditor,#transitDestinationEditBtn'))return;
+    toggleDestinationEditor(false);
+  });
 }
 function syncDestination(){
   const destination=transitDestination(),name=$('#transitSchoolName'),address=$('#transitSchoolAddress'),input=$('#transitDestinationInput'),reset=$('#transitDestinationResetBtn'),kind=$('#transitDestinationKind'),card=$('#transitDestinationEditBtn'),locateButton=$('#transitLocateBtn');
