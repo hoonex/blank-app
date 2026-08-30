@@ -105,7 +105,7 @@ function installMagneticControls(){
   document.addEventListener('pointerdown',event=>{
     if(!motionEnabled()||ownsComplexGesture(event.target))return;
     const host=event.target.closest?.(MAGNET_SELECTOR);if(!host||host.disabled)return;
-    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse?.11:.16,coarse?5.5:8);
+    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse ? .11 : .16,coarse?5.5:8);
     host.classList.add('flow-pressing');setMagnet(host,x,y);activeMagnet={host,id:event.pointerId}
   },{capture:true,passive:true});
   document.addEventListener('pointermove',event=>{
