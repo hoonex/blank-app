@@ -53,15 +53,15 @@ jobs:
           if(data?.mixedBudgetMs!==25000) throw new Error(`Mixed public latency budget is not active: ${JSON.stringify(data)}`);
           console.log('Transit mixed-mode gate contract is active');
           NODE
-      - name: Probe live Daegu route through mixed-aware gate
+      - name: Probe live mixed journey through public Daegu gate
         shell: bash
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
           metrics="$(curl -sSL -o /tmp/transit-mixed-route.json -w '%{http_code} %{time_total}' --get --connect-timeout 10 --max-time 60 \
             --data-urlencode 'action=route' \
-            --data-urlencode 'sx=128.6960' \
-            --data-urlencode 'sy=35.8760' \
+            --data-urlencode 'sx=128.6014' \
+            --data-urlencode 'sy=35.8714' \
             --data-urlencode 'destination=대구광역시 북구 대학로 80' \
             "$base")"
           status="${metrics%% *}"
@@ -82,8 +82,8 @@ jobs:
           if(data?.serviceArea?.name!=='대구광역시'||data?.mixedRouting!=='protected-orchestrator') throw new Error(`Mixed route response lost gate contract: ${JSON.stringify(data)}`);
           if(data?.mixedBudgetMs!==25000) throw new Error(`Mixed route response lost latency budget: ${JSON.stringify(data)}`);
           const mixed=routes.filter(route=>(route.segments||[]).some(segment=>segment.type==='bus')&&(route.segments||[]).some(segment=>segment.type==='subway'));
-          if(data?.mixedAvailable===true&&mixed.length<1) throw new Error(`mixedAvailable=true without a mixed route: ${JSON.stringify(data)}`);
-          if(data?.mixedTimedOut===true&&data?.mixedAvailable===true) throw new Error(`Timed-out mixed search must not claim a mixed result: ${JSON.stringify(data)}`);
+          if(data?.mixedTimedOut===true) throw new Error(`Known mixed-route probe timed out: ${JSON.stringify(data)}`);
+          if(data?.mixedAvailable!==true||mixed.length<1) throw new Error(`Known mixed-route probe produced no mixed journey: ${JSON.stringify(data)}`);
           for(const route of mixed){
             if(route?.estimateMode&&!String(route.estimateMode).startsWith('mixed-static-rail')) throw new Error(`Unexpected mixed estimate mode: ${route.estimateMode}`);
             if(!Array.isArray(route?.realtimeLegs)) throw new Error('Mixed route realtime legs shape is missing');
