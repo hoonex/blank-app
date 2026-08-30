@@ -18,6 +18,7 @@ const SECOND_LEG_REALTIME_LIMIT = 8;
 const TRANSFER_MATCH_METERS = 180;
 const TRANSFER_NAME_MATCH_METERS = 260;
 const TRANSFER_LINE_SAMPLE_LIMIT = 16;
+const ARRIVAL_CACHE_TTL_MS = 18_000;
 
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
@@ -237,6 +238,7 @@ type LiveArrival = {
   waitAddedMinutes: number;
   source: string;
   checkedAt: string;
+  ageSeconds: number;
   stopName: string;
   legIndex: number;
 };
@@ -270,6 +272,11 @@ type TransferMatch = {
   secondIndex: number;
   walkMeters: number;
   score: number;
+};
+
+type ArrivalSnapshot = {
+  items: any[];
+  fetchedAt: number;
 };
 
 const secondLegPlans = new WeakMap<NormalizedRoute, SecondLegPlan>();
@@ -459,15 +466,18 @@ function sampleTransferLines(items: StopLine[], limit = TRANSFER_LINE_SAMPLE_LIM
 
 async function arrivalAtStop(stop: Stop, line: Line, notBeforeSeconds = 0, legIndex = 0): Promise<LiveArrival | null> {
   try {
-    const arrivals = await cached(`arrival:${stop.cityCode}:${stop.id}`, 18_000, async () =>
-      (await tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000)).items);
+    const snapshot = await cached<ArrivalSnapshot>(`arrival:${stop.cityCode}:${stop.id}`, ARRIVAL_CACHE_TTL_MS, async () => {
+      const response = await tago(TAGO_ARRIVAL, { cityCode: stop.cityCode, nodeId: stop.id, numOfRows: 100 }, 9000);
+      return { items: response.items, fetchedAt: Date.now() };
+    });
+    const ageSeconds = Math.max(0, Math.floor((Date.now() - snapshot.fetchedAt) / 1000));
     const targetNo = normalizeRouteNo(line.no);
     const threshold = Math.max(0, Number(notBeforeSeconds) || 0);
-    const candidates = arrivals.filter((item: any) =>
+    const candidates = snapshot.items.filter((item: any) =>
       String(item.routeid || "") === line.id || (targetNo && normalizeRouteNo(item.routeno) === targetNo))
       .map((item: any) => ({
         routeNo: String(item.routeno || line.no || "버스"),
-        seconds: Number(item.arrtime),
+        seconds: Math.max(0, Number(item.arrtime) - ageSeconds),
         stops: Number(item.arrprevstationcnt),
         vehicleType: String(item.vehicletp || ""),
       }))
@@ -480,7 +490,8 @@ async function arrivalAtStop(stop: Stop, line: Line, notBeforeSeconds = 0, legIn
       arrivalMinutes: Math.max(0, Math.ceil(best.seconds / 60)),
       waitAddedMinutes: Math.max(0, Math.ceil((best.seconds - threshold) / 60)),
       source: "TAGO",
-      checkedAt: new Date().toISOString(),
+      checkedAt: new Date(snapshot.fetchedAt).toISOString(),
+      ageSeconds,
       stopName: stop.name,
       legIndex,
     };
@@ -721,8 +732,26 @@ async function stopLines(stops: Stop[]) {
   });
 }
 
+function realtimeCoverageScore(route: NormalizedRoute) {
+  const busLegs = route.segments.filter((segment) => segment.type === "bus").length;
+  return busLegs ? Math.min(1, route.realtimeLegs.length / busLegs) : 0;
+}
+
+function realtimeAgeSeconds(route: NormalizedRoute) {
+  if (!route.realtimeLegs.length) return Number.POSITIVE_INFINITY;
+  const now = Date.now();
+  return Math.max(...route.realtimeLegs.map((leg) => {
+    const checked = Date.parse(leg.checkedAt);
+    return Number.isFinite(checked) ? Math.max(0, Math.floor((now - checked) / 1000)) : Number.POSITIVE_INFINITY;
+  }));
+}
+
 function routeSort(a: NormalizedRoute, b: NormalizedRoute) {
-  return a.totalMinutes - b.totalMinutes || a.transfers - b.transfers || a.walkMeters - b.walkMeters;
+  return a.totalMinutes - b.totalMinutes
+    || a.transfers - b.transfers
+    || realtimeCoverageScore(b) - realtimeCoverageScore(a)
+    || realtimeAgeSeconds(a) - realtimeAgeSeconds(b)
+    || a.walkMeters - b.walkMeters;
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
@@ -746,7 +775,7 @@ async function searchRoutes(sx: number, sy: number, ex: number, ey: number, dest
   for (const route of routes) {
     const key = route.segments.filter((segment) => segment.type === "bus").map((segment) => `${segment.lines.join(',')}:${segment.startId}:${segment.endId}`).join('|');
     const existing = deduped.get(key);
-    if (!existing || route.totalMinutes < existing.totalMinutes) deduped.set(key, route);
+    if (!existing || routeSort(route, existing) < 0) deduped.set(key, route);
   }
   const finalRoutes = [...deduped.values()]
     .sort(routeSort)
@@ -779,7 +808,8 @@ Deno.serve(async (req) => {
         routingProvider: "TAGO-public-data",
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ["bus-direct", "bus-one-transfer"],
-        realtimeRouting: "per-bus-leg-when-available",
+        realtimeRouting: "cache-age-adjusted-per-bus-leg",
+        realtimeFreshness: "provider-fetchedAt+cache-age-adjusted",
         regionalRouting: "coordinate-owned-source+destination",
         transferMatching: "node-id+walkable-stop-proximity",
         plannedGtfsUpgrade: "2026-09-07",
