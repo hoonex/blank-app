@@ -10,15 +10,20 @@ function transitLabEnabled(){
   try{return localStorage.getItem('flow-school-transit-lab-v1')!=='off'}catch{return false}
 }
 
-if(transitLabEnabled()){
-  await import('./school-transit.js');
-  await import('./school-transit-map.js');
-  await import('./school-transit-focus.js');
+async function bootSchoolSurface(){
+  if(transitLabEnabled()){
+    try{
+      await import('./school-transit.js');
+      await import('./school-transit-map.js');
+      await import('./school-transit-focus.js');
+    }catch(error){console.warn('[Flow] Transit lab modules failed to load',error)}
+  }
+  await import('./school-surface-cleanup.js');
 }
 
-/* Preserve the historical lab initialization order: Transit first, cleanup after.
- * Production skips the Transit imports entirely and loads only the cleanup layer. */
-await import('./school-surface-cleanup.js');
+/* Keep the entry module non-blocking. Production skips Transit entirely; the
+ * localhost lab preserves the historical Transit → cleanup initialization order. */
+void bootSchoolSurface();
 
 /* Optical/refraction used to assume School always had five destinations because
  * Transit was one of them. Production now has four, so keep the lens geometry
