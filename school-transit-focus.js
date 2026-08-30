@@ -60,6 +60,11 @@ function installMoreButton(cards){
   }
   setAlternativeVisibility(cards);
 }
+function setFocusedState(routeCount){
+  const state=$('#transitState');if(!state)return;
+  state.textContent=`현재 위치 기준 · ${routeCount}개 비교 · 상위 ${Math.min(PRIMARY_VISIBLE_ROUTES,routeCount)}개 표시`;
+  state.dataset.kind='neutral';
+}
 function renderFocus(detail){
   const routes=Array.isArray(detail?.routes)?detail.routes:[];
   const cards=$$('[data-transit-route]');
@@ -85,11 +90,7 @@ function renderFocus(detail){
     if(index===0&&firstBadge)firstBadge.textContent='지금 추천';
   });
   installMoreButton(cards);
-  const state=$('#transitState');
-  if(state){
-    state.textContent=`현재 위치 기준 · ${routes.length}개 비교 · 상위 ${Math.min(PRIMARY_VISIBLE_ROUTES,routes.length)}개 표시`;
-    state.dataset.kind='neutral';
-  }
+  queueMicrotask(()=>setFocusedState(routes.length));
 }
 function clearFocusWhenEmpty(){
   queueMicrotask(()=>{
