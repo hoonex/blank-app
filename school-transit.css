@@ -39,6 +39,15 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
 .flow-transit-destination-input-row input::placeholder{color:var(--muted-2)}
 .flow-transit-destination-input-row input:focus{border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent)}
 .flow-transit-destination-submit{min-width:150px;min-height:44px;padding-inline:15px;white-space:nowrap}
+.flow-transit-destination-suggestions{box-sizing:border-box;max-height:268px;margin-top:7px;padding:4px;overflow-y:auto;overscroll-behavior:contain;border:1px solid color-mix(in srgb,var(--text) 8%,transparent);border-radius:13px;background:var(--surface);box-shadow:0 12px 28px color-mix(in srgb,#000 10%,transparent);scrollbar-width:thin}
+.flow-transit-destination-suggestion{appearance:none;display:grid;width:100%;min-width:0;gap:4px;padding:10px 11px;border:0;border-radius:10px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.flow-transit-destination-suggestion+.flow-transit-destination-suggestion{border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent);border-top-left-radius:0;border-top-right-radius:0}
+.flow-transit-destination-suggestion:hover,.flow-transit-destination-suggestion:focus-visible,.flow-transit-destination-suggestion.is-active{background:color-mix(in srgb,var(--accent) 7%,var(--surface-2));outline:none}
+.flow-transit-destination-suggestion-main{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.flow-transit-destination-suggestion-main strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.69rem;font-weight:830}
+.flow-transit-destination-suggestion-main em{flex:none;color:var(--accent);font-size:.54rem;font-style:normal;font-weight:780;white-space:nowrap}
+.flow-transit-destination-suggestion small{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.58rem;line-height:1.35}
+.flow-transit-destination-suggestion-state{padding:12px;color:var(--muted);font-size:.61rem;line-height:1.45}
 .flow-transit-destination-editor-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:7px}
 .flow-transit-destination-editor-foot small{color:var(--muted);font-size:.58rem;line-height:1.4}
 .flow-transit-destination-reset{appearance:none;flex:none;min-height:30px;padding:0 8px;border:0;border-radius:9px;background:transparent;color:var(--accent);font:inherit;font-size:.6rem;font-weight:820;cursor:pointer}
@@ -98,6 +107,8 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
   .flow-transit-destination-editor-head small{text-align:left}
   .flow-transit-destination-input-row input,.flow-transit-destination-submit{min-height:44px}
   .flow-transit-destination-submit{min-width:142px}
+  .flow-transit-destination-suggestions{max-height:250px}
+  .flow-transit-destination-suggestion{padding:9px 10px}
   .flow-transit-locate{width:100%;min-width:0;min-height:44px;margin-top:11px}
   .flow-transit-summary{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:9px}
   .flow-transit-summary span{text-align:left}
@@ -115,6 +126,8 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
   .flow-transit-endpoint small{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
   .flow-transit-destination-input-row{grid-template-columns:1fr}
   .flow-transit-destination-submit{width:100%;min-width:0}
+  .flow-transit-destination-suggestions{max-height:236px}
+  .flow-transit-destination-suggestion-main{align-items:flex-start}
   .flow-transit-destination-editor-foot{align-items:flex-start;flex-direction:column;gap:4px}
   .flow-transit-destination-reset{margin-left:-8px}
 }
@@ -143,6 +156,10 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
   .flow-transit-destination-input-row{grid-template-columns:minmax(0,1fr) 116px;gap:5px}
   .flow-transit-destination-input-row input,.flow-transit-destination-submit{min-height:34px!important;height:34px!important;font-size:.54rem!important}
   .flow-transit-destination-submit{min-width:0;padding:0 8px!important}
+  .flow-transit-destination-suggestions{max-height:112px;margin-top:0;padding:2px;border-radius:9px}
+  .flow-transit-destination-suggestion{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);align-items:center;gap:7px;padding:5px 7px;border-radius:7px}
+  .flow-transit-destination-suggestion-main strong{font-size:.52rem}.flow-transit-destination-suggestion-main em{font-size:.43rem}.flow-transit-destination-suggestion small{font-size:.45rem}
+  .flow-transit-destination-suggestion-state{padding:7px;font-size:.48rem}
   .flow-transit-destination-editor-foot{display:flex;align-items:center;flex-direction:row;justify-content:space-between;gap:8px;margin:0}
   .flow-transit-destination-editor-foot small{font-size:.46rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .flow-transit-destination-reset{min-height:25px;padding:0 6px;font-size:.46rem}
