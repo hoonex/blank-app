@@ -66,6 +66,13 @@ async function inspect(page){return page.evaluate(()=>{
     addresses:[...document.querySelectorAll('.flow-transit-destination-suggestion>small')].map(n=>n.textContent.trim()),
   };
 })}
+async function inspectDismissed(page){return page.evaluate(()=>({
+  editorHidden:document.querySelector('#transitDestinationEditor')?.classList.contains('hidden')===true,
+  destinationExpanded:document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded')||'',
+  suggestionsHidden:document.querySelector('#transitDestinationSuggestions')?.classList.contains('hidden')===true,
+  inputExpanded:document.querySelector('#transitDestinationInput')?.getAttribute('aria-expanded')||'',
+  locateVisible:document.querySelector('#transitLocateBtn')?.classList.contains('hidden')===false,
+}))}
 
 const browser=await chromium.launch({headless:true});
 const report={};
@@ -82,6 +89,10 @@ for(const testCase of cases){
   if(testCase.name==='mobile-landscape'&&state.panel.height>120)throw new Error(`${testCase.name}: result list is too tall for landscape ${JSON.stringify(state)}`);
   if(pageErrors.length)throw new Error(`${testCase.name}: page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/destination-suggestions-${testCase.name}.png`,fullPage:false});
+  await page.locator('.flow-transit-header h1').click();
+  const dismissed=await inspectDismissed(page);report[testCase.name].dismissed=dismissed;
+  if(!dismissed.editorHidden||dismissed.destinationExpanded!=='false'||!dismissed.suggestionsHidden||dismissed.inputExpanded!=='false'||!dismissed.locateVisible)throw new Error(`${testCase.name}: outside click must close the destination editor and suggestions ${JSON.stringify(dismissed)}`);
+  if(counters.search!==1||counters.route!==0||counters.rail!==0)throw new Error(`${testCase.name}: outside dismissal must not trigger routing ${JSON.stringify(counters)}`);
   await context.close();
 }
 
