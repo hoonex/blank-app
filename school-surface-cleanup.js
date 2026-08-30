@@ -59,13 +59,16 @@ function parseScheduleDate(row){const raw=$('time',row)?.textContent||'';const d
 function filterPastSchedule(){
   const cutoff=todayKey(),grid=$('#scheduleGrid');
   if(grid){
-    const heading=grid.closest('.content-card')?.querySelector('.card-heading h2');if(heading)heading.textContent='남은 일정';
+    const heading=grid.closest('.content-card')?.querySelector('.card-heading h2');if(heading&&heading.textContent!=='남은 일정')heading.textContent='남은 일정';
     const rows=$$('.schedule-row',grid);let visible=0;
     rows.forEach(row=>{const key=parseScheduleDate(row),past=Boolean(key&&key<cutoff);row.hidden=past;if(!past)visible+=1});
     let empty=$('.flow-future-empty',grid);
     const nativeEmpty=$('.empty:not(.flow-future-empty)',grid);
-    if(!visible&&rows.length){if(!empty){empty=document.createElement('div');empty.className='empty flow-future-empty';grid.append(empty)}empty.textContent='남은 학사일정이 없습니다.';nativeEmpty?.classList.add('hidden')}
-    else{empty?.remove();nativeEmpty?.classList.remove('hidden')}
+    if(!visible&&rows.length){
+      if(!empty){empty=document.createElement('div');empty.className='empty flow-future-empty';grid.append(empty)}
+      if(empty.textContent!=='남은 학사일정이 없습니다.')empty.textContent='남은 학사일정이 없습니다.';
+      nativeEmpty?.classList.add('hidden');
+    }else{empty?.remove();nativeEmpty?.classList.remove('hidden')}
   }
   $$('.calendar-day[data-calendar-date]').forEach(day=>day.classList.toggle('flow-past-day',String(day.dataset.calendarDate||'')<cutoff));
   $$('#nationalScheduleCard .national-event').forEach(event=>{
