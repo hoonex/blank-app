@@ -37,7 +37,8 @@ async function fixture(page,counters,captured){
     const url=new URL(route.request().url()),action=url.searchParams.get('action')||'route';
     if(action==='destination-search'){
       counters.search+=1;captured.search=url;
-      return json(route,{query:url.searchParams.get('query')||'',provider:'Kakao-Local',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},suggestions});
+      const query=url.searchParams.get('query')||'',items=query==='없는장소테스트'?[]:suggestions;
+      return json(route,{query,provider:'Kakao-Local',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},suggestions:items});
     }
     counters.route+=1;captured.route=url;return json(route,routeBody);
   });
@@ -60,12 +61,18 @@ async function inspect(page){return page.evaluate(()=>{
   return{
     scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,
     panel:rect(panel),input:rect(input),submit:rect(submit),viewportHeight:innerHeight,
-    expanded:input?.getAttribute('aria-expanded')||'',
+    expanded:input?.getAttribute('aria-expanded')||'',submitText:submit?.textContent?.trim()||'',
     names:[...document.querySelectorAll('.flow-transit-destination-suggestion-main strong')].map(n=>n.textContent.trim()),
     meta:[...document.querySelectorAll('.flow-transit-destination-suggestion-main em')].map(n=>n.textContent.trim()),
     addresses:[...document.querySelectorAll('.flow-transit-destination-suggestion>small')].map(n=>n.textContent.trim()),
   };
 })}
+async function inspectVerifiedPrompt(page){return page.evaluate(()=>({
+  editorOpen:document.querySelector('#transitDestinationEditor')?.classList.contains('hidden')===false,
+  activeName:document.querySelector('.flow-transit-destination-suggestion.is-active strong')?.textContent?.trim()||'',
+  stored:localStorage.getItem('flow-school-transit-destination-v1'),
+  state:document.querySelector('#transitState')?.textContent?.trim()||'',
+}))}
 async function inspectDismissed(page){return page.evaluate(()=>({
   editorHidden:document.querySelector('#transitDestinationEditor')?.classList.contains('hidden')===true,
   destinationExpanded:document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded')||'',
@@ -82,11 +89,16 @@ for(const testCase of cases){
   await fixture(page,counters,captured);await openTransit(page);const state=await inspect(page);report[testCase.name]={state,counters,pageErrors};
   if(counters.search!==1||counters.route!==0)throw new Error(`${testCase.name}: typing should only search real destinations ${JSON.stringify(counters)}`);
   if(state.expanded!=='true'||state.names[0]!=='동대구역'||state.names.length!==3)throw new Error(`${testCase.name}: related place results missing ${JSON.stringify(state)}`);
+  if(state.submitText!=='장소 검색')throw new Error(`${testCase.name}: destination action must be search-only ${JSON.stringify(state)}`);
   if(!state.meta.some(v=>v.includes('기차역'))||!state.addresses[0]?.includes('대구광역시'))throw new Error(`${testCase.name}: real place metadata missing ${JSON.stringify(state)}`);
   if(state.scrollWidth>state.clientWidth+1||!state.panel||state.panel.left<-1||state.panel.right>state.clientWidth+1)throw new Error(`${testCase.name}: suggestion panel overflow ${JSON.stringify(state)}`);
   if(!state.input||state.panel.top<state.input.bottom-1||state.panel.top-state.input.bottom>14)throw new Error(`${testCase.name}: suggestions must sit directly below the search input ${JSON.stringify(state)}`);
-  if(testCase.name==='mobile-portrait'&&(!state.submit||state.submit.top<state.panel.bottom-1))throw new Error(`${testCase.name}: free-text submit must follow suggestions instead of separating them from the input ${JSON.stringify(state)}`);
+  if(testCase.name==='mobile-portrait'&&(!state.submit||state.submit.top<state.panel.bottom-1))throw new Error(`${testCase.name}: search action must follow suggestions instead of separating them from the input ${JSON.stringify(state)}`);
   if(testCase.name==='mobile-landscape'&&state.panel.height>120)throw new Error(`${testCase.name}: result list is too tall for landscape ${JSON.stringify(state)}`);
+  await page.locator('.flow-transit-destination-submit').click();
+  const verified=await inspectVerifiedPrompt(page);report[testCase.name].verifiedPrompt=verified;
+  if(!verified.editorOpen||verified.activeName!=='동대구역'||verified.stored!==null||!verified.state.includes('실제 목적지를 선택'))throw new Error(`${testCase.name}: search action must require a verified suggestion before routing ${JSON.stringify(verified)}`);
+  if(counters.search!==1||counters.route!==0||counters.rail!==0)throw new Error(`${testCase.name}: search action must not route raw text ${JSON.stringify(counters)}`);
   if(pageErrors.length)throw new Error(`${testCase.name}: page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/destination-suggestions-${testCase.name}.png`,fullPage:false});
   await page.locator('.flow-transit-header h1').click();
@@ -112,6 +124,33 @@ for(const testCase of cases){
   if(stored?.name!=='동대구역'||stored?.address!==suggestions[0].address||stored?.x!==suggestions[0].x||stored?.y!==suggestions[0].y||stored?.category!=='기차역')throw new Error(`selected place persistence incomplete ${JSON.stringify(stored)}`);
   if(pageErrors.length)throw new Error(`selection page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/destination-selected-mobile-portrait.png`,fullPage:false});
+  await context.close();
+}
+
+{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
+  const page=await context.newPage(),counters={search:0,route:0,rail:0},captured={},pageErrors=[];page.on('pageerror',error=>pageErrors.push(String(error)));
+  await fixture(page,counters,captured);
+  await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
+  await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
+  await page.locator('[data-flow-transit-nav]:visible').first().click();
+  await page.waitForSelector('#transitView:not(.hidden)');
+  await page.locator('#transitDestinationEditBtn').click();
+  await page.locator('#transitDestinationInput').fill('없는장소테스트');
+  await page.waitForFunction(()=>document.querySelector('#transitDestinationSuggestions')?.textContent?.includes('일치하는 장소를 찾지 못했습니다.'));
+  await page.locator('.flow-transit-destination-submit').click();
+  await page.waitForFunction(()=>document.querySelector('#transitState')?.textContent?.includes('실제 장소를 찾지 못했습니다.'));
+  const invalid=await page.evaluate(()=>({
+    stored:localStorage.getItem('flow-school-transit-destination-v1'),
+    editorOpen:document.querySelector('#transitDestinationEditor')?.classList.contains('hidden')===false,
+    state:document.querySelector('#transitState')?.textContent?.trim()||'',
+  }));
+  report.noResult={counters,invalid,pageErrors};
+  if(counters.search!==2||counters.route!==0||counters.rail!==0)throw new Error(`no-result query must never route raw text ${JSON.stringify(counters)}`);
+  if(invalid.stored!==null||!invalid.editorOpen||!invalid.state.includes('실제 장소를 찾지 못했습니다.'))throw new Error(`no-result query must remain uncommitted ${JSON.stringify(invalid)}`);
+  if(pageErrors.length)throw new Error(`no-result page errors ${JSON.stringify(pageErrors)}`);
+  await page.screenshot({path:`${OUT}/destination-no-result-mobile-portrait.png`,fullPage:false});
   await context.close();
 }
 
