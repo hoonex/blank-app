@@ -58,12 +58,14 @@ jobs:
         run: |
           set -euo pipefail
           base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data'
-          read -r status seconds < <(curl -sSL -o /tmp/transit-mixed-route.json -w '%{http_code} %{time_total}' --get --connect-timeout 10 --max-time 60 \
+          metrics="$(curl -sSL -o /tmp/transit-mixed-route.json -w '%{http_code} %{time_total}' --get --connect-timeout 10 --max-time 60 \
             --data-urlencode 'action=route' \
             --data-urlencode 'sx=128.6960' \
             --data-urlencode 'sy=35.8760' \
             --data-urlencode 'destination=대구광역시 북구 대학로 80' \
-            "$base")
+            "$base")"
+          status="${metrics%% *}"
+          seconds="${metrics#* }"
           if [ "$status" != "200" ]; then
             echo "Mixed-aware Transit route HTTP $status after ${seconds}s"
             cat /tmp/transit-mixed-route.json
