@@ -6,6 +6,7 @@ import './school-timetable-polish.js';
 import './school-transit.js';
 import './school-transit-map.js';
 import './school-transit-focus.js';
+import './school-surface-cleanup.js';
 
 if(!document.querySelector('link[data-flow-school-settings-wide]')){
   const link=document.createElement('link');
