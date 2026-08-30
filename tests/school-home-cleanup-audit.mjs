@@ -6,9 +6,8 @@ const OUT=process.env.FLOW_TEST_OUT||'school-home-cleanup-audit';
 await fs.mkdir(OUT,{recursive:true});
 
 const pad=value=>String(value).padStart(2,'0');
-const shifted=days=>{const date=new Date();date.setHours(12,0,0,0);date.setDate(date.getDate()+days);return date};
-const ymd=date=>`${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}`;
-const today=ymd(shifted(0)),yesterday=ymd(shifted(-1)),tomorrow=ymd(shifted(1));
+const seoulYmd=(days=0)=>{const date=new Date(Date.now()+9*60*60*1000+days*24*60*60*1000);return`${date.getUTCFullYear()}${pad(date.getUTCMonth()+1)}${pad(date.getUTCDate())}`};
+const today=seoulYmd(0),yesterday=seoulYmd(-1),tomorrow=seoulYmd(1);
 const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 용계동 54'},grade:2,className:'6'};
 const dashboard={
   school:profile.school,selected:today,from:yesterday,to:tomorrow,
