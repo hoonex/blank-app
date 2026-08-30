@@ -31,6 +31,9 @@ jobs:
           grep -q '"binding": "ASSETS"' wrangler.jsonc
           grep -q 'cloudflare-worker.mjs' .assetsignore
           grep -q 'installUniversityFetchRetry' university/net-bootstrap.js
+          grep -q "school-uiux-v2.js" school-metrics.js
+          grep -q "school-uiux-v2.css" sw.js
+          grep -q "school-uiux-v2-system.css" sw.js
 
       - name: Validate Wrangler deployment bundle
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
@@ -58,6 +61,9 @@ jobs:
             'school-ia.js'
             'school-metrics.js'
             'school-surface-cleanup.js'
+            'school-uiux-v2.js'
+            'school-uiux-v2.css'
+            'school-uiux-v2-system.css'
             'flow-experience.js'
             'flow-experience.css'
             'sw.js'
