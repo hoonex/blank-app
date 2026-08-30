@@ -28,8 +28,10 @@ async function fixture(page){
 }
 async function homeState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const visibleStatus=[...document.querySelectorAll('#todayView .status-card')].filter(shown);
   return{
-    status:[...document.querySelectorAll('#todayView .status-card')].filter(shown).map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),
+    status:visibleStatus.map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),
+    statusRects:visibleStatus.map(node=>{const rect=node.getBoundingClientRect();return{label:node.querySelector('.status-label')?.textContent?.trim()||'',left:rect.left,top:rect.top,width:rect.width,height:rect.height}}),
     lessons:shown(document.querySelector('#quickLessons')?.closest('.status-card')),meal:shown(document.querySelector('#quickMeal')?.closest('.status-card')),
     transitSurface:document.documentElement.dataset.flowTransitSurface||'',transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
     bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
@@ -50,6 +52,13 @@ for(const [name,width,height,isMobile] of cases){
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForFunction(()=>document.querySelector('#mealCal')?.textContent?.includes('12:20–13:10'),null,{timeout:5000});
   const home=await homeState(page);
   if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
+  if(width<=900){
+    const [nowCard,nextCard]=home.statusRects;
+    const sameRow=nowCard&&nextCard&&Math.abs(nowCard.top-nextCard.top)<=2&&nowCard.left<nextCard.left;
+    const balanced=nowCard&&nextCard&&Math.abs(nowCard.width-nextCard.width)<=4;
+    const compact=nowCard&&nextCard&&Math.max(nowCard.height,nextCard.height)<=145;
+    if(!sameRow||!balanced||!compact)throw new Error(`${name}: Today status cards are not a compact side-by-side pair ${JSON.stringify(home.statusRects)}`);
+  }
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
   if(transitRequests.length)throw new Error(`${name}: dormant production Transit assets were requested ${JSON.stringify(transitRequests)}`);
   if(width<=900&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
@@ -73,4 +82,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'compact-side-by-side',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
