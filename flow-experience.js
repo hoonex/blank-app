@@ -20,7 +20,7 @@ const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 function enabled(key){return localStorage.getItem(key)!=='off'}
-function setEnabled(key,on){localStorage.setItem(key,on?'on':'off'}
+function setEnabled(key,on){localStorage.setItem(key,on?'on':'off')}
 function touchLike(event){return event?.pointerType==='touch'||event?.pointerType==='pen'||matchMedia('(pointer:coarse)').matches}
 function hapticSupported(){return typeof navigator.vibrate==='function'}
 function motionEnabled(){return enabled(MOTION_KEY)&&!reducedMotion.matches}
@@ -105,7 +105,7 @@ function installMagneticControls(){
   document.addEventListener('pointerdown',event=>{
     if(!motionEnabled()||ownsComplexGesture(event.target))return;
     const host=event.target.closest?.(MAGNET_SELECTOR);if(!host||host.disabled)return;
-    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse?.11:.16,coarse?5.5:8);
+    const coarse=touchLike(event),[x,y]=magnetVector(host,event,coarse ? .11 : .16,coarse?5.5:8);
     host.classList.add('flow-pressing');setMagnet(host,x,y);activeMagnet={host,id:event.pointerId}
   },{capture:true,passive:true});
   document.addEventListener('pointermove',event=>{
