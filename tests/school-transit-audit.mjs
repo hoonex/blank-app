@@ -55,8 +55,10 @@ async function fixture(page,counters,{busFailure=false,outsideFailure=false}={})
     return json(route,{});
   });
   await page.route('**/functions/v1/transit-data*',route=>{
+    const url=new URL(route.request().url()),action=url.searchParams.get('action')||'route';
+    if(action==='destination-search')return json(route,{query:url.searchParams.get('query')||'',provider:'Kakao-Local',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},suggestions:[{id:'station-main',...customTransitDestination,category:'기차역',distanceMeters:0}]});
     counters.bus+=1;
-    const query=new URL(route.request().url()).searchParams.get('destination')||'';
+    const query=url.searchParams.get('destination')||'';
     if(outsideFailure)return json(route,{code:'OUT_OF_SERVICE_AREA',error:'출발 위치가 대구광역시 밖입니다. Flow 교통은 현재 대구광역시 안에서만 경로를 검색합니다.',position:'source',detectedRegion:'경상북도',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},routes:[]},422);
     if(busFailure)return json(route,{error:'공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.',destination:transit.destination,provider:'TAGO-public-data',routes:[]},502);
     return json(route,{...transit,destination:query.includes('동대구역')?customTransitDestination:transit.destination});

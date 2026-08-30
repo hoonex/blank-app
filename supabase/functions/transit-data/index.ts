@@ -24,11 +24,16 @@ const ROUTE_MODES = [
 ];
 
 type KakaoDocument = {
+  id?: string;
   x?: string;
   y?: string;
   place_name?: string;
   address_name?: string;
+  road_address_name?: string;
   region_1depth_name?: string;
+  category_group_name?: string;
+  category_name?: string;
+  distance?: string;
   address?: { address_name?: string; region_1depth_name?: string };
   road_address?: { address_name?: string; region_1depth_name?: string } | null;
 };
@@ -39,6 +44,16 @@ type ResolvedDestination = {
   name: string;
   address: string;
   region: string;
+};
+
+type DestinationSuggestion = {
+  id: string;
+  name: string;
+  address: string;
+  category: string;
+  x: number;
+  y: number;
+  distanceMeters: number | null;
 };
 
 type InternalResult = {
@@ -59,6 +74,12 @@ function finite(value: string | null, min: number, max: number) {
 function isDaegu(region: unknown) {
   const value = String(region || "").trim();
   return value === SERVICE_AREA.name || value === "대구";
+}
+
+function regionFromAddress(address: unknown) {
+  const value = String(address || "").trim();
+  if (/^대구(?:광역시)?(?:\s|$)/.test(value)) return SERVICE_AREA.name;
+  return value.split(/\s+/)[0] || "";
 }
 
 function outOfArea(position: "source" | "destination", region = "") {
@@ -96,8 +117,8 @@ async function coordinateRegion(x: number, y: number) {
 function destinationFromDocument(doc: KakaoDocument, fallbackName: string): ResolvedDestination | null {
   const x = Number(doc?.x), y = Number(doc?.y);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-  const address = String(doc?.road_address?.address_name || doc?.address?.address_name || doc?.address_name || fallbackName || "").trim();
-  const region = String(doc?.road_address?.region_1depth_name || doc?.address?.region_1depth_name || doc?.region_1depth_name || "").trim();
+  const address = String(doc?.road_address_name || doc?.road_address?.address_name || doc?.address?.address_name || doc?.address_name || fallbackName || "").trim();
+  const region = String(doc?.road_address?.region_1depth_name || doc?.address?.region_1depth_name || doc?.region_1depth_name || regionFromAddress(address) || "").trim();
   return {
     x,
     y,
@@ -107,11 +128,79 @@ function destinationFromDocument(doc: KakaoDocument, fallbackName: string): Reso
   };
 }
 
+function suggestionFromDocument(doc: KakaoDocument, fallbackName: string, source: "keyword" | "address"): DestinationSuggestion | null {
+  const resolved = destinationFromDocument(doc, fallbackName);
+  if (!resolved) return null;
+  const region = resolved.region || regionFromAddress(resolved.address);
+  if (!isDaegu(region)) return null;
+  const categoryPath = String(doc?.category_name || "").split(">").map((value) => value.trim()).filter(Boolean);
+  const category = source === "address"
+    ? "주소"
+    : String(doc?.category_group_name || categoryPath.at(-1) || "장소").trim();
+  const rawDistance = Number(doc?.distance);
+  return {
+    id: String(doc?.id || `${resolved.x.toFixed(6)},${resolved.y.toFixed(6)}`),
+    name: resolved.name,
+    address: resolved.address,
+    category,
+    x: resolved.x,
+    y: resolved.y,
+    distanceMeters: Number.isFinite(rawDistance) && rawDistance >= 0 ? Math.round(rawDistance) : null,
+  };
+}
+
+async function destinationSearch(query: string, sx: number | null, sy: number | null) {
+  const keywordParams: Record<string, string> = { query, size: "10" };
+  if (sx !== null && sy !== null) {
+    keywordParams.x = String(sx);
+    keywordParams.y = String(sy);
+  }
+  const [keywordSettled, addressSettled] = await Promise.allSettled([
+    kakao("/search/keyword.json", keywordParams),
+    kakao("/search/address.json", { query, size: "5" }),
+  ]);
+  if (keywordSettled.status === "rejected" && addressSettled.status === "rejected") {
+    throw keywordSettled.reason;
+  }
+  const keywordDocs = keywordSettled.status === "fulfilled" && Array.isArray(keywordSettled.value?.documents)
+    ? keywordSettled.value.documents : [];
+  const addressDocs = addressSettled.status === "fulfilled" && Array.isArray(addressSettled.value?.documents)
+    ? addressSettled.value.documents : [];
+  const deduped = new Map<string, DestinationSuggestion>();
+  for (const [doc, source] of [
+    ...keywordDocs.map((doc: KakaoDocument) => [doc, "keyword"] as const),
+    ...addressDocs.map((doc: KakaoDocument) => [doc, "address"] as const),
+  ]) {
+    const suggestion = suggestionFromDocument(doc, query, source);
+    if (!suggestion) continue;
+    const key = `${suggestion.name}|${suggestion.address}|${suggestion.x.toFixed(5)}|${suggestion.y.toFixed(5)}`;
+    if (!deduped.has(key)) deduped.set(key, suggestion);
+    if (deduped.size >= 6) break;
+  }
+  return reply({
+    query,
+    provider: "Kakao-Local",
+    serviceArea: SERVICE_AREA,
+    suggestions: [...deduped.values()],
+  }, 200, "public, max-age=20");
+}
+
 async function withCoordinateRegion(destination: ResolvedDestination) {
   return { ...destination, region: await coordinateRegion(destination.x, destination.y) };
 }
 
-async function resolveDestination(query: string, ex: number | null, ey: number | null) {
+async function resolveDestination(query: string, ex: number | null, ey: number | null, preferredName = "", preferredAddress = "") {
+  if (ex !== null && ey !== null) {
+    const region = await coordinateRegion(ex, ey);
+    return {
+      x: ex,
+      y: ey,
+      name: String(preferredName || query || "목적지").trim() || "목적지",
+      address: String(preferredAddress || "").trim(),
+      region,
+    } satisfies ResolvedDestination;
+  }
+
   if (query) {
     const addressBody = await kakao("/search/address.json", { query });
     const addressDoc = Array.isArray(addressBody?.documents) ? addressBody.documents[0] : null;
@@ -125,9 +214,7 @@ async function resolveDestination(query: string, ex: number | null, ey: number |
     throw new Error("목적지를 찾지 못했습니다. 장소명이나 도로명 주소를 확인해주세요.");
   }
 
-  if (ex === null || ey === null) throw new Error("목적지 이름이나 좌표가 필요합니다.");
-  const region = await coordinateRegion(ex, ey);
-  return { x: ex, y: ey, name: "목적지", address: "", region } satisfies ResolvedDestination;
+  throw new Error("목적지 이름이나 좌표가 필요합니다.");
 }
 
 async function internalRoute(endpoint: string, sx: number, sy: number, destination: ResolvedDestination, query = "", timeout = 125_000): Promise<InternalResult> {
@@ -305,6 +392,7 @@ Deno.serve(async (req: Request) => {
           mixedAuth: Boolean(SUPABASE_SERVICE_ROLE_KEY),
         },
         routingProvider: "TAGO-public-data",
+        destinationSearch: "Kakao-Local-keyword+address",
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
         routeModes: ROUTE_MODES,
         mixedRouting: "protected-orchestrator",
@@ -320,6 +408,15 @@ Deno.serve(async (req: Request) => {
         plannedGtfsUpgrade: "2026-09-07",
       });
     }
+
+    if (action === "destination-search") {
+      const query = String(url.searchParams.get("query") || "").trim();
+      if (query.length < 2) return reply({ query, provider: "Kakao-Local", serviceArea: SERVICE_AREA, suggestions: [] });
+      const sx = finite(url.searchParams.get("sx"), -180, 180);
+      const sy = finite(url.searchParams.get("sy"), -90, 90);
+      return await destinationSearch(query, sx, sy);
+    }
+
     if (action !== "route") return reply({ error: "지원하지 않는 요청입니다." }, 404);
 
     const sx = finite(url.searchParams.get("sx"), -180, 180);
@@ -332,10 +429,13 @@ Deno.serve(async (req: Request) => {
     const ex = finite(url.searchParams.get("ex"), -180, 180);
     const ey = finite(url.searchParams.get("ey"), -90, 90);
     const query = String(url.searchParams.get("destination") || "").trim();
-    const destination = await resolveDestination(query, ex, ey);
+    const preferredName = String(url.searchParams.get("destinationName") || "").trim();
+    const preferredAddress = String(url.searchParams.get("destinationAddress") || "").trim();
+    const destination = await resolveDestination(query, ex, ey, preferredName, preferredAddress);
     if (!isDaegu(destination.region)) return outOfArea("destination", destination.region);
 
-    return await routeData(sx, sy, query, destination);
+    const coreQuery = ex !== null && ey !== null ? "" : query;
+    return await routeData(sx, sy, coreQuery, destination);
   } catch (error) {
     const message = error instanceof Error ? error.message : "교통 정보를 불러오지 못했습니다.";
     console.error(`transit-data gate: ${message}`);

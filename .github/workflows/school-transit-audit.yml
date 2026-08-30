@@ -23,6 +23,7 @@ jobs:
           node --check school-transit.js
           node --check school-transit-map.js
           node --check tests/school-transit-audit.mjs
+          node --check tests/school-transit-destination-suggestions-audit.mjs
           node --check tests/school-transit-map-audit.mjs
           node --check tests/transit-live-map-audit.mjs
           node scripts/edge-secret-audit.mjs
@@ -43,6 +44,10 @@ jobs:
           grep -q "'/transit':'/index.html'" cloudflare-worker.mjs
           grep -q '"source": "/transit"' vercel.json
           grep -q "KAKAO_REST_KEY" supabase/functions/transit-data/index.ts
+          grep -q "destination-search" supabase/functions/transit-data/index.ts
+          grep -q "Kakao-Local-keyword+address" supabase/functions/transit-data/index.ts
+          grep -q "destinationName" school-transit.js
+          grep -q "data-destination-suggestion" school-transit.js
           grep -q "OUT_OF_SERVICE_AREA" supabase/functions/transit-data/index.ts
           grep -q "daegu-only-source+destination" supabase/functions/transit-data/index.ts
           grep -q "대구광역시" supabase/functions/transit-data/index.ts
@@ -89,6 +94,7 @@ jobs:
           const missing=Object.entries(integrations).filter(([,ready])=>ready!==true).map(([name])=>name);
           if(!data?.ok||missing.length) throw new Error(`Transit integrations are not ready: ${missing.join(', ')||'health failed'}`);
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
+          if(data?.destinationSearch!=='Kakao-Local-keyword+address') throw new Error(`Transit destination search is not active: ${data?.destinationSearch||'missing'}`);
           if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
           if(data?.realtimeRouting!=='cache-age-adjusted-per-bus-leg') throw new Error(`Transit cache-age-adjusted per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
           if(data?.realtimeFreshness!=='provider-fetchedAt+cache-age-adjusted') throw new Error(`Transit realtime freshness provenance is not active: ${data?.realtimeFreshness||'missing'}`);
@@ -99,7 +105,28 @@ jobs:
           if(!map?.ok||map?.provider!=='TAGO-public-data+Daegu-official-SHP'||map?.geometry!=='daegu-official-bus-link-snapshot'||map?.geometrySnapshot!=='2025-09-03'||map?.geometryFallback!=='route-stop-sequence') throw new Error(`Transit official map adapter is not ready: ${JSON.stringify(map)}`);
           const rail=JSON.parse(fs.readFileSync('/tmp/transit-rail-health.json','utf8'));
           if(!rail?.ok||rail?.provider!=='KRIC-snapshot+Kakao-SW8'||rail?.coverage!=='Daegu-1-2-3'||rail?.snapshotDate!=='2026-06-30'||rail?.realtime!==false||rail?.waitModel!=='estimated') throw new Error(`Transit rail adapter is not ready: ${JSON.stringify(rail)}`);
-          console.log('Transit integrations: Daegu-only gate + cache-age-adjusted TAGO realtime + official Daegu road geometry + Daegu rail ready');
+          console.log('Transit integrations: destination suggestions + Daegu-only gate + cache-age-adjusted TAGO realtime + official Daegu road geometry + Daegu rail ready');
+          NODE
+          suggest_status=$(curl -sSL -o /tmp/transit-destination-suggestions.json -w '%{http_code}' --get --connect-timeout 10 --max-time 30 \
+            --data-urlencode 'action=destination-search' \
+            --data-urlencode 'query=동대구' \
+            --data-urlencode 'sx=128.6014' \
+            --data-urlencode 'sy=35.8714' \
+            "$base")
+          if [ "$suggest_status" != "200" ]; then
+            echo "Transit destination search HTTP $suggest_status"
+            cat /tmp/transit-destination-suggestions.json
+            echo
+            exit 1
+          fi
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const data=JSON.parse(fs.readFileSync('/tmp/transit-destination-suggestions.json','utf8'));
+          const suggestions=Array.isArray(data?.suggestions)?data.suggestions:[];
+          if(data?.provider!=='Kakao-Local'||suggestions.length<1||suggestions.length>6) throw new Error(`Unexpected destination suggestions: ${JSON.stringify(data)}`);
+          if(!suggestions.some(item=>String(item?.name||'').includes('동대구'))) throw new Error(`Dongdaegu related places missing: ${JSON.stringify(suggestions)}`);
+          if(!suggestions.every(item=>Number.isFinite(Number(item?.x))&&Number.isFinite(Number(item?.y))&&String(item?.address||'').startsWith('대구'))) throw new Error(`Destination suggestion metadata is incomplete: ${JSON.stringify(suggestions)}`);
+          console.log(`Live destination suggestions: ${suggestions.length} Kakao place/address candidate(s)`);
           NODE
           route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
@@ -189,6 +216,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/school-transit-audit.mjs
+      - name: Verify related destination suggestions across six viewports
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-transit-destination-suggestions-audit.mjs
       - name: Verify lazy bus maps across six viewports
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -199,5 +230,6 @@ jobs:
           name: school-transit-audit
           path: |
             school-transit-audit/
+            school-transit-destination-suggestions-audit/
             school-transit-map-audit/
           retention-days: 7
