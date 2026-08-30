@@ -147,9 +147,28 @@ async function internalRoute(endpoint: string, sx: number, sy: number, destinati
   return { response, body };
 }
 
+function realtimeCoverageScore(route: any) {
+  const segments = Array.isArray(route?.segments) ? route.segments : [];
+  const busLegs = segments.filter((segment: any) => segment?.type === "bus").length;
+  const liveLegs = Array.isArray(route?.realtimeLegs) ? route.realtimeLegs.length : 0;
+  return busLegs ? Math.min(1, liveLegs / busLegs) : 0;
+}
+
+function realtimeAgeSeconds(route: any) {
+  const legs = Array.isArray(route?.realtimeLegs) ? route.realtimeLegs : [];
+  if (!legs.length) return Number.POSITIVE_INFINITY;
+  const now = Date.now();
+  return Math.max(...legs.map((leg: any) => {
+    const checked = Date.parse(String(leg?.checkedAt || ""));
+    return Number.isFinite(checked) ? Math.max(0, Math.floor((now - checked) / 1000)) : Number.POSITIVE_INFINITY;
+  }));
+}
+
 function routeSort(a: any, b: any) {
   return Number(a?.totalMinutes || 0) - Number(b?.totalMinutes || 0)
     || Number(a?.transfers || 0) - Number(b?.transfers || 0)
+    || realtimeCoverageScore(b) - realtimeCoverageScore(a)
+    || realtimeAgeSeconds(a) - realtimeAgeSeconds(b)
     || Number(a?.walkMeters || 0) - Number(b?.walkMeters || 0);
 }
 
@@ -290,7 +309,8 @@ Deno.serve(async (req: Request) => {
         routeModes: ROUTE_MODES,
         mixedRouting: "protected-orchestrator",
         mixedBudgetMs: MIXED_TIMEOUT_MS,
-        realtimeRouting: "per-bus-leg-when-available",
+        realtimeRouting: "cache-age-adjusted-per-bus-leg",
+        realtimeFreshness: "provider-fetchedAt+cache-age-adjusted",
         railRealtime: false,
         regionalRouting: "daegu-only-source+destination",
         transferMatching: "node-id+walkable-stop-proximity",

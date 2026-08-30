@@ -54,7 +54,8 @@ jobs:
           grep -q "getSttnNoList" supabase/functions/transit-data-core/index.ts
           grep -q "city-stop-master" supabase/functions/transit-data-core/index.ts
           grep -q "realtimeLegs" supabase/functions/transit-data-core/index.ts
-          grep -q "per-bus-leg-when-available" supabase/functions/transit-data-core/index.ts
+          grep -q "cache-age-adjusted-per-bus-leg" supabase/functions/transit-data-core/index.ts
+          grep -q "provider-fetchedAt+cache-age-adjusted" supabase/functions/transit-data-core/index.ts
           grep -q "coordinate-owned-source+destination" supabase/functions/transit-data-core/index.ts
           grep -q "node-id+walkable-stop-proximity" supabase/functions/transit-data-core/index.ts
           grep -q "transferWalkMeters" supabase/functions/transit-data-core/index.ts
@@ -89,7 +90,8 @@ jobs:
           if(!data?.ok||missing.length) throw new Error(`Transit integrations are not ready: ${missing.join(', ')||'health failed'}`);
           if(data?.routingProvider!=='TAGO-public-data') throw new Error(`Unexpected Transit provider: ${data?.routingProvider}`);
           if(!Array.isArray(data?.stopDiscovery)||!data.stopDiscovery.includes('city-stop-master')) throw new Error('Transit city-stop fallback is not active');
-          if(data?.realtimeRouting!=='per-bus-leg-when-available') throw new Error(`Transit per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
+          if(data?.realtimeRouting!=='cache-age-adjusted-per-bus-leg') throw new Error(`Transit cache-age-adjusted per-leg realtime capability is not active: ${data?.realtimeRouting||'missing'}`);
+          if(data?.realtimeFreshness!=='provider-fetchedAt+cache-age-adjusted') throw new Error(`Transit realtime freshness provenance is not active: ${data?.realtimeFreshness||'missing'}`);
           if(data?.regionalRouting!=='daegu-only-source+destination') throw new Error(`Transit Daegu-only gate is not active: ${data?.regionalRouting||'missing'}`);
           if(data?.serviceArea?.id!=='daegu'||data?.serviceArea?.name!=='대구광역시'||data?.serviceArea?.policy!=='source+destination-inside') throw new Error(`Unexpected Transit service area: ${JSON.stringify(data?.serviceArea)}`);
           if(data?.transferMatching!=='node-id+walkable-stop-proximity') throw new Error(`Transit transfer matching is not active: ${data?.transferMatching||'missing'}`);
@@ -97,7 +99,7 @@ jobs:
           if(!map?.ok||map?.provider!=='TAGO-public-data+Daegu-official-SHP'||map?.geometry!=='daegu-official-bus-link-snapshot'||map?.geometrySnapshot!=='2025-09-03'||map?.geometryFallback!=='route-stop-sequence') throw new Error(`Transit official map adapter is not ready: ${JSON.stringify(map)}`);
           const rail=JSON.parse(fs.readFileSync('/tmp/transit-rail-health.json','utf8'));
           if(!rail?.ok||rail?.provider!=='KRIC-snapshot+Kakao-SW8'||rail?.coverage!=='Daegu-1-2-3'||rail?.snapshotDate!=='2026-06-30'||rail?.realtime!==false||rail?.waitModel!=='estimated') throw new Error(`Transit rail adapter is not ready: ${JSON.stringify(rail)}`);
-          console.log('Transit integrations: Daegu-only gate + TAGO routing/realtime + official Daegu road geometry + Daegu rail ready');
+          console.log('Transit integrations: Daegu-only gate + cache-age-adjusted TAGO realtime + official Daegu road geometry + Daegu rail ready');
           NODE
           route_status=$(curl -sSL -o /tmp/transit-route.json -w '%{http_code}' --get --connect-timeout 10 --max-time 80 \
             --data-urlencode 'action=route' \
@@ -145,6 +147,15 @@ jobs:
           if(data?.serviceArea?.name!=='대구광역시') throw new Error(`Route response lost service area: ${JSON.stringify(data?.serviceArea)}`);
           if(!routes.every(route=>Number(route.totalMinutes)>0&&Array.isArray(route.segments)&&route.segments.length)) throw new Error('Live route normalization is incomplete');
           if(!routes.every(route=>Array.isArray(route.realtimeLegs))) throw new Error('Per-leg realtime shape is missing from live routes');
+          const liveLegs=routes.flatMap(route=>route.realtimeLegs||[]);
+          if(liveLegs.length){
+            const generated=Date.parse(data.generatedAt);
+            for(const leg of liveLegs){
+              if(!Number.isInteger(leg.ageSeconds)||leg.ageSeconds<0||leg.ageSeconds>60) throw new Error(`Unexpected live arrival age: ${JSON.stringify(leg)}`);
+              const checked=Date.parse(leg.checkedAt);
+              if(!Number.isFinite(checked)||!Number.isFinite(generated)||checked>generated) throw new Error(`Live arrival checkedAt lost provider provenance: ${JSON.stringify(leg)}`);
+            }
+          }
           const outside=JSON.parse(fs.readFileSync('/tmp/transit-outside.json','utf8'));
           if(outside?.code!=='OUT_OF_SERVICE_AREA'||outside?.position!=='source'||outside?.serviceArea?.name!=='대구광역시') throw new Error(`Outside-Daegu gate contract failed: ${JSON.stringify(outside)}`);
           const rail=JSON.parse(fs.readFileSync('/tmp/transit-rail-route.json','utf8'));
@@ -162,7 +173,7 @@ jobs:
           if(!Array.isArray(map?.route?.stops)||map.route.stops.length<2) throw new Error('Transit map route-stop geometry is incomplete');
           if(!Array.isArray(map?.route?.path)||map.route.path.length<2) throw new Error('Transit map official road path is incomplete');
           if(!Array.isArray(map?.vehicles)||!['live','unavailable'].includes(map?.vehicleStatus)) throw new Error('Transit map vehicle fallback contract is incomplete');
-          console.log(`Live Transit: ${routes.length} Daegu bus route(s); outside-Daegu blocked; ${railRoutes.length} rail route(s); official map ${map.route.path.length} path points / ${map.route.stops.length} stops; vehicles ${map.vehicles.length}`);
+          console.log(`Live Transit: ${routes.length} Daegu bus route(s); outside-Daegu blocked; ${railRoutes.length} rail route(s); ${liveLegs.length} live arrival leg(s); official map ${map.route.path.length} path points / ${map.route.stops.length} stops; vehicles ${map.vehicles.length}`);
           NODE
       - name: Install Playwright Chromium
         run: |
