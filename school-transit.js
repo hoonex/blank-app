@@ -24,7 +24,7 @@ function customDestination(){
     };
   }catch{return null}
 }
-function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function active(){return location.pathname==='/transit'&&!$('#transitView')?.classList.contains('hidden')}
 function schoolDestination(){
   const school=profile()?.school||{},address=[school.address,school.addressDetail].filter(Boolean).join(' ').trim();
