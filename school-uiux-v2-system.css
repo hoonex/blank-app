@@ -1,3 +1,7 @@
+html[data-flow-school-ui="v2"] body #todayView .status-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+
 @media(prefers-color-scheme:dark){
   html[data-theme="system"][data-flow-school-ui="v2"]{
     --school-v2-bg:#151b22;
