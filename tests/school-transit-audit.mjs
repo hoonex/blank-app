@@ -28,6 +28,7 @@ const busRoute=(index)=>{
   };
 };
 const transit={generatedAt:new Date().toISOString(),destination:{name:'정동고등학교',address:'대구광역시 동구 용계동 54',x:128.7004,y:35.8467},serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},provider:'TAGO-public-data',realtimeCoverage:'multi-leg',routes:Array.from({length:5},(_,i)=>busRoute(i))};
+const customTransitDestination={name:'동대구역',address:'대구광역시 동구 동부로 149',x:128.6285,y:35.8795};
 const railWalkStart={type:'walk',minutes:3,distance:210,stationCount:0,startName:'현재 위치',endName:'안심(혁신도시.첨복단지)',startId:'',endId:'',lines:[],direction:''};
 const subway={type:'subway',minutes:16,distance:0,stationCount:8,startName:'안심(혁신도시.첨복단지)',endName:'동대구역',startId:'DG-1-32',endId:'DG-1-21',lines:['1호선'],direction:'설화명곡'};
 const railWalkEnd={type:'walk',minutes:4,distance:260,stationCount:0,startName:'동대구역',endName:'목적지',startId:'',endId:'',lines:[],direction:''};
@@ -55,9 +56,10 @@ async function fixture(page,counters,{busFailure=false,outsideFailure=false}={})
   });
   await page.route('**/functions/v1/transit-data*',route=>{
     counters.bus+=1;
+    const query=new URL(route.request().url()).searchParams.get('destination')||'';
     if(outsideFailure)return json(route,{code:'OUT_OF_SERVICE_AREA',error:'출발 위치가 대구광역시 밖입니다. Flow 교통은 현재 대구광역시 안에서만 경로를 검색합니다.',position:'source',detectedRegion:'경상북도',serviceArea:{id:'daegu',name:'대구광역시',policy:'source+destination-inside'},routes:[]},422);
     if(busFailure)return json(route,{error:'공공 교통데이터에서 연결 가능한 버스 경로를 찾지 못했습니다.',destination:transit.destination,provider:'TAGO-public-data',routes:[]},502);
-    return json(route,transit);
+    return json(route,{...transit,destination:query.includes('동대구역')?customTransitDestination:transit.destination});
   });
   await page.route('**/functions/v1/transit-rail*',route=>{counters.rail+=1;return json(route,rail)});
   await page.addInitScript(({profile})=>{
@@ -67,9 +69,11 @@ async function fixture(page,counters,{busFailure=false,outsideFailure=false}={})
 async function inspect(page){
   return page.evaluate(()=>{
     const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
+    const visible=node=>Boolean(node&&!node.classList.contains('hidden')&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden');
     const bottom=[...document.querySelectorAll('#bottomNav>*')].filter(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0}).map(node=>node.textContent.trim());
     const first=document.querySelector('[data-transit-route="0"]');
     const search=document.querySelector('.flow-transit-search');
+    const destinationCard=document.querySelector('#transitDestinationEditBtn'),editor=document.querySelector('#transitDestinationEditor'),input=document.querySelector('#transitDestinationInput'),reset=document.querySelector('#transitDestinationResetBtn'),locate=document.querySelector('#transitLocateBtn');
     return{
       path:location.pathname,
       scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,
@@ -84,6 +88,7 @@ async function inspect(page){
       state:document.querySelector('#transitState')?.textContent.trim()||'',
       stateKind:document.querySelector('#transitState')?.dataset.kind||'',
       serviceAreaLabel:search?getComputedStyle(search,'::before').content.replace(/^['"]|['"]$/g,''):'',
+      destinationCard:rect(destinationCard),destinationName:document.querySelector('#transitSchoolName')?.textContent?.trim()||'',destinationAddress:document.querySelector('#transitSchoolAddress')?.textContent?.trim()||'',destinationKind:document.querySelector('#transitDestinationKind')?.textContent?.trim()||'',destinationExpanded:destinationCard?.getAttribute('aria-expanded')||'',destinationEditorOpen:visible(editor),destinationSubmit:document.querySelector('.flow-transit-destination-submit')?.textContent?.trim()||'',destinationInputFocused:document.activeElement===input,resetVisible:visible(reset),locateVisible:visible(locate),locateAction:locate?.textContent?.trim()||'',
       bottom,
       transitActive:document.querySelector('[data-flow-transit-nav].active')?.textContent.trim()||'',
       viewVisible:!document.querySelector('#transitView')?.classList.contains('hidden'),
@@ -105,6 +110,19 @@ for(const testCase of cases){
   await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>String(sheet.href||'').includes('school-transit.css')));
   await page.locator('[data-flow-transit-nav]:visible').first().click();
   await page.waitForSelector('#transitView:not(.hidden)');
+
+  const destinationIdle=await inspect(page);
+  if(destinationIdle.destinationName!=='정동고등학교'||destinationIdle.destinationKind!=='학교'||destinationIdle.destinationExpanded!=='false'||destinationIdle.destinationEditorOpen||destinationIdle.locateAction!=='학교까지 경로 찾기')throw new Error(`${testCase.name}: destination card idle state is unclear ${JSON.stringify(destinationIdle)}`);
+  await page.locator('#transitDestinationEditBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded')==='true'&&!document.querySelector('#transitDestinationEditor')?.classList.contains('hidden'));
+  await page.waitForTimeout(50);
+  const destinationEditor=await inspect(page);report[`${testCase.name}-destination-editor`]={...destinationEditor,counters:{...counters},pageErrors:[...pageErrors]};
+  if(!destinationEditor.destinationEditorOpen||destinationEditor.destinationSubmit!=='이곳으로 경로 찾기'||!destinationEditor.destinationInputFocused||destinationEditor.locateVisible)throw new Error(`${testCase.name}: destination editor must be a single focused action ${JSON.stringify(destinationEditor)}`);
+  if(!destinationEditor.destinationCard||destinationEditor.destinationCard.left<-1||destinationEditor.destinationCard.right>destinationEditor.clientWidth+1||destinationEditor.scrollWidth>destinationEditor.clientWidth+1)throw new Error(`${testCase.name}: destination editor/card overflow ${JSON.stringify(destinationEditor)}`);
+  await page.screenshot({path:`${OUT}/school-transit-destination-${testCase.name}.png`,fullPage:false});
+  await page.locator('#transitDestinationEditBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#transitDestinationEditBtn')?.getAttribute('aria-expanded')==='false'&&document.querySelector('#transitDestinationEditor')?.classList.contains('hidden'));
+
   await page.locator('#transitLocateBtn').click();
   await page.waitForFunction(()=>document.querySelectorAll('[data-transit-route]').length===5);
   await page.waitForTimeout(100);
@@ -123,6 +141,32 @@ for(const testCase of cases){
   if(pageErrors.length)throw new Error(`${testCase.name}: page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/school-transit-${testCase.name}.png`,fullPage:false});
   await page.screenshot({path:`${OUT}/school-transit-${testCase.name}-full.png`,fullPage:true});
+  await context.close();
+}
+
+{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',geolocation:{longitude:128.696,latitude:35.876},permissions:['geolocation']});
+  const page=await context.newPage();const pageErrors=[],counters={bus:0,rail:0};page.on('pageerror',error=>pageErrors.push(String(error)));
+  await fixture(page,counters);await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowTransit==='ready');
+  await page.locator('[data-flow-transit-nav]:visible').first().click();
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationInput').fill('동대구역');await page.locator('.flow-transit-destination-submit').click();
+  await page.waitForFunction(()=>document.querySelectorAll('[data-transit-route]').length===5&&document.querySelector('#transitSchoolName')?.textContent?.trim()==='동대구역');
+  const custom=await inspect(page);const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('flow-school-transit-destination-v1')||'null'));
+  report['mobile-portrait-custom-destination']={...custom,counters:{...counters},stored,pageErrors:[...pageErrors]};
+  if(counters.bus!==1||counters.rail!==1)throw new Error(`custom destination submit must directly locate and route once ${JSON.stringify(counters)}`);
+  if(custom.destinationName!=='동대구역'||custom.destinationAddress!=='대구광역시 동구 동부로 149'||custom.destinationKind!=='직접 지정'||custom.destinationEditorOpen||!custom.locateVisible||custom.locateAction!=='이 목적지까지 경로 찾기'||!custom.resetVisible)throw new Error(`custom destination resolved state is unclear ${JSON.stringify(custom)}`);
+  if(stored?.query!=='동대구역'||stored?.name!=='동대구역'||stored?.address!=='대구광역시 동구 동부로 149')throw new Error(`custom destination persistence is incomplete ${JSON.stringify(stored)}`);
+  if(custom.scrollWidth>custom.clientWidth+1||pageErrors.length)throw new Error(`custom destination browser regression ${JSON.stringify({custom,pageErrors})}`);
+  await page.screenshot({path:`${OUT}/school-transit-mobile-portrait-custom-destination.png`,fullPage:false});
+
+  await page.locator('#transitDestinationEditBtn').click();await page.locator('#transitDestinationResetBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#transitSchoolName')?.textContent?.trim()==='정동고등학교'&&document.querySelectorAll('[data-transit-route]').length===5);
+  const reset=await inspect(page);const storedAfterReset=await page.evaluate(()=>localStorage.getItem('flow-school-transit-destination-v1'));
+  report['mobile-portrait-destination-reset']={...reset,counters:{...counters},storedAfterReset,pageErrors:[...pageErrors]};
+  if(counters.bus!==2||counters.rail!==2)throw new Error(`school destination reset must reroute from the existing coordinates ${JSON.stringify(counters)}`);
+  if(reset.destinationName!=='정동고등학교'||reset.destinationKind!=='학교'||reset.locateAction!=='학교까지 경로 찾기'||reset.destinationEditorOpen||storedAfterReset!==null)throw new Error(`school destination reset state is incomplete ${JSON.stringify(reset)}`);
+  await page.screenshot({path:`${OUT}/school-transit-mobile-portrait-destination-reset.png`,fullPage:false});
   await context.close();
 }
 
