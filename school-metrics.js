@@ -3,10 +3,19 @@ import '/flow-settings-view.js';
 import '/flow-refraction.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
-import './school-transit.js';
-import './school-transit-map.js';
-import './school-transit-focus.js';
 import './school-surface-cleanup.js';
+
+function transitLabEnabled(){
+  const host=location.hostname;
+  if(host!=='127.0.0.1'&&host!=='localhost')return false;
+  try{return localStorage.getItem('flow-school-transit-lab-v1')!=='off'}catch{return false}
+}
+
+if(transitLabEnabled()){
+  await import('./school-transit.js');
+  await import('./school-transit-map.js');
+  await import('./school-transit-focus.js');
+}
 
 if(!document.querySelector('link[data-flow-school-settings-wide]')){
   const link=document.createElement('link');
