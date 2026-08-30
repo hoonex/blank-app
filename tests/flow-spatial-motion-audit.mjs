@@ -37,7 +37,10 @@ async function runMotion(){
     const nav=page.locator('#bottomNav');await page.waitForFunction(()=>document.querySelector('#bottomNav')?.dataset.flowNavField==='ready');
     const navMaterial=await nav.evaluate(node=>{const style=getComputedStyle(node),pseudo=getComputedStyle(node,'::before');return{width:parseFloat(style.getPropertyValue('--flow-nav-w'))||0,x:parseFloat(style.getPropertyValue('--flow-nav-x'))||0,content:pseudo.content,display:pseudo.display,position:pseudo.position}});
     if(navMaterial.width<40||navMaterial.content==='none'||navMaterial.display==='none'||navMaterial.position!=='absolute')throw new Error(`Navigation pseudo material invalid: ${JSON.stringify(navMaterial)}`);
-    const navChildren=await nav.locator(':scope > *').evaluateAll(nodes=>nodes.map(node=>node.textContent?.trim()||''));if(navChildren.join('|')!=='오늘|일정|학교|설정')throw new Error(`Navigation material polluted destination DOM: ${JSON.stringify(navChildren)}`);
+    const navChildren=await nav.locator(':scope > *').evaluateAll(nodes=>nodes.map(node=>({tag:node.tagName,text:node.textContent?.trim()||'',material:node.classList.contains('flow-nav-field')})));
+    if(navChildren.some(item=>item.material||!['BUTTON','A'].includes(item.tag)||!item.text))throw new Error(`Navigation material polluted destination DOM: ${JSON.stringify(navChildren)}`);
+    if(await nav.locator(':scope > .flow-nav-field').count())throw new Error('Navigation field must stay a pseudo material, not a DOM child');
+    for(const required of ['오늘','일정','학교','설정'])if(!navChildren.some(item=>item.text===required))throw new Error(`Required navigation destination missing: ${required}`);
 
     const tab=page.locator('.mobile-tab[data-view="schedule"]:visible'),box=await tab.boundingBox();if(!box)throw new Error('Schedule tab missing');const px=box.x+box.width*.82,py=box.y+box.height*.45;
     await tab.dispatchEvent('pointerdown',{pointerId:91,pointerType:'touch',isPrimary:true,clientX:px,clientY:py,button:0,buttons:1,bubbles:true,cancelable:true});await page.waitForTimeout(90);
