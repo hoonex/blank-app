@@ -8,10 +8,19 @@ const CORS = {
 const JSON_HEADERS = { ...CORS, "Content-Type": "application/json; charset=utf-8" };
 const SERVICE_AREA = Object.freeze({ id: "daegu", name: "대구광역시", policy: "source+destination-inside" });
 const CORE_URL = "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-data-core";
+const MIXED_URL = "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-mixed";
 const KAKAO_LOCAL = "https://dapi.kakao.com/v2/local";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+const ROUTE_MODES = [
+  "bus-direct",
+  "bus-one-transfer",
+  "bus-subway-bus",
+  "bus-subway-walk",
+  "walk-subway-bus",
+];
 
 type KakaoDocument = {
   x?: string;
@@ -31,6 +40,11 @@ type ResolvedDestination = {
   region: string;
 };
 
+type InternalResult = {
+  response: Response;
+  body: any;
+};
+
 function reply(body: unknown, status = 200, cache = "no-store") {
   return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, "Cache-Control": cache } });
 }
@@ -41,7 +55,7 @@ function finite(value: string | null, min: number, max: number) {
 }
 
 function isDaegu(region: unknown) {
-  const value=String(region || "").trim();
+  const value = String(region || "").trim();
   return value === SERVICE_AREA.name || value === "대구";
 }
 
@@ -114,28 +128,115 @@ async function resolveDestination(query: string, ex: number | null, ey: number |
   return { x: ex, y: ey, name: "목적지", address: "", region } satisfies ResolvedDestination;
 }
 
-async function proxyCore(url: URL, destination: ResolvedDestination) {
+async function internalRoute(endpoint: string, sx: number, sy: number, destination: ResolvedDestination, query = ""): Promise<InternalResult> {
   if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("Transit 내부 라우터 인증 설정이 준비되지 않았습니다.");
-  const core = new URL(CORE_URL);
-  core.searchParams.set("action", "route");
-  core.searchParams.set("sx", String(url.searchParams.get("sx") || ""));
-  core.searchParams.set("sy", String(url.searchParams.get("sy") || ""));
-  core.searchParams.set("ex", String(destination.x));
-  core.searchParams.set("ey", String(destination.y));
-  const query = String(url.searchParams.get("destination") || "").trim();
-  if (query) core.searchParams.set("destination", query);
-
-  const response = await fetch(core, {
+  const url = new URL(endpoint);
+  url.searchParams.set("action", "route");
+  url.searchParams.set("sx", String(sx));
+  url.searchParams.set("sy", String(sy));
+  url.searchParams.set("ex", String(destination.x));
+  url.searchParams.set("ey", String(destination.y));
+  if (query && endpoint === CORE_URL) url.searchParams.set("destination", query);
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
     signal: AbortSignal.timeout(125_000),
   });
   const body = await response.json().catch(() => ({}));
-  const normalized = {
-    ...body,
+  return { response, body };
+}
+
+function routeSort(a: any, b: any) {
+  return Number(a?.totalMinutes || 0) - Number(b?.totalMinutes || 0)
+    || Number(a?.transfers || 0) - Number(b?.transfers || 0)
+    || Number(a?.walkMeters || 0) - Number(b?.walkMeters || 0);
+}
+
+function routeSignature(route: any) {
+  return (Array.isArray(route?.segments) ? route.segments : [])
+    .filter((segment: any) => segment?.type === "bus" || segment?.type === "subway")
+    .map((segment: any) => `${segment.type}:${(segment.lines || []).join(",")}:${segment.startId || segment.startName || ""}:${segment.endId || segment.endName || ""}`)
+    .join("|");
+}
+
+function mergedRoutes(busRoutes: any[], mixedRoutes: any[]) {
+  const deduped = new Map<string, any>();
+  for (const route of [...busRoutes, ...mixedRoutes]) {
+    const signature = routeSignature(route) || String(route?.id || deduped.size);
+    const previous = deduped.get(signature);
+    if (!previous || routeSort(route, previous) < 0) deduped.set(signature, route);
+  }
+  const routes = [...deduped.values()].sort(routeSort).slice(0, 5);
+  if (!routes.length) return routes;
+  const minWalk = Math.min(...routes.map((route) => Number(route?.walkMeters || 0)));
+  const minTransfers = Math.min(...routes.map((route) => Number(route?.transfers || 0)));
+  routes.forEach((route, index) => {
+    const badges: string[] = [];
+    if (index === 0) badges.push("추천");
+    if (index !== 0 && Number(route?.walkMeters || 0) === minWalk) badges.push("걷기 적음");
+    if (index !== 0 && Number(route?.transfers || 0) === minTransfers && badges.length < 2) badges.push("환승 적음");
+    route.id = `route-${index + 1}`;
+    route.badges = badges;
+    route.arrivalAt = new Date(Date.now() + Math.max(1, Number(route?.totalMinutes || 1)) * 60_000).toISOString();
+  });
+  return routes;
+}
+
+function realtimeCoverage(routes: any[]) {
+  if (!routes.some((route) => Array.isArray(route?.realtimeLegs) && route.realtimeLegs.length)) return "none";
+  return routes.some((route) => Array.isArray(route?.realtimeLegs) && route.realtimeLegs.length > 1) ? "multi-leg" : "partial";
+}
+
+function failureMessage(result: InternalResult | null, fallback: string) {
+  return String(result?.body?.error || result?.body?.message || fallback);
+}
+
+async function routeData(sx: number, sy: number, query: string, destination: ResolvedDestination) {
+  const [coreSettled, mixedSettled] = await Promise.allSettled([
+    internalRoute(CORE_URL, sx, sy, destination, query),
+    internalRoute(MIXED_URL, sx, sy, destination),
+  ]);
+  const core = coreSettled.status === "fulfilled" ? coreSettled.value : null;
+  const mixed = mixedSettled.status === "fulfilled" ? mixedSettled.value : null;
+  const busRoutes = core?.response.ok && Array.isArray(core.body?.routes) ? core.body.routes : [];
+  const mixedRoutes = mixed?.response.ok && Array.isArray(mixed.body?.routes) ? mixed.body.routes : [];
+  const routes = mergedRoutes(busRoutes, mixedRoutes);
+
+  if (!routes.length) {
+    const primary = core || mixed;
+    const message = coreSettled.status === "rejected"
+      ? String(coreSettled.reason instanceof Error ? coreSettled.reason.message : coreSettled.reason || "")
+      : failureMessage(core, "공공 교통데이터에서 연결 가능한 경로를 찾지 못했습니다.");
+    return reply({
+      ...(primary?.body && typeof primary.body === "object" ? primary.body : {}),
+      error: message || "공공 교통데이터에서 연결 가능한 경로를 찾지 못했습니다.",
+      destination,
+      provider: "TAGO-public-data",
+      serviceArea: SERVICE_AREA,
+      routeModes: ROUTE_MODES,
+      mixedModeProvider: mixed?.body?.provider || null,
+      routes: [],
+    }, primary?.response?.status || 502, "no-store");
+  }
+
+  const coreMeta = core?.body && typeof core.body === "object" ? { ...core.body } : {};
+  delete coreMeta.routes;
+  delete coreMeta.error;
+  return reply({
+    ...coreMeta,
+    generatedAt: new Date().toISOString(),
     destination,
+    provider: "TAGO-public-data",
+    providers: ["TAGO-public-data", ...(mixedRoutes.length ? ["KRIC-snapshot+Kakao-SW8"] : [])],
     serviceArea: SERVICE_AREA,
-  };
-  return reply(normalized, response.status, response.ok ? "public, max-age=15" : "no-store");
+    realtimeCoverage: realtimeCoverage(routes),
+    routeModes: ROUTE_MODES,
+    mixedRouting: "protected-orchestrator",
+    mixedModeProvider: mixedRoutes.length ? String(mixed?.body?.provider || "TAGO-public-data+KRIC-snapshot+Kakao-SW8") : null,
+    mixedAvailable: mixedRoutes.length > 0,
+    busError: core?.response.ok ? null : failureMessage(core, "버스 경로를 찾지 못했습니다."),
+    mixedError: mixed?.response.ok ? null : failureMessage(mixed, "혼합 경로를 만들지 못했습니다."),
+    routes,
+  }, 200, "public, max-age=15");
 }
 
 Deno.serve(async (req: Request) => {
@@ -152,15 +253,19 @@ Deno.serve(async (req: Request) => {
           publicData: Boolean(DATA_GO_KR_SERVICE_KEY),
           kakao: Boolean(KAKAO_REST_KEY),
           coreAuth: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+          mixedAuth: Boolean(SUPABASE_SERVICE_ROLE_KEY),
         },
         routingProvider: "TAGO-public-data",
         stopDiscovery: ["coordinate-500m", "city-stop-master"],
-        routeModes: ["bus-direct", "bus-one-transfer"],
+        routeModes: ROUTE_MODES,
+        mixedRouting: "protected-orchestrator",
         realtimeRouting: "per-bus-leg-when-available",
+        railRealtime: false,
         regionalRouting: "daegu-only-source+destination",
         transferMatching: "node-id+walkable-stop-proximity",
         serviceArea: SERVICE_AREA,
         coreAccess: "service-role-jwt-only",
+        mixedAccess: "service-role-jwt-only",
         plannedGtfsUpgrade: "2026-09-07",
       });
     }
@@ -179,7 +284,7 @@ Deno.serve(async (req: Request) => {
     const destination = await resolveDestination(query, ex, ey);
     if (!isDaegu(destination.region)) return outOfArea("destination", destination.region);
 
-    return await proxyCore(url, destination);
+    return await routeData(sx, sy, query, destination);
   } catch (error) {
     const message = error instanceof Error ? error.message : "교통 정보를 불러오지 못했습니다.";
     console.error(`transit-data gate: ${message}`);
