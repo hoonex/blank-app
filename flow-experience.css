@@ -81,7 +81,7 @@ html[data-flow-motion="on"] .flow-magnetic{
   translate:var(--flow-magnet-x,0px) var(--flow-magnet-y,0px);
   scale:var(--flow-press-scale,1);
   transform-origin:center;
-  transition:scale 620ms var(--flow-spring-out),box-shadow 520ms var(--flow-spring-out),filter 420ms ease;
+  transition:scale 240ms var(--flow-spring-out),box-shadow 260ms var(--flow-spring-out),filter 220ms ease;
   will-change:translate,scale;
 }
 html[data-flow-motion="on"] .flow-magnetic.flow-pressing{
@@ -124,7 +124,7 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
 :where(.mobile-bottom-nav,.bottom-nav).flow-nav-instant::before{transition:none!important}
 
 .flow-date-controller{position:relative;isolation:isolate}
-.flow-date-controller .date-label{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:scale 620ms var(--flow-spring-out),opacity 260ms ease}
+.flow-date-controller .date-label{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:scale 320ms var(--flow-spring-out),opacity 240ms ease}
 .flow-date-controller .date-label[data-flow-scrubbing="true"]{scale:.95}
 .flow-date-controller .date-label[data-flow-scrubbing="true"]::after{
   content:attr(data-flow-scrub-label);
@@ -211,7 +211,7 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
 .flow-experience-settings-grid span{display:block;font-size:.8rem;font-weight:790;letter-spacing:-.025em}.flow-experience-settings-grid small{display:block;margin-top:4px;color:var(--muted);font-size:.64rem;line-height:1.5;word-break:keep-all}
 .flow-experience-settings-grid button{
   min-width:68px;min-height:38px;margin:10px 0;padding:0 12px;border:1px solid color-mix(in srgb,var(--text) 8%,transparent);border-radius:999px;background:var(--surface-2);color:var(--muted);font:inherit;font-size:.68rem;font-weight:820;cursor:pointer;
-  transition:scale 560ms var(--flow-spring-out),background 220ms ease,color 220ms ease,border-color 220ms ease,opacity 220ms ease;
+  transition:scale 240ms var(--flow-spring-out),background 220ms ease,color 220ms ease,border-color 220ms ease,opacity 220ms ease;
 }
 .flow-experience-settings-grid button.active{background:color-mix(in srgb,var(--accent) 14%,var(--surface-2));color:var(--accent);border-color:color-mix(in srgb,var(--accent) 32%,transparent)}
 .flow-experience-settings-grid button:active{scale:.95}
