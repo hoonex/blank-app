@@ -29,7 +29,7 @@ jobs:
           node --check tests/flow-spatial-motion-audit.mjs
           test -s flow-experience.css
           grep -q "flow-motion-v1" flow-experience.js
-          grep -q "flow-nav-field" flow-experience.js
+          grep -q "flowNavField" flow-experience.js
           grep -q -- "--flow-spring-out:cubic-bezier(.16,1,.3,1)" flow-experience.css
           ! grep -q 'MutationObserver' flow-experience.js
       - name: Install Playwright Chromium
