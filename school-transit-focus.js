@@ -86,8 +86,6 @@ function renderFocus(detail){
     card.classList.toggle('flow-transit-alternative',index>0);
     card.querySelector('.flow-transit-details')?.removeAttribute('open');
     compactMeta(card);
-    const firstBadge=card.querySelector('.flow-transit-badges span');
-    if(index===0&&firstBadge)firstBadge.textContent='지금 추천';
   });
   installMoreButton(cards);
   queueMicrotask(()=>setFocusedState(routes.length));
