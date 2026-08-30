@@ -13,6 +13,7 @@ const requiredContract={
   'transit-data':['DATA_GO_KR_SERVICE_KEY','KAKAO_REST_KEY','SUPABASE_SERVICE_ROLE_KEY'],
   'transit-data-core':['DATA_GO_KR_SERVICE_KEY','KAKAO_REST_KEY'],
   'transit-map':['DATA_GO_KR_SERVICE_KEY'],
+  'transit-mixed':['KAKAO_REST_KEY','SUPABASE_SERVICE_ROLE_KEY'],
   'transit-rail':['KAKAO_REST_KEY'],
 };
 
@@ -25,6 +26,7 @@ for(const [fn,names] of Object.entries(requiredContract)){
 }
 if(manifest?.['university-data']?.entrypoint!=='bootstrap.ts')throw new Error('university-data: shared-key bootstrap entrypoint missing');
 if(manifest?.['transit-data-core']?.access!=='service-role-jwt-only')throw new Error('transit-data-core: protected access contract missing');
+if(manifest?.['transit-mixed']?.access!=='service-role-jwt-only')throw new Error('transit-mixed: protected access contract missing');
 
 const sourceFiles=[];
 function walk(dir){
@@ -59,10 +61,12 @@ requireEnv('supabase/functions/transit-data/index.ts','SUPABASE_SERVICE_ROLE_KEY
 requireEnv('supabase/functions/transit-data-core/index.ts','DATA_GO_KR_SERVICE_KEY');
 requireEnv('supabase/functions/transit-data-core/index.ts','KAKAO_REST_KEY');
 requireEnv('supabase/functions/transit-map/index.ts','DATA_GO_KR_SERVICE_KEY');
+requireEnv('supabase/functions/transit-mixed/index.ts','KAKAO_REST_KEY');
+requireEnv('supabase/functions/transit-mixed/index.ts','SUPABASE_SERVICE_ROLE_KEY');
 requireEnv('supabase/functions/transit-rail/index.ts','KAKAO_REST_KEY');
 
 const transitGate=combined.get('supabase/functions/transit-data/index.ts')||'';
-for(const expected of ['OUT_OF_SERVICE_AREA','daegu-only-source+destination','service-role-jwt-only','SUPABASE_SERVICE_ROLE_KEY','Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`']){
+for(const expected of ['OUT_OF_SERVICE_AREA','daegu-only-source+destination','service-role-jwt-only','SUPABASE_SERVICE_ROLE_KEY','Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`','protected-orchestrator']){
   if(!transitGate.includes(expected))throw new Error(`transit-data: protected Daegu gate contract ${expected} missing`);
 }
 if(/ODSAY_API_KEY|api\.odsay\.com/.test(transitGate))throw new Error('transit-data: ODsay dependency must not be required');
@@ -76,6 +80,11 @@ const transitMap=combined.get('supabase/functions/transit-map/index.ts')||'';
 for(const expected of ['getSttnThrghRouteList','getRouteAcctoThrghSttnList','getRouteAcctoBusLcList']){
   if(!transitMap.includes(expected))throw new Error(`transit-map: public map operation ${expected} missing`);
 }
+const transitMixed=combined.get('supabase/functions/transit-mixed/index.ts')||'';
+for(const expected of ['KRIC-snapshot+Kakao-SW8','service-role-jwt-only','bus-subway-bus','bus-subway-walk','walk-subway-bus','railRealtime: false','BUS_CORE_TIMEOUT_MS']){
+  if(!transitMixed.includes(expected))throw new Error(`transit-mixed: protected mixed routing contract ${expected} missing`);
+}
+if(/ODSAY_API_KEY|api\.odsay\.com/.test(transitMixed))throw new Error('transit-mixed: ODsay dependency must not be required');
 const transitRail=combined.get('supabase/functions/transit-rail/index.ts')||'';
 for(const expected of ['SW8','KRIC-snapshot+Kakao-SW8','Daegu-1-2-3','2026-06-30','subway-direct','subway-one-transfer']){
   if(!transitRail.includes(expected))throw new Error(`transit-rail: rail routing contract ${expected} missing`);
@@ -106,7 +115,7 @@ console.log(JSON.stringify({
   ok:true,
   functions:Object.keys(requiredContract),
   transitProvider:'TAGO-public-data + Daegu rail snapshot',
-  transitAccess:'Daegu gate + service-role-jwt-only core',
+  transitAccess:'Daegu gate + service-role-jwt-only core/mixed',
   universityCompatibilityRoutes:compatibilityRoutes,
   scannedFiles:sourceFiles.length,
 },null,2));
