@@ -9,8 +9,11 @@
   --flow-ambient-x:50%;
   --flow-tilt-x:0px;
   --flow-tilt-y:0px;
+  --flow-tilt-soft-x:0px;
   --flow-scroll-v:0;
   --flow-scroll-y:0px;
+  --flow-scroll-a:0px;
+  --flow-scroll-b:0px;
   --flow-spring-out:cubic-bezier(.16,1,.3,1);
   --flow-spring-soft:cubic-bezier(.2,.92,.22,1);
   --flow-experience-ease:var(--flow-spring-out);
@@ -46,7 +49,7 @@ html[data-flow-ambient="on"] :where(.content-card,.status-card,.panel,.summary-c
   background:
     radial-gradient(66% 122% at calc(var(--flow-ambient-x) + var(--flow-tilt-x)) calc(-12% + var(--flow-tilt-y)),rgba(255,255,255,.3),transparent 62%),
     linear-gradient(105deg,transparent 22%,rgba(255,255,255,.075) 44%,transparent 66%);
-  background-position:calc(var(--flow-scroll-v)*3px) 0,calc(var(--flow-scroll-v)*5px) 0;
+  background-position:var(--flow-scroll-a) 0,var(--flow-scroll-b) 0;
   opacity:.82;
   transition:opacity 620ms ease,background-position 720ms var(--flow-spring-out);
 }
@@ -91,7 +94,8 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
 
 :where(.mobile-bottom-nav,.bottom-nav)[data-flow-nav-field="ready"]{isolation:isolate}
 :where(.mobile-bottom-nav,.bottom-nav)[data-flow-nav-field="ready"]>:where(button,a){position:relative;z-index:2}
-.flow-nav-field{
+:where(.mobile-bottom-nav,.bottom-nav)[data-flow-nav-field="ready"]::before{
+  content:"";
   position:absolute!important;
   z-index:1!important;
   left:0;
@@ -104,7 +108,11 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
   pointer-events:none!important;
   background:
     radial-gradient(85% 130% at 38% -12%,rgba(255,255,255,.78),transparent 56%),
+    linear-gradient(to bottom,rgba(255,255,255,.7) 0 1px,transparent 1px),
     color-mix(in srgb,var(--accent) 9%,rgba(255,255,255,.45));
+  background-size:auto,calc(100% - 18px) 4px,auto;
+  background-position:center,center 3px,center;
+  background-repeat:no-repeat;
   box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 12%,rgba(30,43,65,.06)),inset 0 1px 0 rgba(255,255,255,.75);
   backdrop-filter:blur(18px) saturate(1.12);
   -webkit-backdrop-filter:blur(18px) saturate(1.12);
@@ -112,11 +120,8 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
   transition:transform 620ms var(--flow-spring-out),width 620ms var(--flow-spring-out),opacity 240ms ease;
   will-change:transform,width;
 }
-.flow-nav-field::after{
-  content:"";position:absolute;inset:3px 9px auto;height:1px;border-radius:999px;background:rgba(255,255,255,.76);opacity:.82
-}
-:where(.mobile-bottom-nav,.bottom-nav).flow-nav-dragging .flow-nav-field{transition-duration:70ms;opacity:.94}
-:where(.mobile-bottom-nav,.bottom-nav).flow-nav-instant .flow-nav-field{transition:none!important}
+:where(.mobile-bottom-nav,.bottom-nav).flow-nav-dragging::before{transition-duration:70ms;opacity:.94}
+:where(.mobile-bottom-nav,.bottom-nav).flow-nav-instant::before{transition:none!important}
 
 .flow-date-controller{position:relative;isolation:isolate}
 .flow-date-controller .date-label{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:scale 620ms var(--flow-spring-out),opacity 260ms ease}
@@ -163,7 +168,7 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
     linear-gradient(155deg,color-mix(in srgb,var(--surface) 94%,#fff),color-mix(in srgb,var(--surface-2) 91%,transparent))!important;
 }
 .flow-experience-settings::before{
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.22) 46%,transparent 72%);translate:calc(var(--flow-tilt-x)*.45) 0;transition:translate 720ms var(--flow-spring-out)
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.22) 46%,transparent 72%);translate:var(--flow-tilt-soft-x) 0;transition:translate 720ms var(--flow-spring-out)
 }
 .flow-experience-head>span{display:block;margin-bottom:6px;color:var(--accent);font-size:.58rem;font-weight:850;letter-spacing:.15em}
 .flow-experience-head h2{margin:0;font-size:1.34rem;letter-spacing:-.045em}
@@ -230,9 +235,9 @@ html[data-flow-motion="on"] :where(.neo-button,.soft-button,.primary-button,.mob
 }
 @media(prefers-reduced-motion:reduce){
   html[data-flow-ambient="on"]{transition:none}
-  .school-hero::after,.profile-hero::after,.next-card::after,.school-hero-image,.profile-photo,.flow-date-controller .date-label,.flow-nav-field,.flow-motion-orb,.flow-magnetic{transition:none!important}
+  .school-hero::after,.profile-hero::after,.next-card::after,.school-hero-image,.profile-photo,.flow-date-controller .date-label,.flow-motion-orb,.flow-magnetic{transition:none!important}
   .flow-contact-flare{animation:none!important;display:none!important}
-  .flow-nav-field{display:none!important}
+  :where(.mobile-bottom-nav,.bottom-nav)[data-flow-nav-field="ready"]::before{display:none!important}
   .flow-magnetic{translate:0 0!important;scale:1!important}
   :where([data-view-panel],[data-panel]):not(.hidden) > :where(.status-grid,.today-grid,.summary-grid,.content-grid,.schedule-layout,.profile-card,.metric-grid,.campus-layout,.timetable-panel){animation:none!important}
 }
