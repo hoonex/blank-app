@@ -44,6 +44,18 @@ async function installKakaoFixture(page){
 }
 async function fixture(page,counters){
   await installKakaoFixture(page);
+  await page.addInitScript(()=>{
+    let current={longitude:128.696,latitude:35.876,accuracy:10},nextId=1;
+    const watches=new Map();
+    const position=()=>({coords:{longitude:current.longitude,latitude:current.latitude,accuracy:current.accuracy}});
+    const geolocation={
+      watchPosition(success){const id=nextId++;watches.set(id,success);queueMicrotask(()=>watches.has(id)&&success(position()));return id},
+      clearWatch(id){watches.delete(id)},
+      getCurrentPosition(success){queueMicrotask(()=>success(position()))},
+    };
+    Object.defineProperty(navigator,'geolocation',{configurable:true,value:geolocation});
+    window.__flowSetTestGeolocation=(longitude,latitude,accuracy=10)=>{current={longitude,latitude,accuracy};for(const success of watches.values())success(position())};
+  });
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
   await page.route('**/functions/v1/transit-data*',route=>json(route,transit));
   await page.route('**/functions/v1/transit-map*',route=>{
@@ -104,7 +116,7 @@ for(const testCase of cases){
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('flow:transit-routes-rendered',{detail:{routes:window.__flowTransitFixtureRoutes,generatedAt:new Date().toISOString()}})));
   await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')&&document.querySelector('[data-transit-trip-guide]')?.dataset.phase==='waiting');
   await page.locator('[data-transit-trip-action]').click();
-  await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='5',{timeout:10000});
+  await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='5');
   const riding=await inspect(page);report[testCase.name].activeTrip=riding;
   if(riding.tripPhase!=='riding'||riding.tripRemaining!=='5'||!riding.tripTitle.includes('5정거장 남음')||riding.tripAction!=='하차했어요')throw new Error(`${testCase.name}: riding progress is incomplete ${JSON.stringify(riding)}`);
   if(!riding.guide||riding.guide.left<-1||riding.guide.right>riding.viewport.width+1)throw new Error(`${testCase.name}: trip guide clips horizontally ${JSON.stringify(riding)}`);
@@ -112,8 +124,8 @@ for(const testCase of cases){
   await page.screenshot({path:`${OUT}/school-transit-active-trip-${testCase.name}.png`,fullPage:false});
 
   if(testCase.name==='mobile-portrait'){
-    await context.setGeolocation({longitude:128.623,latitude:35.883});
-    await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='1',{timeout:10000});
+    await page.evaluate(()=>window.__flowSetTestGeolocation(128.623,35.883,10));
+    await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='1');
     const alight=await inspect(page);report[testCase.name].alightPrep=alight;
     if(alight.tripTitle!=='다음 정류장에서 하차 준비'||!alight.tripDetail.includes('1정거장 남음'))throw new Error(`mobile-portrait: alighting preparation is incomplete ${JSON.stringify(alight)}`);
     await page.screenshot({path:`${OUT}/school-transit-active-trip-mobile-portrait-alight.png`,fullPage:false});
