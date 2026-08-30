@@ -67,7 +67,7 @@ for(const testCase of cases){
   const focused=await inspect(page);report[testCase.name]={focused,counters:{...counters},errors:[...errors]};
   if(counters.bus!==1||counters.rail!==1)throw new Error(`${testCase.name}: expected one explicit bus + rail search ${JSON.stringify(counters)}`);
   if(focused.cardCount!==5||focused.visibleCount!==3||focused.primaryCount!==1||focused.alternativeCount!==4)throw new Error(`${testCase.name}: focused route hierarchy failed ${JSON.stringify(focused)}`);
-  if(focused.openDetails!==0||focused.firstBadge!=='지금 추천'||!focused.summary.includes('추천 24분')||!focused.summary.includes('708'))throw new Error(`${testCase.name}: primary route is still noisy or unclear ${JSON.stringify(focused)}`);
+  if(focused.openDetails!==0||focused.firstBadge!=='추천'||!focused.summary.includes('추천 24분')||!focused.summary.includes('708'))throw new Error(`${testCase.name}: primary route is still noisy or unclear ${JSON.stringify(focused)}`);
   if(focused.state!=='현재 위치 기준 · 5개 비교 · 상위 3개 표시')throw new Error(`${testCase.name}: verbose base renderer state leaked back into focused Transit ${JSON.stringify(focused)}`);
   if(focused.moreText!=='다른 경로 2개 더 보기'||focused.moreExpanded!=='false')throw new Error(`${testCase.name}: hidden alternatives control failed ${JSON.stringify(focused)}`);
   if(focused.meta.some(item=>item.text==='환승 0회')||focused.meta.some(item=>item.text==='요금 정보 없음'&&!item.hidden))throw new Error(`${testCase.name}: route metadata noise remains ${JSON.stringify(focused.meta)}`);
