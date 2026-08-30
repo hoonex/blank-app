@@ -53,6 +53,14 @@ jobs:
             '/university/campus|Flow University'
             '/university/school|Flow University'
           )
+          critical_assets=(
+            'school.js'
+            'school-ia.js'
+            'school-metrics.js'
+            'school-surface-cleanup.js'
+            'sw.js'
+          )
+          expected_release=$(node --input-type=module -e "import('./cloudflare-worker.mjs').then(m=>process.stdout.write(m.FLOW_RELEASE))")
 
           for attempt in $(seq 1 20); do
             ok=1
@@ -73,6 +81,39 @@ jobs:
               fi
               echo "OK $route -> 200 $marker"
             done
+
+            if [[ "$ok" == '1' ]]; then
+              headers='/tmp/flow-home-headers.txt'
+              curl --silent --show-error --location \
+                --header 'cache-control: no-cache' \
+                --connect-timeout 10 --max-time 20 \
+                --dump-header "$headers" --output /tmp/flow-home-release.html \
+                "$base/home?flow_release=$GITHUB_SHA" || true
+              deployed_release=$(awk 'BEGIN{IGNORECASE=1}$1=="x-flow-release:"{gsub("\\r","");print $2}' "$headers" | tail -n1)
+              if [[ "$deployed_release" != "$expected_release" ]]; then
+                echo "WAIT release -> deployed '$deployed_release' / expected '$expected_release'"
+                ok=0
+              else
+                echo "OK release -> $deployed_release"
+              fi
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              for asset in "${critical_assets[@]}"; do
+                deployed="/tmp/flow-live-${asset//\//_}"
+                code=$(curl --silent --show-error --location \
+                  --header 'cache-control: no-cache' \
+                  --connect-timeout 10 --max-time 20 \
+                  --output "$deployed" --write-out '%{http_code}' \
+                  "$base/$asset?flow_deploy=$GITHUB_SHA" || true)
+                if [[ "$code" != '200' ]] || ! cmp -s "$asset" "$deployed"; then
+                  echo "WAIT /$asset -> HTTP $code / deployed bytes do not match main"
+                  ok=0
+                  break
+                fi
+                echo "OK /$asset -> 200 exact repository bytes"
+              done
+            fi
 
             if [[ "$ok" == '1' ]]; then
               deployed='/tmp/flow-net-bootstrap.js'
@@ -108,10 +149,10 @@ jobs:
         run: |
           set -euo pipefail
           state='success'
-          description='Clean routes and critical University asset match production'
+          description='Clean routes and critical School/University assets match production'
           if [[ "$LIVE_OUTCOME" != 'success' ]]; then
             state='failure'
-            description='Cloudflare route or critical-asset probe failed'
+            description='Cloudflare route, release, or critical-asset probe failed'
           fi
           payload=$(python - "$state" "$description" <<'PY'
           import json,sys
