@@ -9,8 +9,8 @@ await mkdir(OUT,{recursive:true});
 const source=await readFile('flow-experience.js','utf8');
 const css=await readFile('flow-experience.css','utf8');
 if(source.includes('MutationObserver'))throw new Error('Spatial motion must stay event-driven');
-for(const token of ['flow-motion-v1','MAGNET_SELECTOR','flow-nav-field','flow-motion-demo','DeviceOrientationEvent'])if(!source.includes(token))throw new Error(`Spatial motion source token missing: ${token}`);
-for(const token of ['--flow-spring-out:cubic-bezier(.16,1,.3,1)','.flow-nav-field','.flow-motion-demo','html[data-flow-motion="on"] .flow-magnetic','prefers-reduced-motion:reduce'])if(!css.includes(token))throw new Error(`Spatial motion CSS token missing: ${token}`);
+for(const token of ['flow-motion-v1','MAGNET_SELECTOR','flowNavField','flow-motion-demo','DeviceOrientationEvent'])if(!source.includes(token))throw new Error(`Spatial motion source token missing: ${token}`);
+for(const token of ['--flow-spring-out:cubic-bezier(.16,1,.3,1)','data-flow-nav-field="ready"','.flow-motion-demo','html[data-flow-motion="on"] .flow-magnetic','prefers-reduced-motion:reduce'])if(!css.includes(token))throw new Error(`Spatial motion CSS token missing: ${token}`);
 
 const browser=await chromium.launch({headless:true});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
@@ -34,7 +34,10 @@ async function runMotion(){
   const label='school-spatial-motion';const {context,page,errors}=await boot();
   try{
     const root=page.locator('html');if(await root.getAttribute('data-flow-motion')!=='on')throw new Error('Spatial motion did not default on');if(await root.getAttribute('data-flow-haptics-supported')!=='true')throw new Error('Haptic capability was not detected');
-    const nav=page.locator('#bottomNav'),field=nav.locator('.flow-nav-field');await field.waitFor();const fieldBox=await field.boundingBox();if(!fieldBox||fieldBox.width<40)throw new Error(`Navigation field geometry invalid: ${JSON.stringify(fieldBox)}`);
+    const nav=page.locator('#bottomNav');await page.waitForFunction(()=>document.querySelector('#bottomNav')?.dataset.flowNavField==='ready');
+    const navMaterial=await nav.evaluate(node=>{const style=getComputedStyle(node),pseudo=getComputedStyle(node,'::before');return{width:parseFloat(style.getPropertyValue('--flow-nav-w'))||0,x:parseFloat(style.getPropertyValue('--flow-nav-x'))||0,content:pseudo.content,display:pseudo.display,position:pseudo.position}});
+    if(navMaterial.width<40||navMaterial.content==='none'||navMaterial.display==='none'||navMaterial.position!=='absolute')throw new Error(`Navigation pseudo material invalid: ${JSON.stringify(navMaterial)}`);
+    const navChildren=await nav.locator(':scope > *').evaluateAll(nodes=>nodes.map(node=>node.textContent?.trim()||''));if(navChildren.join('|')!=='오늘|일정|학교|설정')throw new Error(`Navigation material polluted destination DOM: ${JSON.stringify(navChildren)}`);
 
     const tab=page.locator('.mobile-tab[data-view="schedule"]:visible'),box=await tab.boundingBox();if(!box)throw new Error('Schedule tab missing');const px=box.x+box.width*.82,py=box.y+box.height*.45;
     await tab.dispatchEvent('pointerdown',{pointerId:91,pointerType:'touch',isPrimary:true,clientX:px,clientY:py,button:0,buttons:1,bubbles:true,cancelable:true});await page.waitForTimeout(90);
@@ -62,14 +65,14 @@ async function runMotion(){
 
     await motion.tap();if(await root.getAttribute('data-flow-motion')!=='off')throw new Error('Motion preference did not disable');await motion.tap();if(await root.getAttribute('data-flow-motion')!=='on')throw new Error('Motion preference did not restore');
     const haptic=card.locator('[data-flow-experience-toggle="haptics"]');if(await haptic.textContent()==='미지원'||await haptic.isDisabled())throw new Error('Supported haptics were incorrectly marked unavailable');
-    await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,during,release,fieldStart,fieldDragged,demoDuring,errors}
+    await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,during,release,navMaterial,navChildren,fieldStart,fieldDragged,demoDuring,errors}
   }finally{await context.close()}
 }
 
 async function runReduced(){
   const label='school-reduced-motion';const {context,page,errors}=await boot('reduce');
   try{
-    if(await page.locator('html').getAttribute('data-flow-motion')!=='reduced')throw new Error('Reduced-motion did not suppress spatial motion');const fieldDisplay=await page.locator('#bottomNav .flow-nav-field').evaluate(node=>getComputedStyle(node).display);if(fieldDisplay!=='none')throw new Error(`Navigation field remains visible in reduced motion: ${fieldDisplay}`);const animation=await page.locator('.status-grid').evaluate(node=>getComputedStyle(node).animationName);if(animation!=='none')throw new Error(`Content motion remains active in reduced motion: ${animation}`);clean(label,errors);return{label,fieldDisplay,animation,errors}
+    if(await page.locator('html').getAttribute('data-flow-motion')!=='reduced')throw new Error('Reduced-motion did not suppress spatial motion');const fieldDisplay=await page.locator('#bottomNav').evaluate(node=>getComputedStyle(node,'::before').display);if(fieldDisplay!=='none')throw new Error(`Navigation field remains visible in reduced motion: ${fieldDisplay}`);const animation=await page.locator('.status-grid').evaluate(node=>getComputedStyle(node).animationName);if(animation!=='none')throw new Error(`Content motion remains active in reduced motion: ${animation}`);clean(label,errors);return{label,fieldDisplay,animation,errors}
   }finally{await context.close()}
 }
 
