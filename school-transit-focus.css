@@ -1,0 +1,40 @@
+/* Focus Transit on one useful route first, then compact alternatives. */
+#transitView.flow-transit-focused .flow-transit-search{margin-bottom:10px}
+#transitView.flow-transit-focused.has-results .flow-transit-search{padding-bottom:14px}
+#transitView.flow-transit-focused .flow-transit-summary{margin:0 0 9px;padding:0 2px;gap:10px}
+#transitView.flow-transit-focused .flow-transit-summary strong{font-size:.76rem;font-weight:850;letter-spacing:-.02em}
+#transitView.flow-transit-focused .flow-transit-summary span{font-size:.61rem;color:var(--muted)}
+#transitView.flow-transit-focused .flow-transit-routes{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#transitView.flow-transit-focused .flow-transit-route{padding:14px;border-radius:16px}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-primary{grid-column:1/-1;padding:18px}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-primary .flow-transit-time strong{font-size:1.7rem}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-time strong{font-size:1.2rem}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-live{margin-top:9px;padding:7px 9px;font-size:.59rem}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-segments{margin-top:9px}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-segment-chip{min-height:27px;padding-inline:8px;font-size:.56rem}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-meta{margin-top:9px;font-size:.57rem}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-details{display:none}
+#transitView.flow-transit-focused [data-focus-hidden="true"]{display:none!important}
+#transitView.flow-transit-focused .flow-transit-more-routes{display:block;width:max-content;max-width:100%;margin:10px auto 2px;min-height:36px;padding-inline:14px}
+#transitView.flow-transit-focused .flow-transit-more-routes.hidden{display:none!important}
+#transitView.flow-transit-focused .flow-transit-state{margin-top:8px;font-size:.59rem;color:var(--muted-2)}
+#transitView.flow-transit-focused.has-results .flow-transit-state{margin-bottom:0}
+#transitView.flow-transit-focused .flow-transit-details:not([open]){padding-top:7px;margin-top:9px}
+#transitView.flow-transit-focused .flow-transit-route.flow-transit-primary .flow-transit-badges span:first-child{background:var(--accent-soft);color:var(--accent)}
+
+@media(max-width:900px){
+  #transitView.flow-transit-focused .flow-transit-summary{align-items:center;flex-direction:row;justify-content:space-between;gap:8px}
+  #transitView.flow-transit-focused .flow-transit-summary span{text-align:right;max-width:68%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #transitView.flow-transit-focused .flow-transit-routes{grid-template-columns:1fr;gap:8px}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-primary{grid-column:auto;padding:15px}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-primary .flow-transit-time strong{font-size:1.45rem}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative{padding:12px 13px}
+}
+
+@media(max-width:520px){
+  #transitView.flow-transit-focused .flow-transit-summary{align-items:flex-start;flex-direction:column;gap:2px;margin-bottom:7px}
+  #transitView.flow-transit-focused .flow-transit-summary span{max-width:100%;text-align:left}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-primary .flow-transit-segments{margin-top:10px}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-live{display:none}
+  #transitView.flow-transit-focused .flow-transit-route.flow-transit-alternative .flow-transit-meta span:last-child{display:none}
+}

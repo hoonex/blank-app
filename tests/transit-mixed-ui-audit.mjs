@@ -105,7 +105,7 @@ for(const testCase of cases){
   if(state.transitTypes.join('>')!=='bus>subway>bus')throw new Error(`${testCase.name}: mixed route order is wrong ${JSON.stringify(state.transitTypes)}`);
   if(state.badge!=='추천'||!state.details.includes('1호선')||!state.details.includes('708')||!state.details.includes('814'))throw new Error(`${testCase.name}: mixed route detail is incomplete ${JSON.stringify(state)}`);
   if(state.liveRows!==2||state.transferLiveRows<1)throw new Error(`${testCase.name}: mixed bus realtime legs are not preserved ${JSON.stringify(state)}`);
-  if(!state.summary.includes('도시철도'))throw new Error(`${testCase.name}: mixed-mode summary is missing ${JSON.stringify(state)}`);
+  if(!state.summary.includes('708')||!state.summary.includes('1호선')||!state.summary.includes('814'))throw new Error(`${testCase.name}: mixed-mode summary lost the actual bus/subway sequence ${JSON.stringify(state)}`);
   if(state.scrollWidth>state.clientWidth+1)throw new Error(`${testCase.name}: horizontal overflow ${JSON.stringify(state)}`);
   if(pageErrors.length||consoleErrors.length)throw new Error(`${testCase.name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   await page.screenshot({path:`${OUT}/mixed-${testCase.name}.png`,fullPage:false});

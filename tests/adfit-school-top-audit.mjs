@@ -47,6 +47,7 @@ async function prepare(mode,width,height){
     localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));
     localStorage.setItem('flow-school-theme-v3','light');
     localStorage.setItem('flow-glass-mode-v2',mode);
+    localStorage.setItem('flow-school-transit-lab-v1','off');
   },{school:SCHOOL,mode});
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await page.locator('#dashboard:not(.hidden)').waitFor();
