@@ -1,0 +1,845 @@
+/* Flow School UI/UX v2
+ * A structural visual pass: fewer floating cards, stronger hierarchy, compact
+ * school identity, and one cohesive daily workspace across all viewports.
+ */
+
+html[data-flow-school-ui="v2"]{
+  --school-v2-bg:#eef2f6;
+  --school-v2-panel:rgba(255,255,255,.86);
+  --school-v2-panel-solid:#fff;
+  --school-v2-line:rgba(43,57,78,.09);
+  --school-v2-line-strong:rgba(43,57,78,.14);
+  --school-v2-shadow:0 18px 48px rgba(43,57,78,.075);
+  --school-v2-shadow-soft:0 8px 24px rgba(43,57,78,.055);
+  --school-v2-radius:28px;
+  --school-v2-radius-small:18px;
+}
+html[data-theme="dark"][data-flow-school-ui="v2"],
+@media(prefers-color-scheme:dark){
+  html[data-theme="system"][data-flow-school-ui="v2"]{
+    --school-v2-bg:#151b22;
+    --school-v2-panel:rgba(34,43,54,.88);
+    --school-v2-panel-solid:#222b36;
+    --school-v2-line:rgba(255,255,255,.08);
+    --school-v2-line-strong:rgba(255,255,255,.13);
+    --school-v2-shadow:0 22px 52px rgba(0,0,0,.22);
+    --school-v2-shadow-soft:0 10px 28px rgba(0,0,0,.16);
+  }
+}
+html[data-theme="dark"][data-flow-school-ui="v2"]{
+  --school-v2-bg:#151b22;
+  --school-v2-panel:rgba(34,43,54,.88);
+  --school-v2-panel-solid:#222b36;
+  --school-v2-line:rgba(255,255,255,.08);
+  --school-v2-line-strong:rgba(255,255,255,.13);
+  --school-v2-shadow:0 22px 52px rgba(0,0,0,.22);
+  --school-v2-shadow-soft:0 10px 28px rgba(0,0,0,.16);
+}
+
+html[data-flow-school-ui="v2"] body{
+  background:var(--school-v2-bg)!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body{
+  background-color:var(--school-v2-bg)!important;
+}
+
+/* Global language: flatter surfaces, less dashboard chrome. */
+html[data-flow-school-ui="v2"] .neo-panel{
+  border:1px solid var(--school-v2-line);
+  box-shadow:var(--school-v2-shadow-soft);
+}
+html[data-flow-school-ui="v2"] :where(.neo-button,.primary-button,.date-controller button,.calendar-head button,.choice-chip,.meal-tab,.day-chip,.subject-chip,.allergy-chip,.segmented button){
+  box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"] .neo-button{
+  border:1px solid var(--school-v2-line)!important;
+  background:color-mix(in srgb,var(--surface) 76%,var(--surface-2))!important;
+  border-radius:999px!important;
+  min-height:38px;
+  padding-inline:15px;
+  font-weight:780;
+}
+html[data-flow-school-ui="v2"] .neo-button:hover{
+  transform:none!important;
+  background:color-mix(in srgb,var(--accent) 8%,var(--surface))!important;
+}
+html[data-flow-school-ui="v2"] .neo-button:active,
+html[data-flow-school-ui="v2"] .neo-button.active{
+  transform:scale(.975)!important;
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface))!important;
+}
+html[data-flow-school-ui="v2"] .section-kicker,
+html[data-flow-school-ui="v2"] .eyebrow{
+  letter-spacing:.105em;
+  font-size:.58rem;
+}
+
+/* Desktop shell: from floating dashboard card to a calm app frame. */
+html[data-flow-school-ui="v2"] .product-shell{
+  width:min(1580px,calc(100% - 28px));
+  grid-template-columns:206px minmax(0,1fr);
+  gap:18px;
+  padding:14px 0 76px;
+}
+html[data-flow-school-ui="v2"] .desktop-sidebar{
+  top:14px;
+  height:calc(100vh - 28px);
+  padding:16px 12px 13px;
+  border-radius:24px;
+  background:color-mix(in srgb,var(--school-v2-panel) 94%,transparent);
+  border:1px solid var(--school-v2-line);
+  box-shadow:var(--school-v2-shadow-soft);
+  backdrop-filter:blur(24px) saturate(1.08);
+  -webkit-backdrop-filter:blur(24px) saturate(1.08);
+}
+html[data-flow-school-ui="v2"] .sidebar-logo{
+  padding:3px 8px 18px;
+}
+html[data-flow-school-ui="v2"] .school-identity{
+  margin:0 2px 18px;
+  padding:10px;
+  border-radius:15px;
+  border:1px solid var(--school-v2-line);
+  background:transparent;
+}
+html[data-flow-school-ui="v2"] .school-identity:hover{
+  background:color-mix(in srgb,var(--surface) 75%,transparent);
+}
+html[data-flow-school-ui="v2"] .side-nav{
+  gap:3px;
+}
+html[data-flow-school-ui="v2"] .nav-item{
+  position:relative;
+  min-height:54px;
+  padding:10px 12px 10px 16px;
+  border-radius:14px;
+  background:transparent!important;
+}
+html[data-flow-school-ui="v2"] .nav-item::before{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:50%;
+  width:3px;
+  height:20px;
+  border-radius:999px;
+  transform:translateY(-50%) scaleY(.35);
+  background:var(--accent);
+  opacity:0;
+  transition:opacity .2s ease,transform .35s var(--flow-spring-out,cubic-bezier(.16,1,.3,1));
+}
+html[data-flow-school-ui="v2"] .nav-item:hover{
+  background:color-mix(in srgb,var(--surface) 66%,transparent)!important;
+}
+html[data-flow-school-ui="v2"] .nav-item.active{
+  background:color-mix(in srgb,var(--accent) 9%,var(--surface))!important;
+}
+html[data-flow-school-ui="v2"] .nav-item.active::before{
+  opacity:1;
+  transform:translateY(-50%) scaleY(1);
+}
+html[data-flow-school-ui="v2"] .nav-item span{
+  font-size:.78rem;
+  letter-spacing:-.025em;
+}
+html[data-flow-school-ui="v2"] .nav-item small{
+  margin-top:2px;
+  font-size:.56rem;
+}
+html[data-flow-school-ui="v2"] .countdown-pill{
+  margin:0 2px 7px;
+  padding:12px 13px;
+  border-radius:15px;
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+  color:var(--text);
+  border:1px solid color-mix(in srgb,var(--accent) 18%,var(--school-v2-line));
+  box-shadow:none;
+}
+html[data-flow-school-ui="v2"] .countdown-pill span{
+  color:var(--muted);
+  opacity:1;
+}
+html[data-flow-school-ui="v2"] .countdown-pill strong{
+  color:var(--accent);
+}
+html[data-flow-school-ui="v2"] .product-main{
+  padding-top:0;
+}
+
+/* Today masthead: identity is concise; date control is a real primary control. */
+html[data-flow-school-ui="v2"] #todayView{
+  isolation:isolate;
+}
+html[data-flow-school-ui="v2"] .school-hero{
+  min-height:174px;
+  border-radius:30px;
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:var(--school-v2-shadow);
+  background:#4869c4;
+}
+html[data-flow-school-ui="v2"] .school-hero-image.has-image{
+  filter:saturate(.72) contrast(.92) brightness(.86);
+  transform:scale(1.018);
+}
+html[data-flow-school-ui="v2"] .school-hero-shade{
+  background:
+    linear-gradient(90deg,rgba(15,25,42,.82) 0%,rgba(23,38,62,.55) 48%,rgba(17,29,48,.28) 100%),
+    linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.08));
+}
+html[data-flow-school-ui="v2"] .school-hero-content{
+  min-height:174px;
+  padding:23px 25px 24px;
+  align-items:flex-end;
+  gap:13px;
+}
+html[data-flow-school-ui="v2"] .school-hero .school-badge{
+  width:48px;
+  height:48px;
+  border-radius:15px;
+  box-shadow:0 8px 24px rgba(0,0,0,.16);
+}
+html[data-flow-school-ui="v2"] .school-hero-copy h1{
+  margin-top:5px;
+  font-size:clamp(1.7rem,2.5vw,2.55rem);
+  line-height:1;
+  letter-spacing:-.055em;
+}
+html[data-flow-school-ui="v2"] .school-hero-copy p{
+  margin-top:6px;
+  font-size:.7rem;
+}
+html[data-flow-school-ui="v2"] .hero-right{
+  gap:7px;
+}
+html[data-flow-school-ui="v2"] .date-controller{
+  padding:4px;
+  border-radius:999px;
+  background:rgba(248,250,253,.93);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+}
+html[data-flow-school-ui="v2"] .date-controller button{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:rgba(231,236,243,.72);
+}
+html[data-flow-school-ui="v2"] .date-label{
+  min-width:104px;
+}
+html[data-flow-school-ui="v2"] .today-jump{
+  padding:7px 11px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(15,25,42,.22);
+}
+
+/* Overview shelf: two useful states, one shared surface. */
+html[data-flow-school-ui="v2"] body #todayView .status-grid{
+  position:relative;
+  z-index:4;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr)!important;
+  gap:0!important;
+  margin:-18px 20px 16px!important;
+  padding:6px!important;
+  overflow:hidden;
+  border:1px solid var(--school-v2-line)!important;
+  border-radius:21px!important;
+  background:color-mix(in srgb,var(--school-v2-panel) 96%,transparent)!important;
+  box-shadow:0 16px 42px rgba(35,48,70,.10)!important;
+  backdrop-filter:blur(22px) saturate(1.12);
+  -webkit-backdrop-filter:blur(22px) saturate(1.12);
+}
+html[data-flow-school-ui="v2"] body #todayView .status-card{
+  min-height:92px!important;
+  padding:14px 16px!important;
+  border:0!important;
+  border-radius:16px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"] body #todayView .status-card+.status-card:not(.flow-home-noise){
+  border-left:1px solid var(--school-v2-line)!important;
+}
+html[data-flow-school-ui="v2"] #todayView .status-label{
+  color:var(--muted);
+  font-size:.55rem;
+  letter-spacing:.09em;
+}
+html[data-flow-school-ui="v2"] #todayView .status-card strong{
+  margin-top:7px!important;
+  font-size:1.03rem!important;
+  line-height:1.14;
+}
+html[data-flow-school-ui="v2"] #todayView .status-card p{
+  margin-top:4px!important;
+  font-size:.61rem!important;
+  line-height:1.4;
+}
+html[data-flow-school-ui="v2"] #todayView .progress-track{
+  height:4px;
+  margin-top:10px!important;
+  background:color-mix(in srgb,var(--text) 7%,transparent);
+}
+
+/* The actual redesign: timetable + meal + events read as one workspace, not 3 cards. */
+html[data-flow-school-ui="v2"] .today-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.42fr) minmax(320px,.72fr);
+  gap:0;
+  overflow:hidden;
+  border:1px solid var(--school-v2-line);
+  border-radius:var(--school-v2-radius);
+  background:var(--school-v2-panel-solid);
+  box-shadow:var(--school-v2-shadow);
+}
+html[data-flow-school-ui="v2"] .today-grid>.content-card,
+html[data-flow-school-ui="v2"] .today-grid .right-stack>.content-card{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+  min-width:0;
+  padding:24px 24px 26px;
+  border-right:1px solid var(--school-v2-line)!important;
+}
+html[data-flow-school-ui="v2"] .today-grid .right-stack{
+  display:grid;
+  grid-template-rows:auto auto;
+  gap:0;
+  min-width:0;
+  background:color-mix(in srgb,var(--surface-2) 36%,var(--surface));
+}
+html[data-flow-school-ui="v2"] .today-grid .meal-card{
+  padding:24px 22px 22px;
+  border-bottom:1px solid var(--school-v2-line)!important;
+}
+html[data-flow-school-ui="v2"] .today-grid .upcoming-card{
+  padding:22px;
+}
+html[data-flow-school-ui="v2"] .card-heading{
+  margin-bottom:18px;
+}
+html[data-flow-school-ui="v2"] .card-heading h2{
+  margin-top:5px;
+  font-size:1.38rem;
+  letter-spacing:-.045em;
+}
+html[data-flow-school-ui="v2"] .card-heading p{
+  max-width:54ch;
+  margin-top:6px;
+  font-size:.67rem;
+}
+
+/* Day picker becomes a compact segmented strip. */
+html[data-flow-school-ui="v2"] .day-strip{
+  gap:5px;
+  padding:5px;
+  margin-bottom:16px;
+  border:1px solid var(--school-v2-line);
+  border-radius:17px;
+  background:color-mix(in srgb,var(--surface-2) 70%,transparent);
+}
+html[data-flow-school-ui="v2"] .day-chip{
+  min-height:50px;
+  border:0!important;
+  border-radius:13px!important;
+  background:transparent!important;
+  color:var(--muted);
+}
+html[data-flow-school-ui="v2"] .day-chip.active{
+  background:var(--surface)!important;
+  color:var(--text)!important;
+  box-shadow:0 5px 15px rgba(43,57,78,.07)!important;
+}
+html[data-flow-school-ui="v2"] .day-chip.active strong{
+  color:var(--accent);
+}
+
+/* Timetable rows are the dominant object. */
+html[data-flow-school-ui="v2"] .timetable{
+  display:grid;
+  gap:7px;
+}
+html[data-flow-school-ui="v2"] .period-button{
+  position:relative;
+  min-height:58px;
+  padding:8px 12px 8px 9px;
+  border:1px solid transparent!important;
+  border-radius:16px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transition:background .18s ease,border-color .18s ease,transform .16s ease;
+}
+html[data-flow-school-ui="v2"] .period-button:hover{
+  background:color-mix(in srgb,var(--accent) 5%,var(--surface-2))!important;
+  border-color:color-mix(in srgb,var(--accent) 9%,var(--school-v2-line))!important;
+}
+html[data-flow-school-ui="v2"] .period-button:active{
+  transform:scale(.992);
+}
+html[data-flow-school-ui="v2"] .period-no{
+  width:38px!important;
+  height:38px!important;
+  border-radius:12px!important;
+  display:grid!important;
+  place-items:center!important;
+  background:color-mix(in srgb,var(--accent) 9%,var(--surface-2))!important;
+  color:var(--accent)!important;
+  font-size:.71rem!important;
+  font-weight:850!important;
+}
+html[data-flow-school-ui="v2"] .period-name{
+  font-size:.88rem!important;
+  font-weight:810!important;
+  letter-spacing:-.03em;
+}
+html[data-flow-school-ui="v2"] .period-origin,
+html[data-flow-school-ui="v2"] .period-edit-hint{
+  font-size:.56rem!important;
+}
+
+/* Meal and events are concise utility panes. */
+html[data-flow-school-ui="v2"] .meal-tabs{
+  padding:4px;
+  border:1px solid var(--school-v2-line);
+  border-radius:14px;
+  background:color-mix(in srgb,var(--surface-2) 72%,transparent);
+}
+html[data-flow-school-ui="v2"] .meal-tab{
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+}
+html[data-flow-school-ui="v2"] .meal-tab.active{
+  background:var(--surface)!important;
+  box-shadow:0 4px 12px rgba(43,57,78,.06)!important;
+}
+html[data-flow-school-ui="v2"] .meal-list{
+  margin-top:13px;
+}
+html[data-flow-school-ui="v2"] .meal-item,
+html[data-flow-school-ui="v2"] .event-row,
+html[data-flow-school-ui="v2"] .schedule-row{
+  border-radius:14px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"] .meal-footer{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid var(--school-v2-line);
+}
+html[data-flow-school-ui="v2"] .event-list,
+html[data-flow-school-ui="v2"] .schedule-list{
+  display:grid;
+  gap:6px;
+}
+
+/* Secondary destinations share an editorial header + one strong canvas. */
+html[data-flow-school-ui="v2"] .view-header{
+  min-height:126px;
+  margin:0 0 14px;
+  padding:22px 24px;
+  border:1px solid var(--school-v2-line);
+  border-radius:26px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 7%,var(--surface)),var(--surface));
+  box-shadow:var(--school-v2-shadow-soft);
+}
+html[data-flow-school-ui="v2"] .view-header h1{
+  margin-top:5px;
+  font-size:clamp(1.8rem,3vw,2.7rem);
+  letter-spacing:-.055em;
+}
+html[data-flow-school-ui="v2"] .view-header p{
+  max-width:58ch;
+  margin-top:7px;
+}
+html[data-flow-school-ui="v2"] .week-card,
+html[data-flow-school-ui="v2"] .schedule-layout>.content-card,
+html[data-flow-school-ui="v2"] .profile-hero,
+html[data-flow-school-ui="v2"] .school-info-grid>*{
+  border:1px solid var(--school-v2-line)!important;
+  box-shadow:var(--school-v2-shadow-soft)!important;
+}
+html[data-flow-school-ui="v2"] .week-card{
+  border-radius:28px!important;
+}
+html[data-flow-school-ui="v2"] .schedule-layout{
+  gap:12px;
+}
+html[data-flow-school-ui="v2"] .schedule-layout>.content-card{
+  border-radius:24px!important;
+}
+html[data-flow-school-ui="v2"] .profile-hero{
+  min-height:210px;
+  border-radius:28px;
+}
+html[data-flow-school-ui="v2"] .school-actions{
+  gap:8px;
+}
+html[data-flow-school-ui="v2"] .school-actions .neo-button{
+  min-height:44px;
+}
+
+/* Dialogs now read like system sheets rather than neumorphic cards. */
+html[data-flow-school-ui="v2"] dialog .sheet{
+  border:1px solid var(--school-v2-line)!important;
+  border-radius:28px!important;
+  background:color-mix(in srgb,var(--surface) 96%,transparent)!important;
+  box-shadow:0 28px 90px rgba(24,34,50,.2)!important;
+  backdrop-filter:blur(26px) saturate(1.08);
+  -webkit-backdrop-filter:blur(26px) saturate(1.08);
+}
+
+/* Mobile bottom navigation: app navigation, not five floating buttons. */
+html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+  border:1px solid var(--school-v2-line)!important;
+  border-radius:22px!important;
+  background:color-mix(in srgb,var(--school-v2-panel) 95%,transparent)!important;
+  box-shadow:0 16px 44px rgba(29,40,58,.14)!important;
+  backdrop-filter:blur(26px) saturate(1.12)!important;
+  -webkit-backdrop-filter:blur(26px) saturate(1.12)!important;
+}
+html[data-flow-school-ui="v2"] .mobile-tab{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font-weight:760;
+}
+html[data-flow-school-ui="v2"] .mobile-tab.active{
+  color:var(--accent)!important;
+}
+html[data-flow-school-ui="v2"] .mobile-tab span{
+  position:relative;
+  z-index:3;
+}
+
+@media(min-width:901px){
+  html[data-flow-school-ui="v2"] .product-main{
+    padding-bottom:22px;
+  }
+}
+
+@media(max-width:1180px) and (min-width:901px){
+  html[data-flow-school-ui="v2"] .product-shell{
+    grid-template-columns:188px minmax(0,1fr);
+    gap:14px;
+  }
+  html[data-flow-school-ui="v2"] .today-grid{
+    grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr);
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy h1{
+    font-size:2rem;
+  }
+}
+
+@media(max-width:900px){
+  html[data-flow-school-ui="v2"] body{
+    padding-bottom:84px;
+  }
+  html[data-flow-school-ui="v2"] .product-shell{
+    width:100%;
+    display:block;
+    padding:0 12px 18px;
+  }
+  html[data-flow-school-ui="v2"] .product-main{
+    width:100%;
+    padding:0;
+  }
+  html[data-flow-school-ui="v2"] .mobile-topbar{
+    min-height:58px;
+    margin:0 -2px 8px;
+    padding:9px 4px;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-school-button{
+    padding:6px 9px;
+    border-radius:12px;
+    background:color-mix(in srgb,var(--surface) 66%,transparent);
+    border:1px solid var(--school-v2-line);
+  }
+  html[data-flow-school-ui="v2"] .school-hero{
+    min-height:140px;
+    border-radius:23px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:140px;
+    padding:17px 16px 19px;
+    gap:10px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero .school-badge{
+    width:42px;
+    height:42px;
+    border-radius:13px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy h1{
+    max-width:56vw;
+    font-size:1.48rem;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy p{
+    font-size:.61rem;
+  }
+  html[data-flow-school-ui="v2"] .hero-right{
+    position:absolute;
+    top:13px;
+    right:13px;
+  }
+  html[data-flow-school-ui="v2"] .date-controller{
+    padding:3px;
+  }
+  html[data-flow-school-ui="v2"] .date-controller button{
+    width:30px;
+    height:30px;
+  }
+  html[data-flow-school-ui="v2"] .date-label{
+    min-width:88px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-jump{
+    display:none;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)!important;
+    margin:-13px 10px 12px!important;
+    padding:4px!important;
+    border-radius:18px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card{
+    min-height:82px!important;
+    padding:11px 12px!important;
+    border-radius:14px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card strong{
+    font-size:.86rem!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card p{
+    font-size:.55rem!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .progress-track{
+    margin-top:7px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid{
+    display:block;
+    border-radius:23px;
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+    padding:18px 14px 20px;
+    border-right:0!important;
+    border-bottom:1px solid var(--school-v2-line)!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .right-stack{
+    display:block;
+    background:color-mix(in srgb,var(--surface-2) 26%,var(--surface));
+  }
+  html[data-flow-school-ui="v2"] .today-grid .meal-card,
+  html[data-flow-school-ui="v2"] .today-grid .upcoming-card{
+    padding:18px 14px;
+  }
+  html[data-flow-school-ui="v2"] .card-heading{
+    margin-bottom:13px;
+  }
+  html[data-flow-school-ui="v2"] .card-heading h2{
+    font-size:1.13rem;
+  }
+  html[data-flow-school-ui="v2"] .card-heading p{
+    max-width:36ch;
+    font-size:.59rem;
+    line-height:1.42;
+  }
+  html[data-flow-school-ui="v2"] .day-strip{
+    gap:3px;
+    padding:4px;
+    margin-bottom:12px;
+    border-radius:15px;
+  }
+  html[data-flow-school-ui="v2"] .day-chip{
+    min-height:46px;
+    border-radius:11px!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable{
+    gap:4px;
+  }
+  html[data-flow-school-ui="v2"] .period-button{
+    min-height:54px;
+    padding:7px 8px 7px 7px;
+    border-radius:14px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-no{
+    width:34px!important;
+    height:34px!important;
+    border-radius:10px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-name{
+    font-size:.82rem!important;
+  }
+  html[data-flow-school-ui="v2"] .view-header{
+    min-height:104px;
+    margin:0 0 10px;
+    padding:18px 16px;
+    border-radius:22px;
+  }
+  html[data-flow-school-ui="v2"] .view-header h1{
+    font-size:1.72rem;
+  }
+  html[data-flow-school-ui="v2"] .view-header p{
+    max-width:35ch;
+    font-size:.62rem;
+  }
+  html[data-flow-school-ui="v2"] .week-card,
+  html[data-flow-school-ui="v2"] .schedule-layout>.content-card,
+  html[data-flow-school-ui="v2"] .profile-hero{
+    border-radius:22px!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+    left:12px!important;
+    right:12px!important;
+    bottom:max(10px,env(safe-area-inset-bottom))!important;
+    width:auto!important;
+    min-height:62px!important;
+    padding:5px!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-tab{
+    min-height:50px!important;
+    border-radius:17px!important;
+    font-size:.64rem!important;
+  }
+}
+
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] .product-shell{
+    padding-inline:9px;
+  }
+  html[data-flow-school-ui="v2"] .mobile-topbar{
+    min-height:54px;
+    margin-bottom:5px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero{
+    min-height:132px;
+    border-radius:21px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:132px;
+    padding:15px 14px 17px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero .school-badge{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy h1{
+    max-width:50vw;
+    font-size:1.34rem;
+  }
+  html[data-flow-school-ui="v2"] .hero-right{
+    top:10px;
+    right:10px;
+  }
+  html[data-flow-school-ui="v2"] .date-controller button{
+    width:28px;
+    height:28px;
+  }
+  html[data-flow-school-ui="v2"] .date-label{
+    min-width:78px!important;
+  }
+  html[data-flow-school-ui="v2"] .date-label strong{
+    font-size:.61rem;
+  }
+  html[data-flow-school-ui="v2"] .date-label span{
+    font-size:.52rem;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    margin:-11px 7px 10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card{
+    min-height:76px!important;
+    padding:10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card strong{
+    font-size:.79rem!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid{
+    border-radius:20px;
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card,
+  html[data-flow-school-ui="v2"] .today-grid .meal-card,
+  html[data-flow-school-ui="v2"] .today-grid .upcoming-card{
+    padding-left:12px;
+    padding-right:12px;
+  }
+  html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+    left:8px!important;
+    right:8px!important;
+    border-radius:20px!important;
+  }
+}
+
+@media(max-width:900px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body{
+    padding-bottom:20px;
+  }
+  html[data-flow-school-ui="v2"] .product-shell{
+    padding:8px 10px 14px;
+  }
+  html[data-flow-school-ui="v2"] .mobile-topbar{
+    min-height:44px;
+    margin-bottom:5px;
+    padding:4px 2px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero{
+    min-height:112px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:112px;
+    padding:13px 14px;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy h1{
+    font-size:1.24rem;
+  }
+  html[data-flow-school-ui="v2"] .school-hero .school-badge{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    margin:-10px 8px 9px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card{
+    min-height:66px!important;
+    padding:8px 10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card p{
+    display:none;
+  }
+  html[data-flow-school-ui="v2"] #todayView .progress-track{
+    margin-top:5px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+    border-right:1px solid var(--school-v2-line)!important;
+    border-bottom:0!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .right-stack{
+    display:grid;
+  }
+  html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+    min-height:48px!important;
+    bottom:6px!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-tab{
+    min-height:38px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  html[data-flow-school-ui="v2"] .nav-item::before,
+  html[data-flow-school-ui="v2"] .period-button{
+    transition:none!important;
+  }
+}
