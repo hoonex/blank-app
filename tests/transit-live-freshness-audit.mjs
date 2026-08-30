@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const source = fs.readFileSync('supabase/functions/transit-data-core/index.ts', 'utf8');
+const coreSource = fs.readFileSync('supabase/functions/transit-data-core/index.ts', 'utf8');
+const gateSource = fs.readFileSync('supabase/functions/transit-data/index.ts', 'utf8');
 
 for (const snippet of [
   'const ARRIVAL_CACHE_TTL_MS = 18_000',
@@ -15,7 +16,18 @@ for (const snippet of [
   'routeSort(route, existing) < 0',
   'realtimeFreshness: "provider-fetchedAt+cache-age-adjusted"',
 ]) {
-  assert.ok(source.includes(snippet), `missing freshness contract: ${snippet}`);
+  assert.ok(coreSource.includes(snippet), `missing core freshness contract: ${snippet}`);
+}
+
+for (const snippet of [
+  'function realtimeCoverageScore(route: any)',
+  'function realtimeAgeSeconds(route: any)',
+  'realtimeCoverageScore(b) - realtimeCoverageScore(a)',
+  'realtimeAgeSeconds(a) - realtimeAgeSeconds(b)',
+  'realtimeRouting: "cache-age-adjusted-per-bus-leg"',
+  'realtimeFreshness: "provider-fetchedAt+cache-age-adjusted"',
+]) {
+  assert.ok(gateSource.includes(snippet), `missing public gate freshness contract: ${snippet}`);
 }
 
 function selectArrival(rawSeconds, fetchedAt, now, threshold = 0) {
@@ -64,4 +76,5 @@ console.log(JSON.stringify({
   transferThresholdRejectsExpiredArrival: true,
   tieBreakOrder: tied.map((route) => route.id),
   transferPreferencePreserved: true,
+  publicGatePreservesFreshnessTieBreak: true,
 }, null, 2));
