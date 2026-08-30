@@ -38,7 +38,7 @@ html[data-theme] body .mobile-bottom-nav:has(> .flow-mobile-settings.active:nth-
 .flow-transit-destination-input-row input{grid-area:input;box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:0 13px;border:1px solid color-mix(in srgb,var(--text) 9%,transparent);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:.72rem;outline:none}
 .flow-transit-destination-input-row input::placeholder{color:var(--muted-2)}
 .flow-transit-destination-input-row input:focus{border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent)}
-.flow-transit-destination-submit{grid-area:action;min-width:150px;min-height:44px;padding-inline:15px;white-space:nowrap}
+.flow-transit-destination-submit{grid-area:action;min-width:150px;min-height:44px;margin:0;padding-inline:15px;white-space:nowrap}
 .flow-transit-destination-suggestions{grid-area:suggestions;box-sizing:border-box;max-height:268px;margin:0;padding:4px;overflow-y:auto;overscroll-behavior:contain;border:1px solid color-mix(in srgb,var(--text) 8%,transparent);border-radius:13px;background:var(--surface);box-shadow:0 12px 28px color-mix(in srgb,#000 10%,transparent);scrollbar-width:thin}
 .flow-transit-destination-suggestion{appearance:none;display:grid;width:100%;min-width:0;gap:4px;padding:10px 11px;border:0;border-radius:10px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
 .flow-transit-destination-suggestion+.flow-transit-destination-suggestion{border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent);border-top-left-radius:0;border-top-right-radius:0}
