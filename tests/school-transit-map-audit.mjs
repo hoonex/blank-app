@@ -44,6 +44,18 @@ async function installKakaoFixture(page){
 }
 async function fixture(page,counters){
   await installKakaoFixture(page);
+  await page.addInitScript(()=>{
+    let current={longitude:128.696,latitude:35.876,accuracy:10},nextId=1;
+    const watches=new Map();
+    const position=()=>({coords:{longitude:current.longitude,latitude:current.latitude,accuracy:current.accuracy}});
+    const geolocation={
+      watchPosition(success){const id=nextId++;watches.set(id,success);queueMicrotask(()=>watches.has(id)&&success(position()));return id},
+      clearWatch(id){watches.delete(id)},
+      getCurrentPosition(success){queueMicrotask(()=>success(position()))},
+    };
+    Object.defineProperty(navigator,'geolocation',{configurable:true,value:geolocation});
+    window.__flowSetTestGeolocation=(longitude,latitude,accuracy=10)=>{current={longitude,latitude,accuracy};for(const success of watches.values())success(position())};
+  });
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
   await page.route('**/functions/v1/transit-data*',route=>json(route,transit));
   await page.route('**/functions/v1/transit-map*',route=>{
@@ -54,12 +66,12 @@ async function fixture(page,counters){
     const segment=startIndex>=0&&endIndex>=startIndex?stops.slice(startIndex,endIndex+1):stops;
     return json(route,{...base,route:{...base.route,start:segment[0],end:segment.at(-1),stops:segment}});
   });
-  await page.addInitScript(({profile})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard')},{profile});
+  await page.addInitScript(({profile,routes})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');window.__flowTransitFixtureRoutes=routes},{profile,routes:transit.routes});
 }
 async function baseState(page){return page.evaluate(()=>{const card=document.querySelector('[data-transit-route="0"]');const r=card?.getBoundingClientRect();return{cardHeight:r?.height||0,pageHeight:document.documentElement.scrollHeight,scrollY,routeCount:document.querySelectorAll('[data-transit-route]').length}})}
 async function inspect(page){return page.evaluate(()=>{
   const rect=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
-  const shell=document.querySelector('.flow-transit-map-shell'),sheet=document.querySelector('.flow-transit-map-sheet'),canvas=document.querySelector('.flow-transit-map-canvas'),card=document.querySelector('[data-transit-route="0"]'),nav=document.querySelector('.mobile-bottom-nav:has(.active),.mobile-bottom-nav,.bottom-nav');
+  const shell=document.querySelector('.flow-transit-map-shell'),sheet=document.querySelector('.flow-transit-map-sheet'),canvas=document.querySelector('.flow-transit-map-canvas'),card=document.querySelector('[data-transit-route="0"]'),nav=document.querySelector('.mobile-bottom-nav:has(.active),.mobile-bottom-nav,.bottom-nav'),guide=document.querySelector('[data-transit-trip-guide]');
   const cardRect=card?.getBoundingClientRect();
   const overlayCenters=[...document.querySelectorAll('.fixture-overlay')].map(node=>{const r=node.getBoundingClientRect();return r.left+r.width/2});
   const spread=overlayCenters.length?Math.max(...overlayCenters)-Math.min(...overlayCenters):0;
@@ -67,7 +79,8 @@ async function inspect(page){return page.evaluate(()=>{
   return{
     scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,pageHeight:document.documentElement.scrollHeight,
     toggles:document.querySelectorAll('.flow-transit-map-toggle').length,shells:document.querySelectorAll('.flow-transit-map-shell').length,inlinePanels:document.querySelectorAll('[data-transit-route] .flow-transit-map-shell,[data-transit-route] .flow-transit-map-sheet').length,
-    shell:rect(shell),sheet:rect(sheet),canvas:rect(canvas),cardHeight:cardRect?.height||0,ready:shell?.dataset.mapReady||'',vehicles:shell?.dataset.vehicleCount||'',pins:document.querySelectorAll('.flow-transit-map-pin').length,transferPins:document.querySelectorAll('.flow-transit-map-pin.transfer').length,vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,lines:document.querySelectorAll('.fixture-route-line').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',legs:document.querySelectorAll('.flow-transit-map-leg').length,
+    shell:rect(shell),sheet:rect(sheet),canvas:rect(canvas),guide:rect(guide),cardHeight:cardRect?.height||0,ready:shell?.dataset.mapReady||'',vehicles:shell?.dataset.vehicleCount||'',pins:document.querySelectorAll('.flow-transit-map-pin').length,transferPins:document.querySelectorAll('.flow-transit-map-pin.transfer').length,vehiclePins:document.querySelectorAll('.flow-transit-map-vehicle').length,lines:document.querySelectorAll('.fixture-route-line').length,status:document.querySelector('.flow-transit-map-status')?.textContent?.trim()||'',legs:document.querySelectorAll('.flow-transit-map-leg').length,
+    tripPhase:guide?.dataset.phase||'',tripRemaining:guide?.dataset.remaining??'',tripTitle:guide?.querySelector('[data-transit-trip-title]')?.textContent?.trim()||'',tripDetail:guide?.querySelector('[data-transit-trip-detail]')?.textContent?.trim()||'',tripAction:guide?.querySelector('[data-transit-trip-action]')?.textContent?.trim()||'',tripDisabled:Boolean(guide?.querySelector('[data-transit-trip-action]')?.disabled),
     bodyLocked:document.body.classList.contains('flow-transit-map-open')&&getComputedStyle(document.body).overflow==='hidden',shellPosition:shell?getComputedStyle(shell).position:'',bottomCovered:Boolean(bottomHit?.closest?.('.flow-transit-map-shell')),navVisible:Boolean(nav&&getComputedStyle(nav).display!=='none'),markerSpreadX:spread,viewport:{width:innerWidth,height:innerHeight},activeTag:document.activeElement?.className||'',
   };
 })}
@@ -86,6 +99,7 @@ for(const testCase of cases){
   if(counters.map!==1)throw new Error(`${testCase.name}: expected one lazy route-map request, got ${counters.map}`);
   if(state.shells!==1||state.inlinePanels!==0||state.ready!=='true'||state.lines<1||state.pins<2||state.vehiclePins<1)throw new Error(`${testCase.name}: bus map sheet/layers incomplete ${JSON.stringify(state)}`);
   if(!state.status.includes('운행 버스 1대')||!state.status.includes('15초마다 갱신'))throw new Error(`${testCase.name}: live vehicle refresh status missing ${JSON.stringify(state)}`);
+  if(!state.guide||state.tripPhase!=='idle'||state.tripAction!=='여정 시작'||state.tripDisabled)throw new Error(`${testCase.name}: active-trip guide did not initialize ${JSON.stringify(state)}`);
   if(!state.bodyLocked||state.shellPosition!=='fixed')throw new Error(`${testCase.name}: map sheet must lock the page as a fixed dialog ${JSON.stringify(state)}`);
   if(Math.abs(state.cardHeight-before.cardHeight)>2||Math.abs(state.pageHeight-before.pageHeight)>2)throw new Error(`${testCase.name}: opening the map must not expand route cards/page ${JSON.stringify({before,state})}`);
   if(!state.sheet||state.sheet.top<-1||state.sheet.left<-1||state.sheet.right>state.viewport.width+1||state.sheet.bottom>state.viewport.height+1)throw new Error(`${testCase.name}: map sheet clips outside viewport ${JSON.stringify(state)}`);
@@ -96,6 +110,29 @@ for(const testCase of cases){
   if(pageErrors.length)throw new Error(`${testCase.name}: page errors ${JSON.stringify(pageErrors)}`);
   await page.screenshot({path:`${OUT}/school-transit-map-${testCase.name}.png`,fullPage:false});
 
+  await page.locator('[data-transit-trip-action]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.phase==='waiting');
+  const waiting=await inspect(page);if(!waiting.tripTitle.includes('708')||waiting.tripAction!=='탑승했어요'||!waiting.tripDetail.includes('실시간 4정거장 전'))throw new Error(`${testCase.name}: boarding guidance is incomplete ${JSON.stringify(waiting)}`);
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('flow:transit-routes-rendered',{detail:{routes:window.__flowTransitFixtureRoutes,generatedAt:new Date().toISOString()}})));
+  await page.waitForFunction(()=>document.querySelector('.flow-transit-map-shell')&&document.querySelector('[data-transit-trip-guide]')?.dataset.phase==='waiting');
+  await page.locator('[data-transit-trip-action]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='5');
+  const riding=await inspect(page);report[testCase.name].activeTrip=riding;
+  if(riding.tripPhase!=='riding'||riding.tripRemaining!=='5'||!riding.tripTitle.includes('5정거장 남음')||riding.tripAction!=='하차했어요')throw new Error(`${testCase.name}: riding progress is incomplete ${JSON.stringify(riding)}`);
+  if(!riding.guide||riding.guide.left<-1||riding.guide.right>riding.viewport.width+1)throw new Error(`${testCase.name}: trip guide clips horizontally ${JSON.stringify(riding)}`);
+  if(riding.scrollWidth>riding.clientWidth+1)throw new Error(`${testCase.name}: active-trip horizontal overflow ${JSON.stringify(riding)}`);
+  await page.screenshot({path:`${OUT}/school-transit-active-trip-${testCase.name}.png`,fullPage:false});
+
+  if(testCase.name==='mobile-portrait'){
+    await page.evaluate(()=>window.__flowSetTestGeolocation(128.623,35.883,10));
+    await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.remaining==='1');
+    const alight=await inspect(page);report[testCase.name].alightPrep=alight;
+    if(alight.tripTitle!=='다음 정류장에서 하차 준비'||!alight.tripDetail.includes('1정거장 남음'))throw new Error(`mobile-portrait: alighting preparation is incomplete ${JSON.stringify(alight)}`);
+    await page.screenshot({path:`${OUT}/school-transit-active-trip-mobile-portrait-alight.png`,fullPage:false});
+  }
+
+  await page.locator('[data-transit-trip-action]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-transit-trip-guide]')?.dataset.phase==='complete');
   await page.locator('[data-transit-map-close]').click();await page.waitForFunction(()=>!document.querySelector('.flow-transit-map-shell'));await page.waitForFunction(()=>document.activeElement?.classList.contains('flow-transit-map-toggle'));
   const closed=await page.evaluate(()=>({locked:document.body.classList.contains('flow-transit-map-open'),expanded:document.querySelector('[data-transit-route="0"] .flow-transit-map-toggle')?.getAttribute('aria-expanded'),focused:document.activeElement?.classList.contains('flow-transit-map-toggle')||false,pageHeight:document.documentElement.scrollHeight}));
   if(closed.locked||closed.expanded!=='false'||!closed.focused||Math.abs(closed.pageHeight-before.pageHeight)>2)throw new Error(`${testCase.name}: close/focus/page restoration failed ${JSON.stringify(closed)}`);
