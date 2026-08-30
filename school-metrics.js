@@ -3,7 +3,6 @@ import '/flow-settings-view.js';
 import '/flow-refraction.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
-import './school-surface-cleanup.js';
 
 function transitLabEnabled(){
   const host=location.hostname;
@@ -16,6 +15,10 @@ if(transitLabEnabled()){
   await import('./school-transit-map.js');
   await import('./school-transit-focus.js');
 }
+
+/* Preserve the historical lab initialization order: Transit first, cleanup after.
+ * Production skips the Transit imports entirely and loads only the cleanup layer. */
+await import('./school-surface-cleanup.js');
 
 /* Optical/refraction used to assume School always had five destinations because
  * Transit was one of them. Production now has four, so keep the lens geometry
