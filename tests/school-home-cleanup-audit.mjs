@@ -21,6 +21,7 @@ const cases=[
   ['mobile-portrait',390,844,true],['mobile-landscape',844,390,true],['tablet-portrait',768,1024,true],
   ['tablet-landscape',1024,768,true],['desktop-1366',1366,768,false],['desktop-1920',1920,1080,false],
 ];
+const transitAsset=/\/school-transit(?:-map|-focus|-today)?\.(?:js|css)(?:\?|$)/;
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixture(page){
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
@@ -45,12 +46,13 @@ async function settingsState(page){return page.evaluate(()=>{const panel=documen
 
 const browser=await chromium.launch({headless:true});const report={};
 for(const [name,width,height,isMobile] of cases){
-  const context=await browser.newContext({viewport:{width,height},isMobile,hasTouch:isMobile,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage(),pageErrors=[],consoleErrors=[];
-  page.on('pageerror',error=>pageErrors.push(String(error)));page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});await fixture(page);
+  const context=await browser.newContext({viewport:{width,height},isMobile,hasTouch:isMobile,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage(),pageErrors=[],consoleErrors=[],transitRequests=[];
+  page.on('pageerror',error=>pageErrors.push(String(error)));page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('request',request=>{const url=request.url();if(transitAsset.test(url))transitRequests.push(url)});await fixture(page);
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForTimeout(100);
   const home=await homeState(page);
   if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
+  if(transitRequests.length)throw new Error(`${name}: dormant production Transit assets were requested ${JSON.stringify(transitRequests)}`);
   if(width<=900&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
   if(!home.mealFooter.includes('12:20–13:10')||home.overflow>1)throw new Error(`${name}: Today meal window/overflow failed ${JSON.stringify(home)}`);
   await page.screenshot({path:`${OUT}/home-${name}.png`,fullPage:false});await page.screenshot({path:`${OUT}/home-${name}-full.png`,fullPage:true});
@@ -68,7 +70,8 @@ for(const [name,width,height,isMobile] of cases){
   await page.screenshot({path:`${OUT}/settings-${name}.png`,fullPage:false});await page.screenshot({path:`${OUT}/settings-${name}-full.png`,fullPage:true});
 
   await page.locator('#bottomNav [data-view="today"]:visible,.side-nav [data-view="today"]:visible').first().click();await page.waitForSelector('#todayView:not(.hidden)');await page.waitForFunction(()=>document.querySelector('#mealCal')?.textContent?.includes('12:15–13:05'));const after=await homeState(page);
+  if(transitRequests.length)throw new Error(`${name}: dormant Transit assets loaded after navigation ${JSON.stringify(transitRequests)}`);
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
-  report[name]={home,schedule,settings,saved,after,pageErrors,consoleErrors};await context.close();
+  report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],transit:'dormant',mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],transit:'dormant',transitRequests:0,mealWindow:true},null,2));
