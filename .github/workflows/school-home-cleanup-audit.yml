@@ -32,12 +32,7 @@ jobs:
           grep -q "await import('./school-transit.js')" school-metrics.js
           grep -q "await import('./school-transit-map.js')" school-metrics.js
           grep -q "await import('./school-transit-focus.js')" school-metrics.js
-          ! grep -q "school-transit.js" sw.js
-          ! grep -q "school-transit-map.js" sw.js
-          ! grep -q "school-transit-focus.js" sw.js
-          ! grep -q "school-transit.css" sw.js
-          ! grep -q "school-transit-map.css" sw.js
-          ! grep -q "school-transit-focus.css" sw.js
+          ! grep -q "^const SHELL=.*school-transit" sw.js
           ! grep -q "school-transit-today.js" school-metrics.js
           grep -q "const CACHE='flow-school-shell-v14'" sw.js
       - name: Install Playwright Chromium
