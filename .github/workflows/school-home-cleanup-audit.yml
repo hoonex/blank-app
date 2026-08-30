@@ -22,6 +22,7 @@ jobs:
           set -euo pipefail
           node --check school-surface-cleanup.js
           node --check tests/school-home-cleanup-audit.mjs
+          node --check cloudflare-worker.mjs
           grep -q "school-surface-cleanup.js" school-metrics.js
           grep -q "school-surface-cleanup.js" sw.js
           grep -q "flow-school-transit-lab-v1" school-surface-cleanup.js
@@ -34,7 +35,10 @@ jobs:
           grep -q "await import('./school-transit-focus.js')" school-metrics.js
           ! grep -q "^const SHELL=.*school-transit" sw.js
           ! grep -q "school-transit-today.js" school-metrics.js
-          grep -q "const CACHE='flow-school-shell-v14'" sw.js
+          grep -q "const CACHE='flow-school-shell-v15'" sw.js
+          grep -q "FLOW_RELEASE='school-shell-v15-20260831'" cloudflare-worker.mjs
+          grep -q "flow-school-production-critical" cloudflare-worker.mjs
+          grep -q "flow-school-cache-recovery" cloudflare-worker.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
