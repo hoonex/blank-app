@@ -3,6 +3,8 @@ const RAIL_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/transit-r
 const PROFILE_KEY='flow-school-profile-v3';
 const DESTINATION_KEY='flow-school-transit-destination-v1';
 const REFRESH_MS=30000;
+const DESTINATION_SEARCH_DELAY=180;
+const DESTINATION_SEARCH_MIN=2;
 const $=(selector,root=document)=>root.querySelector(selector);
 const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
 
@@ -10,16 +12,24 @@ let lastCoords=null;
 let refreshTimer=0;
 let requestAbort=null;
 let loading=false;
+let destinationSearchTimer=0;
+let destinationSearchAbort=null;
+let destinationSuggestions=[];
+let destinationSuggestionIndex=-1;
 
 function profile(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'null')}catch{return null}}
 function customDestination(){
   try{
     const stored=JSON.parse(localStorage.getItem(DESTINATION_KEY)||'null'),query=String(stored?.query||'').trim();
     if(!query)return null;
+    const x=Number(stored?.x),y=Number(stored?.y);
     return{
       name:String(stored?.name||query).trim()||query,
       query,
       address:String(stored?.address||'').trim(),
+      category:String(stored?.category||'').trim(),
+      x:Number.isFinite(x)?x:null,
+      y:Number.isFinite(y)?y:null,
       custom:true,
     };
   }catch{return null}
@@ -38,17 +48,20 @@ function schoolDestination(){
 function transitDestination(){return customDestination()||schoolDestination()}
 function saveCustomDestination(query,resolved=null){
   const normalized=String(query||'').trim();if(!normalized)return;
+  const x=Number(resolved?.x),y=Number(resolved?.y);
   const next={
     query:normalized,
     name:String(resolved?.name||normalized).trim()||normalized,
     address:String(resolved?.address||resolved?.roadAddress||'').trim(),
+    category:String(resolved?.category||'').trim(),
+    ...(Number.isFinite(x)&&Number.isFinite(y)?{x,y}:{}),
   };
   localStorage.setItem(DESTINATION_KEY,JSON.stringify(next));
 }
 function clearCustomDestination(){localStorage.removeItem(DESTINATION_KEY)}
 function installStyle(){
   if($('link[data-flow-school-transit]'))return;
-  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit.css?v=20260830-1';link.dataset.flowSchoolTransit='';document.head.append(link);
+  const link=document.createElement('link');link.rel='stylesheet';link.href='/school-transit.css?v=20260830-2';link.dataset.flowSchoolTransit='';document.head.append(link);
 }
 function navButton(kind){
   const button=document.createElement('button');button.type='button';button.dataset.view='transit';button.dataset.flowTransitNav='';
@@ -95,14 +108,15 @@ function installView(){
       <form class="flow-transit-destination-editor hidden" id="transitDestinationEditor">
         <div class="flow-transit-destination-editor-head">
           <label for="transitDestinationInput">다른 목적지 찾기</label>
-          <small>대구광역시 안의 장소명 또는 도로명 주소를 입력하세요.</small>
+          <small>입력하면 대구 안의 실제 장소와 주소를 바로 확인할 수 있습니다.</small>
         </div>
         <div class="flow-transit-destination-input-row">
-          <input id="transitDestinationInput" name="destination" type="search" maxlength="120" autocomplete="off" enterkeyhint="go" placeholder="예: 동대구역, 대구시청, 도로명 주소" required>
+          <input id="transitDestinationInput" name="destination" type="search" maxlength="120" autocomplete="off" enterkeyhint="go" placeholder="예: 동대구역, 대구시청, 도로명 주소" required role="combobox" aria-autocomplete="list" aria-controls="transitDestinationSuggestions" aria-expanded="false">
           <button class="primary-button flow-transit-destination-submit" type="submit" data-transit-destination-action>이곳으로 경로 찾기</button>
         </div>
+        <div class="flow-transit-destination-suggestions hidden" id="transitDestinationSuggestions" role="listbox" aria-label="실제 목적지 검색 결과"></div>
         <div class="flow-transit-destination-editor-foot">
-          <small>확정하면 현재 위치를 확인한 뒤 바로 경로를 검색합니다.</small>
+          <small>검색 결과를 선택하면 그 장소의 실제 좌표로 바로 경로를 찾습니다.</small>
           <button id="transitDestinationResetBtn" class="flow-transit-destination-reset" type="button" data-transit-destination-action>학교를 목적지로</button>
         </div>
       </form>
@@ -116,8 +130,14 @@ function installView(){
   $('#transitRefreshBtn')?.addEventListener('click',()=>locateAndLoad({manual:true,refresh:true}));
   $('#transitDestinationEditBtn')?.addEventListener('click',()=>toggleDestinationEditor());
   $('#transitDestinationResetBtn')?.addEventListener('click',()=>resetDestination());
-  $('#transitDestinationEditor')?.addEventListener('submit',event=>{event.preventDefault();applyDestination($('#transitDestinationInput')?.value||'')});
-  $('#transitDestinationEditor')?.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();toggleDestinationEditor(false);$('#transitDestinationEditBtn')?.focus({preventScroll:true})}});
+  $('#transitDestinationEditor')?.addEventListener('submit',event=>{event.preventDefault();cancelDestinationSearch();applyDestination($('#transitDestinationInput')?.value||'')});
+  $('#transitDestinationEditor')?.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#transitDestinationSuggestions')?.classList.contains('hidden')){event.preventDefault();toggleDestinationEditor(false);$('#transitDestinationEditBtn')?.focus({preventScroll:true})}});
+  $('#transitDestinationInput')?.addEventListener('input',event=>scheduleDestinationSearch(event.currentTarget?.value||''));
+  $('#transitDestinationInput')?.addEventListener('keydown',handleDestinationInputKeydown);
+  $('#transitDestinationSuggestions')?.addEventListener('click',event=>{
+    const button=event.target.closest?.('[data-destination-suggestion]');if(!button)return;
+    const index=Number(button.dataset.destinationSuggestion);if(Number.isInteger(index))selectDestinationSuggestion(index);
+  });
 }
 function syncDestination(){
   const destination=transitDestination(),name=$('#transitSchoolName'),address=$('#transitSchoolAddress'),input=$('#transitDestinationInput'),reset=$('#transitDestinationResetBtn'),kind=$('#transitDestinationKind'),card=$('#transitDestinationEditBtn'),locateButton=$('#transitLocateBtn');
@@ -129,14 +149,92 @@ function syncDestination(){
   if(locateButton)locateButton.textContent=destination.custom?'이 목적지까지 경로 찾기':'학교까지 경로 찾기';
   reset?.classList.toggle('hidden',!destination.custom);
 }
+function destinationDistance(value){
+  const meters=Number(value);if(!Number.isFinite(meters)||meters<0)return'';
+  if(meters<1000)return`${Math.max(10,Math.round(meters/10)*10)}m`;
+  return`${(meters/1000).toFixed(meters<10000?1:0)}km`;
+}
+function renderDestinationSuggestions(items=[],message=''){
+  const panel=$('#transitDestinationSuggestions'),input=$('#transitDestinationInput');if(!panel)return;
+  destinationSuggestions=Array.isArray(items)?items:[];destinationSuggestionIndex=-1;
+  if(!destinationSuggestions.length){
+    panel.innerHTML=message?`<div class="flow-transit-destination-suggestion-state">${esc(message)}</div>`:'';
+    panel.classList.toggle('hidden',!message);
+    input?.setAttribute('aria-expanded',String(Boolean(message)));
+    input?.removeAttribute('aria-activedescendant');
+    return;
+  }
+  panel.innerHTML=destinationSuggestions.map((item,index)=>{
+    const distance=destinationDistance(item?.distanceMeters),meta=[String(item?.category||'장소').trim(),distance].filter(Boolean).join(' · ');
+    return`<button class="flow-transit-destination-suggestion" id="transitDestinationSuggestion${index}" type="button" role="option" aria-selected="false" data-destination-suggestion="${index}">
+      <span class="flow-transit-destination-suggestion-main"><strong>${esc(item?.name||'목적지')}</strong><em>${esc(meta)}</em></span>
+      <small>${esc(item?.address||'주소 정보 없음')}</small>
+    </button>`;
+  }).join('');
+  panel.classList.remove('hidden');input?.setAttribute('aria-expanded','true');input?.removeAttribute('aria-activedescendant');
+}
+function setDestinationSuggestionIndex(index){
+  if(!destinationSuggestions.length)return;
+  const next=(index+destinationSuggestions.length)%destinationSuggestions.length;destinationSuggestionIndex=next;
+  $$('[data-destination-suggestion]').forEach((button,i)=>{const selected=i===next;button.classList.toggle('is-active',selected);button.setAttribute('aria-selected',String(selected))});
+  const input=$('#transitDestinationInput');input?.setAttribute('aria-activedescendant',`transitDestinationSuggestion${next}`);
+  $(`[data-destination-suggestion="${next}"]`)?.scrollIntoView({block:'nearest'});
+}
+function clearDestinationSuggestions(){
+  destinationSuggestions=[];destinationSuggestionIndex=-1;
+  const panel=$('#transitDestinationSuggestions'),input=$('#transitDestinationInput');
+  if(panel){panel.innerHTML='';panel.classList.add('hidden')}
+  input?.setAttribute('aria-expanded','false');input?.removeAttribute('aria-activedescendant');
+}
+function cancelDestinationSearch({clear=false}={}){
+  clearTimeout(destinationSearchTimer);destinationSearchTimer=0;destinationSearchAbort?.abort();destinationSearchAbort=null;
+  if(clear)clearDestinationSuggestions();
+}
+async function performDestinationSearch(query){
+  const normalized=String(query||'').trim(),input=$('#transitDestinationInput');
+  if(normalized.length<DESTINATION_SEARCH_MIN){clearDestinationSuggestions();return}
+  destinationSearchAbort?.abort();destinationSearchAbort=new AbortController();const signal=destinationSearchAbort.signal;
+  renderDestinationSuggestions([],'실제 장소를 찾는 중…');
+  try{
+    const url=new URL(TRANSIT_EDGE);url.searchParams.set('action','destination-search');url.searchParams.set('query',normalized);
+    if(lastCoords){url.searchParams.set('sx',String(lastCoords.x));url.searchParams.set('sy',String(lastCoords.y))}
+    const response=await fetch(url,{signal});const body=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(body.error||'목적지 검색 결과를 불러오지 못했습니다.');
+    if(String(input?.value||'').trim()!==normalized)return;
+    const items=Array.isArray(body?.suggestions)?body.suggestions:[];
+    renderDestinationSuggestions(items,items.length?'':'대구광역시 안에서 일치하는 장소를 찾지 못했습니다.');
+  }catch(error){
+    if(error?.name==='AbortError')return;
+    if(String(input?.value||'').trim()===normalized)renderDestinationSuggestions([],error instanceof Error?error.message:'목적지 검색 결과를 불러오지 못했습니다.');
+  }finally{if(destinationSearchAbort?.signal===signal)destinationSearchAbort=null}
+}
+function scheduleDestinationSearch(value){
+  cancelDestinationSearch();const query=String(value||'').trim();
+  if(query.length<DESTINATION_SEARCH_MIN){clearDestinationSuggestions();return}
+  destinationSearchTimer=setTimeout(()=>{destinationSearchTimer=0;performDestinationSearch(query)},DESTINATION_SEARCH_DELAY);
+}
+function handleDestinationInputKeydown(event){
+  if(event.isComposing)return;
+  if(event.key==='ArrowDown'&&destinationSuggestions.length){event.preventDefault();setDestinationSuggestionIndex(destinationSuggestionIndex<0?0:destinationSuggestionIndex+1);return}
+  if(event.key==='ArrowUp'&&destinationSuggestions.length){event.preventDefault();setDestinationSuggestionIndex(destinationSuggestionIndex<0?destinationSuggestions.length-1:destinationSuggestionIndex-1);return}
+  if(event.key==='Enter'&&destinationSuggestions.length){event.preventDefault();selectDestinationSuggestion(destinationSuggestionIndex<0?0:destinationSuggestionIndex);return}
+  if(event.key==='Escape'&&!$('#transitDestinationSuggestions')?.classList.contains('hidden')){event.preventDefault();event.stopPropagation();cancelDestinationSearch({clear:true})}
+}
+async function selectDestinationSuggestion(index){
+  const suggestion=destinationSuggestions[index];if(!suggestion||loading)return;
+  const input=$('#transitDestinationInput'),query=String(input?.value||suggestion.name||'').trim()||String(suggestion.name||'').trim();
+  cancelDestinationSearch({clear:true});saveCustomDestination(query,suggestion);syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
+  if(lastCoords){await rerouteFromLastCoords(`${suggestion.name}까지 경로를 찾는 중…`);return}
+  await locateAndLoad({manual:true});
+}
 function toggleDestinationEditor(force){
   const editor=$('#transitDestinationEditor'),button=$('#transitDestinationEditBtn'),input=$('#transitDestinationInput'),locateButton=$('#transitLocateBtn');if(!editor)return;
   const open=typeof force==='boolean'?force:editor.classList.contains('hidden');
   editor.classList.toggle('hidden',!open);button?.setAttribute('aria-expanded',String(open));locateButton?.classList.toggle('hidden',open);
   if(open){
     const destination=transitDestination();if(input)input.value=destination.custom?destination.query:'';
-    requestAnimationFrame(()=>input?.focus({preventScroll:true}));
-  }
+    requestAnimationFrame(()=>{input?.focus({preventScroll:true});if(input?.value?.trim().length>=DESTINATION_SEARCH_MIN)scheduleDestinationSearch(input.value)});
+  }else cancelDestinationSearch({clear:true});
 }
 function clearRenderedRoutes(){
   const summary=$('#transitSummary');summary?.classList.add('hidden');if(summary)summary.innerHTML='';
@@ -165,7 +263,7 @@ function showTransit({push=true}={}){
   if(push&&location.pathname!=='/transit')history.pushState({view:'transit'},'', '/transit');
   if(lastCoords)scheduleRefresh();
 }
-function leaveTransit(){stopRefresh();requestAbort?.abort();requestAbort=null;toggleDestinationEditor(false);$$('[data-flow-transit-nav]').forEach(button=>button.classList.remove('active'))}
+function leaveTransit(){stopRefresh();requestAbort?.abort();requestAbort=null;cancelDestinationSearch({clear:true});toggleDestinationEditor(false);$$('[data-flow-transit-nav]').forEach(button=>button.classList.remove('active'))}
 function locate({maximumAge=15000}={}){
   return new Promise((resolve,reject)=>{
     if(!navigator.geolocation)return reject(new Error('이 브라우저에서는 위치 기능을 사용할 수 없습니다.'));
@@ -240,9 +338,13 @@ async function fetchRoutes(coords){
   const destination=transitDestination();if(!destination.query)throw new Error('목적지를 입력하거나 먼저 학교를 선택해주세요.');
   requestAbort?.abort();requestAbort=new AbortController();
   const url=new URL(TRANSIT_EDGE);url.searchParams.set('action','route');url.searchParams.set('sx',String(coords.x));url.searchParams.set('sy',String(coords.y));url.searchParams.set('destination',destination.query);
+  const ex=Number(destination?.x),ey=Number(destination?.y);
+  if(destination.custom&&Number.isFinite(ex)&&Number.isFinite(ey)){
+    url.searchParams.set('ex',String(ex));url.searchParams.set('ey',String(ey));url.searchParams.set('destinationName',destination.name);if(destination.address)url.searchParams.set('destinationAddress',destination.address);
+  }
   const response=await fetch(url,{signal:requestAbort.signal});const body=await response.json().catch(()=>({}));
   if(destination.custom&&body?.destination){
-    saveCustomDestination(destination.query,body.destination);syncDestination();
+    saveCustomDestination(destination.query,{...body.destination,category:destination.category});syncDestination();
   }
   let railBody=null;
   if(body?.provider==='TAGO-public-data'&&body?.destination){
@@ -336,12 +438,12 @@ async function rerouteFromLastCoords(message='새 목적지 경로를 찾는 중
 }
 async function applyDestination(value){
   const query=String(value||'').trim();if(!query){setState('목적지 이름이나 주소를 입력해주세요.','error');$('#transitDestinationInput')?.focus({preventScroll:true});return}
-  saveCustomDestination(query);syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
+  cancelDestinationSearch({clear:true});saveCustomDestination(query);syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
   if(lastCoords){await rerouteFromLastCoords(`${query}까지 경로를 찾는 중…`);return}
   await locateAndLoad({manual:true});
 }
 async function resetDestination(){
-  clearCustomDestination();syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
+  cancelDestinationSearch({clear:true});clearCustomDestination();syncDestination();toggleDestinationEditor(false);clearRenderedRoutes();
   if(lastCoords){await rerouteFromLastCoords('학교까지 경로를 다시 찾는 중…');return}
   setState('학교를 목적지로 설정했습니다. 경로 찾기를 눌러 현재 위치에서 검색하세요.');
 }
