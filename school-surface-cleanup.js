@@ -19,7 +19,8 @@ function installStyle(){
   if($('#flow-school-surface-cleanup-style'))return;
   const style=document.createElement('style');style.id='flow-school-surface-cleanup-style';style.textContent=`
 #todayView .status-card.flow-home-noise{display:none!important}
-#todayView .status-grid{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)!important}
+#todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
+#todayView .status-card{min-width:0}
 .flow-bell-summary{display:grid;gap:5px;margin-top:14px;padding:13px 14px;border-radius:14px;background:var(--surface-2);border:1px solid color-mix(in srgb,var(--text) 6%,transparent)}
 .flow-bell-summary>span{font-size:.58rem;font-weight:800;letter-spacing:.06em;color:var(--muted)}
 .flow-bell-summary>strong{font-size:.75rem;line-height:1.55;letter-spacing:-.025em;color:var(--text);word-break:keep-all}
@@ -30,11 +31,20 @@ function installStyle(){
 html[data-flow-transit-surface="dormant"] .mobile-bottom-nav{--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
 html[data-flow-transit-surface="dormant"] [data-flow-transit-nav],html[data-flow-transit-surface="dormant"] #transitView{display:none!important}
 @media(max-width:900px){
-  #todayView .status-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr)!important}
+  #todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:10px 0 12px!important;align-items:stretch}
   #todayView .clock-card{grid-column:auto!important}
+  #todayView .status-card{min-height:104px!important;padding:12px 13px!important;border-radius:16px!important}
+  #todayView .status-card strong{margin-top:7px!important;font-size:.9rem!important;line-height:1.18}
+  #todayView .status-card p{margin-top:4px!important;font-size:.57rem!important;line-height:1.35}
+  #todayView .progress-track{margin-top:9px!important}
   #flowSchoolSettingsView .flow-settings-fields.flow-meal-window{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(max-width:360px){#todayView .status-grid{grid-template-columns:1fr!important}}
+@media(max-width:340px){
+  #todayView .status-grid{gap:6px!important}
+  #todayView .status-card{padding:11px!important}
+  #todayView .status-card strong{font-size:.84rem!important}
+  #todayView .status-card p{font-size:.54rem!important}
+}
 `;
   document.head.append(style);
 }
