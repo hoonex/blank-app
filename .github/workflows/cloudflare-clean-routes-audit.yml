@@ -58,6 +58,8 @@ jobs:
             'school-ia.js'
             'school-metrics.js'
             'school-surface-cleanup.js'
+            'flow-experience.js'
+            'flow-experience.css'
             'sw.js'
           )
           expected_release=$(node --input-type=module -e "import('./cloudflare-worker.mjs').then(m=>process.stdout.write(m.FLOW_RELEASE))")
