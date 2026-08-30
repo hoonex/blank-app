@@ -76,11 +76,13 @@ function renderFocus(detail){
   const primary=routes[0];
   const summary=$('#transitSummary');
   if(summary){
+    const fallbackFromBus=summary.textContent.includes('버스 경로 대신 도시철도');
     const lines=routeLines(primary)||'대중교통';
     const live=realtimeCopy(primary);
     const transfer=Number(primary?.transfers)||0;
+    const routeCopy=[live,lines,transfer?`환승 ${transfer}회`:'직행'].filter(Boolean).join(' · ');
     summary.classList.remove('hidden');
-    summary.innerHTML=`<strong>추천 ${Math.max(1,Math.round(Number(primary?.totalMinutes)||0))}분</strong><span>${[live,lines,transfer?`환승 ${transfer}회`:'직행'].filter(Boolean).join(' · ')}</span>`;
+    summary.innerHTML=`<strong>추천 ${Math.max(1,Math.round(Number(primary?.totalMinutes)||0))}분</strong><span>${fallbackFromBus?`버스 경로 대신 ${routeCopy}`:routeCopy}</span>`;
   }
   cards.forEach((card,index)=>{
     card.classList.toggle('flow-transit-primary',index===0);
