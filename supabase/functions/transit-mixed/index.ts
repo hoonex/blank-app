@@ -6,7 +6,8 @@ const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
 const KAKAO_REST_KEY = Deno.env.get("KAKAO_REST_KEY") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BUS_ASSIST_MIN_WALK_METERS = 550;
-const MAX_RAIL_CANDIDATES = 2;
+const BUS_CORE_TIMEOUT_MS = 22_000;
+const MAX_RAIL_CANDIDATES = 1;
 const MAX_BUS_OPTIONS_PER_SIDE = 2;
 const MAX_MIXED_ROUTES = 5;
 
@@ -132,9 +133,15 @@ async function busRoutes(sx: number, sy: number, ex: number, ey: number): Promis
   url.searchParams.set("sy", String(sy));
   url.searchParams.set("ex", String(ex));
   url.searchParams.set("ey", String(ey));
-  const { response, body } = await jsonFetch(url, { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }, 80_000);
-  if (!response.ok) return [];
-  return Array.isArray(body?.routes) ? body.routes : [];
+  try {
+    const { response, body } = await jsonFetch(url, { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` } }, BUS_CORE_TIMEOUT_MS);
+    if (!response.ok) return [];
+    return Array.isArray(body?.routes) ? body.routes : [];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error || "bus leg timeout");
+    console.warn(`transit-mixed bus leg skipped: ${message}`);
+    return [];
+  }
 }
 
 function firstWalk(route: Route) {
@@ -236,8 +243,10 @@ async function buildForRail(rail: Route, sx: number, sy: number, ex: number, ey:
   if (!subway.length) return [];
   const accessName = subway[0].startName;
   const egressName = subway.at(-1)!.endName;
-  const accessPoint = await stationPoint(accessName, sx, sy);
-  const egressPoint = await stationPoint(egressName, ex, ey);
+  const [accessPoint, egressPoint] = await Promise.all([
+    stationPoint(accessName, sx, sy),
+    stationPoint(egressName, ex, ey),
+  ]);
   if (!accessPoint || !egressPoint) return [];
 
   const railAccessWalk = Number(firstWalk(rail)?.distance || 0);
@@ -252,8 +261,6 @@ async function buildForRail(rail: Route, sx: number, sy: number, ex: number, ey:
   ]);
   const accessOptions: Array<Route | null> = needAccessBus && accessRoutes.length ? accessRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
   const egressOptions: Array<Route | null> = needEgressBus && egressRoutes.length ? egressRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
-  if (!accessRoutes.length) accessOptions.push(null);
-  if (!egressRoutes.length) egressOptions.push(null);
 
   const routes: Route[] = [];
   const seen = new Set<string>();
@@ -269,8 +276,9 @@ async function buildForRail(rail: Route, sx: number, sy: number, ex: number, ey:
 }
 
 async function searchMixed(sx: number, sy: number, ex: number, ey: number) {
+  const startedAt = Date.now();
   const rail = await railRoutes(sx, sy, ex, ey);
-  if (!rail?.routes?.length) return { routes: [] as Route[], snapshotDate: rail?.snapshotDate || null };
+  if (!rail?.routes?.length) return { routes: [] as Route[], snapshotDate: rail?.snapshotDate || null, searchMs: Date.now() - startedAt };
   const candidates: Route[] = [];
   for (const route of rail.routes.slice(0, MAX_RAIL_CANDIDATES)) {
     candidates.push(...await buildForRail(route, sx, sy, ex, ey, rail.snapshotDate || ""));
@@ -284,7 +292,7 @@ async function searchMixed(sx: number, sy: number, ex: number, ey: number) {
   }
   const routes = [...deduped.values()].sort(routeSort).slice(0, MAX_MIXED_ROUTES);
   routes.forEach((route, index) => { route.id = `mixed-${index + 1}`; });
-  return { routes, snapshotDate: rail.snapshotDate || null };
+  return { routes, snapshotDate: rail.snapshotDate || null, searchMs: Date.now() - startedAt };
 }
 
 Deno.serve(async (req: Request) => {
@@ -301,6 +309,8 @@ Deno.serve(async (req: Request) => {
       railRealtime: false,
       busRealtime: "per-bus-leg-when-available",
       busAssistThresholdMeters: BUS_ASSIST_MIN_WALK_METERS,
+      busCoreTimeoutMs: BUS_CORE_TIMEOUT_MS,
+      railCandidates: MAX_RAIL_CANDIDATES,
     });
     if (action !== "route") return reply({ error: "지원하지 않는 요청입니다." }, 404);
 
@@ -318,6 +328,7 @@ Deno.serve(async (req: Request) => {
       realtimeCoverage: result.routes.some((route) => route.realtimeLegs.length) ? "bus-legs-only" : "none",
       railRealtime: false,
       railSnapshotDate: result.snapshotDate,
+      searchMs: result.searchMs,
       routes: result.routes,
     }, 200, "public, max-age=30");
   } catch (error) {
