@@ -22,14 +22,25 @@ async function fixture(page){
   await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');localStorage.setItem('flow-school-transit-lab-v1','off')},{profile});
 }
 
-const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
-async function shellState(page){return page.evaluate(()=>({
-  desktop:shown(document.querySelector('.desktop-sidebar')),
-  topbar:shown(document.querySelector('.mobile-topbar')),
-  bottom:shown(document.querySelector('#bottomNav')),
-  overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
-}))}
+async function shellState(page){return page.evaluate(()=>{
+  const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const box=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};
+  const schoolName=document.querySelector('#mobileSchoolName');
+  const className=document.querySelector('#mobileClassName');
+  return{
+    desktop:shown(document.querySelector('.desktop-sidebar')),
+    topbar:shown(document.querySelector('.mobile-topbar')),
+    bottom:shown(document.querySelector('#bottomNav')),
+    brandSmallVisible:shown(document.querySelector('.mobile-topbar .flow-logo-copy small')),
+    schoolNameDisplay:schoolName?getComputedStyle(schoolName).display:'',
+    classNameDisplay:className?getComputedStyle(className).display:'',
+    schoolName:box(schoolName),
+    className:box(className),
+    overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+  };
+})}
 async function scheduleState(page){return page.evaluate(()=>{
+  const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
   const box=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};
   const header=document.querySelector('#scheduleView .view-header');
   const layout=document.querySelector('#scheduleView .schedule-layout');
@@ -48,7 +59,8 @@ async function schoolState(page){return page.evaluate(()=>{
   return{headerFlex:hs?.flexDirection||'',header:box(header),gridColumns:gs?.gridTemplateColumns||'',actionsDisplay:as?.display||'',actionsColumns:as?.gridTemplateColumns||'',profile:box(profile),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
 async function settingsState(page){return page.evaluate(()=>{
-  const fields=[...document.querySelectorAll('#flowSchoolSettingsView .setting-fields')].filter(node=>shown(node));
+  const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const fields=[...document.querySelectorAll('#flowSchoolSettingsView .setting-fields')].filter(shown);
   return{columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
 
@@ -70,8 +82,11 @@ for(const testCase of [
 
   const shell=await shellState(page);
   if(portrait){
-    if(shell.desktop||!shell.topbar||!shell.bottom)throw new Error(`${name}: touch shell did not engage ${JSON.stringify(shell)}`);
-  }else if(!shell.desktop||shell.bottom){
+    const schoolIdentitySplit=shell.schoolName&&shell.className&&shell.schoolNameDisplay==='block'&&shell.classNameDisplay==='block'&&shell.className.top>=shell.schoolName.bottom-1;
+    if(shell.desktop||!shell.topbar||!shell.bottom||shell.brandSmallVisible||!schoolIdentitySplit||shell.overflow>1){
+      throw new Error(`${name}: touch topbar/shell did not fully engage ${JSON.stringify(shell)}`);
+    }
+  }else if(!shell.desktop||shell.bottom||shell.overflow>1){
     throw new Error(`${name}: landscape desktop shell regressed ${JSON.stringify(shell)}`);
   }
 
@@ -123,4 +138,4 @@ for(const testCase of [
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',landscape:'desktop-preserved'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',landscape:'desktop-preserved'},null,2));
