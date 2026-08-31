@@ -80,8 +80,8 @@ for(const [name,width,height,isMobile] of cases){
     const balanced=nowCard&&nextCard&&Math.abs(nowCard.width-nextCard.width)<=4;
     const compact=nowCard&&nextCard&&Math.max(nowCard.height,nextCard.height)<=145;
     const shell=home.statusShell;
-    const unified=shell&&Math.abs(shell.visualGap)<=1&&shell.columnGap<=1&&shell.divider>=1&&shell.borderRadius>=16&&shell.background!=='rgba(0, 0, 0, 0)';
-    if(!sameRow||!balanced||!compact||!unified)throw new Error(`${name}: Today status pair is not one compact divided shell ${JSON.stringify({statusRects:home.statusRects,statusShell:home.statusShell})}`);
+    const separated=shell&&shell.visualGap>=6&&shell.visualGap<=14&&shell.columnGap>=6&&shell.columnGap<=14&&shell.divider===0&&shell.borderRadius===0&&shell.background==='rgba(0, 0, 0, 0)';
+    if(!sameRow||!balanced||!compact||!separated)throw new Error(`${name}: Today status pair is not two compact borderless objects ${JSON.stringify({statusRects:home.statusRects,statusShell:home.statusShell})}`);
     if(home.shell.desktopSidebar||!home.shell.mobileTopbar||!home.shell.bottomNav)throw new Error(`${name}: portrait/mobile shell split-brain ${JSON.stringify(home.shell)}`);
   }
   if(name==='wide-tablet-portrait'){
@@ -121,4 +121,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',widePortraitComposition:'touch-first',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'borderless-separated-pair',widePortraitShell:'mobile',widePortraitComposition:'touch-first',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
