@@ -55,8 +55,9 @@ async function schoolState(page){return page.evaluate(()=>{
   const grid=document.querySelector('#schoolView .school-info-grid');
   const actions=document.querySelector('#schoolView .school-actions');
   const profile=document.querySelector('#schoolView .profile-hero');
+  const tiles=[...document.querySelectorAll('#schoolView .school-info-grid>.info-tile')];
   const hs=header?getComputedStyle(header):null,gs=grid?getComputedStyle(grid):null,as=actions?getComputedStyle(actions):null;
-  return{headerFlex:hs?.flexDirection||'',header:box(header),gridColumns:gs?.gridTemplateColumns||'',actionsDisplay:as?.display||'',actionsColumns:as?.gridTemplateColumns||'',profile:box(profile),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+  return{headerFlex:hs?.flexDirection||'',header:box(header),grid:box(grid),gridColumns:gs?.gridTemplateColumns||'',tiles:tiles.map(box),actionsDisplay:as?.display||'',actionsColumns:as?.gridTemplateColumns||'',profile:box(profile),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
 async function settingsState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
@@ -109,9 +110,12 @@ for(const testCase of [
   await page.waitForTimeout(60);
   const school=await schoolState(page);
   if(portrait){
-    const twoColumns=school.gridColumns.trim().split(/\s+/).filter(Boolean).length===2;
+    const first=school.tiles[0],second=school.tiles[1],third=school.tiles[2];
+    const twoTileRow=school.tiles.length<2||(first&&second&&Math.abs(first.top-second.top)<=2&&second.left>first.left&&Math.abs(first.width-second.width)<=4);
+    const wrapsAfterTwo=school.tiles.length<3||(third&&first&&third.top>=first.bottom-1);
+    const halfWidth=school.tiles.length===0||(school.grid&&first&&first.width>=school.grid.width*.45&&first.width<=school.grid.width*.52);
     const twoActions=school.actionsColumns.trim().split(/\s+/).filter(Boolean).length===2;
-    if(school.headerFlex!=='column'||!twoColumns||school.actionsDisplay!=='grid'||!twoActions||!school.profile||school.profile.height>215||school.overflow>1){
+    if(school.headerFlex!=='column'||!twoTileRow||!wrapsAfterTwo||!halfWidth||school.actionsDisplay!=='grid'||!twoActions||!school.profile||school.profile.height>215||school.overflow>1){
       throw new Error(`${name}: School profile is not touch-first ${JSON.stringify(school)}`);
     }
   }else if(school.headerFlex==='column'||school.actionsDisplay==='grid'||school.overflow>1){
