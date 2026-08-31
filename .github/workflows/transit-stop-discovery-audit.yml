@@ -1,0 +1,25 @@
+name: Transit stop discovery audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transit-stop-discovery-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate stop-discovery source contract
+        run: |
+          set -euo pipefail
+          node --check tests/transit-stop-discovery-source-audit.mjs
+          node tests/transit-stop-discovery-source-audit.mjs
+          test -s supabase/functions/transit-data-core/index.ts
