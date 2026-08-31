@@ -54,9 +54,9 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
   document.head.append(style);
 }
 
-/* Settings is a destination, not a modal that may cover navigation. Keep the
- * touch nav above it, reserve the nav footprint from the Settings scroll surface,
- * and remove the Standard-mode pseudo lens that can appear as a thin stray pill. */
+/* Settings is a destination, not a modal that may cover navigation. Preserve the
+ * existing tab/lens geometry and only establish the missing wide-tablet stacking
+ * contract: nav above the settings surface, settings content ending above nav. */
 if(!document.querySelector('#flow-school-touch-nav-contract')){
   const style=document.createElement('style');
   style.id='flow-school-touch-nav-contract';
@@ -67,16 +67,9 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     visibility:visible!important;
     opacity:1!important;
     pointer-events:auto!important;
-    isolation:isolate!important;
-  }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav>.mobile-tab{
-    display:grid!important;
-    place-items:center!important;
-    min-height:48px!important;
-    padding:0 8px!important;
   }
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
-    display:grid!important;
+    display:block!important;
     visibility:visible!important;
     pointer-events:auto!important;
   }
@@ -84,14 +77,6 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     z-index:40!important;
     bottom:78px!important;
     padding-bottom:34px!important;
-  }
-  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-bottom-nav::before{
-    display:none!important;
-    content:none!important;
-  }
-  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-tab.active{
-    background:color-mix(in srgb,var(--accent) 11%,var(--surface))!important;
-    color:var(--accent)!important;
   }
 }`;
   document.head.append(style);
