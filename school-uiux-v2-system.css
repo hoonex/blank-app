@@ -305,49 +305,145 @@ html[data-flow-school-ui="v2"] .date-controller button{
   }
 }
 
+/* Wide portrait tablets use the same touch-first content composition as smaller
+   portrait tablets. This is deliberately a content breakpoint, not just shell visibility:
+   the date control owns a full hero row, utility copy is compact, and secondary Today
+   panes stack instead of falling back to desktop geometry. */
 @media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] .school-hero,
   html[data-flow-school-ui="v2"] .school-hero-content{
-    min-height:136px!important;
+    min-height:172px!important;
   }
   html[data-flow-school-ui="v2"] .school-hero{
-    border-radius:24px!important;
+    border-radius:23px!important;
   }
   html[data-flow-school-ui="v2"] .school-hero-content{
-    padding:16px 17px 18px!important;
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr)!important;
+    grid-template-areas:"date date" "badge copy"!important;
+    align-content:end!important;
+    align-items:center!important;
+    gap:8px 10px!important;
+    padding:14px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero .school-badge{
+    grid-area:badge!important;
+    width:43px!important;
+    height:43px!important;
+    border-radius:13px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy{
+    grid-area:copy!important;
+    min-width:0!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy .eyebrow{
+    display:none!important;
   }
   html[data-flow-school-ui="v2"] .school-hero-copy h1{
-    max-width:56vw!important;
-    font-size:1.58rem!important;
+    max-width:none!important;
+    margin-top:0!important;
+    font-size:1.48rem!important;
   }
   html[data-flow-school-ui="v2"] .hero-right{
-    position:absolute!important;
-    top:14px!important;
-    right:14px!important;
+    grid-area:date!important;
+    position:static!important;
+    inset:auto!important;
+    width:100%!important;
+    margin:0!important;
+    align-items:stretch!important;
+    gap:0!important;
+  }
+  html[data-flow-school-ui="v2"] .date-controller{
+    width:100%!important;
+    justify-content:space-between!important;
+    padding:4px!important;
+    box-sizing:border-box!important;
+  }
+  html[data-flow-school-ui="v2"] .date-controller button{
+    width:34px!important;
+    height:34px!important;
+  }
+  html[data-flow-school-ui="v2"] .date-label{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    text-align:center!important;
+  }
+  html[data-flow-school-ui="v2"] .today-jump{
+    display:none!important;
   }
   html[data-flow-school-ui="v2"] body #todayView .status-grid{
-    margin:-10px 12px 12px!important;
+    margin:-10px 10px 12px!important;
     padding:4px!important;
     border-radius:18px!important;
   }
   html[data-flow-school-ui="v2"] body #todayView .status-card{
-    min-height:78px!important;
+    min-height:76px!important;
     padding:10px 12px!important;
   }
   html[data-flow-school-ui="v2"] .today-grid{
     display:block!important;
     grid-template-columns:none!important;
-    border-radius:24px!important;
+    border-radius:23px!important;
   }
   html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
-    padding:16px 16px 20px!important;
+    padding:16px 14px 20px!important;
     border-right:0!important;
     border-bottom:1px solid var(--school-v2-line)!important;
   }
-  html[data-flow-school-ui="v2"] .today-grid .right-stack{
+  html[data-flow-school-ui="v2"] .product-main .view .section-kicker,
+  html[data-flow-school-ui="v2"] .today-grid .card-heading p{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable-card .card-heading{
     display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:start!important;
+    gap:8px!important;
+    margin-bottom:10px!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable-card .card-heading>div:first-child{
+    min-width:0!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .right-stack{
+    display:block!important;
+    grid-template-columns:none!important;
     grid-template-rows:none!important;
+    background:color-mix(in srgb,var(--surface-2) 26%,var(--surface))!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .meal-card,
+  html[data-flow-school-ui="v2"] .today-grid .upcoming-card{
+    min-width:0!important;
+    padding:18px 14px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .meal-card{
+    border-right:0!important;
+    border-bottom:1px solid var(--school-v2-line)!important;
+  }
+  html[data-flow-school-ui="v2"] .day-strip{
+    gap:3px!important;
+    padding:4px!important;
+    margin-bottom:10px!important;
+    border-radius:15px!important;
+  }
+  html[data-flow-school-ui="v2"] .day-chip{
+    min-height:44px!important;
+    border-radius:11px!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable{
+    gap:3px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-button{
+    min-height:50px!important;
+    padding:6px 8px 6px 7px!important;
+    border-radius:14px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-no{
+    width:33px!important;
+    height:33px!important;
+    border-radius:10px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-name{
+    font-size:.82rem!important;
   }
 }
 
