@@ -37,6 +37,7 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> .flow-mobile-settings.active)){--flow-tab-index:0!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
 @media(max-width:900px){
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
@@ -90,7 +91,10 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] .profile-hero{min-height:205px!important;border-radius:22px!important}
   html[data-flow-school-ui="v2"] .profile-content{min-height:205px!important;padding:17px!important}
   html[data-flow-school-ui="v2"] .profile-content h2{font-size:1.85rem!important}
-  html[data-flow-school-ui="v2"] .school-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  html[data-flow-school-ui="v2"] .school-info-grid{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:7px!important}
+  html[data-flow-school-ui="v2"] .school-info-grid>.info-tile{grid-column:span 6!important}
+  html[data-flow-school-ui="v2"] .school-info-grid>.info-tile-empty{grid-column:1/-1!important}
+  html[data-flow-school-ui="v2"] .school-info-grid:has(>.info-tile:nth-child(2n+1):last-child)>.info-tile:last-child{grid-column:4/span 6!important}
   html[data-flow-school-ui="v2"] .school-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
   html[data-flow-school-ui="v2"] .action-link{min-height:44px!important}
   html[data-flow-school-ui="v2"] .source-note{padding-bottom:8px!important}
