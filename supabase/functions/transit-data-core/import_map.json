@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "https://raw.githubusercontent.com/hoonex/blank-app/2db1c1f6a760f4ca5e58d882703f30db7b6744c7/supabase/functions/transit-data-core/official-stop-fallback.ts": "./official-stop-fallback.ts"
+  }
+}
