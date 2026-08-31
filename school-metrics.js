@@ -98,8 +98,23 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] .action-link{min-height:44px!important}
   html[data-flow-school-ui="v2"] .source-note{padding-bottom:8px!important}
 
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .setting-fields,
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .meal-setting-fields{grid-template-columns:minmax(0,1fr)!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
+    position:fixed!important;
+    z-index:35!important;
+    inset:64px 0 0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain!important;
+    background:var(--bg)!important;
+    padding:18px 11px 112px!important;
+  }
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header{margin-bottom:22px!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header h1{font-size:2.15rem!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header p{font-size:.8rem!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-stack{gap:12px!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-card{padding:18px!important;border-radius:18px!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields,
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.one,
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.flow-meal-window{grid-template-columns:minmax(0,1fr)!important}
 }`;
   document.head.append(style);
 }
