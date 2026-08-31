@@ -4,13 +4,6 @@ import '/flow-refraction.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
 
-/* The shared Settings layer identifies its mobile destination semantically as
- * `.flow-mobile-settings`; School's historical button predates that class. Keep
- * the actual DOM in the same four-destination contract so lens indexing, active
- * state, and touch routing cannot diverge when Settings is opened. */
-const schoolMobileSettingsTab=document.querySelector('#mobileSettingsBtn');
-if(schoolMobileSettingsTab)schoolMobileSettingsTab.classList.add('flow-mobile-settings');
-
 function transitLabEnabled(){
   const host=location.hostname;
   if(host!=='127.0.0.1'&&host!=='localhost')return false;
@@ -44,19 +37,20 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> :is(.flow-mobile-settings,#mobileSettingsBtn).active){--flow-tab-index:3!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:3!important}
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="school"]{grid-row:1!important;grid-column:3!important}
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>:is(.flow-mobile-settings,#mobileSettingsBtn){grid-row:1!important;grid-column:4!important}
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>#mobileSettingsBtn{grid-row:1!important;grid-column:4!important}
 }`;
   document.head.append(style);
 }
 
-/* Settings is a destination, not a modal that may cover navigation. Preserve the
- * existing tab/lens geometry and only establish the missing wide-tablet stacking
- * contract: nav above the settings surface, settings content ending above nav. */
+/* Settings is a destination, not a modal that may cover navigation. The School
+ * settings button is already a `.mobile-tab`; do not add the shared
+ * `.flow-mobile-settings` control class because its independent control styling
+ * distorts the tab geometry on 901–1024px portrait tablets. */
 if(!document.querySelector('#flow-school-touch-nav-contract')){
   const style=document.createElement('style');
   style.id='flow-school-touch-nav-contract';
@@ -69,7 +63,6 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     pointer-events:auto!important;
   }
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
-    display:block!important;
     visibility:visible!important;
     pointer-events:auto!important;
   }
