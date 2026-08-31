@@ -136,8 +136,9 @@ async function runSchool(reducedMotion) {
     await page.locator('#dashboard:not(.hidden)').waitFor();
     await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--flow-motion-medium').trim() === '240ms');
     await armAnimationLog(page); await clearAnimationLog(page);
-    await page.locator('.mobile-tab[data-view="week"]:visible').dispatchEvent('click');
-    await page.locator('#weekView:not(.hidden)').waitFor(); await page.waitForTimeout(40);
+    // Week is now an inline timetable mode inside Today; audit a real School destination transition.
+    await page.locator('.mobile-tab[data-view="schedule"]:visible').dispatchEvent('click');
+    await page.locator('#scheduleView:not(.hidden)').waitFor(); await page.waitForTimeout(40);
     const viewAnimations = await animationNames(page);
 
     await clearAnimationLog(page);

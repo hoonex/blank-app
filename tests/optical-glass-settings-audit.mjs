@@ -33,7 +33,7 @@ async function mockUniversity(page){
 async function schoolMobile(){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR'});const page=await context.newPage();
   await mockSchool(page);await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await waitMaterial(page);
-  const trigger=page.locator('#bottomNav > #mobileSettingsBtn.flow-mobile-settings');await trigger.waitFor({state:'visible'});
+  const trigger=page.locator('#bottomNav > #mobileSettingsBtn');await trigger.waitFor({state:'visible'});
   await page.waitForFunction(()=>document.querySelector('#bottomNav>[data-view="transit"]'));
   const shell=await page.evaluate(()=>{const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn'),items=[...nav.querySelectorAll(':scope > .mobile-tab')].filter(x=>getComputedStyle(x).display!=='none'),week=document.querySelector('.timetable-mode-toggle > .mobile-tab[data-view="week"]');return{count:items.length,settingsLast:settings===items.at(-1),transitInline:Boolean(nav.querySelector(':scope > [data-view="transit"]')),weekInBottom:Boolean(nav.querySelector(':scope > [data-view="week"]')),weekInline:Boolean(week),grid:getComputedStyle(nav).gridTemplateColumns,width:settings.getBoundingClientRect().width,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth}});
   if(shell.count!==5||!shell.settingsLast||!shell.transitInline||shell.weekInBottom||!shell.weekInline||shell.grid.trim().split(/\s+/).length!==5||shell.width<44||shell.scrollWidth>shell.clientWidth+3)throw new Error(`school five-slot navigation / inline Week failed ${JSON.stringify(shell)}`);

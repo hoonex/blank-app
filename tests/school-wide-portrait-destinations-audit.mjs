@@ -72,12 +72,15 @@ async function navigationState(page){return page.evaluate(()=>{
   const box=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};
   const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn'),panel=document.querySelector('#flowSchoolSettingsView');
   const tabs=nav?[...nav.querySelectorAll(':scope>.mobile-tab')].filter(shown):[];
-  const ns=nav?getComputedStyle(nav):null,ps=panel?getComputedStyle(panel):null;
+  const ns=nav?getComputedStyle(nav):null,ps=panel?getComputedStyle(panel):null,ss=settings?getComputedStyle(settings):null,lens=nav?getComputedStyle(nav,'::before'):null;
+  const number=value=>{const parsed=Number.parseFloat(value||'');return Number.isFinite(parsed)?parsed:0};
   return{
     visible:shown(nav),nav:box(nav),tabs:tabs.map(node=>({text:node.textContent.trim(),active:node.classList.contains('active'),rect:box(node)})),
-    settingsActive:Boolean(settings?.classList.contains('active')),settingsSemantic:Boolean(settings?.classList.contains('flow-mobile-settings')),
+    settingsActive:Boolean(settings?.classList.contains('active')),settingsLegacyClass:Boolean(settings?.classList.contains('flow-mobile-settings')),
+    settingsBorderTop:ss?.borderTopWidth||'',settingsDisplay:ss?.display||'',settingsRect:box(settings),
     tabIndex:ns?.getPropertyValue('--flow-tab-index').trim()||'',pointer:ns?.pointerEvents||'',navZ:Number.parseInt(ns?.zIndex||'0',10)||0,
     panel:box(panel),panelZ:Number.parseInt(ps?.zIndex||'0',10)||0,
+    lens:{display:lens?.display||'',top:number(lens?.top),bottom:number(lens?.bottom),width:number(lens?.width),height:number(lens?.height)},
   };
 })}
 
@@ -149,9 +152,13 @@ for(const testCase of [
     const single=settings.columns.length>0&&settings.columns.every(value=>value.trim().split(/\s+/).filter(Boolean).length===1);
     const mobileSurface=settings.position==='fixed'&&settings.panel&&settings.panel.top>=60&&settings.panel.top<=68&&settings.panel.width>=950;
     const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=46);
+    const firstTab=settingsNav.tabs[0]?.rect;
+    const sameTabGeometry=Boolean(firstTab)&&settingsNav.tabs.every(tab=>tab.rect&&Math.abs(tab.rect.top-firstTab.top)<=1&&Math.abs(tab.rect.height-firstTab.height)<=1&&Math.abs(tab.rect.width-firstTab.width)<=2);
     const navAbovePanel=settingsNav.nav&&settingsNav.panel&&settingsNav.panel.bottom<=settingsNav.nav.top+2&&settingsNav.navZ>settingsNav.panelZ;
-    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navAbovePanel||settingsNav.pointer==='none'||!settingsNav.settingsActive||!settingsNav.settingsSemantic||settingsNav.tabIndex!=='3'){
-      throw new Error(`${name}: Settings bottom-nav escape route is broken ${JSON.stringify({settings,settingsNav})}`);
+    const fullLens=settingsNav.nav&&settingsNav.lens.display!=='none'&&settingsNav.lens.height>=Math.max(40,settingsNav.nav.height-12)&&settingsNav.lens.width>=firstTab.width-4;
+    const cleanSettingsTab=!settingsNav.settingsLegacyClass&&settingsNav.settingsBorderTop==='0px'&&sameTabGeometry;
+    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navAbovePanel||settingsNav.pointer==='none'||!settingsNav.settingsActive||settingsNav.tabIndex!=='3'||!cleanSettingsTab||!fullLens){
+      throw new Error(`${name}: Settings bottom-nav/lens geometry is broken ${JSON.stringify({settings,settingsNav,sameTabGeometry,fullLens,cleanSettingsTab})}`);
     }
   }else if(settings.position==='fixed'||settings.overflow>1){
     throw new Error(`${name}: Settings landscape composition regressed ${JSON.stringify(settings)}`);
@@ -164,7 +171,7 @@ for(const testCase of [
   await page.waitForTimeout(50);
   const returnedNav=await navigationState(page);
   if(portrait){
-    if(!returnedNav.visible||returnedNav.tabs.length!==4||returnedNav.tabs[0]?.active!==true||returnedNav.settingsActive||returnedNav.tabIndex!=='0'){
+    if(!returnedNav.visible||returnedNav.tabs.length!==4||returnedNav.tabs[0]?.active!==true||returnedNav.settingsActive||returnedNav.tabIndex!=='0'||returnedNav.settingsLegacyClass){
       throw new Error(`${name}: could not return from Settings through Today tab ${JSON.stringify(returnedNav)}`);
     }
   }
@@ -175,4 +182,4 @@ for(const testCase of [
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface-with-bottom-nav-return',landscape:'desktop-preserved'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface-with-full-height-lens-and-bottom-nav-return',landscape:'desktop-preserved'},null,2));
