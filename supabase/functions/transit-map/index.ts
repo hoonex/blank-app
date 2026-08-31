@@ -6,6 +6,7 @@ const TAGO_CITY_CODES = `${TAGO_BASE}/BusSttnInfoInqireService/getCtyCodeList`;
 const TAGO_ROUTES_AT_STOP = `${TAGO_BASE}/BusSttnInfoInqireService/getSttnThrghRouteList`;
 const TAGO_ROUTE_STOPS = `${TAGO_BASE}/BusRouteInfoInqireService/getRouteAcctoThrghSttnList`;
 const TAGO_BUS_LOCATION = `${TAGO_BASE}/BusLcInfoInqireService/getRouteAcctoBusLcList`;
+const DAEGU_CITY_CODE = "22";
 const DATA_GO_KR_SERVICE_KEY = Deno.env.get("DATA_GO_KR_SERVICE_KEY") || "";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,7 @@ function publicDataKey() {
   try { return /%[0-9a-f]{2}/i.test(DATA_GO_KR_SERVICE_KEY) ? decodeURIComponent(DATA_GO_KR_SERVICE_KEY) : DATA_GO_KR_SERVICE_KEY; }
   catch { return DATA_GO_KR_SERVICE_KEY; }
 }
+function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function safe(value: string | null, max = 120) {
   const text = String(value || "").trim();
   return text && text.length <= max ? text : "";
@@ -70,11 +72,12 @@ async function cityCodes() {
   return cached("map-city-codes", 24 * 60 * 60_000, async () => {
     const response = await tago(TAGO_CITY_CODES, { numOfRows: 200 });
     return response.items.map((item: any) => ({ code: String(item.citycode || item.cityCode || ""), name: String(item.cityname || item.cityName || "") })).filter((item) => item.code && item.name);
-  });
+  }, (cities) => cities.length > 0);
 }
 async function cityCodeForRegion(regionHint: string) {
   const compact = compactRegion(regionHint);
   if (!compact) return "";
+  if (compact === "대구") return DAEGU_CITY_CODE;
   const cities = await cityCodes();
   const exact = cities.find((city) => city.name === regionHint);
   if (exact) return exact.code;
@@ -84,21 +87,30 @@ async function cityCodeForRegion(regionHint: string) {
   });
   return match?.code || "";
 }
-async function routeAtStop(cityCode: string, nodeId: string, lineNo: string) {
-  const key = `map-route:${cityCode}:${nodeId}:${normalizeRouteNo(lineNo)}`;
+type RouteCandidate = { id: string; no: string; type: string; startName: string; endName: string };
+async function matchingRoutesAtStop(cityCode: string, nodeId: string, lineNo: string): Promise<RouteCandidate[]> {
+  if (!nodeId) return [];
+  const key = `map-routes:${cityCode}:${nodeId}:${normalizeRouteNo(lineNo)}`;
   return cached(key, 30 * 60_000, async () => {
-    const response = await tago(TAGO_ROUTES_AT_STOP, { cityCode, nodeId, nodeid: nodeId, numOfRows: 150 });
     const target = normalizeRouteNo(lineNo);
-    const match = response.items.find((item: any) => target && normalizeRouteNo(item.routeno || item.routeNo) === target);
-    if (!match) throw new Error("승차 정류장에서 해당 버스 노선을 찾지 못했습니다.");
-    return {
-      id: String(match.routeid || match.routeId || ""),
-      no: String(match.routeno || match.routeNo || lineNo),
-      type: String(match.routetp || match.routeTp || ""),
-      startName: String(match.startnodenm || match.startNodeNm || ""),
-      endName: String(match.endnodenm || match.endNodeNm || ""),
-    };
-  });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await tago(TAGO_ROUTES_AT_STOP, { cityCode, nodeId, nodeid: nodeId, numOfRows: 150 });
+      const routes = response.items.map((item: any) => ({
+        id: String(item.routeid || item.routeId || ""),
+        no: String(item.routeno || item.routeNo || lineNo),
+        type: String(item.routetp || item.routeTp || ""),
+        startName: String(item.startnodenm || item.startNodeNm || ""),
+        endName: String(item.endnodenm || item.endNodeNm || ""),
+      })).filter((route: RouteCandidate) => route.id && target && normalizeRouteNo(route.no) === target);
+      if (routes.length) {
+        const unique = new Map<string, RouteCandidate>();
+        routes.forEach((route: RouteCandidate) => unique.set(route.id, route));
+        return [...unique.values()];
+      }
+      if (attempt === 0) await sleep(220);
+    }
+    return [];
+  }, (routes) => routes.length > 0);
 }
 async function routeStops(cityCode: string, routeId: string) {
   return cached(`map-stops:${cityCode}:${routeId}`, 30 * 60_000, async () => {
@@ -110,7 +122,30 @@ async function routeStops(cityCode: string, routeId: string) {
       x: Number(item.gpslong ?? item.gpsLong),
       y: Number(item.gpslati ?? item.gpsLati),
     })).filter((stop: any) => stop.id && Number.isFinite(stop.x) && Number.isFinite(stop.y)).sort((a: any, b: any) => a.order - b.order);
-  });
+  }, (stops) => stops.length > 0);
+}
+function stopIndex(stops: any[], id: string, name: string) {
+  let index = stops.findIndex((stop) => stop.id === id);
+  if (index >= 0) return index;
+  const normalized = name.replace(/\s+/g, "");
+  return stops.findIndex((stop) => normalized && stop.name.replace(/\s+/g, "") === normalized);
+}
+async function resolveRouteSegment(cityCode: string, lineNo: string, startId: string, endId: string, startName: string, endName: string) {
+  const routeLists = await Promise.all([matchingRoutesAtStop(cityCode, startId, lineNo), matchingRoutesAtStop(cityCode, endId, lineNo)]);
+  const candidates = new Map<string, RouteCandidate>();
+  for (const route of routeLists.flat()) candidates.set(route.id, route);
+  if (!candidates.size) throw new Error("승·하차 정류장에서 해당 버스 노선을 찾지 못했습니다.");
+  const checks = await Promise.all([...candidates.values()].slice(0, 10).map(async (route) => {
+    const stops = await routeStops(cityCode, route.id);
+    const startIndex = stopIndex(stops, startId, startName);
+    const endIndex = stopIndex(stops, endId, endName);
+    return { route, stops, startIndex, endIndex };
+  }));
+  const valid = checks.filter((candidate) => candidate.startIndex >= 0 && candidate.endIndex > candidate.startIndex)
+    .sort((a, b) => (a.endIndex - a.startIndex) - (b.endIndex - b.startIndex));
+  if (!valid.length) throw new Error("승차·하차 순서에 맞는 노선 구간을 찾지 못했습니다.");
+  const selected = valid[0];
+  return { route: selected.route, stops: selected.stops, startIndex: selected.startIndex, endIndex: selected.endIndex };
 }
 async function vehicleLocations(cityCode: string, routeId: string) {
   try {
@@ -130,12 +165,6 @@ async function vehicleLocations(cityCode: string, routeId: string) {
     return [];
   }
 }
-function stopIndex(stops: any[], id: string, name: string) {
-  let index = stops.findIndex((stop) => stop.id === id);
-  if (index >= 0) return index;
-  const normalized = name.replace(/\s+/g, "");
-  return stops.findIndex((stop) => normalized && stop.name.replace(/\s+/g, "") === normalized);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -149,7 +178,9 @@ Deno.serve(async (req) => {
       geometry: "daegu-official-bus-link-snapshot",
       geometrySnapshot: "2025-09-03",
       geometryFallback: "route-stop-sequence",
+      routeVariantSelection: "start+end-stop-sequence",
       vehiclePositioning: "TAGO-bus-location-when-available",
+      cityCodeResolution: "daegu-22-fast-path+TAGO-city-list",
     });
     if (action !== "route-map") return reply({ error: "지원하지 않는 요청입니다." }, 404);
     const region = safe(url.searchParams.get("region"), 60);
@@ -162,12 +193,9 @@ Deno.serve(async (req) => {
 
     const cityCode = await cityCodeForRegion(region);
     if (!cityCode) throw new Error("해당 지역의 버스 도시코드를 찾지 못했습니다.");
-    const route = await routeAtStop(cityCode, startId, lineNo);
-    if (!route.id) throw new Error("버스 노선 ID를 찾지 못했습니다.");
-    const stops = await routeStops(cityCode, route.id);
-    const startIndex = stopIndex(stops, startId, startName), endIndex = stopIndex(stops, endId, endName);
-    if (startIndex < 0 || endIndex <= startIndex) throw new Error("승차·하차 순서에 맞는 노선 구간을 찾지 못했습니다.");
-    const segmentStops = stops.slice(startIndex, endIndex + 1);
+    const resolved = await resolveRouteSegment(cityCode, lineNo, startId, endId, startName, endName);
+    const route = resolved.route;
+    const segmentStops = resolved.stops.slice(resolved.startIndex, resolved.endIndex + 1);
     const official = compactRegion(region) === "대구" ? buildOfficialRouteGeometry(segmentStops) : null;
     const geometry = official?.ok ? "daegu-official-bus-link-snapshot" : "route-stop-sequence";
     const vehicles = await vehicleLocations(cityCode, route.id);
