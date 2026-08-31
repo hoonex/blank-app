@@ -7,7 +7,6 @@
     { "source": "/home", "destination": "/index.html" },
     { "source": "/week", "destination": "/index.html" },
     { "source": "/schedule", "destination": "/index.html" },
-    { "source": "/transit", "destination": "/index.html" },
     { "source": "/school", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/university", "destination": "/university/index.html" },
