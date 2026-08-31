@@ -20,7 +20,7 @@ const cases=[
   {name:'galaxy-412',width:412,height:915,modes:['standard','optical']},
   {name:'wide-960',width:960,height:1536,modes:['standard']},
 ];
-const stableSamples=[120,650,1600,4500];
+const stableSamples=[360,800,1800,4800];
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function installFixture(page,glassMode){
@@ -51,7 +51,7 @@ async function geometry(page){
       nav:{top:nr.top,width:nr.width,height:nr.height},
       active:{top:ar.top-nr.top,left:ar.left-nr.left,width:ar.width,height:ar.height},
       lens:{top,left,height,width,bottom:top+height,right:left+width,transformX},
-      copy:cr?{top:cr.top-nr.top,left:cr.left-nr.left,width:cr.width,height:cr.height}:null,
+      copy:cr?{top:cr.top-nr.top,left:cr.left-nr.left,width:cr.width,height:cr.height,right:cr.right-nr.left,bottom:cr.bottom-nr.top}:null,
       vars:{
         top:getComputedStyle(nav).getPropertyValue('--flow-school-lens-top').trim(),
         height:getComputedStyle(nav).getPropertyValue('--flow-school-lens-height').trim(),
@@ -62,19 +62,35 @@ async function geometry(page){
     };
   });
 }
-function assertLens(name,state,expectedLabel){
+function assertIdentity(name,state,expectedLabel){
   if(!state)throw new Error(`${name}: missing School bottom-nav geometry`);
   if(state.label!==expectedLabel)throw new Error(`${name}: active tab changed unexpectedly ${JSON.stringify(state)}`);
+}
+function assertTransitionShape(name,state,expectedLabel){
+  assertIdentity(name,state,expectedLabel);
+  const topDelta=Math.abs(state.lens.top-state.active.top),heightDelta=Math.abs(state.lens.height-state.active.height),widthDelta=Math.abs(state.lens.width-state.active.width);
+  const inNav=state.lens.left>=-2&&state.lens.right<=state.nav.width+2&&state.lens.top>=-2&&state.lens.bottom<=state.nav.height+2;
+  if(topDelta>2||heightDelta>1.5||widthDelta>1.5||state.lens.height<36||!inNav){
+    throw new Error(`${name}: moving lens collapsed or escaped nav ${JSON.stringify({topDelta,heightDelta,widthDelta,inNav,state})}`);
+  }
+  if(state.copy){
+    const copyHeightDelta=Math.abs(state.copy.height-state.active.height),copyWidthDelta=Math.abs(state.copy.width-state.active.width);
+    const copyInNav=state.copy.left>=-2&&state.copy.right<=state.nav.width+2&&state.copy.top>=-2&&state.copy.bottom<=state.nav.height+2;
+    if(copyHeightDelta>1.5||copyWidthDelta>1.5||!copyInNav)throw new Error(`${name}: Optical moving copy lens collapsed or escaped nav ${JSON.stringify({copyHeightDelta,copyWidthDelta,copyInNav,state})}`);
+  }
+}
+function assertStableLens(name,state,expectedLabel){
+  assertIdentity(name,state,expectedLabel);
   const topDelta=Math.abs(state.lens.top-state.active.top),leftDelta=Math.abs(state.lens.left-state.active.left);
   const heightDelta=Math.abs(state.lens.height-state.active.height),widthDelta=Math.abs(state.lens.width-state.active.width);
   const coversBox=state.lens.bottom>=state.active.top+state.active.height-1.5&&state.lens.right>=state.active.left+state.active.width-1.5&&state.lens.top<=state.active.top+1.5&&state.lens.left<=state.active.left+1.5;
   if(topDelta>1.5||leftDelta>1.5||heightDelta>1.5||widthDelta>1.5||!coversBox||state.lens.height<36){
-    throw new Error(`${name}: active lens detached from full tab box ${JSON.stringify({topDelta,leftDelta,heightDelta,widthDelta,coversBox,state})}`);
+    throw new Error(`${name}: settled lens detached from full tab box ${JSON.stringify({topDelta,leftDelta,heightDelta,widthDelta,coversBox,state})}`);
   }
   if(state.copy){
     const copyTopDelta=Math.abs(state.copy.top-state.active.top),copyLeftDelta=Math.abs(state.copy.left-state.active.left);
     const copyHeightDelta=Math.abs(state.copy.height-state.active.height),copyWidthDelta=Math.abs(state.copy.width-state.active.width);
-    if(copyTopDelta>1.5||copyLeftDelta>1.5||copyHeightDelta>1.5||copyWidthDelta>1.5)throw new Error(`${name}: Optical copy lens detached from full tab box ${JSON.stringify({copyTopDelta,copyLeftDelta,copyHeightDelta,copyWidthDelta,state})}`);
+    if(copyTopDelta>1.5||copyLeftDelta>1.5||copyHeightDelta>1.5||copyWidthDelta>1.5)throw new Error(`${name}: settled Optical copy lens detached from full tab box ${JSON.stringify({copyTopDelta,copyLeftDelta,copyHeightDelta,copyWidthDelta,state})}`);
   }
 }
 async function sampleStable(page,label,expectedLabel){
@@ -84,8 +100,23 @@ async function sampleStable(page,label,expectedLabel){
     await page.waitForTimeout(Math.max(0,target-elapsed));
     elapsed=target;
     const state=await geometry(page);
-    assertLens(`${label}@${target}ms`,state,expectedLabel);
-    samples.push({atMs:target,...state});
+    assertStableLens(`${label}@${target}ms`,state,expectedLabel);
+    samples.push({atMs:target,phase:'settled',...state});
+  }
+  return samples;
+}
+async function sampleTransitionAndStable(page,label,expectedLabel){
+  await page.waitForTimeout(120);
+  const moving=await geometry(page);
+  assertTransitionShape(`${label}@120ms`,moving,expectedLabel);
+  const samples=[{atMs:120,phase:'moving',...moving}];
+  let elapsed=120;
+  for(const target of stableSamples){
+    await page.waitForTimeout(Math.max(0,target-elapsed));
+    elapsed=target;
+    const state=await geometry(page);
+    assertStableLens(`${label}@${target}ms`,state,expectedLabel);
+    samples.push({atMs:target,phase:'settled',...state});
   }
   return samples;
 }
@@ -109,12 +140,13 @@ for(const testCase of cases){
 
     await page.locator('#mobileSettingsBtn:visible').click();
     await page.waitForSelector('#flowSchoolSettingsView:not(.hidden)');
-    const settingsSamples=await sampleStable(page,`${name}/settings`,'설정');
+    const settingsSamples=await sampleTransitionAndStable(page,`${name}/settings`,'설정');
     await page.screenshot({path:`${OUT}/${name}-settings-5s.png`,fullPage:false});
 
     await page.locator('#bottomNav [data-view="today"]:visible').click();
     await page.waitForSelector('#todayView:not(.hidden)');
-    const returnedSamples=await sampleStable(page,`${name}/return`,'오늘');
+    const returnedSamples=await sampleTransitionAndStable(page,`${name}/return`,'오늘');
+    await page.screenshot({path:`${OUT}/${name}-return-5s.png`,fullPage:false});
 
     const resized=[];
     if(testCase.width<=412){
@@ -132,4 +164,4 @@ for(const testCase of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'lens full box remains bound to active tab for 4.5s across Standard/Optical and viewport changes'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'lens never collapses while moving and settles to the full active-tab box through 4.8s across Standard/Optical and viewport changes'},null,2));
