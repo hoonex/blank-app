@@ -1,0 +1,35 @@
+name: Retired surface contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'school-metrics.js'
+      - 'cloudflare-worker.mjs'
+      - 'vercel.json'
+      - 'tests/retired-transit-production-contract.mjs'
+      - '.github/workflows/retired-surface-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'school-metrics.js'
+      - 'cloudflare-worker.mjs'
+      - 'vercel.json'
+      - 'tests/retired-transit-production-contract.mjs'
+      - '.github/workflows/retired-surface-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retired-surface-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify retired School surfaces stay out of production
+        run: node tests/retired-transit-production-contract.mjs
