@@ -61,6 +61,10 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function transientTagoError(message = "") {
+  return /가용한 세션|30\/30|초당|timeout|timed out|abort(?:ed|error)?|시간이 초과/i.test(message);
+}
+
 async function withTagoSlot<T>(task: () => Promise<T>): Promise<T> {
   if (tagoActive >= TAGO_MAX_CONCURRENCY) {
     await new Promise<void>((resolve) => tagoWaiters.push(resolve));
@@ -133,8 +137,7 @@ async function tago(endpoint: string, params: Record<string, string | number> = 
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : String(error);
-      const temporary = /가용한 세션|30\/30|초당|timeout|시간이 초과/i.test(message);
-      if (!temporary || attempt === 2) throw error;
+      if (!transientTagoError(message) || attempt === 2) throw error;
       await sleep(350 * (2 ** attempt));
     }
   }
@@ -381,12 +384,16 @@ async function nearbyStops(x: number, y: number, regionHint = "") {
       console.warn(`nearby direct lookup unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
     if (!candidates.length && resolvedCityCode) {
-      let master = await cityStopMaster(resolvedCityCode);
-      if (!master.length) {
-        await sleep(250);
-        master = await cityStopMaster(resolvedCityCode);
+      try {
+        let master = await cityStopMaster(resolvedCityCode);
+        if (!master.length) {
+          await sleep(250);
+          master = await cityStopMaster(resolvedCityCode);
+        }
+        candidates = normalizeStops(master, x, y, resolvedCityCode).filter((stop) => stop.distance <= 1800);
+      } catch (error) {
+        console.warn(`city stop master unavailable: ${error instanceof Error ? error.message : String(error)}`);
       }
-      candidates = normalizeStops(master, x, y, resolvedCityCode).filter((stop) => stop.distance <= 1800);
     }
     const unique = new Map<string, Stop>();
     for (const stop of candidates) {
@@ -577,7 +584,13 @@ async function directCandidates(source: StopLine[], destination: StopLine[], sx:
       const signature = `${start.line.id}:${start.stop.id}:${end.stop.id}`;
       if (seen.has(signature)) continue;
       seen.add(signature);
-      const stops = await routeStops(start.line);
+      let stops: RouteStop[] = [];
+      try {
+        stops = await routeStops(start.line);
+      } catch (error) {
+        console.warn(`direct route stops unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        continue;
+      }
       const a = indexOfStop(stops, start.stop), b = indexOfStop(stops, end.stop);
       if (a < 0 || b <= a) continue;
       const stations = b - a;
@@ -615,7 +628,14 @@ async function transferCandidates(source: StopLine[], destination: StopLine[], s
   const stopCache = new Map<string, RouteStop[]>();
   const getStops = async (line: Line) => {
     const key = `${line.cityCode}:${line.id}`;
-    if (!stopCache.has(key)) stopCache.set(key, await routeStops(line));
+    if (!stopCache.has(key)) {
+      try {
+        stopCache.set(key, await routeStops(line));
+      } catch (error) {
+        console.warn(`transfer route stops unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        stopCache.set(key, []);
+      }
+    }
     return stopCache.get(key)!;
   };
   const seen = new Set<string>();
@@ -736,8 +756,14 @@ function assignBadges(routes: NormalizedRoute[]) {
 }
 
 async function stopLines(stops: Stop[]) {
-  const groups = await Promise.all(stops.map(async (stop) =>
-    (await routesAtStop(stop)).map((line) => ({ stop, line }))));
+  const groups = await Promise.all(stops.map(async (stop) => {
+    try {
+      return (await routesAtStop(stop)).map((line) => ({ stop, line }));
+    } catch (error) {
+      console.warn(`stop routes unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      return [] as StopLine[];
+    }
+  }));
   const seen = new Set<string>();
   return groups.flat().filter((item) => {
     const key = `${item.stop.id}:${item.line.cityCode}:${item.line.id}`;
@@ -831,6 +857,7 @@ Deno.serve(async (req) => {
         realtimeFreshness: "provider-fetchedAt+cache-age-adjusted",
         regionalRouting: "coordinate-owned-source+destination",
         transferMatching: "node-id+walkable-stop-proximity",
+        upstreamFailureMode: "partial-fanout-degradation+transient-retry",
         plannedGtfsUpgrade: "2026-09-07",
       }, 200, "no-store");
     }
