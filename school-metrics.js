@@ -4,6 +4,13 @@ import '/flow-refraction.js';
 import './school-ia.js';
 import './school-timetable-polish.js';
 
+/* The shared Settings layer identifies its mobile destination semantically as
+ * `.flow-mobile-settings`; School's historical button predates that class. Keep
+ * the actual DOM in the same four-destination contract so lens indexing, active
+ * state, and touch routing cannot diverge when Settings is opened. */
+const schoolMobileSettingsTab=document.querySelector('#mobileSettingsBtn');
+if(schoolMobileSettingsTab)schoolMobileSettingsTab.classList.add('flow-mobile-settings');
+
 function transitLabEnabled(){
   const host=location.hostname;
   if(host!=='127.0.0.1'&&host!=='localhost')return false;
@@ -37,12 +44,55 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> .flow-mobile-settings.active){--flow-tab-index:3!important}
-@media(max-width:900px){
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> :is(.flow-mobile-settings,#mobileSettingsBtn).active){--flow-tab-index:3!important}
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
   html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="school"]{grid-row:1!important;grid-column:3!important}
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>.flow-mobile-settings{grid-row:1!important;grid-column:4!important}
+  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>:is(.flow-mobile-settings,#mobileSettingsBtn){grid-row:1!important;grid-column:4!important}
+}`;
+  document.head.append(style);
+}
+
+/* Settings is a destination, not a modal that may cover navigation. Keep the
+ * touch nav above it, reserve the nav footprint from the Settings scroll surface,
+ * and remove the Standard-mode pseudo lens that can appear as a thin stray pill. */
+if(!document.querySelector('#flow-school-touch-nav-contract')){
+  const style=document.createElement('style');
+  style.id='flow-school-touch-nav-contract';
+  style.textContent=`
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
+    z-index:90!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    isolation:isolate!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav>.mobile-tab{
+    display:grid!important;
+    place-items:center!important;
+    min-height:48px!important;
+    padding:0 8px!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
+    display:grid!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
+    z-index:40!important;
+    bottom:78px!important;
+    padding-bottom:34px!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-bottom-nav::before{
+    display:none!important;
+    content:none!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-tab.active{
+    background:color-mix(in srgb,var(--accent) 11%,var(--surface))!important;
+    color:var(--accent)!important;
+  }
 }`;
   document.head.append(style);
 }
@@ -100,8 +150,7 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
 
   html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
     position:fixed!important;
-    z-index:35!important;
-    inset:64px 0 76px!important;
+    inset:64px 0 78px!important;
     overflow-y:auto!important;
     overscroll-behavior:contain!important;
     background:var(--bg)!important;
