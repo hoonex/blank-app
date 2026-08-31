@@ -12,6 +12,7 @@ const KAKAO_KEYWORD = "https://dapi.kakao.com/v2/local/search/keyword.json";
 const KAKAO_COORD_REGION = "https://dapi.kakao.com/v2/local/geo/coord2regioncode.json";
 const TAGO_MAX_CONCURRENCY = 3;
 const TAGO_CITY_STOP_PAGE_SIZE = 1000;
+const DAEGU_CITY_CODE = "22";
 const DEFAULT_BUS_WAIT_MINUTES = 5;
 const TRANSFER_BUFFER_MINUTES = 1;
 const SECOND_LEG_REALTIME_LIMIT = 8;
@@ -314,16 +315,21 @@ async function cityCodes() {
       code: String(item.citycode || item.cityCode || ""),
       name: String(item.cityname || item.cityName || ""),
     })).filter((item) => item.code && item.name);
-  });
+  }, (cities) => cities.length > 0);
 }
 
 function compactRegion(value = "") {
   return value.replace(/\s+/g, "").replace(/특별자치도|특별자치시|광역시|특별시|도$/g, "");
 }
 
+function isDaeguRegion(value = "") {
+  return compactRegion(value) === "대구";
+}
+
 async function cityCodeForRegion(regionHint = "") {
   const region = regionHint.trim();
   if (!region) return "";
+  if (isDaeguRegion(region)) return DAEGU_CITY_CODE;
   const cities = await cityCodes();
   const compact = compactRegion(region);
   const exact = cities.find((city) => city.name === region);
@@ -336,7 +342,9 @@ async function cityCodeForRegion(regionHint = "") {
 }
 
 async function cityCodeForCoordinate(x: number, y: number) {
-  const [region, cities] = await Promise.all([coordinateRegion(x, y), cityCodes()]);
+  const region = await coordinateRegion(x, y);
+  if (isDaeguRegion(region.first)) return DAEGU_CITY_CODE;
+  const cities = await cityCodes();
   const first = compactRegion(region.first), second = compactRegion(region.second);
   const exact = cities.find((city) => city.name === region.first || city.name === region.second);
   if (exact) return exact.code;
@@ -357,21 +365,28 @@ async function cityStopMaster(cityCode: string) {
     const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, index) =>
       tago(TAGO_STOPS_BY_CITY, { cityCode, pageNo: index + 2, numOfRows: TAGO_CITY_STOP_PAGE_SIZE }, 20000)));
     return [...first.items, ...rest.flatMap((page) => page.items)];
-  });
+  }, (items) => items.length > 0);
 }
 
 async function nearbyStops(x: number, y: number, regionHint = "") {
   const key = `near:${x.toFixed(5)}:${y.toFixed(5)}:${compactRegion(regionHint)}`;
   return cached(key, 10 * 60_000, async () => {
-    const direct = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 20 });
-    let candidates = normalizeStops(direct.items, x, y);
-    if (!candidates.length) {
-      const hintedCityCode = await cityCodeForRegion(regionHint);
-      const cityCode = hintedCityCode || await cityCodeForCoordinate(x, y);
-      if (cityCode) {
-        const master = await cityStopMaster(cityCode);
-        candidates = normalizeStops(master, x, y, cityCode).filter((stop) => stop.distance <= 1800);
+    const hintedCityCode = await cityCodeForRegion(regionHint).catch(() => "");
+    const resolvedCityCode = hintedCityCode || await cityCodeForCoordinate(x, y).catch(() => "");
+    let candidates: Stop[] = [];
+    try {
+      const direct = await tago(TAGO_STOPS_NEAR, { gpsLong: x, gpsLati: y, numOfRows: 20 });
+      candidates = normalizeStops(direct.items, x, y, resolvedCityCode);
+    } catch (error) {
+      console.warn(`nearby direct lookup unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    if (!candidates.length && resolvedCityCode) {
+      let master = await cityStopMaster(resolvedCityCode);
+      if (!master.length) {
+        await sleep(250);
+        master = await cityStopMaster(resolvedCityCode);
       }
+      candidates = normalizeStops(master, x, y, resolvedCityCode).filter((stop) => stop.distance <= 1800);
     }
     const unique = new Map<string, Stop>();
     for (const stop of candidates) {
@@ -403,7 +418,7 @@ async function routesAtStop(stop: Stop) {
       seen.add(line.id);
       return true;
     }).slice(0, 18);
-  });
+  }, (lines) => lines.length > 0);
 }
 
 async function routeStops(line: Line) {
@@ -417,7 +432,7 @@ async function routeStops(line: Line) {
       y: Number(item.gpslati ?? item.gpsLati),
     } satisfies RouteStop)).filter((stop: RouteStop) => stop.id)
       .sort((a: RouteStop, b: RouteStop) => a.order - b.order);
-  });
+  }, (stops) => stops.length > 0);
 }
 
 function normalizeRouteNo(value: unknown) {
@@ -721,8 +736,8 @@ function assignBadges(routes: NormalizedRoute[]) {
 }
 
 async function stopLines(stops: Stop[]) {
-  const groups: StopLine[][] = [];
-  for (const stop of stops) groups.push((await routesAtStop(stop)).map((line) => ({ stop, line })));
+  const groups = await Promise.all(stops.map(async (stop) =>
+    (await routesAtStop(stop)).map((line) => ({ stop, line }))));
   const seen = new Set<string>();
   return groups.flat().filter((item) => {
     const key = `${item.stop.id}:${item.line.cityCode}:${item.line.id}`;
@@ -755,13 +770,17 @@ function routeSort(a: NormalizedRoute, b: NormalizedRoute) {
 }
 
 async function searchRoutes(sx: number, sy: number, ex: number, ey: number, destinationRegion = "") {
-  const sourceStops = await nearbyStops(sx, sy);
-  const destinationStops = await nearbyStops(ex, ey, destinationRegion);
+  const [sourceStops, destinationStops] = await Promise.all([
+    nearbyStops(sx, sy),
+    nearbyStops(ex, ey, destinationRegion),
+  ]);
   if (!sourceStops.length) throw new Error("현재 위치 주변에서 버스 정류장을 찾지 못했습니다.");
   if (!destinationStops.length) throw new Error("목적지 주변에서 버스 정류장을 찾지 못했습니다.");
 
-  const source = await stopLines(sourceStops);
-  const destination = await stopLines(destinationStops);
+  const [source, destination] = await Promise.all([
+    stopLines(sourceStops),
+    stopLines(destinationStops),
+  ]);
   if (!source.length || !destination.length) throw new Error("주변 정류장의 운행 노선 정보를 찾지 못했습니다.");
 
   const direct = await directCandidates(source, destination, sx, sy, ex, ey);
@@ -806,7 +825,7 @@ Deno.serve(async (req) => {
           kakao: Boolean(KAKAO_REST_KEY),
         },
         routingProvider: "TAGO-public-data",
-        stopDiscovery: ["coordinate-500m", "city-stop-master"],
+        stopDiscovery: ["coordinate+resolved-citycode", "city-stop-master"],
         routeModes: ["bus-direct", "bus-one-transfer"],
         realtimeRouting: "cache-age-adjusted-per-bus-leg",
         realtimeFreshness: "provider-fetchedAt+cache-age-adjusted",
