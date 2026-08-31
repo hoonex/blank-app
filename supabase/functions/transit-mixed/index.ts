@@ -255,12 +255,14 @@ async function buildForRail(rail: Route, sx: number, sy: number, ex: number, ey:
   const needEgressBus = railEgressWalk >= BUS_ASSIST_MIN_WALK_METERS;
   if (!needAccessBus && !needEgressBus) return [];
 
+  const assistAccess = needAccessBus && (!needEgressBus || railAccessWalk >= railEgressWalk);
+  const assistEgress = needEgressBus && !assistAccess;
   const [accessRoutes, egressRoutes] = await Promise.all([
-    needAccessBus ? busRoutes(sx, sy, accessPoint.x, accessPoint.y) : Promise.resolve([]),
-    needEgressBus ? busRoutes(egressPoint.x, egressPoint.y, ex, ey) : Promise.resolve([]),
+    assistAccess ? busRoutes(sx, sy, accessPoint.x, accessPoint.y) : Promise.resolve([]),
+    assistEgress ? busRoutes(egressPoint.x, egressPoint.y, ex, ey) : Promise.resolve([]),
   ]);
-  const accessOptions: Array<Route | null> = needAccessBus && accessRoutes.length ? accessRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
-  const egressOptions: Array<Route | null> = needEgressBus && egressRoutes.length ? egressRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
+  const accessOptions: Array<Route | null> = assistAccess && accessRoutes.length ? accessRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
+  const egressOptions: Array<Route | null> = assistEgress && egressRoutes.length ? egressRoutes.slice(0, MAX_BUS_OPTIONS_PER_SIDE) : [null];
 
   const routes: Route[] = [];
   const seen = new Set<string>();
@@ -309,6 +311,7 @@ Deno.serve(async (req: Request) => {
       railRealtime: false,
       busRealtime: "per-bus-leg-when-available",
       busAssistThresholdMeters: BUS_ASSIST_MIN_WALK_METERS,
+      busAssistStrategy: "single-longer-boundary",
       busCoreTimeoutMs: BUS_CORE_TIMEOUT_MS,
       railCandidates: MAX_RAIL_CANDIDATES,
     });
