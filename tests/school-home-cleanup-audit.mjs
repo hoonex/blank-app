@@ -28,14 +28,31 @@ async function fixture(page){
 }
 async function homeState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const box=node=>{if(!node)return null;const rect=node.getBoundingClientRect();return{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height}};
   const visibleStatus=[...document.querySelectorAll('#todayView .status-card')].filter(shown);
   const statusRects=visibleStatus.map(node=>{const rect=node.getBoundingClientRect();return{label:node.querySelector('.status-label')?.textContent?.trim()||'',left:rect.left,top:rect.top,width:rect.width,height:rect.height}});
   const grid=document.querySelector('#todayView .status-grid'),gridStyle=grid?getComputedStyle(grid):null,nextStyle=visibleStatus[1]?getComputedStyle(visibleStatus[1]):null;
   const visualGap=statusRects.length===2?statusRects[1].left-(statusRects[0].left+statusRects[0].width):null;
+  const hero=document.querySelector('#todayView .school-hero');
+  const heroContent=document.querySelector('#todayView .school-hero-content');
+  const heroCopy=document.querySelector('#todayView .school-hero-copy');
+  const heroRight=document.querySelector('#todayView .hero-right');
+  const dateController=document.querySelector('#todayView .date-controller');
+  const rightStack=document.querySelector('#todayView .right-stack');
+  const rightStackStyle=rightStack?getComputedStyle(rightStack):null;
+  const timetableCard=document.querySelector('#todayView .timetable-card');
   return{
     status:visibleStatus.map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),statusRects,
     statusShell:gridStyle?{columnGap:parseFloat(gridStyle.columnGap)||0,background:gridStyle.backgroundColor,borderRadius:parseFloat(gridStyle.borderTopLeftRadius)||0,divider:parseFloat(nextStyle?.borderLeftWidth||'0')||0,visualGap}:null,
     shell:{desktopSidebar:shown(document.querySelector('.desktop-sidebar')),mobileTopbar:shown(document.querySelector('.mobile-topbar')),bottomNav:shown(document.querySelector('#bottomNav'))},
+    composition:{
+      hero:box(hero),heroContent:box(heroContent),heroCopy:box(heroCopy),heroRight:box(heroRight),date:box(dateController),timetable:box(timetableCard),
+      heroRightPosition:heroRight?getComputedStyle(heroRight).position:'',
+      rightStackDisplay:rightStackStyle?.display||'',rightStackColumns:rightStackStyle?.gridTemplateColumns||'',
+      heroEyebrowVisible:shown(document.querySelector('#todayView .school-hero-copy .eyebrow')),
+      timetableDescriptionVisible:shown(document.querySelector('#todayView .timetable-card .card-heading p')),
+      timetableKickerVisible:shown(document.querySelector('#todayView .timetable-card .section-kicker')),
+    },
     lessons:shown(document.querySelector('#quickLessons')?.closest('.status-card')),meal:shown(document.querySelector('#quickMeal')?.closest('.status-card')),
     transitSurface:document.documentElement.dataset.flowTransitSurface||'',transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
     bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
@@ -67,6 +84,18 @@ for(const [name,width,height,isMobile] of cases){
     if(!sameRow||!balanced||!compact||!unified)throw new Error(`${name}: Today status pair is not one compact divided shell ${JSON.stringify({statusRects:home.statusRects,statusShell:home.statusShell})}`);
     if(home.shell.desktopSidebar||!home.shell.mobileTopbar||!home.shell.bottomNav)throw new Error(`${name}: portrait/mobile shell split-brain ${JSON.stringify(home.shell)}`);
   }
+  if(name==='wide-tablet-portrait'){
+    const c=home.composition;
+    const wideDate=c.date&&c.hero&&c.date.width>=c.hero.width*.88;
+    const dateFirst=c.date&&c.heroCopy&&c.date.top<c.heroCopy.top&&c.date.bottom<=c.heroCopy.top+4;
+    const touchHero=c.heroRightPosition==='static'&&!c.heroEyebrowVisible;
+    const stackedUtilities=c.rightStackDisplay==='block'&&c.rightStackColumns==='none';
+    const compactHeading=!c.timetableDescriptionVisible&&!c.timetableKickerVisible;
+    const timetableFits=c.timetable&&c.hero&&Math.abs(c.timetable.width-c.hero.width)<=2;
+    if(!wideDate||!dateFirst||!touchHero||!stackedUtilities||!compactHeading||!timetableFits){
+      throw new Error(`${name}: touch-first content composition did not engage ${JSON.stringify(c)}`);
+    }
+  }
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
   if(transitRequests.length)throw new Error(`${name}: dormant production Transit assets were requested ${JSON.stringify(transitRequests)}`);
   if(expectMobileShell&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
@@ -90,4 +119,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',widePortraitComposition:'touch-first',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
