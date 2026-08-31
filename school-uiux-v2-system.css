@@ -352,7 +352,7 @@ html[data-flow-school-ui="v2"] .date-controller button{
     display:none!important;
   }
   html[data-flow-school-ui="v2"] body #todayView .status-grid{
-    grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
     margin:-7px 10px 9px!important;
     padding:4px!important;
     border-radius:18px!important;
