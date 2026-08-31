@@ -1,18 +1,34 @@
 const root=document.documentElement;
-root.dataset.flowSchoolUi='v2';
 
 function attachStyle(href,key){
-  if(document.querySelector(`link[${key}]`))return;
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href=href;
-  link.setAttribute(key,'');
-  document.head.append(link);
+  let link=document.querySelector(`link[${key}]`);
+  if(!link){
+    link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href=href;
+    link.setAttribute(key,'');
+    document.head.append(link);
+  }
+  if(link.sheet)return Promise.resolve(link);
+  return new Promise(resolve=>{
+    let settled=false;
+    const done=()=>{if(settled)return;settled=true;resolve(link)};
+    link.addEventListener('load',done,{once:true});
+    link.addEventListener('error',done,{once:true});
+    setTimeout(done,1600);
+  });
 }
 
-attachStyle('/school-uiux-v2.css?v=20260831-1','data-flow-school-ui-v2');
-attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system');
-attachStyle('/school-today-clay.css?v=20260901-1','data-flow-school-today-clay');
+/* Do not expose a half-styled v2 tree. All three visual layers are present before
+ * the v2 selector becomes active, so Optical source-copy creation and real users
+ * see one stable geometry instead of an old-layout -> new-layout transition. */
+await Promise.all([
+  attachStyle('/school-uiux-v2.css?v=20260831-1','data-flow-school-ui-v2'),
+  attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system'),
+  attachStyle('/school-today-clay.css?v=20260901-1','data-flow-school-today-clay'),
+]);
+root.dataset.flowSchoolUi='v2';
+root.dataset.flowSchoolUiStyles='ready';
 
 /* Week is an inline Today mode now. Compact portrait keeps the shared root
  * destination transition, armed only by navigation interaction. Larger touch
@@ -173,3 +189,7 @@ window.addEventListener('scroll',scheduleRefractionSync,{passive:true,capture:tr
 document.addEventListener('pointermove',event=>{if(event.target.closest?.('#bottomNav'))scheduleRefractionSync()},{passive:true,capture:true});
 setTimeout(refractionBurst,180);
 setTimeout(refractionBurst,760);
+
+/* If Optical was already booting while the School visual layers loaded, rebuild
+ * its source once from the now-final layout. This is bounded and event-driven. */
+queueMicrotask(()=>window.dispatchEvent(new CustomEvent('flow:refraction-refresh')));
