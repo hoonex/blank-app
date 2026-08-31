@@ -383,6 +383,17 @@ async function nearbyStops(x: number, y: number, regionHint = "") {
     } catch (error) {
       console.warn(`nearby direct lookup unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
+    if (!candidates.length && resolvedCityCode === DAEGU_CITY_CODE) {
+      try {
+        const snapshot = await import("https://raw.githubusercontent.com/hoonex/blank-app/2db1c1f6a760f4ca5e58d882703f30db7b6744c7/supabase/functions/transit-data-core/official-stop-fallback.ts");
+        candidates = snapshot.nearbyOfficialDaeguStops(x, y, 8, 1800).map((stop: any) => ({
+          ...stop,
+          cityCode: DAEGU_CITY_CODE,
+        } satisfies Stop));
+      } catch (error) {
+        console.warn(`official Daegu stop snapshot unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     if (!candidates.length && resolvedCityCode) {
       try {
         let master = await cityStopMaster(resolvedCityCode);
@@ -851,7 +862,9 @@ Deno.serve(async (req) => {
           kakao: Boolean(KAKAO_REST_KEY),
         },
         routingProvider: "TAGO-public-data",
-        stopDiscovery: ["coordinate+resolved-citycode", "city-stop-master"],
+        stopDiscovery: ["coordinate+resolved-citycode", "daegu-official-network-snapshot", "city-stop-master"],
+        stopSnapshot: "2025-09-03",
+        stopSnapshotSourceSha256: "98d6a7725e3fddbcd65c58af3fadc217378ee8bfec82e29e2931341e19f86a1e",
         routeModes: ["bus-direct", "bus-one-transfer"],
         realtimeRouting: "cache-age-adjusted-per-bus-leg",
         realtimeFreshness: "provider-fetchedAt+cache-age-adjusted",
