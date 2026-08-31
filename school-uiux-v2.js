@@ -40,19 +40,26 @@ function ensureRefractionObserver(){
   if(!scene||scene===observedScene)return;
   refractionObserver?.disconnect();observedScene=scene;
   refractionObserver=new MutationObserver(()=>syncRefractionCopy());
-  refractionObserver.observe(scene,{childList:true,subtree:true});
+  refractionObserver.observe(scene,{childList:true});
+  syncRefractionCopy();
+}
+function syncRefractionSettled(){
+  ensureRefractionObserver();
   syncRefractionCopy();
 }
 function scheduleRefractionSync(){
   if(refractionSyncFrame)return;
-  refractionSyncFrame=requestAnimationFrame(()=>requestAnimationFrame(()=>{ensureRefractionObserver();syncRefractionCopy()}));
+  refractionSyncFrame=requestAnimationFrame(()=>requestAnimationFrame(syncRefractionSettled));
 }
 function refractionBurst(){
-  ensureRefractionObserver();
-  syncRefractionCopy();
-  scheduleRefractionSync();
-  setTimeout(scheduleRefractionSync,40);
-  setTimeout(scheduleRefractionSync,120);
+  syncRefractionSettled();
+  /* flow-refraction schedules cloneSource() on a zero-delay timer. Queue our
+   * zero-delay settle after that listener so its legacy INSET geometry cannot
+   * overwrite the v2 lens-origin correction. Later settles cover stylesheet
+   * and font layout without keeping a render loop alive. */
+  setTimeout(syncRefractionSettled,0);
+  setTimeout(syncRefractionSettled,40);
+  setTimeout(syncRefractionSettled,120);
 }
 window.addEventListener('flow:refraction-refresh',refractionBurst,{passive:true});
 window.addEventListener('flow:glass-mode-changed',refractionBurst,{passive:true});
