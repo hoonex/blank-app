@@ -18,7 +18,7 @@ const dashboard={
 };
 const cases=[
   ['mobile-portrait',390,844,true],['mobile-landscape',844,390,true],['tablet-portrait',768,1024,true],
-  ['tablet-landscape',1024,768,true],['desktop-1366',1366,768,false],['desktop-1920',1920,1080,false],
+  ['wide-tablet-portrait',960,1536,true],['tablet-landscape',1024,768,true],['desktop-1366',1366,768,false],['desktop-1920',1920,1080,false],
 ];
 const transitAsset=/\/school-transit(?:-map|-focus|-today)?\.(?:js|css)(?:\?|$)/;
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
@@ -35,6 +35,7 @@ async function homeState(page){return page.evaluate(()=>{
   return{
     status:visibleStatus.map(node=>node.querySelector('.status-label')?.textContent?.trim()||''),statusRects,
     statusShell:gridStyle?{columnGap:parseFloat(gridStyle.columnGap)||0,background:gridStyle.backgroundColor,borderRadius:parseFloat(gridStyle.borderTopLeftRadius)||0,divider:parseFloat(nextStyle?.borderLeftWidth||'0')||0,visualGap}:null,
+    shell:{desktopSidebar:shown(document.querySelector('.desktop-sidebar')),mobileTopbar:shown(document.querySelector('.mobile-topbar')),bottomNav:shown(document.querySelector('#bottomNav'))},
     lessons:shown(document.querySelector('#quickLessons')?.closest('.status-card')),meal:shown(document.querySelector('#quickMeal')?.closest('.status-card')),
     transitSurface:document.documentElement.dataset.flowTransitSurface||'',transitNav:[...document.querySelectorAll('[data-flow-transit-nav]')].some(shown),transitView:Boolean(document.querySelector('#transitView')),
     bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
@@ -50,12 +51,13 @@ async function settingsState(page){return page.evaluate(()=>{const panel=documen
 
 const browser=await chromium.launch({headless:true});const report={};
 for(const [name,width,height,isMobile] of cases){
+  const expectMobileShell=width<=900||(height>width&&width<=1024);
   const context=await browser.newContext({viewport:{width,height},isMobile,hasTouch:isMobile,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage(),pageErrors=[],consoleErrors=[],transitRequests=[];
   page.on('pageerror',error=>pageErrors.push(String(error)));page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('request',request=>{const url=request.url();if(transitAsset.test(url))transitRequests.push(url)});await fixture(page);
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForFunction(()=>document.querySelector('#mealCal')?.textContent?.includes('12:20–13:10'),null,{timeout:5000});
   const home=await homeState(page);
   if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
-  if(width<=900){
+  if(expectMobileShell){
     const [nowCard,nextCard]=home.statusRects;
     const sameRow=nowCard&&nextCard&&Math.abs(nowCard.top-nextCard.top)<=2&&nowCard.left<nextCard.left;
     const balanced=nowCard&&nextCard&&Math.abs(nowCard.width-nextCard.width)<=4;
@@ -63,10 +65,11 @@ for(const [name,width,height,isMobile] of cases){
     const shell=home.statusShell;
     const unified=shell&&Math.abs(shell.visualGap)<=1&&shell.columnGap<=1&&shell.divider>=1&&shell.borderRadius>=16&&shell.background!=='rgba(0, 0, 0, 0)';
     if(!sameRow||!balanced||!compact||!unified)throw new Error(`${name}: Today status pair is not one compact divided shell ${JSON.stringify({statusRects:home.statusRects,statusShell:home.statusShell})}`);
+    if(home.shell.desktopSidebar||!home.shell.mobileTopbar||!home.shell.bottomNav)throw new Error(`${name}: portrait/mobile shell split-brain ${JSON.stringify(home.shell)}`);
   }
   if(home.transitSurface!=='dormant'||home.transitNav||home.transitView)throw new Error(`${name}: production Transit surface remains ${JSON.stringify(home)}`);
   if(transitRequests.length)throw new Error(`${name}: dormant production Transit assets were requested ${JSON.stringify(transitRequests)}`);
-  if(width<=900&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
+  if(expectMobileShell&&home.bottom.join('|')!=='오늘|일정|학교|설정')throw new Error(`${name}: mobile nav is not four destinations ${JSON.stringify(home.bottom)}`);
   if(!home.mealFooter.includes('12:20–13:10')||home.overflow>1)throw new Error(`${name}: Today meal window/overflow failed ${JSON.stringify(home)}`);
   await page.screenshot({path:`${OUT}/home-${name}.png`,fullPage:false});await page.screenshot({path:`${OUT}/home-${name}-full.png`,fullPage:true});
 
@@ -87,4 +90,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],todayStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',transit:'dormant',transitRequests:0,mealWindow:true},null,2));

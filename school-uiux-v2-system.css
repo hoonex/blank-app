@@ -143,13 +143,15 @@ html[data-flow-school-ui="v2"] .date-controller button{
     min-height:56px!important;
     padding:4px!important;
     bottom:max(8px,env(safe-area-inset-bottom))!important;
+    isolation:isolate;
+    overflow:visible!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) .mobile-bottom-nav{
     border-color:color-mix(in srgb,var(--text) 7%,transparent)!important;
-    background:color-mix(in srgb,var(--school-v2-panel) 72%,transparent)!important;
+    background:var(--school-v2-panel)!important;
     box-shadow:0 10px 30px rgba(29,40,58,.11)!important;
     backdrop-filter:blur(30px) saturate(1.24)!important;
     -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
-    isolation:isolate;
-    overflow:visible!important;
   }
   html[data-flow-school-ui="v2"] .mobile-bottom-nav::before{
     content:"";
@@ -221,5 +223,155 @@ html[data-flow-school-ui="v2"] .date-controller button{
   html[data-flow-school-ui="v2"] .today-grid .compact-heading .text-button{
     white-space:nowrap!important;
     flex:0 0 auto!important;
+  }
+}
+
+/* Shell breakpoints must move together. The legacy School shell hides the desktop rail at
+   820px while v2 switches its content at 900px; that mismatch can leave a full-height
+   desktop sidebar above the mobile content. Keep the shell atomic, and also treat portrait
+   tablet browser viewports up to 1024px as touch-first. The display overrides are scoped
+   to the visible dashboard so the landing screen's .hidden contract remains authoritative. */
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body{
+    padding-bottom:84px!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden){
+    width:100%!important;
+    display:block!important;
+    grid-template-columns:none!important;
+    padding:0 12px 18px!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .product-main{
+    width:100%!important;
+    min-width:0!important;
+    padding:0!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    position:sticky!important;
+    top:0!important;
+    z-index:60!important;
+    min-height:58px!important;
+    height:auto!important;
+    margin:0 -2px 8px!important;
+    padding:9px 4px!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-topbar{
+    background:var(--school-v2-bg)!important;
+    border:0!important;
+    box-shadow:none!important;
+    backdrop-filter:blur(20px) saturate(1.08)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(1.08)!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{
+    max-width:56vw!important;
+    padding:6px 9px!important;
+    border-radius:12px!important;
+    background:color-mix(in srgb,var(--surface) 74%,transparent)!important;
+    border:1px solid var(--school-v2-line)!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
+    position:fixed!important;
+    display:grid!important;
+    left:12px!important;
+    right:12px!important;
+    bottom:max(8px,env(safe-area-inset-bottom))!important;
+    width:auto!important;
+    min-height:56px!important;
+    padding:4px!important;
+    border-radius:22px!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-bottom-nav{
+    border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
+    background:var(--school-v2-panel)!important;
+    box-shadow:0 10px 30px rgba(29,40,58,.11)!important;
+    backdrop-filter:blur(30px) saturate(1.24)!important;
+    -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
+    display:block!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{
+    min-height:46px!important;
+    border-radius:15px!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .toast{
+    bottom:78px!important;
+  }
+}
+
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] .school-hero,
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:136px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero{
+    border-radius:24px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    padding:16px 17px 18px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-copy h1{
+    max-width:56vw!important;
+    font-size:1.58rem!important;
+  }
+  html[data-flow-school-ui="v2"] .hero-right{
+    position:absolute!important;
+    top:14px!important;
+    right:14px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    margin:-10px 12px 12px!important;
+    padding:4px!important;
+    border-radius:18px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card{
+    min-height:78px!important;
+    padding:10px 12px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid{
+    display:block!important;
+    grid-template-columns:none!important;
+    border-radius:24px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+    padding:16px 16px 20px!important;
+    border-right:0!important;
+    border-bottom:1px solid var(--school-v2-line)!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid .right-stack{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:none!important;
+  }
+}
+
+/* Compact landscape keeps the existing top toolbar coordinate system. The shared
+   touch-shell rules above only control visibility; they must not leave the toolbar with
+   portrait left/right anchors plus the landscape translateX(-50%) transform. */
+@media(max-width:900px) and (max-height:520px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
+    top:max(7px,env(safe-area-inset-top))!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:clamp(260px,42vw,360px)!important;
+    height:40px!important;
+    min-height:40px!important;
+    max-height:40px!important;
+    transform:translateX(-50%)!important;
+    padding:3px 4px!important;
+    border-radius:18px!important;
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{
+    min-height:32px!important;
+    height:32px!important;
+    border-radius:12px!important;
+    padding:2px 5px!important;
   }
 }
