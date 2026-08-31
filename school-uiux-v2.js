@@ -149,7 +149,6 @@ function ensureRefractionObserver(){
 }
 function syncRefractionSettled(){
   ensureRefractionObserver();
-  syncMobileLensBox();
   syncRefractionCopy();
 }
 function scheduleRefractionSync(){
