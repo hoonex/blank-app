@@ -101,11 +101,11 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
     position:fixed!important;
     z-index:35!important;
-    inset:64px 0 0!important;
+    inset:64px 0 76px!important;
     overflow-y:auto!important;
     overscroll-behavior:contain!important;
     background:var(--bg)!important;
-    padding:18px 11px 112px!important;
+    padding:18px 11px 34px!important;
   }
   html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header{margin-bottom:22px!important}
   html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header h1{font-size:2.15rem!important}
