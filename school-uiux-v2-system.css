@@ -227,26 +227,27 @@ html[data-flow-school-ui="v2"] .date-controller button{
 /* Shell breakpoints must move together. The legacy School shell hides the desktop rail at
    820px while v2 switches its content at 900px; that mismatch can leave a full-height
    desktop sidebar above the mobile content. Keep the shell atomic, and also treat portrait
-   tablet browser viewports up to 1024px as touch-first. */
+   tablet browser viewports up to 1024px as touch-first. The display overrides are scoped
+   to the visible dashboard so the landing screen's .hidden contract remains authoritative. */
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] body{
     padding-bottom:84px!important;
   }
-  html[data-flow-school-ui="v2"] .product-shell{
+  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden){
     width:100%!important;
     display:block!important;
     grid-template-columns:none!important;
     padding:0 12px 18px!important;
   }
-  html[data-flow-school-ui="v2"] .desktop-sidebar{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{
     display:none!important;
   }
-  html[data-flow-school-ui="v2"] .product-main{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .product-main{
     width:100%!important;
     min-width:0!important;
     padding:0!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-topbar{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar{
     display:flex!important;
     align-items:center!important;
     justify-content:space-between!important;
@@ -263,14 +264,14 @@ html[data-flow-school-ui="v2"] .date-controller button{
     backdrop-filter:blur(20px) saturate(1.08)!important;
     -webkit-backdrop-filter:blur(20px) saturate(1.08)!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-school-button{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{
     max-width:56vw!important;
     padding:6px 9px!important;
     border-radius:12px!important;
     background:color-mix(in srgb,var(--surface) 74%,transparent)!important;
     border:1px solid var(--school-v2-line)!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
     position:fixed!important;
     display:grid!important;
     left:12px!important;
@@ -286,14 +287,14 @@ html[data-flow-school-ui="v2"] .date-controller button{
     backdrop-filter:blur(30px) saturate(1.24)!important;
     -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
   }
-  html[data-flow-school-ui="v2"] #mobileSettingsBtn{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
     display:block!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-tab{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{
     min-height:46px!important;
     border-radius:15px!important;
   }
-  html[data-flow-school-ui="v2"] .toast{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .toast{
     bottom:78px!important;
   }
 }
