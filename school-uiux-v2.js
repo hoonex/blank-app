@@ -12,6 +12,7 @@ function attachStyle(href,key){
 
 attachStyle('/school-uiux-v2.css?v=20260831-1','data-flow-school-ui-v2');
 attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system');
+attachStyle('/school-today-clay.css?v=20260901-1','data-flow-school-today-clay');
 
 /* Week is an inline Today mode now. Compact portrait keeps the shared root
  * destination transition, armed only by navigation interaction. Larger touch
