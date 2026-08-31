@@ -18,6 +18,7 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
   '/school-ia.js',
   '/school-metrics.js',
   '/school-surface-cleanup.js',
+  '/school-today-clay.css',
   '/sw.js',
 ]);
 
@@ -25,13 +26,32 @@ const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
 #todayView .status-grid>.status-card:nth-child(2),#todayView .status-grid>.status-card:nth-child(3){display:none!important}
 #bottomNav>[data-view="week"]{display:none!important}
 @media(max-width:900px){
-  #todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:0!important;margin:10px 0 12px!important;align-items:stretch;background:var(--surface)!important;border-radius:24px!important;overflow:hidden!important;box-shadow:var(--shadow)!important}
+  .mobile-school-button{border:0!important;background:var(--surface)!important;box-shadow:0 7px 16px rgba(52,70,101,.11),inset 0 1px 1px rgba(255,255,255,.88)!important}
+  #todayView .school-hero{min-height:112px!important;border:0!important;border-radius:25px!important;box-shadow:0 18px 42px rgba(49,70,126,.20)!important}
+  #todayView .school-hero-content{min-height:112px!important;padding:13px 14px 14px!important;display:block!important}
+  #todayView .school-hero .school-badge,#todayView .school-hero-copy h1,#todayView .school-hero-copy p{display:none!important}
+  #todayView .school-hero-copy{position:absolute!important;top:15px!important;left:17px!important}
+  #todayView .hero-right{position:absolute!important;left:13px!important;right:13px!important;top:auto!important;bottom:12px!important;width:auto!important;margin:0!important;align-items:stretch!important}
+  #todayView .date-controller{width:100%!important;min-height:54px!important;padding:5px!important;border:0!important;border-radius:19px!important;background:rgba(248,250,255,.94)!important;box-shadow:0 10px 24px rgba(13,26,59,.18),inset 0 2px 1px rgba(255,255,255,.92),inset 0 -4px 9px rgba(78,96,132,.075)!important}
+  #todayView .date-controller button{width:42px!important;height:42px!important;flex:0 0 42px!important;border:0!important;border-radius:15px!important}
+  #todayView .date-label{min-width:0!important;flex:1 1 auto!important;text-align:center!important}
+  #todayView .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;margin:11px 2px 14px!important;padding:0!important;align-items:stretch!important;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible!important;box-shadow:none!important}
   #todayView .clock-card{grid-column:auto!important}
-  #todayView .status-grid>.status-card:nth-child(1),#todayView .status-grid>.status-card:nth-child(4){min-width:0!important;min-height:104px!important;padding:12px 13px!important;background:transparent!important;border-radius:0!important;box-shadow:none!important}
-  #todayView .status-grid>.status-card:nth-child(4){border-left:1px solid color-mix(in srgb,var(--text) 8%,transparent)!important}
-  #todayView .status-card strong{margin-top:7px!important;font-size:.9rem!important;line-height:1.18}
-  #todayView .status-card p{margin-top:4px!important;font-size:.57rem!important;line-height:1.35}
-  #todayView .progress-track{margin-top:9px!important}
+  #todayView .status-grid>.status-card:nth-child(1),#todayView .status-grid>.status-card:nth-child(4){min-width:0!important;min-height:80px!important;padding:12px 13px!important;background:var(--surface)!important;border:0!important;border-radius:19px!important;box-shadow:0 13px 30px rgba(52,70,101,.12),inset 0 2px 1px rgba(255,255,255,.88),inset 0 -4px 10px rgba(75,95,128,.065)!important}
+  #todayView .status-grid>.status-card:nth-child(4){border-left:0!important}
+  #todayView .status-card strong{margin-top:6px!important;font-size:.86rem!important;line-height:1.18}
+  #todayView .status-card p{margin-top:4px!important;font-size:.55rem!important;line-height:1.35}
+  #todayView .progress-track{margin-top:7px!important}
+}
+@media(max-width:520px){
+  #todayView .school-hero,#todayView .school-hero-content{min-height:106px!important}
+  #todayView .school-hero{border-radius:23px!important}
+  #todayView .school-hero-copy{top:13px!important;left:15px!important}
+  #todayView .hero-right{left:11px!important;right:11px!important;bottom:10px!important}
+  #todayView .date-controller{min-height:51px!important;padding:4px!important;border-radius:18px!important}
+  #todayView .date-controller button{width:39px!important;height:39px!important;flex-basis:39px!important;border-radius:14px!important}
+  #todayView .status-grid{gap:8px!important;margin:10px 1px 13px!important}
+  #todayView .status-grid>.status-card:nth-child(1),#todayView .status-grid>.status-card:nth-child(4){min-height:76px!important;padding:11px 12px!important;border-radius:18px!important}
 }
 </style>`;
 
