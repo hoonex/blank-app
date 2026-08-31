@@ -42,6 +42,81 @@ function installDestinationMotionContract(){
 }
 installDestinationMotionContract();
 
+/* The rendered School tab is the hit target and the complete lens geometry
+ * source of truth. Compact Chrome, Optical refraction, safe-area changes and
+ * delayed layout work must not independently derive either axis from pseudo
+ * element defaults. Keep the moving lens bound to the active tab's full box. */
+let mobileLensFrame=0,mobileLensResizeObserver=null,mobileLensMutationObserver=null,mobileLensObservedNav=null;
+function syncMobileLensBox(){
+  mobileLensFrame=0;
+  const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
+  if(!nav||getComputedStyle(nav).display==='none')return;
+  const active=nav.querySelector(':scope > .mobile-tab.active')||nav.querySelector(':scope > .mobile-tab:not([hidden])');
+  if(!active||getComputedStyle(active).display==='none')return;
+  const navRect=nav.getBoundingClientRect(),activeRect=active.getBoundingClientRect();
+  if(!navRect.width||!navRect.height||!activeRect.width||!activeRect.height)return;
+  const pseudo=getComputedStyle(nav,'::before');
+  const pseudoLeft=Number.parseFloat(pseudo.left);
+  const baseLeft=Number.isFinite(pseudoLeft)?pseudoLeft:5;
+  const top=Math.max(0,activeRect.top-navRect.top);
+  const left=Math.max(0,activeRect.left-navRect.left);
+  const x=left-baseLeft;
+  nav.style.setProperty('--flow-school-lens-top',`${top.toFixed(2)}px`);
+  nav.style.setProperty('--flow-school-lens-height',`${activeRect.height.toFixed(2)}px`);
+  nav.style.setProperty('--flow-school-lens-width',`${activeRect.width.toFixed(2)}px`);
+  nav.style.setProperty('--flow-lens-x',`${x.toFixed(2)}px`);
+}
+function scheduleMobileLensBox(){
+  if(mobileLensFrame)return;
+  mobileLensFrame=requestAnimationFrame(()=>requestAnimationFrame(syncMobileLensBox));
+}
+function ensureMobileLensObservers(){
+  const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
+  if(!nav||nav===mobileLensObservedNav)return;
+  mobileLensResizeObserver?.disconnect();
+  mobileLensMutationObserver?.disconnect();
+  mobileLensObservedNav=nav;
+  if('ResizeObserver'in window){
+    mobileLensResizeObserver=new ResizeObserver(scheduleMobileLensBox);
+    mobileLensResizeObserver.observe(nav);
+  }
+  mobileLensMutationObserver=new MutationObserver(scheduleMobileLensBox);
+  mobileLensMutationObserver.observe(nav,{subtree:true,attributes:true,attributeFilter:['class','hidden']});
+  syncMobileLensBox();
+}
+function installMobileLensBoxContract(){
+  if(!document.querySelector('#flow-school-mobile-lens-box')){
+    const style=document.createElement('style');
+    style.id='flow-school-mobile-lens-box';
+    style.textContent=`
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav::before{
+    top:var(--flow-school-lens-top,6px)!important;
+    bottom:auto!important;
+    width:var(--flow-school-lens-width,calc((100% - 10px)/var(--flow-tab-count)))!important;
+    height:var(--flow-school-lens-height,calc(100% - 12px))!important;
+  }
+  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+    top:var(--flow-school-lens-top,6px)!important;
+    bottom:auto!important;
+    width:var(--flow-school-lens-width,calc((100% - 10px)/var(--flow-tab-count)))!important;
+    height:var(--flow-school-lens-height,calc(100% - 12px))!important;
+  }
+}`;
+    document.head.append(style);
+  }
+  ensureMobileLensObservers();
+  scheduleMobileLensBox();
+}
+installMobileLensBoxContract();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installMobileLensBoxContract,{once:true});
+document.addEventListener('click',event=>{if(event.target.closest?.('#bottomNav'))scheduleMobileLensBox()},{capture:false});
+window.addEventListener('flow:glass-mode-changed',scheduleMobileLensBox,{passive:true});
+window.addEventListener('resize',scheduleMobileLensBox,{passive:true});
+window.visualViewport?.addEventListener('resize',scheduleMobileLensBox,{passive:true});
+setTimeout(installMobileLensBoxContract,120);
+setTimeout(scheduleMobileLensBox,700);
+
 /* The v2 app bar adds its own border/padding inset. Optical Glass historically
  * assumed the moving lens began exactly five pixels from the nav border box,
  * which leaves the counter-positioned source copy a few pixels off once that
