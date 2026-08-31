@@ -67,6 +67,19 @@ async function settingsState(page){return page.evaluate(()=>{
   const style=panel?getComputedStyle(panel):null;
   return{position:style?.position||'',panel:box(panel),columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),fieldRects:fields.map(box),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
+async function navigationState(page){return page.evaluate(()=>{
+  const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const box=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};
+  const nav=document.querySelector('#bottomNav'),settings=document.querySelector('#mobileSettingsBtn'),panel=document.querySelector('#flowSchoolSettingsView');
+  const tabs=nav?[...nav.querySelectorAll(':scope>.mobile-tab')].filter(shown):[];
+  const ns=nav?getComputedStyle(nav):null,ps=panel?getComputedStyle(panel):null;
+  return{
+    visible:shown(nav),nav:box(nav),tabs:tabs.map(node=>({text:node.textContent.trim(),active:node.classList.contains('active'),rect:box(node)})),
+    settingsActive:Boolean(settings?.classList.contains('active')),settingsSemantic:Boolean(settings?.classList.contains('flow-mobile-settings')),
+    tabIndex:ns?.getPropertyValue('--flow-tab-index').trim()||'',pointer:ns?.pointerEvents||'',navZ:Number.parseInt(ns?.zIndex||'0',10)||0,
+    panel:box(panel),panelZ:Number.parseInt(ps?.zIndex||'0',10)||0,beforeDisplay:nav?getComputedStyle(nav,'::before').display:'',
+  };
+})}
 
 const browser=await chromium.launch({headless:true});
 const report={};
@@ -129,21 +142,37 @@ for(const testCase of [
   await page.locator('#mobileSettingsBtn:visible,#settingsBtn:visible').first().click();
   await page.waitForSelector('#flowSchoolSettingsView:not(.hidden)');
   await page.waitForSelector('#flowSchoolSettingsView .flow-settings-fields');
-  await page.waitForTimeout(40);
-  const settings=await settingsState(page);
+  await page.locator('#flowSchoolSettingsView').evaluate(node=>{node.scrollTop=node.scrollHeight});
+  await page.waitForTimeout(60);
+  const settings=await settingsState(page),settingsNav=await navigationState(page);
   if(portrait){
     const single=settings.columns.length>0&&settings.columns.every(value=>value.trim().split(/\s+/).filter(Boolean).length===1);
     const mobileSurface=settings.position==='fixed'&&settings.panel&&settings.panel.top>=60&&settings.panel.top<=68&&settings.panel.width>=950;
-    if(!single||!mobileSurface||settings.overflow>1)throw new Error(`${name}: Settings is not touch-first ${JSON.stringify(settings)}`);
+    const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=47);
+    const navAbovePanel=settingsNav.nav&&settingsNav.panel&&settingsNav.panel.bottom<=settingsNav.nav.top+2&&settingsNav.navZ>settingsNav.panelZ;
+    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navAbovePanel||settingsNav.pointer==='none'||!settingsNav.settingsActive||!settingsNav.settingsSemantic||settingsNav.tabIndex!=='3'||settingsNav.beforeDisplay!=='none'){
+      throw new Error(`${name}: Settings bottom-nav escape route is broken ${JSON.stringify({settings,settingsNav})}`);
+    }
   }else if(settings.position==='fixed'||settings.overflow>1){
     throw new Error(`${name}: Settings landscape composition regressed ${JSON.stringify(settings)}`);
   }
   await page.screenshot({path:`${OUT}/settings-${name}.png`,fullPage:true});
 
+  await page.locator('[data-view="today"]:visible').first().click();
+  await page.waitForSelector('#todayView:not(.hidden)');
+  await page.waitForFunction(()=>document.querySelector('#flowSchoolSettingsView')?.classList.contains('hidden'));
+  await page.waitForTimeout(50);
+  const returnedNav=await navigationState(page);
+  if(portrait){
+    if(!returnedNav.visible||returnedNav.tabs.length!==4||returnedNav.tabs[0]?.active!==true||returnedNav.settingsActive||returnedNav.tabIndex!=='0'){
+      throw new Error(`${name}: could not return from Settings through Today tab ${JSON.stringify(returnedNav)}`);
+    }
+  }
+
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
-  report[name]={shell,schedule,school,settings,pageErrors,consoleErrors};
+  report[name]={shell,schedule,school,settings,settingsNav,returnedNav,pageErrors,consoleErrors};
   await context.close();
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface',landscape:'desktop-preserved'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface-with-bottom-nav-return',landscape:'desktop-preserved'},null,2));
