@@ -40,7 +40,7 @@ function ensureRefractionObserver(){
   if(!scene||scene===observedScene)return;
   refractionObserver?.disconnect();observedScene=scene;
   refractionObserver=new MutationObserver(()=>syncRefractionCopy());
-  refractionObserver.observe(scene,{childList:true});
+  refractionObserver.observe(scene,{childList:true,subtree:true});
   syncRefractionCopy();
 }
 function scheduleRefractionSync(){
@@ -48,6 +48,8 @@ function scheduleRefractionSync(){
   refractionSyncFrame=requestAnimationFrame(()=>requestAnimationFrame(()=>{ensureRefractionObserver();syncRefractionCopy()}));
 }
 function refractionBurst(){
+  ensureRefractionObserver();
+  syncRefractionCopy();
   scheduleRefractionSync();
   setTimeout(scheduleRefractionSync,40);
   setTimeout(scheduleRefractionSync,120);
