@@ -24,6 +24,7 @@ jobs:
           node --check tests/school-home-cleanup-audit.mjs
           node --check tests/school-wide-portrait-destinations-audit.mjs
           node --check tests/school-mobile-lens-geometry-audit.mjs
+          node --check tests/school-transit-retirement-audit.mjs
           node --check cloudflare-worker.mjs
           grep -q "school-surface-cleanup.js" school-metrics.js
           grep -q "school-surface-cleanup.js" sw.js
@@ -41,6 +42,7 @@ jobs:
           grep -q "FLOW_RELEASE='school-shell-v15-20260831'" cloudflare-worker.mjs
           grep -q "flow-school-production-critical" cloudflare-worker.mjs
           grep -q "flow-school-cache-recovery" cloudflare-worker.mjs
+          node tests/school-transit-retirement-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
