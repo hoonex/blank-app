@@ -286,6 +286,9 @@ html[data-flow-school-ui="v2"] .date-controller button{
     backdrop-filter:blur(30px) saturate(1.24)!important;
     -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
   }
+  html[data-flow-school-ui="v2"] #mobileSettingsBtn{
+    display:block!important;
+  }
   html[data-flow-school-ui="v2"] .mobile-tab{
     min-height:46px!important;
     border-radius:15px!important;
