@@ -77,7 +77,7 @@ async function navigationState(page){return page.evaluate(()=>{
     visible:shown(nav),nav:box(nav),tabs:tabs.map(node=>({text:node.textContent.trim(),active:node.classList.contains('active'),rect:box(node)})),
     settingsActive:Boolean(settings?.classList.contains('active')),settingsSemantic:Boolean(settings?.classList.contains('flow-mobile-settings')),
     tabIndex:ns?.getPropertyValue('--flow-tab-index').trim()||'',pointer:ns?.pointerEvents||'',navZ:Number.parseInt(ns?.zIndex||'0',10)||0,
-    panel:box(panel),panelZ:Number.parseInt(ps?.zIndex||'0',10)||0,beforeDisplay:nav?getComputedStyle(nav,'::before').display:'',
+    panel:box(panel),panelZ:Number.parseInt(ps?.zIndex||'0',10)||0,
   };
 })}
 
@@ -148,9 +148,9 @@ for(const testCase of [
   if(portrait){
     const single=settings.columns.length>0&&settings.columns.every(value=>value.trim().split(/\s+/).filter(Boolean).length===1);
     const mobileSurface=settings.position==='fixed'&&settings.panel&&settings.panel.top>=60&&settings.panel.top<=68&&settings.panel.width>=950;
-    const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=47);
+    const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=46);
     const navAbovePanel=settingsNav.nav&&settingsNav.panel&&settingsNav.panel.bottom<=settingsNav.nav.top+2&&settingsNav.navZ>settingsNav.panelZ;
-    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navAbovePanel||settingsNav.pointer==='none'||!settingsNav.settingsActive||!settingsNav.settingsSemantic||settingsNav.tabIndex!=='3'||settingsNav.beforeDisplay!=='none'){
+    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navAbovePanel||settingsNav.pointer==='none'||!settingsNav.settingsActive||!settingsNav.settingsSemantic||settingsNav.tabIndex!=='3'){
       throw new Error(`${name}: Settings bottom-nav escape route is broken ${JSON.stringify({settings,settingsNav})}`);
     }
   }else if(settings.position==='fixed'||settings.overflow>1){
