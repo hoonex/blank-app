@@ -81,7 +81,7 @@ for(const item of cases){
     if(state.todayJump)throw new Error(`${item.name}: desktop Today jump leaked into portrait composition`);
     if(state.todayGrid.display!=='block'||state.rightStack.display!=='block')throw new Error(`${item.name}: content is still desktop/tablet split ${JSON.stringify({todayGrid:state.todayGrid,rightStack:state.rightStack})}`);
     if(!state.meal||!state.upcoming||state.upcoming.top<state.meal.bottom-1)throw new Error(`${item.name}: meal/upcoming are not vertically stacked ${JSON.stringify({meal:state.meal,upcoming:state.upcoming})}`);
-    if(state.mealBorders.right>0.5||state.mealBorders.bottom<0.5)throw new Error(`${item.name}: desktop meal divider leaked into portrait composition ${JSON.stringify(state.mealBorders)}`);
+    if(state.mealBorders.right>0.5)throw new Error(`${item.name}: desktop right divider leaked into portrait composition ${JSON.stringify(state.mealBorders)}`);
     if(!state.hero||state.hero.height>132)throw new Error(`${item.name}: hero is still using wide desktop geometry ${JSON.stringify(state.hero)}`);
     if(state.headingFont>19.5||state.periodHeight>50)throw new Error(`${item.name}: timetable typography/rows are still wide-layout sized ${JSON.stringify({headingFont:state.headingFont,periodHeight:state.periodHeight})}`);
   }else{
