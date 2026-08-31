@@ -19,6 +19,7 @@ async function bootSchoolSurface(){
     }catch(error){console.warn('[Flow] Transit lab modules failed to load',error)}
   }
   await import('./school-surface-cleanup.js');
+  await import('./school-uiux-v2.js');
 }
 
 /* Keep the entry module non-blocking. Production skips Transit entirely; the
