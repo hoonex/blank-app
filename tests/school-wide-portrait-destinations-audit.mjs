@@ -61,8 +61,11 @@ async function schoolState(page){return page.evaluate(()=>{
 })}
 async function settingsState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
-  const fields=[...document.querySelectorAll('#flowSchoolSettingsView .setting-fields')].filter(shown);
-  return{columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+  const box=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}:null};
+  const panel=document.querySelector('#flowSchoolSettingsView');
+  const fields=[...document.querySelectorAll('#flowSchoolSettingsView .flow-settings-fields')].filter(shown);
+  const style=panel?getComputedStyle(panel):null;
+  return{position:style?.position||'',panel:box(panel),columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),fieldRects:fields.map(box),overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
 
 const browser=await chromium.launch({headless:true});
@@ -125,14 +128,15 @@ for(const testCase of [
 
   await page.locator('#mobileSettingsBtn:visible,#settingsBtn:visible').first().click();
   await page.waitForSelector('#flowSchoolSettingsView:not(.hidden)');
-  await page.waitForFunction(()=>document.querySelector('#flowSchoolSettingsView .setting-fields'));
+  await page.waitForSelector('#flowSchoolSettingsView .flow-settings-fields');
   await page.waitForTimeout(40);
   const settings=await settingsState(page);
   if(portrait){
     const single=settings.columns.length>0&&settings.columns.every(value=>value.trim().split(/\s+/).filter(Boolean).length===1);
-    if(!single||settings.overflow>1)throw new Error(`${name}: Settings fields are not touch-first ${JSON.stringify(settings)}`);
-  }else if(settings.overflow>1){
-    throw new Error(`${name}: Settings landscape overflow ${JSON.stringify(settings)}`);
+    const mobileSurface=settings.position==='fixed'&&settings.panel&&settings.panel.top>=60&&settings.panel.top<=68&&settings.panel.width>=950;
+    if(!single||!mobileSurface||settings.overflow>1)throw new Error(`${name}: Settings is not touch-first ${JSON.stringify(settings)}`);
+  }else if(settings.position==='fixed'||settings.overflow>1){
+    throw new Error(`${name}: Settings landscape composition regressed ${JSON.stringify(settings)}`);
   }
   await page.screenshot({path:`${OUT}/settings-${name}.png`,fullPage:true});
 
@@ -142,4 +146,4 @@ for(const testCase of [
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',landscape:'desktop-preserved'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface',landscape:'desktop-preserved'},null,2));
