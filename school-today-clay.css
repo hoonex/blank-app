@@ -1,6 +1,6 @@
 /* Flow School — Today cycle 2
  * Borderless top composition with restrained soft-clay interaction.
- * Scope is deliberately limited to the Today masthead/status area.
+ * Scope is deliberately limited to the compact Today masthead/status area.
  */
 html[data-flow-school-ui="v2"]{
   --flow-today-clay-surface:color-mix(in srgb,var(--surface) 93%,#e8eef8);
@@ -47,24 +47,16 @@ html[data-theme="dark"][data-flow-school-ui="v2"]{
   }
 }
 
-/* Never draw an outline around this cycle's top-level surfaces. */
-html[data-flow-school-ui="v2"] #todayView .school-hero,
-html[data-flow-school-ui="v2"] #todayView .date-controller,
-html[data-flow-school-ui="v2"] #todayView .date-controller button,
-html[data-flow-school-ui="v2"] body #todayView .status-grid,
-html[data-flow-school-ui="v2"] body #todayView .status-card{
-  border:0!important;
-  outline:0;
-}
-
 @media(max-width:900px){
-  /* The top bar owns school identity on touch layouts; don't repeat it in Hero. */
-  html[data-flow-school-ui="v2"] .mobile-school-button{
+  /* The top bar owns school identity on touch layouts; don't repeat it in Hero.
+   * Match the shell selector specificity so the legacy 1px line cannot win. */
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{
     border:0!important;
+    outline:0!important;
     background:var(--flow-today-clay-surface)!important;
     box-shadow:var(--flow-today-clay-shadow-small)!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-school-button:active{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button:active{
     box-shadow:var(--flow-today-clay-pressed)!important;
     transform:translateY(1px) scale(.99);
   }
@@ -72,6 +64,7 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
   html[data-flow-school-ui="v2"] #todayView .school-hero{
     min-height:112px!important;
     border:0!important;
+    outline:0!important;
     border-radius:25px!important;
     overflow:hidden;
     background:linear-gradient(145deg,#607fe2 0%,#4767c2 54%,#3d57a7 100%)!important;
@@ -127,6 +120,7 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
     padding:5px!important;
     gap:5px;
     border:0!important;
+    outline:0!important;
     border-radius:19px!important;
     background:rgba(248,250,255,.94)!important;
     box-shadow:
@@ -149,6 +143,7 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
     height:42px!important;
     flex:0 0 42px;
     border:0!important;
+    outline:0!important;
     border-radius:15px!important;
     background:var(--flow-today-clay-surface)!important;
     color:var(--muted)!important;
@@ -184,6 +179,7 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
     padding:0!important;
     overflow:visible!important;
     border:0!important;
+    outline:0!important;
     border-radius:0!important;
     background:transparent!important;
     box-shadow:none!important;
@@ -194,6 +190,7 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
     min-height:80px!important;
     padding:12px 13px!important;
     border:0!important;
+    outline:0!important;
     border-radius:19px!important;
     background:var(--flow-today-clay-surface)!important;
     box-shadow:var(--flow-today-clay-shadow)!important;
@@ -227,7 +224,8 @@ html[data-flow-school-ui="v2"] body #todayView .status-card{
     min-height:50px!important;
     margin-bottom:4px!important;
   }
-  html[data-flow-school-ui="v2"] .mobile-school-button{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{
+    border:0!important;
     border-radius:15px!important;
     padding:7px 10px!important;
   }
