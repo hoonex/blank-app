@@ -14,25 +14,29 @@ attachStyle('/school-uiux-v2.css?v=20260831-1','data-flow-school-ui-v2');
 attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system');
 
 /* Week is an inline Today mode now, so the real School destinations are Today,
- * Schedule, School, and the dedicated Settings surface. Keep their root motion
- * aligned with the shared native layer instead of leaving only child content
- * settle animation. Reduced-motion remains authoritative. */
+ * Schedule, School, and the dedicated Settings surface. Arm root transition
+ * motion on destination interaction rather than at bootstrap: Optical Glass
+ * must sample a settled Today surface before any view transform can move it.
+ * Reduced-motion remains authoritative. */
 function installDestinationMotionContract(){
   if(document.querySelector('#flow-school-v2-destination-motion'))return;
   const style=document.createElement('style');
   style.id='flow-school-v2-destination-motion';
   style.textContent=`
-html[data-flow-school-ui="v2"] :is(#todayView,#scheduleView,#schoolView,#flowSchoolSettingsView):not(.hidden){
+html[data-flow-school-ui="v2"][data-flow-school-destination-motion="armed"] :is(#todayView,#scheduleView,#schoolView,#flowSchoolSettingsView):not(.hidden){
   animation:flow-view-enter var(--flow-motion-medium,240ms) var(--flow-motion-spring,cubic-bezier(.16,1,.3,1)) both!important;
   transform-origin:50% 18%;
 }
 @media(prefers-reduced-motion:reduce){
-  html[data-flow-school-ui="v2"] :is(#todayView,#scheduleView,#schoolView,#flowSchoolSettingsView):not(.hidden){
+  html[data-flow-school-ui="v2"][data-flow-school-destination-motion="armed"] :is(#todayView,#scheduleView,#schoolView,#flowSchoolSettingsView):not(.hidden){
     animation:none!important;
     transform:none!important;
   }
 }`;
   document.head.append(style);
+  document.addEventListener('click',event=>{
+    if(event.target.closest?.('#bottomNav > .mobile-tab,.side-nav > .nav-item'))root.dataset.flowSchoolDestinationMotion='armed';
+  },{capture:true});
 }
 installDestinationMotionContract();
 
