@@ -23,6 +23,7 @@ jobs:
           node --check school-surface-cleanup.js
           node --check tests/school-home-cleanup-audit.mjs
           node --check tests/school-wide-portrait-destinations-audit.mjs
+          node --check tests/school-mobile-lens-geometry-audit.mjs
           node --check cloudflare-worker.mjs
           grep -q "school-surface-cleanup.js" school-metrics.js
           grep -q "school-surface-cleanup.js" sw.js
@@ -54,6 +55,11 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/school-home-cleanup-audit.mjs
+      - name: Verify compact School active lens follows its tab
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-home-cleanup-audit/mobile-lens
+        run: node tests/school-mobile-lens-geometry-audit.mjs
       - name: Verify all School destinations on wide portrait tablets
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
