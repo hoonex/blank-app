@@ -143,13 +143,15 @@ html[data-flow-school-ui="v2"] .date-controller button{
     min-height:56px!important;
     padding:4px!important;
     bottom:max(8px,env(safe-area-inset-bottom))!important;
+    isolation:isolate;
+    overflow:visible!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) .mobile-bottom-nav{
     border-color:color-mix(in srgb,var(--text) 7%,transparent)!important;
-    background:color-mix(in srgb,var(--school-v2-panel) 72%,transparent)!important;
+    background:var(--school-v2-panel)!important;
     box-shadow:0 10px 30px rgba(29,40,58,.11)!important;
     backdrop-filter:blur(30px) saturate(1.24)!important;
     -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
-    isolation:isolate;
-    overflow:visible!important;
   }
   html[data-flow-school-ui="v2"] .mobile-bottom-nav::before{
     content:"";
@@ -258,6 +260,8 @@ html[data-flow-school-ui="v2"] .date-controller button{
     height:auto!important;
     margin:0 -2px 8px!important;
     padding:9px 4px!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-topbar{
     background:var(--school-v2-bg)!important;
     border:0!important;
     box-shadow:none!important;
@@ -280,9 +284,11 @@ html[data-flow-school-ui="v2"] .date-controller button{
     width:auto!important;
     min-height:56px!important;
     padding:4px!important;
-    border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
     border-radius:22px!important;
-    background:color-mix(in srgb,var(--school-v2-panel) 72%,transparent)!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) #dashboard:not(.hidden) .mobile-bottom-nav{
+    border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
+    background:var(--school-v2-panel)!important;
     box-shadow:0 10px 30px rgba(29,40,58,.11)!important;
     backdrop-filter:blur(30px) saturate(1.24)!important;
     -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
