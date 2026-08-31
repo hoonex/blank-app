@@ -31,6 +31,8 @@ async function composition(page){
     const meal=style('#todayView .meal-card');
     const heading=style('#todayView .timetable-card .card-heading h2');
     const period=style('#todayView .period-button');
+    const mobileSchoolSpan=style('#mobileSchoolBtn span');
+    const mobileSchoolSmall=style('#mobileSchoolBtn small');
     return{
       shell:{
         desktopSidebar:shown(document.querySelector('.desktop-sidebar')),
@@ -40,6 +42,13 @@ async function composition(page){
       bottom:[...document.querySelectorAll('#bottomNav>*')].filter(shown).map(node=>node.textContent.trim()),
       todayJump:shown(document.querySelector('.today-jump')),
       hero:rect(document.querySelector('.school-hero')),
+      dateController:rect(document.querySelector('.date-controller')),
+      mobileSchool:{
+        spanDisplay:mobileSchoolSpan?.display||'',
+        smallDisplay:mobileSchoolSmall?.display||'',
+        span:rect(document.querySelector('#mobileSchoolBtn span')),
+        small:rect(document.querySelector('#mobileSchoolBtn small')),
+      },
       todayGrid:{display:grid?.display||'',columns:grid?.gridTemplateColumns||''},
       rightStack:{display:right?.display||'',columns:right?.gridTemplateColumns||'',rows:right?.gridTemplateRows||''},
       timetable:rect(document.querySelector('#todayView .timetable-card')),
@@ -83,6 +92,8 @@ for(const item of cases){
     if(!state.meal||!state.upcoming||state.upcoming.top<state.meal.bottom-1)throw new Error(`${item.name}: meal/upcoming are not vertically stacked ${JSON.stringify({meal:state.meal,upcoming:state.upcoming})}`);
     if(state.mealBorders.right>0.5)throw new Error(`${item.name}: desktop right divider leaked into portrait composition ${JSON.stringify(state.mealBorders)}`);
     if(!state.hero||state.hero.height>132)throw new Error(`${item.name}: hero is still using wide desktop geometry ${JSON.stringify(state.hero)}`);
+    if(!state.dateController||state.dateController.width<state.hero.width-40||state.dateController.top>state.hero.top+28)throw new Error(`${item.name}: date controller is not using mobile full-width hero geometry ${JSON.stringify({hero:state.hero,dateController:state.dateController})}`);
+    if(state.mobileSchool.spanDisplay!=='block'||state.mobileSchool.smallDisplay!=='block'||!state.mobileSchool.span||!state.mobileSchool.small||state.mobileSchool.small.top<state.mobileSchool.span.bottom-1)throw new Error(`${item.name}: mobile school identity is not stacked ${JSON.stringify(state.mobileSchool)}`);
     if(state.headingFont>19.5||state.periodHeight>50)throw new Error(`${item.name}: timetable typography/rows are still wide-layout sized ${JSON.stringify({headingFont:state.headingFont,periodHeight:state.periodHeight})}`);
   }else{
     if(!state.shell.desktopSidebar||state.shell.mobileTopbar||state.shell.bottomNav)throw new Error(`${item.name}: landscape desktop shell regressed ${JSON.stringify(state.shell)}`);
