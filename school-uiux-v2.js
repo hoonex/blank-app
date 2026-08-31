@@ -42,11 +42,10 @@ function installDestinationMotionContract(){
 }
 installDestinationMotionContract();
 
-/* School has one moving glass lens, but compact Chrome must not derive its
- * vertical box from an absolutely-positioned pseudo element's top/bottom pair.
- * The real tab is the hit target and therefore the geometry source of truth.
- * Binding the lens to that rendered box keeps Standard and Optical aligned on
- * phones, portrait tablets, browser UI resizes, and safe-area changes. */
+/* The rendered School tab is the hit target and the complete lens geometry
+ * source of truth. Compact Chrome, Optical refraction, safe-area changes and
+ * delayed layout work must not independently derive either axis from pseudo
+ * element defaults. Keep the moving lens bound to the active tab's full box. */
 let mobileLensFrame=0,mobileLensResizeObserver=null,mobileLensMutationObserver=null,mobileLensObservedNav=null;
 function syncMobileLensBox(){
   mobileLensFrame=0;
@@ -56,9 +55,16 @@ function syncMobileLensBox(){
   if(!active||getComputedStyle(active).display==='none')return;
   const navRect=nav.getBoundingClientRect(),activeRect=active.getBoundingClientRect();
   if(!navRect.width||!navRect.height||!activeRect.width||!activeRect.height)return;
+  const pseudo=getComputedStyle(nav,'::before');
+  const pseudoLeft=Number.parseFloat(pseudo.left);
+  const baseLeft=Number.isFinite(pseudoLeft)?pseudoLeft:5;
   const top=Math.max(0,activeRect.top-navRect.top);
+  const left=Math.max(0,activeRect.left-navRect.left);
+  const x=left-baseLeft;
   nav.style.setProperty('--flow-school-lens-top',`${top.toFixed(2)}px`);
   nav.style.setProperty('--flow-school-lens-height',`${activeRect.height.toFixed(2)}px`);
+  nav.style.setProperty('--flow-school-lens-width',`${activeRect.width.toFixed(2)}px`);
+  nav.style.setProperty('--flow-lens-x',`${x.toFixed(2)}px`);
 }
 function scheduleMobileLensBox(){
   if(mobileLensFrame)return;
@@ -87,11 +93,13 @@ function installMobileLensBoxContract(){
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav::before{
     top:var(--flow-school-lens-top,6px)!important;
     bottom:auto!important;
+    width:var(--flow-school-lens-width,calc((100% - 10px)/var(--flow-tab-count)))!important;
     height:var(--flow-school-lens-height,calc(100% - 12px))!important;
   }
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
     top:var(--flow-school-lens-top,6px)!important;
     bottom:auto!important;
+    width:var(--flow-school-lens-width,calc((100% - 10px)/var(--flow-tab-count)))!important;
     height:var(--flow-school-lens-height,calc(100% - 12px))!important;
   }
 }`;
