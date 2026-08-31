@@ -19,6 +19,44 @@ html[data-flow-school-ui="v2"] .date-controller button{
   }
 }
 
+/* Visual reinspection corrections: keep the workspace dense and app-like instead of
+   letting the timetable stretch into empty dashboard space. */
+@media(min-width:901px){
+  html[data-flow-school-ui="v2"] .school-hero,
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:158px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    padding-top:20px!important;
+    padding-bottom:20px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+    padding-top:21px!important;
+    padding-bottom:22px!important;
+  }
+  html[data-flow-school-ui="v2"] .card-heading{
+    margin-bottom:14px!important;
+  }
+  html[data-flow-school-ui="v2"] .day-strip{
+    margin-bottom:11px!important;
+  }
+  html[data-flow-school-ui="v2"] .day-chip{
+    min-height:44px!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable{
+    gap:2px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-button{
+    min-height:49px!important;
+    padding-top:5px!important;
+    padding-bottom:5px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-no{
+    width:34px!important;
+    height:34px!important;
+  }
+}
+
 @media(min-width:901px) and (max-width:1120px){
   html[data-flow-school-ui="v2"] .today-grid{
     display:block!important;
@@ -48,6 +86,102 @@ html[data-flow-school-ui="v2"] .date-controller button{
   html[data-flow-school-ui="v2"] .today-grid .compact-heading .text-button{
     white-space:nowrap!important;
     flex:0 0 auto!important;
+  }
+}
+
+/* Portrait tab bar deliberately behaves like a translucent system material. Content may
+   scroll underneath it, but the first fold should still leave every timetable row legible. */
+@media(max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] .school-hero,
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:110px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    padding-top:12px!important;
+    padding-bottom:13px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    margin-top:-7px!important;
+    margin-bottom:9px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card{
+    min-height:70px!important;
+    padding:9px 10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card strong{
+    margin-top:5px!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .progress-track{
+    margin-top:5px!important;
+  }
+  html[data-flow-school-ui="v2"] .today-grid>.timetable-card{
+    padding-top:14px!important;
+    padding-bottom:20px!important;
+  }
+  html[data-flow-school-ui="v2"] .card-heading{
+    margin-bottom:9px!important;
+  }
+  html[data-flow-school-ui="v2"] .day-strip{
+    margin-bottom:8px!important;
+  }
+  html[data-flow-school-ui="v2"] .day-chip{
+    min-height:42px!important;
+  }
+  html[data-flow-school-ui="v2"] .timetable{
+    gap:2px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-button{
+    min-height:47px!important;
+    padding-top:5px!important;
+    padding-bottom:5px!important;
+  }
+  html[data-flow-school-ui="v2"] .period-no{
+    width:32px!important;
+    height:32px!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-bottom-nav{
+    min-height:56px!important;
+    padding:4px!important;
+    bottom:max(8px,env(safe-area-inset-bottom))!important;
+    border-color:color-mix(in srgb,var(--text) 7%,transparent)!important;
+    background:color-mix(in srgb,var(--school-v2-panel) 72%,transparent)!important;
+    box-shadow:0 10px 30px rgba(29,40,58,.11)!important;
+    backdrop-filter:blur(30px) saturate(1.24)!important;
+    -webkit-backdrop-filter:blur(30px) saturate(1.24)!important;
+    isolation:isolate;
+    overflow:visible!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-bottom-nav::before{
+    content:"";
+    position:absolute;
+    left:10px;
+    right:10px;
+    top:-14px;
+    height:14px;
+    border-radius:18px 18px 0 0;
+    background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--school-v2-panel) 22%,transparent));
+    pointer-events:none;
+    z-index:-1;
+  }
+  html[data-flow-school-ui="v2"] .mobile-tab{
+    min-height:46px!important;
+    border-radius:15px!important;
+  }
+  html[data-flow-school-ui="v2"] .mobile-tab.active{
+    background:color-mix(in srgb,var(--surface) 58%,transparent)!important;
+  }
+}
+
+/* Tablet portrait has room for a slightly taller hero; keep the date controller and
+   school identity from competing for the same vertical band. */
+@media(min-width:521px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] .school-hero,
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    min-height:124px!important;
+  }
+  html[data-flow-school-ui="v2"] .school-hero-content{
+    padding-top:15px!important;
+    padding-bottom:16px!important;
   }
 }
 
