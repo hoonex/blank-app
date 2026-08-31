@@ -47,6 +47,60 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
   document.head.append(style);
 }
 
+/* The shell breakpoint already treats 901–1024px portrait tablets as touch-first.
+ * Extend that contract through the topbar and every secondary School destination so
+ * a Galaxy-style portrait viewport cannot fall back to desktop internals after leaving Today. */
+if(!document.querySelector('#flow-school-wide-portrait-destinations')){
+  const style=document.createElement('style');
+  style.id='flow-school-wide-portrait-destinations';
+  style.textContent=`
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body{overflow-x:hidden!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy strong{font-size:.88rem!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy small{display:none!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{text-align:right!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span,
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span{font-size:.65rem!important;font-weight:800!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.54rem!important}
+
+  html[data-flow-school-ui="v2"] .view-header{
+    min-height:104px!important;
+    margin:0 0 10px!important;
+    padding:18px 16px!important;
+    border-radius:22px!important;
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:13px!important;
+  }
+  html[data-flow-school-ui="v2"] .view-header h1{font-size:1.72rem!important}
+  html[data-flow-school-ui="v2"] .view-header p{max-width:35ch!important;font-size:.62rem!important}
+  html[data-flow-school-ui="v2"] .week-controls{width:100%!important}
+  html[data-flow-school-ui="v2"] .week-controls .neo-button{flex:1 1 0!important}
+  html[data-flow-school-ui="v2"] .week-table-wrap{margin:0 -4px!important}
+
+  html[data-flow-school-ui="v2"] .schedule-layout{display:block!important;grid-template-columns:none!important}
+  html[data-flow-school-ui="v2"] .schedule-layout>.content-card{border-radius:22px!important}
+  html[data-flow-school-ui="v2"] .calendar-card{margin-bottom:10px!important}
+  html[data-flow-school-ui="v2"] .calendar-grid{gap:1px!important}
+  html[data-flow-school-ui="v2"] .calendar-day{min-height:66px!important;padding:6px!important;border-radius:9px!important}
+  html[data-flow-school-ui="v2"] .calendar-event-label{display:none!important}
+  html[data-flow-school-ui="v2"] .schedule-row{padding:10px 11px!important}
+
+  html[data-flow-school-ui="v2"] .profile-hero{min-height:205px!important;border-radius:22px!important}
+  html[data-flow-school-ui="v2"] .profile-content{min-height:205px!important;padding:17px!important}
+  html[data-flow-school-ui="v2"] .profile-content h2{font-size:1.85rem!important}
+  html[data-flow-school-ui="v2"] .school-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  html[data-flow-school-ui="v2"] .school-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  html[data-flow-school-ui="v2"] .action-link{min-height:44px!important}
+  html[data-flow-school-ui="v2"] .source-note{padding-bottom:8px!important}
+
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .setting-fields,
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .meal-setting-fields{grid-template-columns:minmax(0,1fr)!important}
+}`;
+  document.head.append(style);
+}
+
 if(!document.querySelector('link[data-flow-school-settings-wide]')){
   const link=document.createElement('link');
   link.rel='stylesheet';
