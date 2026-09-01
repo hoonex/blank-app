@@ -78,7 +78,7 @@ function clay(name,node){
   if(!node.boxShadow||node.boxShadow==='none'||!node.boxShadow.includes('inset'))throw new Error(`${name}: soft-clay depth missing ${JSON.stringify(node)}`);
 }
 function visible(name,node){if(!node||node.display==='none'||node.visibility==='hidden'||node.opacity<.95||node.rect.height<1)throw new Error(`${name}: expected visible element ${JSON.stringify(node)}`)}
-function assertState(name,state){
+function assertState(name,state,expectedDays){
   if(!state.claySheet)throw new Error(`${name}: Today clay stylesheet did not load`);
   if(state.topbarMode!=='ready')throw new Error(`${name}: compact Today topbar contract did not activate ${JSON.stringify(state.topbarMode)}`);
   visible(`${name}/topbar`,state.topbar);visible(`${name}/mobileSchool`,state.mobileSchool);visible(`${name}/dateDock`,state.dateDock);
@@ -90,7 +90,7 @@ function assertState(name,state){
   });
   if(!state.mobileSchool.text.includes('정동고등학교')||!state.mobileSchool.text.includes('2학년 6반'))throw new Error(`${name}: compact School identity missing ${JSON.stringify(state.mobileSchool)}`);
   if(state.hero.rect.height>1.5)throw new Error(`${name}: oversized School Hero remains in compact first fold ${JSON.stringify(state.hero.rect)}`);
-  if(state.dateDays.length!==5||state.dateDays.filter(day=>day.active==='true').length!==1)throw new Error(`${name}: five-day magnetic rail contract missing ${JSON.stringify(state.dateDays)}`);
+  if(state.dateDays.length!==expectedDays||state.dateDays.filter(day=>day.active==='true').length!==1)throw new Error(`${name}: responsive magnetic rail contract missing ${JSON.stringify({expectedDays,dateDays:state.dateDays})}`);
   if(state.dateDock.rect.left<state.topbar.rect.left-1||state.dateDock.rect.right>state.topbar.rect.right+1)throw new Error(`${name}: date dock escaped topbar ${JSON.stringify({topbar:state.topbar.rect,date:state.dateDock.rect})}`);
   if(state.mobileSchool.rect.left<state.dateDock.rect.right-1)throw new Error(`${name}: date dock overlaps School selector ${JSON.stringify({date:state.dateDock.rect,school:state.mobileSchool.rect})}`);
   if(!state.statusCards.length)throw new Error(`${name}: no visible status cards`);
@@ -108,6 +108,7 @@ function stableGeometry(name,a,b){
 const browser=await chromium.launch({headless:true});
 const report={};
 for(const c of cases){
+  const expectedDays=c.width<=520?3:5;
   for(const mode of ['standard','optical']){
     const name=`${c.name}-${mode}`;
     const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
@@ -117,15 +118,15 @@ for(const c of cases){
     await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');
     await page.waitForFunction(()=>document.documentElement.dataset.flowTodayTopbar==='ready'&&document.querySelector('#flowTodayDateDock'));
     await page.waitForTimeout(400);
-    const initial=await snapshot(page);assertState(`${name}/initial`,initial);
+    const initial=await snapshot(page);assertState(`${name}/initial`,initial,expectedDays);
     await page.screenshot({path:`${OUT}/${name}-initial.png`,fullPage:false});
     await page.waitForTimeout(5000);
-    const delayed=await snapshot(page);assertState(`${name}/5s`,delayed);stableGeometry(name,initial,delayed);
+    const delayed=await snapshot(page);assertState(`${name}/5s`,delayed,expectedDays);stableGeometry(name,initial,delayed);
     await page.screenshot({path:`${OUT}/${name}-5s.png`,fullPage:false});
-    report[name]={initial,delayed};
+    report[name]={expectedDays,initial,delayed};
     await context.close();
   }
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps Flow + magnetic date rail + compact School identity stable while removing the oversized School hero'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps Flow + responsive magnetic date rail + compact School identity stable while removing the oversized School hero'},null,2));
