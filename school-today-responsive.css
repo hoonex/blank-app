@@ -44,6 +44,36 @@
 }
 
 @media (min-width: 901px) and (max-width: 1024px) and (orientation: landscape){
+  html[data-flow-school-ui="v2"] body #todayView .school-hero{
+    min-height:64px!important;
+    height:64px!important;
+    margin:0 0 10px!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .school-hero :is(.school-hero-image,.school-hero-shade,.school-badge,.school-hero-copy,.today-jump){
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .school-hero-content{
+    min-height:64px!important;
+    height:64px!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    background:transparent!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .hero-right{
+    width:auto!important;
+    margin:0 auto!important;
+    align-items:center!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    margin:10px 0 14px!important;
+  }
   html[data-flow-school-ui="v2"] #todayView .today-grid{
     grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr)!important;
     gap:14px!important;
