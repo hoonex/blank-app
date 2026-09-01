@@ -58,6 +58,13 @@
     border-radius:11px!important;
   }
 
+  /* Compact landscape shares the 36px period badge used by touch portrait.
+     Reset the responsive layer's 38px minimum so width and height cannot split. */
+  html[data-flow-school-ui="v2"] body #todayView .period-no{
+    min-width:36px!important;
+    min-height:36px!important;
+  }
+
   /* Today owns a large magnetic date deck. Keep the established landscape
      destination bar in the first header row and compress the deck into a second
      row underneath it, so neither surface covers the other at 844x390. */
