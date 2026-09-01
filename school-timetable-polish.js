@@ -63,9 +63,13 @@ html[data-flow-school-ui="v2"] body #todayView .meal-card #allergyBtn.flow-schoo
   padding-inline:12px!important;
   background:color-mix(in srgb,var(--surface) 88%,var(--surface-2))!important;
 }
-/* Period identity should read as a number badge, not another miniature card. */
+/* Period identity should read as a number dot, not another miniature card.
+ * Clip the painted surface itself so later compact-radius rules cannot make it read squircle. */
 html[data-flow-school-ui="v2"] body #todayView .period-no{
-  border-radius:50%!important;
+  border-radius:999px!important;
+  clip-path:circle(50% at 50% 50%)!important;
+  -webkit-clip-path:circle(50% at 50% 50%)!important;
+  overflow:hidden!important;
 }
 .inline-week-timetable{gap:11px!important}
 .inline-week-toolbar{padding-top:1px!important}
