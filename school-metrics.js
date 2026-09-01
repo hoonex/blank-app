@@ -111,8 +111,8 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     padding-bottom:34px!important;
   }
 }
-@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body #todayView .timetable .period-no{min-width:36px!important}
+@media(min-width:700px) and (max-width:900px){
+  html[data-flow-school-ui="v2"] body #todayView .timetable .period-no{width:36px!important;height:36px!important;min-width:36px!important}
 }`;
   document.head.append(style);
 }
