@@ -9,7 +9,7 @@ html[data-flow-school-ui="v2"] #todayView{
   max-width:1180px;
   margin-inline:auto;
 }
-html[data-flow-school-ui="v2"] #todayView .status-grid{
+html[data-flow-school-ui="v2"] body #todayView .status-grid{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:12px!important;
@@ -21,7 +21,7 @@ html[data-flow-school-ui="v2"] #todayView .status-grid{
   box-shadow:none!important;
   overflow:visible!important;
 }
-html[data-flow-school-ui="v2"] #todayView .status-card:not(.flow-home-noise){
+html[data-flow-school-ui="v2"] body #todayView .status-card:not(.flow-home-noise){
   min-width:0!important;
   min-height:102px!important;
   padding:16px 17px!important;
@@ -31,7 +31,7 @@ html[data-flow-school-ui="v2"] #todayView .status-card:not(.flow-home-noise){
   background:color-mix(in srgb,var(--surface) 96%,var(--surface-2))!important;
   box-shadow:0 10px 28px rgba(43,57,78,.065),inset 0 1px 0 rgba(255,255,255,.76)!important;
 }
-html[data-flow-school-ui="v2"] #todayView .status-card+.status-card:not(.flow-home-noise){border-left:0!important}
+html[data-flow-school-ui="v2"] body #todayView .status-card+.status-card:not(.flow-home-noise){border-left:0!important}
 html[data-flow-school-ui="v2"] #todayView .status-card strong{font-size:.94rem!important;letter-spacing:-.035em!important}
 html[data-flow-school-ui="v2"] #todayView .status-card p{font-size:.58rem!important;line-height:1.42!important}
 html[data-flow-school-ui="v2"] #todayView .progress-track{margin-top:10px!important;border-radius:5px!important;overflow:hidden!important}
@@ -84,6 +84,25 @@ html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading>div>p{di
 
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #todayView #dayStrip{display:none!important}
+  /* The large date deck belongs to Today only. Hidden Today must not make Transit,
+     Schedule, School, or Settings inherit its 108px app bar. */
+  html[data-flow-school-ui="v2"] body #dashboard:not(:has(#todayView:not(.hidden))) #flowTodayDateDock{display:none!important}
+  html[data-flow-school-ui="v2"] body #dashboard:not(:has(#todayView:not(.hidden))) .mobile-topbar:has(#flowTodayDateDock){
+    display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;
+    min-height:58px!important;height:auto!important;padding:7px 4px!important;background:transparent!important;border:0!important;box-shadow:none!important
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(:has(#todayView:not(.hidden))) .mobile-topbar .mobile-school-button{
+    min-height:44px!important;max-width:56vw!important;padding:6px 9px!important;border-radius:12px!important
+  }
+  /* Optical Today remains visibly optical instead of being flattened by the
+     structural transparent topbar override in the date-deck module. */
+  html[data-flow-school-ui="v2"][data-flow-glass-mode="optical"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#flowTodayDateDock){
+    background:radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.78) 0%,rgba(255,255,255,.20) 32%,transparent 57%),linear-gradient(180deg,rgba(247,250,255,.66),rgba(244,248,253,.47))!important;
+    border-bottom:1px solid rgba(255,255,255,.62)!important;
+    box-shadow:0 9px 30px rgba(38,55,88,.09),inset 0 1px 0 rgba(255,255,255,.86)!important;
+    backdrop-filter:blur(18px) saturate(1.78) brightness(1.035) contrast(1.02)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(1.78) brightness(1.035) contrast(1.02)!important
+  }
 }
 
 html[data-flow-school-ui="v2"] body #todayView .timetable-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;flex-wrap:nowrap!important}
@@ -139,23 +158,22 @@ html[data-flow-school-ui="v2"] #todayView .meal-tabs{margin-bottom:9px!important
 html[data-flow-school-ui="v2"] #todayView .meal-tab{border-radius:10px!important;corner-shape:squircle!important}
 html[data-flow-school-ui="v2"] #todayView .dish{border-radius:11px!important;corner-shape:squircle!important}
 
-/* Tablets use one touch-first shell in both orientations. This deliberately
-   closes the old 901–1180 desktop-sidebar gap so the date deck and Today body
-   never belong to different responsive systems. */
+/* Tablets use one touch-first shell in both orientations on Today only. Other
+   destinations retain their existing shell so a hidden date deck cannot shift them. */
 @media(min-width:901px) and (max-width:1180px){
-  html[data-flow-school-ui="v2"] body{padding-bottom:88px!important}
-  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden){
+  html[data-flow-school-ui="v2"] body:has(#todayView:not(.hidden)){padding-bottom:88px!important}
+  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden):has(#todayView:not(.hidden)){
     width:100%!important;display:block!important;grid-template-columns:none!important;max-width:none!important;padding:0 18px 24px!important
   }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .product-main{width:100%!important;min-width:0!important;max-width:none!important;padding:0!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar{position:sticky!important;top:0!important;z-index:60!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .desktop-sidebar{display:none!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .product-main{width:100%!important;min-width:0!important;max-width:none!important;padding:0!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-topbar{position:sticky!important;top:0!important;z-index:60!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-bottom-nav{
     position:fixed!important;display:grid!important;left:18px!important;right:18px!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:auto!important;min-height:60px!important;padding:5px!important;border-radius:22px!important
   }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{display:block!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{min-height:48px!important;border-radius:15px!important;corner-shape:squircle!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .toast{bottom:84px!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) #mobileSettingsBtn{display:block!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-tab{min-height:48px!important;border-radius:15px!important;corner-shape:squircle!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .toast{bottom:84px!important}
 }
 
 @media(min-width:700px) and (max-width:1180px){
@@ -166,7 +184,7 @@ html[data-flow-school-ui="v2"] #todayView .dish{border-radius:11px!important;cor
 
 @media(max-width:699px){
   html[data-flow-school-ui="v2"] #todayView{--flow-today-gap:12px;--flow-today-radius:19px;padding-inline:9px!important}
-  html[data-flow-school-ui="v2"] #todayView .status-grid{gap:8px!important;margin:8px 0 12px!important}
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{gap:8px!important;margin:8px 0 12px!important}
   html[data-flow-school-ui="v2"] #todayView .status-card:not(.flow-home-noise){min-height:86px!important;padding:12px!important;border-radius:17px!important}
   html[data-flow-school-ui="v2"] #todayView .status-card strong{font-size:.82rem!important}html[data-flow-school-ui="v2"] #todayView .status-card p{font-size:.52rem!important}
   html[data-flow-school-ui="v2"] #todayView .timetable-card{padding:13px!important}
