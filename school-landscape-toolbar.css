@@ -58,17 +58,46 @@
     border-radius:11px!important;
   }
 
-  /* Today now owns a 108px date deck in this header. The legacy centered
-     landscape toolbar would sit directly on top of that deck, so Today alone
-     returns the destination bar to the safe-area bottom and reserves its space. */
-  html[data-flow-school-ui="v2"] body #dashboard.product-shell:has(#todayView:not(.hidden)){
-    padding-bottom:64px!important;
+  /* Today owns a large magnetic date deck. Keep the established landscape
+     destination bar in the first header row and compress the deck into a second
+     row underneath it, so neither surface covers the other at 844x390. */
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#flowTodayDateDock){
+    min-height:112px!important;
+    padding-top:48px!important;
+    padding-bottom:6px!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-bottom-nav{
-    top:auto!important;
-    bottom:max(7px,env(safe-area-inset-bottom))!important;
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock{
+    height:58px!important;
+    grid-template-columns:30px minmax(0,1fr) 30px!important;
+    grid-template-rows:45px 4px!important;
+    padding:4px 6px 3px!important;
+    border-radius:20px!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .toast{bottom:56px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-edge{
+    width:30px!important;
+    height:30px!important;
+    border-radius:10px!important;
+    font-size:1rem!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock :is(.flow-date-viewport,.flow-date-rail){height:45px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-viewport{border-radius:15px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-day{
+    height:36px!important;
+    padding:2px 1px!important;
+    border-radius:12px!important;
+    gap:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-day[data-active="true"]{
+    height:42px!important;
+    border-radius:14px!important;
+    transform:translateY(-1px) scale(1.04)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-week{font-size:.42rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-num{font-size:.74rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-today{height:6px!important;font-size:.36rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-dots{height:4px!important;gap:4px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-dots i{width:3px!important;height:3px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-dots i.active{width:9px!important}
 
   /* The landscape shell is phone-sized even though 844px is wider than the old
      820px calendar breakpoint. Keep the month and its event context visible
