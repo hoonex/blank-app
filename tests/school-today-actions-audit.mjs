@@ -44,7 +44,7 @@ function assert(condition,message){if(!condition)throw new Error(message)}
 async function renderedState(page){
   return page.evaluate(()=>{
     const style=node=>node?getComputedStyle(node):null;
-    const metric=node=>{if(!node)return null;const s=style(node),r=node.getBoundingClientRect();return{border:s.borderTopWidth,radius:s.borderTopLeftRadius,width:r.width,height:r.height,background:s.backgroundColor,color:s.color}};
+    const metric=node=>{if(!node)return null;const s=style(node),r=node.getBoundingClientRect();return{border:s.borderTopWidth,radius:s.borderTopLeftRadius,clipPath:s.clipPath,width:r.width,height:r.height,background:s.backgroundColor,color:s.color}};
     const actions=document.querySelector('.timetable-actions');
     const order=actions?[...actions.children].map(node=>node.classList.contains('timetable-mode-toggle')?'mode':node.id==='editSubjectsBtn'?'edit':node.id==='shareTimetableBtn'?'share':node.id||node.className):[];
     const periods=[...document.querySelectorAll('#timetable .period-no')].map(metric);
@@ -85,7 +85,7 @@ for(const [name,width,height,isMobile] of cases){
   }
   assert(state.editClass&&state.shareClass&&state.allergyClass,`${name}: utility action classes missing ${JSON.stringify(state)}`);
   assert(state.periods.length>=4,`${name}: timetable period badges missing`);
-  assert(state.periods.every(period=>period.radius==='50%'&&Math.abs(period.width-period.height)<=1),`${name}: period badges are not circles ${JSON.stringify(state.periods)}`);
+  assert(state.periods.every(period=>Math.abs(period.width-period.height)<=1&&String(period.clipPath||'').startsWith('circle(')),`${name}: period badges are not clipped to true circles ${JSON.stringify(state.periods)}`);
   assert(state.overflow<=1,`${name}: horizontal overflow ${state.overflow}`);
   assert(errors.length===0,`${name}: browser errors ${JSON.stringify(errors)}`);
   report[name]={state,errors};
