@@ -25,14 +25,22 @@ async function prepare(page){
 }
 async function readState(page){
   return page.evaluate(()=>{
-    const timetable=document.querySelector('#timetable'),eventList=document.querySelector('#eventList'),hero=document.querySelector('#heroSchoolName');
+    const timetable=document.querySelector('#timetable'),eventList=document.querySelector('#eventList');
+    const heroPanel=document.querySelector('#schoolHero'),hero=document.querySelector('#heroSchoolName');
+    const compactSchool=document.querySelector('#mobileSchoolBtn'),desktopSchool=document.querySelector('#schoolNameTop');
+    const dock=document.querySelector('#flowTodayDateDock'),topbar=document.querySelector('.mobile-topbar');
     const rows=[...(timetable?.querySelectorAll('.period-button')||[])];
     const rowRects=rows.map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{top:r.top,bottom:r.bottom,height:r.height,bg:s.backgroundColor,shadow:s.boxShadow,radius:s.borderRadius}});
     const examCards=[...(eventList?.querySelectorAll(':scope > .flow-exam-card')||[])].map(card=>{const r=card.getBoundingClientRect(),s=getComputedStyle(card);return{depth:card.dataset.depth,top:r.top,bottom:r.bottom,height:r.height,opacity:s.opacity,transform:s.transform}});
     const before=getComputedStyle(eventList,'::before');
+    const dockRect=dock?.getBoundingClientRect(),heroRect=heroPanel?.getBoundingClientRect(),schoolRect=compactSchool?.getBoundingClientRect();
     return{
       android:document.documentElement.dataset.flowAndroidStableGlass,
-      hero:{text:hero?.textContent||'',display:hero?getComputedStyle(hero).display:null},
+      topbarMode:document.documentElement.dataset.flowTodayTopbar,
+      hero:{text:hero?.textContent||'',height:heroRect?.height||0,visible:!!heroRect&&heroRect.height>1},
+      compactSchool:{text:[compactSchool?.querySelector('span')?.textContent,compactSchool?.querySelector('small')?.textContent].filter(Boolean).join(' · '),display:compactSchool?getComputedStyle(compactSchool).display:null,width:schoolRect?.width||0,height:schoolRect?.height||0},
+      desktopSchool:desktopSchool?.textContent||'',
+      dateDock:{display:dock?getComputedStyle(dock).display:null,width:dockRect?.width||0,height:dockRect?.height||0,insideTopbar:!!dock&&dock.parentElement===topbar,days:[...(dock?.querySelectorAll('.flow-date-day')||[])].map(node=>({iso:node.dataset.iso,offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim()})),picker:document.querySelector('#datePicker')?.value||''},
       times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),
       current:[...(timetable?.querySelectorAll('.flow-period-current')||[])].map(node=>node.dataset.period),
       periodShapes:[...(timetable?.querySelectorAll('.period-no')||[])].map(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return{clip:s.clipPath,width:r.width,height:r.height,radius:s.borderRadius}}),
@@ -60,7 +68,19 @@ function assertUnifiedState(state,{portrait=false,expectNearest=true}={}){
   assert(state.examCards[1].top-state.examCards[0].bottom>=8&&state.examCards[2].top-state.examCards[1].bottom>=8,`three visible exams overlap ${JSON.stringify(state.examCards)}`);
   assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0&&parseFloat(state.peek.height)<=24,`rear exam stack hint is missing or too large ${JSON.stringify(state.peek)}`);
   assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
-  if(portrait){assert(state.hero.text==='정동고등학교'&&state.hero.display!=='none',`portrait hero school identity missing ${JSON.stringify(state.hero)}`);assert(state.android==='true',`Android stable glass flag missing ${JSON.stringify(state)}`);assert(state.lens===null||state.lens==='none',`Android live refraction copy is still visible ${state.lens}`)}
+  if(portrait){
+    assert(state.topbarMode==='ready',`portrait compact topbar mode missing ${JSON.stringify(state)}`);
+    assert(state.hero.height<=1&&!state.hero.visible,`large School hero still occupies portrait first fold ${JSON.stringify(state.hero)}`);
+    assert(state.compactSchool.text.includes('정동고등학교')&&state.compactSchool.text.includes('2학년 6반')&&state.compactSchool.display!=='none'&&state.compactSchool.height>=44,`compact school selector missing ${JSON.stringify(state.compactSchool)}`);
+    assert(state.dateDock.display!=='none'&&state.dateDock.insideTopbar&&state.dateDock.days.length===5&&state.dateDock.days.filter(day=>day.active==='true').length===1,`gesture date rail missing ${JSON.stringify(state.dateDock)}`);
+    assert(state.android==='true',`Android stable glass flag missing ${JSON.stringify(state)}`);
+    assert(state.lens===null||state.lens==='none',`Android live refraction copy is still visible ${state.lens}`);
+  }
+}
+async function dragDate(page,dx){
+  const dock=page.locator('#flowTodayDateDock');const box=await dock.boundingBox();assert(box,'date dock geometry missing');
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+dx,box.y+box.height/2,{steps:9});await page.mouse.up();await page.waitForTimeout(360);
+  return page.locator('#datePicker').inputValue();
 }
 
 const browser=await chromium.launch({headless:true});
@@ -70,6 +90,9 @@ const portraitErrors=await prepare(portrait);const state=await readState(portrai
 await portrait.screenshot({path:`${OUT}/portrait-initial.png`,fullPage:true});
 await portrait.waitForTimeout(5000);
 const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true});assert(JSON.stringify(portraitStable.exams)===JSON.stringify(state.exams),`exam stack changed without interaction after 5s ${JSON.stringify({initial:state.exams,stable:portraitStable.exams})}`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
+
+const originalDate=await portrait.locator('#datePicker').inputValue();const nextDate=await dragDate(portrait,-78);assert(nextDate!==originalDate,`left date gesture did not advance ${JSON.stringify({originalDate,nextDate})}`);const returnedDate=await dragDate(portrait,78);assert(returnedDate===originalDate,`right date gesture did not magnet-snap back ${JSON.stringify({originalDate,nextDate,returnedDate})}`);await portrait.waitForFunction(value=>document.querySelector('#datePicker')?.value===value,originalDate,{timeout:5000});await portrait.waitForTimeout(120);
+
 const stack=portrait.locator('#eventList').first();await stack.scrollIntoViewIfNeeded();await portrait.waitForTimeout(80);const box=await stack.boundingBox();assert(box,'exam stack missing geometry');
 const stackGeometry=()=>stack.evaluate(el=>[...el.querySelectorAll(':scope > .flow-exam-card')].map(card=>({depth:card.dataset.depth,top:card.getBoundingClientRect().top,transition:getComputedStyle(card).transitionDuration,transform:getComputedStyle(card).transform})));
 const beforeDrag=await stackGeometry();
@@ -85,6 +108,6 @@ await portrait.waitForTimeout(1000);const snappedStable=await readState(portrait
 await portraitContext.close();
 
 const landscapeContext=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'});
-const landscape=await landscapeContext.newPage();const landscapeErrors=await prepare(landscape);const landscapeState=await readState(landscape);assertUnifiedState(landscapeState);assert(landscapeState.hero.text==='정동고등학교'&&landscapeState.hero.display!=='none',`landscape school identity missing ${JSON.stringify(landscapeState.hero)}`);assert(landscapeErrors.length===0,`landscape browser errors ${JSON.stringify(landscapeErrors)}`);await landscape.screenshot({path:`${OUT}/landscape.png`,fullPage:true});
-await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,portraitStable,beforeDrag,duringDrag,after,snappedStable,landscapeState,portraitErrors,landscapeErrors},null,2));
-await landscapeContext.close();await browser.close();console.log(JSON.stringify({ok:true,currentPeriod:state.current[0],exams:state.exams,after,portraitHero:state.hero.text,landscapeHero:landscapeState.hero.text},null,2));
+const landscape=await landscapeContext.newPage();const landscapeErrors=await prepare(landscape);const landscapeState=await readState(landscape);assertUnifiedState(landscapeState);assert(landscapeState.hero.height<=120,`landscape retained oversized School hero ${JSON.stringify(landscapeState.hero)}`);assert(landscapeState.desktopSchool==='정동고등학교'||landscapeState.compactSchool.text.includes('정동고등학교'),`landscape compact School identity missing ${JSON.stringify(landscapeState)}`);assert(landscapeErrors.length===0,`landscape browser errors ${JSON.stringify(landscapeErrors)}`);await landscape.screenshot({path:`${OUT}/landscape.png`,fullPage:true});
+await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,portraitStable,originalDate,nextDate,returnedDate,beforeDrag,duringDrag,after,snappedStable,landscapeState,portraitErrors,landscapeErrors},null,2));
+await landscapeContext.close();await browser.close();console.log(JSON.stringify({ok:true,currentPeriod:state.current[0],exams:state.exams,after,portraitSchool:state.compactSchool.text,dateGesture:{originalDate,nextDate,returnedDate},landscapeHeroHeight:landscapeState.hero.height},null,2));
