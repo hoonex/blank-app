@@ -145,6 +145,12 @@ function syncRefractionCopy(){
   if(root.dataset.flowRefractionCopy!=='true')return;
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
   const lens=nav?.querySelector(':scope > .flow-refraction-copy-lens');
+  /* Dedicated School switch surfaces own their internal scroll registration in
+   * flow-refraction. This v2 correction is only for the main School app bar;
+   * overriding a school-switch clone here would replace its dialog+scroll
+   * geometry with product-main coordinates on the same captured scroll event. */
+  const sourceCopy=lens?.querySelector('.flow-refraction-source-copy');
+  if(sourceCopy?.dataset.flowRefractionSource==='school-switch')return;
   const source=document.querySelector('.product-main');
   if(!nav||!lens||!source)return;
   const lensRect=lens.getBoundingClientRect(),sourceRect=source.getBoundingClientRect();
