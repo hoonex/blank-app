@@ -36,7 +36,7 @@ html[data-flow-school-ui="v2"] #${DATE_DOCK_ID}{display:none}
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){
     display:grid!important;grid-template-columns:auto minmax(180px,520px) minmax(104px,154px)!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;
     width:100%!important;min-height:60px!important;height:auto!important;padding:5px clamp(8px,1.8vw,18px)!important;box-sizing:border-box!important;
-    background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important
+    background:color-mix(in srgb,var(--surface) 88%,var(--bg))!important;border:0!important;box-shadow:none!important;overflow:visible!important
   }
   html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo{min-width:44px!important;min-height:44px!important;align-self:center!important}
   html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:1.08rem!important;font-weight:850!important;letter-spacing:-.06em!important}
