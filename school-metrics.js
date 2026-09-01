@@ -54,7 +54,10 @@ async function bootSchoolSurface(){
 void bootSchoolSurface().finally(()=>{
   delete schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading;
   schoolSurfaceRoot.dataset.flowSchoolSurface='ready';
-  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:refraction-refresh')));
+  /* Refraction may have booted while the dashboard was intentionally hidden.
+   * Re-run the full glass-mode lifecycle after the first visible frame so it
+   * rebuilds the source copy, geometry, filter, and readiness marker together. */
+  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:glass-mode-changed')));
 });
 
 /* Optical/refraction used to assume School always had five destinations because
@@ -87,6 +90,9 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
   const style=document.createElement('style');
   style.id='flow-school-touch-nav-contract';
   style.textContent=`
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar{background:var(--bg)!important}
+}
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
     z-index:90!important;
