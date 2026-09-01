@@ -151,7 +151,7 @@ html[data-flow-school-ui="v2"] body #todayView .upcoming-card{
 }
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{
   position:relative!important;
-  height:334px!important;
+  height:310px!important;
   overflow:visible!important;
   touch-action:pan-x;
   user-select:none;
@@ -166,15 +166,14 @@ html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::before,
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::after{
   content:"";
   position:absolute;
-  height:50px;
-  border-radius:16px;
+  border-radius:13px;
   corner-shape:squircle;
   background:color-mix(in srgb,var(--surface) 90%,var(--surface-2));
   box-shadow:var(--flow-today-shadow-soft);
   pointer-events:none;
 }
-html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::before{left:10px;right:10px;top:282px;opacity:.48;z-index:0}
-html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::after{left:18px;right:18px;top:291px;opacity:.26;z-index:-1}
+html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::before{left:10px;right:10px;top:282px;height:22px;opacity:.42;z-index:0}
+html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack::after{left:18px;right:18px;top:290px;height:16px;opacity:.20;z-index:-1}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack:is([data-flow-exam-count="0"],[data-flow-exam-count="1"],[data-flow-exam-count="2"],[data-flow-exam-count="3"])::before,
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack:is([data-flow-exam-count="0"],[data-flow-exam-count="1"],[data-flow-exam-count="2"],[data-flow-exam-count="3"])::after{display:none}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-card{
@@ -333,7 +332,7 @@ html[data-flow-school-ui="v2"] body #todayView .flow-exam-hint{right:2px!importa
   html[data-flow-school-ui="v2"] body #todayView .period-button{min-height:60px!important;border-radius:17px!important}
   html[data-flow-school-ui="v2"] body #todayView .period-no{width:36px!important;height:36px!important;border-radius:11px!important}
   html[data-flow-school-ui="v2"] body #todayView .flow-period-time{font-size:.52rem!important}
-  html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{height:330px!important}
+  html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{height:310px!important}
   html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack[data-flow-exam-count="3"]{height:284px!important}
 }
 
@@ -347,7 +346,7 @@ html[data-flow-school-ui="v2"] body #todayView .flow-exam-hint{right:2px!importa
   html[data-flow-school-ui="v2"] #todayView .date-controller button{width:37px!important;height:37px!important;flex-basis:37px!important}
   html[data-flow-school-ui="v2"] body #todayView .timetable-actions{gap:4px!important}
   html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action{padding-inline:9px!important}
-  html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{height:326px!important}
+  html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{height:308px!important}
   html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack[data-flow-exam-count="3"]{height:284px!important}
 }
 
