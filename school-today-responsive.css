@@ -57,6 +57,7 @@ html[data-flow-school-ui="v2"] #todayView .timetable-card{
 }
 html[data-flow-school-ui="v2"] #todayView .right-stack{
   display:grid!important;
+  grid-column:1/-1!important;
   grid-template-columns:minmax(0,.97fr) minmax(0,1.03fr)!important;
   gap:var(--flow-today-gap)!important;
   align-items:stretch!important;
@@ -84,6 +85,12 @@ html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading>div>p{di
 
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #todayView #dayStrip{display:none!important}
+  html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .flow-logo{
+    min-width:44px!important;
+    min-height:44px!important;
+    display:flex!important;
+    align-items:center!important;
+  }
   /* The large date deck belongs to Today only. Hidden Today must not make Transit,
      Schedule, School, or Settings inherit its 108px app bar. */
   html[data-flow-school-ui="v2"] body #dashboard:not(:has(#todayView:not(.hidden))) #flowTodayDateDock{display:none!important}
@@ -158,22 +165,23 @@ html[data-flow-school-ui="v2"] #todayView .meal-tabs{margin-bottom:9px!important
 html[data-flow-school-ui="v2"] #todayView .meal-tab{border-radius:10px!important;corner-shape:squircle!important}
 html[data-flow-school-ui="v2"] #todayView .dish{border-radius:11px!important;corner-shape:squircle!important}
 
-/* Tablets use one touch-first shell in both orientations on Today only. Other
-   destinations retain their existing shell so a hidden date deck cannot shift them. */
+/* 901–1180px keeps one structural compact shell across all School destinations.
+   That prevents Today ↔ other-view shell swaps, keeps touch navigation available
+   for Transit, and avoids a large layout-stability penalty on tab changes. */
 @media(min-width:901px) and (max-width:1180px){
-  html[data-flow-school-ui="v2"] body:has(#todayView:not(.hidden)){padding-bottom:88px!important}
-  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden):has(#todayView:not(.hidden)){
+  html[data-flow-school-ui="v2"] body{padding-bottom:88px!important}
+  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden){
     width:100%!important;display:block!important;grid-template-columns:none!important;max-width:none!important;padding:0 18px 24px!important
   }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .desktop-sidebar{display:none!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .product-main{width:100%!important;min-width:0!important;max-width:none!important;padding:0!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-topbar{position:sticky!important;top:0!important;z-index:60!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-bottom-nav{
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .product-main{width:100%!important;min-width:0!important;max-width:none!important;padding:0!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar{position:sticky!important;top:0!important;z-index:60!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
     position:fixed!important;display:grid!important;left:18px!important;right:18px!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:auto!important;min-height:60px!important;padding:5px!important;border-radius:22px!important
   }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) #mobileSettingsBtn{display:block!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .mobile-tab{min-height:48px!important;border-radius:15px!important;corner-shape:squircle!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden):has(#todayView:not(.hidden)) .toast{bottom:84px!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{display:block!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{min-height:48px!important;border-radius:15px!important;corner-shape:squircle!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .toast{bottom:84px!important}
 }
 
 @media(min-width:700px) and (max-width:1180px){
