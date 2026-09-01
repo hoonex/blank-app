@@ -1,144 +1,180 @@
-/* Flow School Today — responsive tablet composition.
- * Phones keep a single content column. Portrait tablets keep the timetable
- * full-width and place meal + upcoming exams side by side underneath it.
+/* Flow School Today v3 — one responsive composition for the gesture date deck.
+ * The top deck owns day navigation, so Today no longer repeats a second weekday
+ * strip. Timetable stays full-width; meal and exams become a balanced utility row.
  */
-@media (min-width: 640px) and (max-width: 1024px) and (orientation: portrait){
-  html[data-flow-school-ui="v2"] #todayView .today-grid{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-    gap:14px!important;
-    align-items:start!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .timetable-card{
-    grid-column:1/-1!important;
-    width:100%!important;
-    min-width:0!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .right-stack{
-    display:grid!important;
-    grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr)!important;
-    gap:14px!important;
-    align-items:stretch!important;
-    width:100%!important;
-    min-width:0!important;
-    border:0!important;
-    border-radius:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-    overflow:visible!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .right-stack > :is(.meal-card,.upcoming-card){
-    min-width:0!important;
-    width:100%!important;
-    height:100%!important;
-    margin:0!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .meal-card,
-  html[data-flow-school-ui="v2"] #todayView .upcoming-card{
-    border-radius:22px!important;
-    corner-shape:squircle!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .upcoming-card #eventList{
-    min-height:0!important;
-  }
+html[data-flow-school-ui="v2"] #todayView{
+  --flow-today-gap:16px;
+  --flow-today-radius:22px;
+  --flow-control-radius:14px;
+  max-width:1180px;
+  margin-inline:auto;
+}
+html[data-flow-school-ui="v2"] #todayView .status-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+  margin:10px 0 16px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+html[data-flow-school-ui="v2"] #todayView .status-card:not(.flow-home-noise){
+  min-width:0!important;
+  min-height:102px!important;
+  padding:16px 17px!important;
+  border:0!important;
+  border-radius:20px!important;
+  corner-shape:squircle!important;
+  background:color-mix(in srgb,var(--surface) 96%,var(--surface-2))!important;
+  box-shadow:0 10px 28px rgba(43,57,78,.065),inset 0 1px 0 rgba(255,255,255,.76)!important;
+}
+html[data-flow-school-ui="v2"] #todayView .status-card+.status-card:not(.flow-home-noise){border-left:0!important}
+html[data-flow-school-ui="v2"] #todayView .status-card strong{font-size:.94rem!important;letter-spacing:-.035em!important}
+html[data-flow-school-ui="v2"] #todayView .status-card p{font-size:.58rem!important;line-height:1.42!important}
+html[data-flow-school-ui="v2"] #todayView .progress-track{margin-top:10px!important;border-radius:5px!important;overflow:hidden!important}
+
+html[data-flow-school-ui="v2"] #todayView .today-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:var(--flow-today-gap)!important;
+  align-items:start!important;
+}
+html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcoming-card){
+  border:0!important;
+  border-radius:var(--flow-today-radius)!important;
+  corner-shape:squircle!important;
+  background:color-mix(in srgb,var(--surface) 97%,var(--surface-2))!important;
+  box-shadow:0 10px 30px rgba(43,57,78,.06),inset 0 1px 0 rgba(255,255,255,.74)!important;
+}
+html[data-flow-school-ui="v2"] #todayView .timetable-card{
+  grid-column:1/-1!important;
+  width:100%!important;
+  min-width:0!important;
+  padding:18px!important;
+}
+html[data-flow-school-ui="v2"] #todayView .right-stack{
+  display:grid!important;
+  grid-template-columns:minmax(0,.97fr) minmax(0,1.03fr)!important;
+  gap:var(--flow-today-gap)!important;
+  align-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+html[data-flow-school-ui="v2"] #todayView .right-stack>:is(.meal-card,.upcoming-card){
+  min-width:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:17px!important;
+}
+html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcoming-card) .section-kicker{display:none!important}
+html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcoming-card) .card-heading{margin-bottom:12px!important;align-items:center!important}
+html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcoming-card) .card-heading h2{font-size:1rem!important;letter-spacing:-.045em!important}
+html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading>div>p{display:none!important}
+
+/* The date deck is the date navigator. Remove the redundant weekday row. */
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"] #todayView #dayStrip{display:none!important}
 }
 
-/* Compact landscape already uses the center of the header for primary nav.
- * Keep the date gesture, but collapse it to the active day and anchor it in the
- * free space immediately before the school selector so the hit target never
- * sits underneath the navigation lens. The gesture physics remain unchanged. */
-@media (max-width: 900px) and (orientation: landscape){
-  html[data-flow-school-ui="v2"] body .mobile-topbar:has(#flowTodayDateDock){
-    grid-template-columns:auto minmax(0,1fr) auto!important;
-    gap:10px!important;
-    min-height:58px!important;
-    padding:4px 12px!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock{
-    width:78px!important;
-    min-width:78px!important;
-    max-width:78px!important;
-    height:44px!important;
-    justify-self:end!important;
-    padding:2px!important;
-    border-radius:16px!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-edge{
-    display:none!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-viewport,
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-rail{
-    width:100%!important;
-    height:40px!important;
-    margin:0!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-rail{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-day:not([data-active="true"]){
-    display:none!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-day[data-active="true"]{
-    width:100%!important;
-    height:36px!important;
-    min-width:0!important;
-    border-radius:12px!important;
-    transform:scale(1)!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-week{
-    font-size:.45rem!important;
-  }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-num{
-    font-size:.78rem!important;
-  }
+/* One shape language: compact controls are squircles, never mixed pills/circles. */
+html[data-flow-school-ui="v2"] body #todayView .timetable-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;flex-wrap:nowrap!important}
+html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{
+  display:inline-grid!important;grid-template-columns:1fr 1fr!important;min-width:112px!important;height:42px!important;padding:3px!important;
+  border:0!important;border-radius:var(--flow-control-radius)!important;corner-shape:squircle!important;background:color-mix(in srgb,var(--surface-2) 88%,var(--surface))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.64)!important
+}
+html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button{
+  min-height:36px!important;padding:0 11px!important;border:0!important;border-radius:11px!important;corner-shape:squircle!important;background:transparent!important;color:var(--muted)!important;box-shadow:none!important;font-size:.62rem!important;font-weight:820!important
+}
+html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button.active{
+  background:var(--surface)!important;color:var(--accent)!important;box-shadow:0 4px 12px rgba(43,57,78,.08),inset 0 1px 0 rgba(255,255,255,.78)!important
+}
+html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action,
+html[data-flow-school-ui="v2"] body #todayView .timetable-actions>.neo-button{
+  min-height:42px!important;padding:0 13px!important;border:0!important;border-radius:var(--flow-control-radius)!important;corner-shape:squircle!important;
+  background:color-mix(in srgb,var(--surface) 93%,var(--surface-2))!important;color:var(--text)!important;box-shadow:0 4px 13px rgba(43,57,78,.06),inset 0 1px 0 rgba(255,255,255,.72)!important;font-size:.61rem!important;font-weight:790!important
+}
+html[data-flow-school-ui="v2"] body #todayView #editSubjectsBtn.flow-school-utility-action{background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important;color:var(--accent)!important}
+html[data-flow-school-ui="v2"] body #todayView .meal-card #allergyBtn{min-height:38px!important;border-radius:13px!important;corner-shape:squircle!important}
+
+/* Every period is an independent cell again. */
+html[data-flow-school-ui="v2"] body #todayView #timetable{display:grid!important;gap:7px!important;margin-top:2px!important}
+html[data-flow-school-ui="v2"] body #todayView .period-button{
+  width:100%!important;min-height:58px!important;margin:0!important;padding:8px 11px!important;border:0!important;border-radius:17px!important;corner-shape:squircle!important;
+  background:color-mix(in srgb,var(--surface) 98%,var(--surface-2))!important;box-shadow:0 4px 13px rgba(43,57,78,.045),inset 0 1px 0 rgba(255,255,255,.76)!important;overflow:hidden!important
+}
+html[data-flow-school-ui="v2"] body #todayView .period-button.flow-period-current{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 10%,var(--surface)),color-mix(in srgb,var(--accent) 4%,var(--surface)))!important;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--accent) 8%,transparent),inset 0 1px 0 rgba(255,255,255,.82)!important
+}
+html[data-flow-school-ui="v2"] body #todayView .period-no{
+  display:grid!important;place-items:center!important;width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;
+  border:0!important;border-radius:12px!important;corner-shape:squircle!important;clip-path:none!important;-webkit-clip-path:none!important;
+  background:color-mix(in srgb,var(--surface-2) 88%,var(--surface))!important;color:var(--text)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)!important
+}
+html[data-flow-school-ui="v2"] body #todayView .period-button.flow-period-current .period-no{
+  background:var(--accent)!important;color:#fff!important;box-shadow:0 5px 13px color-mix(in srgb,var(--accent) 22%,transparent),inset 0 1px 0 rgba(255,255,255,.28)!important
+}
+html[data-flow-school-ui="v2"] body #todayView .period-name{font-size:.69rem!important;font-weight:820!important;letter-spacing:-.025em!important}
+html[data-flow-school-ui="v2"] body #todayView .flow-period-time{margin-top:1px!important;font-size:.52rem!important;line-height:1.15!important}
+html[data-flow-school-ui="v2"] body #todayView .neis-timetable-help{margin-top:13px!important;padding-top:13px!important;border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent)!important}
+
+/* Make the ad a deliberate first-fold rail without distorting the ad creative. */
+html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(iframe),
+html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(.flow-adfit-mock){
+  width:100%!important;min-height:158px!important;margin:8px 0 17px!important;padding:20px clamp(18px,5vw,56px)!important;
+  border:0!important;border-radius:24px!important;corner-shape:squircle!important;
+  background:radial-gradient(circle at 78% 28%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 35%),linear-gradient(135deg,color-mix(in srgb,var(--surface) 96%,var(--surface-2)),color-mix(in srgb,var(--accent) 3%,var(--surface)))!important;
+  box-shadow:0 10px 30px rgba(43,57,78,.055),inset 0 1px 0 rgba(255,255,255,.78)!important
+}
+html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top .flow-adfit-slot{width:100%!important;max-width:728px!important;margin:auto!important}
+
+html[data-flow-school-ui="v2"] #todayView .meal-tabs{margin-bottom:9px!important}
+html[data-flow-school-ui="v2"] #todayView .meal-tab{border-radius:10px!important;corner-shape:squircle!important}
+html[data-flow-school-ui="v2"] #todayView .dish{border-radius:11px!important;corner-shape:squircle!important}
+
+@media(min-width:700px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] #todayView{padding-inline:clamp(10px,2.2vw,24px)!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack{grid-template-columns:minmax(0,.96fr) minmax(0,1.04fr)!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack>:is(.meal-card,.upcoming-card){min-height:286px!important}
 }
 
-@media (min-width: 901px) and (max-width: 1024px) and (orientation: landscape){
-  html[data-flow-school-ui="v2"] body #todayView .school-hero{
-    min-height:64px!important;
-    height:64px!important;
-    margin:0 0 10px!important;
-    border:0!important;
-    border-radius:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-    overflow:visible!important;
-  }
-  html[data-flow-school-ui="v2"] body #todayView .school-hero :is(.school-hero-image,.school-hero-shade,.school-badge,.school-hero-copy,.today-jump){
-    display:none!important;
-  }
-  html[data-flow-school-ui="v2"] body #todayView .school-hero-content{
-    min-height:64px!important;
-    height:64px!important;
-    padding:0!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    background:transparent!important;
-  }
-  html[data-flow-school-ui="v2"] body #todayView .hero-right{
-    width:auto!important;
-    margin:0 auto!important;
-    align-items:center!important;
-  }
-  html[data-flow-school-ui="v2"] body #todayView .status-grid{
-    margin:10px 0 14px!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .today-grid{
-    grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr)!important;
-    gap:14px!important;
-  }
-  html[data-flow-school-ui="v2"] #todayView .right-stack{
-    min-width:0!important;
-    gap:14px!important;
-  }
+@media(max-width:699px){
+  html[data-flow-school-ui="v2"] #todayView{--flow-today-gap:12px;--flow-today-radius:19px;padding-inline:9px!important}
+  html[data-flow-school-ui="v2"] #todayView .status-grid{gap:8px!important;margin:8px 0 12px!important}
+  html[data-flow-school-ui="v2"] #todayView .status-card:not(.flow-home-noise){min-height:86px!important;padding:12px!important;border-radius:17px!important}
+  html[data-flow-school-ui="v2"] #todayView .status-card strong{font-size:.82rem!important}html[data-flow-school-ui="v2"] #todayView .status-card p{font-size:.52rem!important}
+  html[data-flow-school-ui="v2"] #todayView .timetable-card{padding:13px!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack{display:flex!important;flex-direction:column!important;gap:12px!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack>:is(.meal-card,.upcoming-card){height:auto!important;padding:14px!important}
+  html[data-flow-school-ui="v2"] #todayView .timetable-actions{gap:4px!important}
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{min-width:86px!important;height:36px!important;padding:2px!important;border-radius:12px!important}
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button{min-height:32px!important;padding:0 7px!important;border-radius:9px!important;font-size:.55rem!important}
+  html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action,html[data-flow-school-ui="v2"] body #todayView .timetable-actions>.neo-button{min-height:36px!important;padding:0 9px!important;border-radius:12px!important;font-size:.54rem!important}
+  html[data-flow-school-ui="v2"] body #todayView #timetable{gap:6px!important}
+  html[data-flow-school-ui="v2"] body #todayView .period-button{min-height:54px!important;padding:7px 9px!important;border-radius:15px!important}
+  html[data-flow-school-ui="v2"] body #todayView .period-no{width:34px!important;height:34px!important;min-width:34px!important;border-radius:10px!important}
+  html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(iframe),html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(.flow-adfit-mock){min-height:142px!important;padding:14px 12px!important;border-radius:20px!important}
 }
 
-@media (max-width: 639px){
-  html[data-flow-school-ui="v2"] #todayView .right-stack{
-    display:flex!important;
-    flex-direction:column!important;
-    gap:14px!important;
-  }
+@media(max-width:430px){
+  html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading{grid-template-columns:minmax(0,1fr) auto!important;gap:6px!important}
+  html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading h2{font-size:.9rem!important}
+  html[data-flow-school-ui="v2"] #todayView .timetable-actions{transform:scale(.96);transform-origin:right center}
+}
+
+@media(min-width:1181px){
+  html[data-flow-school-ui="v2"] #todayView .today-grid{grid-template-columns:minmax(0,1fr)!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack{grid-template-columns:minmax(0,.96fr) minmax(0,1.04fr)!important}
+  html[data-flow-school-ui="v2"] #todayView .right-stack>:is(.meal-card,.upcoming-card){min-height:286px!important}
 }
