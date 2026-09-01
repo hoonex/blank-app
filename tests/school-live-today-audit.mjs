@@ -4,76 +4,120 @@ import fs from 'node:fs/promises';
 const BASE=process.env.FLOW_BASE_URL||'http://127.0.0.1:4173';
 const OUT=process.env.FLOW_TEST_OUT||'school-live-today-audit';
 await fs.mkdir(OUT,{recursive:true});
-const pad=v=>String(v).padStart(2,'0');
+const pad=value=>String(value).padStart(2,'0');
 const kst=new Date(Date.now()+9*60*60*1000);
 const selected=`${kst.getUTCFullYear()}${pad(kst.getUTCMonth()+1)}${pad(kst.getUTCDate())}`;
 const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 반야월북로 199'},grade:2,className:'6'};
-const dashboard={school:profile.school,selected,from:selected,to:selected,timetable:Array.from({length:7},(_,i)=>({date:selected,period:i+1,subject:['국어','문학','수학Ⅱ','영어Ⅱ','물리학','정보','체육'][i]})),meals:[{date:selected,type:'중식',dishes:['현미밥','된장국'],calories:'812 Kcal'}],events:[{date:'20260902',name:'전국연합학력평가',content:'1,2학년 전국연합학력평가'},{date:'20260905',name:'토요휴업일',content:''},{date:'20260909',name:'영어듣기평가',content:'2학년 영어듣기평가'},{date:'20260912',name:'토요휴업일',content:''},{date:'20260915',name:'2학기 중간고사',content:'2학년 중간고사'}],scheduleMeta:{mode:'fixture',count:5}};
+const requestedDashboardDates=[];
+const eventsByMonth={
+  '202609':[
+    {date:'20260902',name:'전국연합학력평가',content:'1,2학년 전국연합학력평가',grade2:'Y'},
+    {date:'20260905',name:'토요휴업일',content:'',grade2:'Y'},
+    {date:'20260909',name:'영어듣기평가',content:'2학년 영어듣기평가',grade2:'Y'},
+    {date:'20260915',name:'2학기 중간고사',content:'2학년 중간고사',grade2:'Y'},
+  ],
+  '202610':[
+    {date:'20261007',name:'2학기 수행평가',content:'교과별 수행평가 주간',grade2:'Y'},
+    {date:'20261020',name:'전국연합학력평가',content:'1,2학년 전국연합학력평가',grade2:'Y'},
+  ],
+  '202611':[{date:'20261124',name:'2학기 기말고사',content:'2학년 기말고사',grade2:'Y'}],
+  '202612':[{date:'20261215',name:'학업성취도평가',content:'2학년 학업성취도평가',grade2:'Y'}],
+  '202701':[{date:'20270108',name:'겨울방학',content:'',grade2:'Y'}],
+  '202702':[{date:'20270205',name:'학년말 평가',content:'2학년 학년말 평가',grade2:'Y'}],
+};
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 function assert(value,message){if(!value)throw new Error(message)}
+function dashboardFor(date){
+  const key=String(date||selected).replace(/\D/g,'').slice(0,8)||selected,month=key.slice(0,6);
+  return{school:profile.school,selected:key,from:key,to:key,timetable:Array.from({length:7},(_,i)=>({date:key,period:i+1,subject:['선택과목','문학','음악 감상과 비평','선택과목','스포츠 생활2','동아리활동','선택과목'][i]})),meals:[{date:key,type:'중식',dishes:['현미밥','된장국','갈릭치킨마요','배추김치'],calories:'933.2 Kcal'}],events:eventsByMonth[month]||[],scheduleMeta:{mode:'fixture',count:(eventsByMonth[month]||[]).length}};
+}
 async function prepare(page){
   const errors=[];page.on('pageerror',error=>errors.push(String(error)));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())});
-  await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});if(action==='place')return json(route,{provider:'fixture',place:{id:'school',name:profile.school.name,address:profile.school.address}});return json(route,{})});
-  await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');const now=new Date(),start=new Date(now.getTime()-65*60000),pad=v=>String(v).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}))},{profile});
+  await page.route('**/functions/v1/school-data*',route=>{
+    const url=new URL(route.request().url()),action=url.searchParams.get('action')||'';
+    if(action==='dashboard'){const date=url.searchParams.get('date')||selected;requestedDashboardDates.push(date);return json(route,dashboardFor(date))}
+    if(action==='media')return json(route,{media:{}});
+    if(action==='place')return json(route,{provider:'fixture',place:{id:'school',name:profile.school.name,address:profile.school.address}});
+    return json(route,{});
+  });
+  await page.addInitScript(({profile})=>{
+    localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');
+    const now=new Date(),start=new Date(now.getTime()-65*60000),pad=value=>String(value).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}));
+  },{profile});
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
   await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
   await page.waitForFunction(()=>document.querySelector('#timetable')?.querySelectorAll('.flow-period-time').length===7,{timeout:10000});
-  await page.waitForFunction(()=>document.querySelector('#eventList')?.querySelectorAll(':scope > .flow-exam-card').length===3,{timeout:10000});
-  await page.waitForTimeout(500);return errors;
+  await page.waitForFunction(()=>document.querySelector('#flowTodayDateDock')&&document.querySelector('#flowExamFeedV3')?.querySelectorAll('[data-flow-exam-item]').length===3,{timeout:10000});
+  await page.waitForTimeout(450);return errors;
 }
 async function readState(page){return page.evaluate(()=>{
   const box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height}};
-  const timetable=document.querySelector('#timetable'),eventList=document.querySelector('#eventList'),heroPanel=document.querySelector('#schoolHero');
-  const compactSchool=document.querySelector('#mobileSchoolBtn'),desktopSchool=document.querySelector('#schoolNameTop'),dock=document.querySelector('#flowTodayDateDock'),topbar=document.querySelector('.mobile-topbar');
-  const rows=[...(timetable?.querySelectorAll('.period-button')||[])],meal=document.querySelector('#todayView .meal-card'),upcoming=document.querySelector('#todayView .upcoming-card'),rightStack=document.querySelector('#todayView .right-stack');
+  const visible=node=>{if(!node)return false;const style=getComputedStyle(node),r=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&r.width>0&&r.height>0};
+  const timetable=document.querySelector('#timetable'),rows=[...(timetable?.querySelectorAll('.period-button')||[])],dock=document.querySelector('#flowTodayDateDock'),school=document.querySelector('#mobileSchoolBtn'),hero=document.querySelector('#schoolHero'),feed=document.querySelector('#flowExamFeedV3');
+  const dateDays=[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{active:node.dataset.active,offset:node.dataset.offset,iso:node.dataset.iso,width:r.width,height:r.height,radius:s.borderRadius,text:node.textContent.trim()}});
   const rowRects=rows.map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{top:r.top,bottom:r.bottom,height:r.height,bg:s.backgroundColor,shadow:s.boxShadow,radius:s.borderRadius}});
-  const examCards=[...(eventList?.querySelectorAll(':scope > .flow-exam-card')||[])].map(card=>{const r=card.getBoundingClientRect(),s=getComputedStyle(card);return{depth:card.dataset.depth,top:r.top,bottom:r.bottom,height:r.height,opacity:s.opacity,transform:s.transform}});
-  const before=eventList?getComputedStyle(eventList,'::before'):null,dockRect=box(dock),heroRect=box(heroPanel),schoolRect=box(compactSchool),stackStyle=rightStack?getComputedStyle(rightStack):null;
+  const periodShapes=[...(timetable?.querySelectorAll('.period-no')||[])].map(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return{clip:s.clipPath,width:r.width,height:r.height,radius:s.borderRadius}});
+  const items=[...(feed?.querySelectorAll('[data-flow-exam-item]')||[])].map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{kind:node.className,top:r.top,bottom:r.bottom,height:r.height,radius:s.borderRadius,title:node.querySelector('h3,.flow-exam-row-copy strong')?.textContent||'',detail:node.querySelector('p,.flow-exam-row-copy small')?.textContent||''}});
+  const actions=[...document.querySelectorAll('#todayView .timetable-actions button')].filter(visible).map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return{width:r.width,height:r.height,radius:s.borderRadius,text:node.textContent.trim()}});
+  const meal=document.querySelector('#todayView .meal-card'),upcoming=document.querySelector('#todayView .upcoming-card'),oldEvents=document.querySelector('#eventList'),lens=document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens');
   return{
-    android:document.documentElement.dataset.flowAndroidStableGlass,topbarMode:document.documentElement.dataset.flowTodayTopbar,
-    hero:{height:heroRect?.height||0,visible:!!heroRect&&heroRect.height>1},
-    compactSchool:{text:[compactSchool?.querySelector('span')?.textContent,compactSchool?.querySelector('small')?.textContent].filter(Boolean).join(' · '),display:compactSchool?getComputedStyle(compactSchool).display:null,width:schoolRect?.width||0,height:schoolRect?.height||0},desktopSchool:desktopSchool?.textContent||'',
-    dateDock:{display:dock?getComputedStyle(dock).display:null,width:dockRect?.width||0,height:dockRect?.height||0,insideTopbar:!!dock&&dock.parentElement===topbar,days:[...(dock?.querySelectorAll('.flow-date-day')||[])].map(node=>({iso:node.dataset.iso,offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim()})),picker:document.querySelector('#datePicker')?.value||''},
-    times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),current:[...(timetable?.querySelectorAll('.flow-period-current')||[])].map(node=>node.dataset.period),
-    periodShapes:[...(timetable?.querySelectorAll('.period-no')||[])].map(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return{clip:s.clipPath,width:r.width,height:r.height,radius:s.borderRadius}}),rowRects,
-    examTitle:document.querySelector('.upcoming-card .card-heading h2')?.textContent,exams:[...(eventList?.querySelectorAll(':scope > .flow-exam-card h3')||[])].map(node=>node.textContent),examText:eventList?.textContent||'',visible:eventList?.dataset.flowExamVisible,count:eventList?.dataset.flowExamCount,examCards,
-    peek:before?{display:before.display,opacity:before.opacity,height:before.height}:{display:'none',opacity:'0',height:'0px'},
-    utilities:{display:stackStyle?.display||'',columns:stackStyle?.gridTemplateColumns||'',stack:box(rightStack),meal:box(meal),upcoming:box(upcoming)},
-    lens:document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')?getComputedStyle(document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')).display:null,
-    overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
+    topbarMode:document.documentElement.dataset.flowTodayTopbar,android:document.documentElement.dataset.flowAndroidStableGlass,
+    hero:box(hero),school:{box:box(school),display:school?getComputedStyle(school).display:null,text:school?.textContent?.replace(/\s+/g,' ').trim()||''},
+    dock:{box:box(dock),display:dock?getComputedStyle(dock).display:null,days:dateDays,picker:document.querySelector('#datePicker')?.value||''},dayStrip:document.querySelector('#dayStrip')?getComputedStyle(document.querySelector('#dayStrip')).display:null,
+    times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),current:rows.filter(node=>node.classList.contains('flow-period-current')).map(node=>node.dataset.period),rowRects,periodShapes,actions,
+    exams:{visible:Number(feed?.dataset.flowExamVisible||0),total:Number(feed?.dataset.flowExamTotal||0),exhausted:feed?.dataset.flowExamExhausted||'false',items,text:feed?.textContent||'',oldDisplay:oldEvents?getComputedStyle(oldEvents).display:null},
+    utilities:{meal:box(meal),upcoming:box(upcoming)},lens:lens?getComputedStyle(lens).display:null,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,scrollHeight:document.documentElement.scrollHeight
   };
 })}
-function assertUnifiedState(state,{portrait=false,expectNearest=true,tabletUtilities=false}={}){
+function assertSquircle(shape,label){const radius=parseFloat(shape.radius)||0,short=Math.min(shape.width,shape.height);assert(radius>=8&&radius<short/2-1,`${label} is not a squircle ${JSON.stringify(shape)}`)}
+function assertBase(state,{dateCount,tabletUtilities=false}={}){
+  assert(state.topbarMode==='ready',`Today date deck mode missing ${state.topbarMode}`);
+  assert((state.hero?.height||0)<=1,`old blue School hero is still visible ${JSON.stringify(state.hero)}`);
+  assert(state.school.display!=='none'&&state.school.box?.height>=44&&state.school.text.includes('정동고등학교')&&state.school.text.includes('2학년 6반'),`compact School selector missing ${JSON.stringify(state.school)}`);
+  assert(state.dock.display!=='none'&&state.dock.box?.width>=180&&state.dock.days.length===dateCount,`date deck density incorrect ${JSON.stringify(state.dock)}`);
+  const active=state.dock.days.find(day=>day.active==='true'),near=state.dock.days.find(day=>day.offset==='1')||state.dock.days.find(day=>day.offset==='-1');assert(active&&near&&active.height>=near.height+5,`selected date is not magnified ${JSON.stringify(state.dock.days)}`);assertSquircle(active,'active date');
+  assert(state.dayStrip==='none',`redundant weekday strip is still visible ${state.dayStrip}`);
   assert(state.times.length===7&&state.times.every(text=>/^\d{2}:\d{2}–\d{2}:\d{2}/.test(text)),`period times missing ${JSON.stringify(state.times)}`);
   assert(state.current.length===1&&state.current[0]==='2',`current period highlight incorrect ${JSON.stringify(state.current)}`);
-  assert(state.periodShapes.every(item=>String(item.clip||'none')==='none'&&Math.abs(item.width-item.height)<=1&&parseFloat(item.radius)>=9&&parseFloat(item.radius)<item.width/2),`period badges are not squircle cells ${JSON.stringify(state.periodShapes)}`);
-  assert(state.rowRects.length===7&&state.rowRects.every((row,index)=>index===0||row.top-state.rowRects[index-1].bottom>=5),`timetable subjects are visually merged ${JSON.stringify(state.rowRects)}`);
-  assert(state.rowRects.every(row=>row.bg!=='rgba(0, 0, 0, 0)'&&row.bg!=='transparent'&&row.shadow!=='none'),`timetable cells lost separated surfaces ${JSON.stringify(state.rowRects)}`);
-  assert(state.examTitle==='다가오는 시험'&&state.exams.length===3&&state.visible==='3',`three-exam contract missing ${JSON.stringify(state)}`);
-  assert(!state.examText.includes('토요휴업일'),`holiday leaked into exam stack ${state.examText}`);if(expectNearest)assert(state.exams[0].includes('전국연합'),`nearest exam missing ${JSON.stringify(state.exams)}`);
-  assert(state.examCards.length===3&&state.examCards[0].height>state.examCards[1].height+25&&Math.abs(state.examCards[1].height-state.examCards[2].height)<=1,`exam hierarchy is not hero + two normal ${JSON.stringify(state.examCards)}`);
-  assert(state.examCards[1].top-state.examCards[0].bottom>=8&&state.examCards[2].top-state.examCards[1].bottom>=8,`three visible exams overlap ${JSON.stringify(state.examCards)}`);
-  assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0&&parseFloat(state.peek.height)<=24,`rear stack peek invalid ${JSON.stringify(state.peek)}`);
-  if(tabletUtilities){const u=state.utilities;assert(u.display==='grid'&&u.meal&&u.upcoming&&Math.abs(u.meal.top-u.upcoming.top)<=3&&u.meal.right<=u.upcoming.left-8&&u.meal.width>=250&&u.upcoming.width>=250,`tablet meal/exam utilities are not a clean two-column row ${JSON.stringify(u)}`)}
+  assert(state.rowRects.length===7&&state.rowRects.every((row,index)=>index===0||row.top-state.rowRects[index-1].bottom>=5),`timetable cells are visually merged ${JSON.stringify(state.rowRects)}`);
+  assert(state.rowRects.every(row=>row.bg!=='transparent'&&row.bg!=='rgba(0, 0, 0, 0)'&&row.shadow!=='none'),`timetable cells lost independent surfaces ${JSON.stringify(state.rowRects)}`);
+  assert(state.periodShapes.every(item=>String(item.clip||'none')==='none'&&Math.abs(item.width-item.height)<=1),`period badge circle clipping returned ${JSON.stringify(state.periodShapes)}`);state.periodShapes.forEach((shape,index)=>assertSquircle(shape,`period ${index+1}`));
+  state.actions.forEach((shape,index)=>assertSquircle(shape,`toolbar control ${index+1}`));
+  assert(state.exams.visible===3&&state.exams.items.length===3,`initial exam feed must show exactly three ${JSON.stringify(state.exams)}`);
+  assert(state.exams.oldDisplay==='none',`legacy overlapping exam stack remained visible ${state.exams.oldDisplay}`);
+  assert(!state.exams.text.includes('토요휴업일'),`holiday leaked into exam feed ${state.exams.text}`);
+  assert(state.exams.items[0].kind.includes('flow-exam-feature-v3')&&state.exams.items[0].height>=state.exams.items[1].height+30,`first exam is not the detailed hero ${JSON.stringify(state.exams.items)}`);
+  assert(state.exams.items[1].top-state.exams.items[0].bottom>=7&&state.exams.items[2].top-state.exams.items[1].bottom>=7,`first three exams overlap ${JSON.stringify(state.exams.items)}`);
   assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
-  if(portrait){assert(state.topbarMode==='ready'&&state.hero.height<=1&&!state.hero.visible,`portrait still has oversized School hero ${JSON.stringify(state.hero)}`);assert(state.compactSchool.text.includes('정동고등학교')&&state.compactSchool.text.includes('2학년 6반')&&state.compactSchool.display!=='none'&&state.compactSchool.height>=44,`compact school selector missing ${JSON.stringify(state.compactSchool)}`);assert(state.dateDock.display!=='none'&&state.dateDock.insideTopbar&&state.dateDock.days.length===5&&state.dateDock.days.filter(day=>day.active==='true').length===1,`gesture date rail missing ${JSON.stringify(state.dateDock)}`);assert(state.android==='true'&&(state.lens===null||state.lens==='none'),`Android stable glass contract failed ${JSON.stringify({android:state.android,lens:state.lens})}`)}
+  if(tabletUtilities){const{meal,upcoming}=state.utilities;assert(meal&&upcoming&&Math.abs(meal.top-upcoming.top)<=3&&meal.right<=upcoming.left-10&&meal.width>=250&&upcoming.width>=250,`tablet meal/exam row is not balanced ${JSON.stringify(state.utilities)}`)}
 }
-async function dragDate(page,dx){const dock=page.locator('#flowTodayDateDock');const box=await dock.boundingBox();assert(box,'date dock geometry missing');await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+dx,box.y+box.height/2,{steps:9});await page.mouse.up();await page.waitForTimeout(360);return page.locator('#datePicker').inputValue()}
+async function dragDate(page,dx){
+  const dock=page.locator('#flowTodayDateDock'),picker=page.locator('#datePicker'),before=await picker.inputValue(),box=await dock.boundingBox();assert(box,'date deck geometry missing');const x=box.x+box.width/2,y=box.y+Math.min(40,box.height/2);
+  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+dx,y,{steps:8});const during=await picker.inputValue();assert(during===before,`date committed before gesture release ${before} -> ${during}`);await page.mouse.up();await page.waitForFunction(previous=>document.querySelector('#datePicker')?.value!==previous,before,{timeout:3000});return{before,after:await picker.inputValue()};
+}
+async function revealToEnd(page){
+  const feed=page.locator('#flowExamFeedV3');let rounds=0;
+  while(rounds<12){
+    const before=Number(await feed.getAttribute('data-flow-exam-visible')||0),done=(await feed.getAttribute('data-flow-exam-exhausted'))==='true';if(done)break;
+    await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:'instant'}));
+    await page.waitForFunction(previous=>{const feed=document.querySelector('#flowExamFeedV3');return Number(feed?.dataset.flowExamVisible||0)>previous||feed?.dataset.flowExamExhausted==='true'},before,{timeout:5000});
+    await page.waitForTimeout(120);rounds++;
+  }
+  return{visible:Number(await feed.getAttribute('data-flow-exam-visible')||0),total:Number(await feed.getAttribute('data-flow-exam-total')||0),exhausted:(await feed.getAttribute('data-flow-exam-exhausted'))==='true',rounds};
+}
 
 const browser=await chromium.launch({headless:true});
 const portraitContext=await browser.newContext({viewport:{width:768,height:1024},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'});
-const portrait=await portraitContext.newPage(),portraitErrors=await prepare(portrait);const state=await readState(portrait);assertUnifiedState(state,{portrait:true,tabletUtilities:true});assert(!portraitErrors.length,`portrait browser errors ${JSON.stringify(portraitErrors)}`);await portrait.screenshot({path:`${OUT}/portrait-initial.png`,fullPage:true});
-await portrait.waitForTimeout(5000);const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true,tabletUtilities:true});assert(JSON.stringify(portraitStable.exams)===JSON.stringify(state.exams),`exam stack changed without interaction after 5s`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
-const originalDate=await portrait.locator('#datePicker').inputValue(),nextDate=await dragDate(portrait,-78);assert(nextDate!==originalDate,`left date gesture did not advance`);const returnedDate=await dragDate(portrait,78);assert(returnedDate===originalDate,`right date gesture did not magnet-snap back`);
-await portrait.waitForFunction(value=>document.querySelector('#datePicker')?.value===value,originalDate,{timeout:5000});
-await portrait.waitForFunction(()=>document.querySelector('#eventList')?.querySelectorAll(':scope > .flow-exam-card').length===3,{timeout:10000});
-await portrait.waitForFunction(()=>{const card=document.querySelector('#eventList > .flow-exam-card[data-depth="0"]');return !!card&&card.getBoundingClientRect().height>0},{timeout:5000});
-const stack=portrait.locator('#eventList').first();await stack.scrollIntoViewIfNeeded();await portrait.waitForTimeout(80);const stackBox=await stack.boundingBox();assert(stackBox,'exam stack missing geometry');
-const stackGeometry=()=>stack.evaluate(el=>[...el.querySelectorAll(':scope > .flow-exam-card')].map(card=>({depth:card.dataset.depth,top:card.getBoundingClientRect().top,transition:getComputedStyle(card).transitionDuration,transform:getComputedStyle(card).transform})));
-const beforeDrag=await stackGeometry();await portrait.mouse.move(stackBox.x+stackBox.width/2,stackBox.y+70);await portrait.mouse.down();await portrait.mouse.move(stackBox.x+stackBox.width/2,stackBox.y-10,{steps:8});const duringDrag=await stackGeometry();
-assert(duringDrag.length===3&&duringDrag[0].top<beforeDrag[0].top-20&&duringDrag[1].top<beforeDrag[1].top-40&&duringDrag[2].top<beforeDrag[2].top-40,`exam stack did not follow drag ${JSON.stringify({beforeDrag,duringDrag})}`);assert(duringDrag.every(item=>String(item.transition).split(',').every(value=>parseFloat(value)===0)),`drag still has transition lag ${JSON.stringify(duringDrag)}`);await portrait.mouse.up();await portrait.waitForTimeout(320);
-const after=await portrait.locator('#eventList > .flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap ${after}`);await portrait.waitForTimeout(1000);const snappedStable=await readState(portrait);assertUnifiedState(snappedStable,{portrait:true,expectNearest:false,tabletUtilities:true});assert(snappedStable.exams[0]===after,`snapped exam did not remain stable`);await portrait.screenshot({path:`${OUT}/portrait-after-drag.png`,fullPage:true});await portraitContext.close();
+const portrait=await portraitContext.newPage(),portraitErrors=await prepare(portrait),initial=await readState(portrait);assertBase(initial,{dateCount:7,tabletUtilities:true});assert(initial.android==='true'&&(initial.lens===null||initial.lens==='none'),`Android Optical stability regressed ${JSON.stringify({android:initial.android,lens:initial.lens})}`);assert(!portraitErrors.length,`portrait browser errors ${JSON.stringify(portraitErrors)}`);await portrait.screenshot({path:`${OUT}/portrait-initial.png`,fullPage:true});
+await portrait.waitForTimeout(5000);const stable=await readState(portrait);assertBase(stable,{dateCount:7,tabletUtilities:true});assert(stable.exams.visible===3&&JSON.stringify(stable.exams.items.map(item=>item.title))===JSON.stringify(initial.exams.items.map(item=>item.title)),`exam feed changed before user scroll`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
+const forward=await dragDate(portrait,-66);assert(forward.after!==forward.before,`left gesture did not advance date`);const back=await dragDate(portrait,66);assert(back.after===forward.before,`right gesture did not return one day ${JSON.stringify({forward,back})}`);await portrait.waitForFunction(value=>document.querySelector('#datePicker')?.value===value,forward.before,{timeout:3000});await portrait.waitForFunction(()=>document.querySelector('#flowExamFeedV3')?.querySelectorAll('[data-flow-exam-item]').length===3,{timeout:5000});
+const progressive=await revealToEnd(portrait);assert(progressive.exhausted&&progressive.visible===progressive.total&&progressive.total>=7,`progressive exam feed did not reach the academic-year end ${JSON.stringify(progressive)}`);assert(requestedDashboardDates.some(date=>String(date).startsWith('202610'))&&requestedDashboardDates.some(date=>String(date).startsWith('202702')),`future exam months were not lazily fetched ${JSON.stringify(requestedDashboardDates)}`);const expanded=await readState(portrait);assert(expanded.exams.items.length===progressive.total&&expanded.exams.items[0].kind.includes('flow-exam-feature-v3'),`expanded feed hierarchy broke ${JSON.stringify(expanded.exams)}`);await portrait.screenshot({path:`${OUT}/portrait-expanded-exams.png`,fullPage:true});await portraitContext.close();
 
-const landscapeContext=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'}),landscape=await landscapeContext.newPage();const landscapeErrors=await prepare(landscape),landscapeState=await readState(landscape);assertUnifiedState(landscapeState);assert(landscapeState.hero.height<=120,`landscape retained oversized School hero ${JSON.stringify(landscapeState.hero)}`);assert(landscapeState.desktopSchool==='정동고등학교'||landscapeState.compactSchool.text.includes('정동고등학교'),`landscape School identity missing`);assert(!landscapeErrors.length,`landscape browser errors ${JSON.stringify(landscapeErrors)}`);await landscape.screenshot({path:`${OUT}/landscape.png`,fullPage:true});
-await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,portraitStable,originalDate,nextDate,returnedDate,beforeDrag,duringDrag,after,snappedStable,landscapeState,portraitErrors,landscapeErrors},null,2));await landscapeContext.close();await browser.close();console.log(JSON.stringify({ok:true,currentPeriod:state.current[0],exams:state.exams,after,dateGesture:{originalDate,nextDate,returnedDate},tabletUtilities:state.utilities,landscapeHeroHeight:landscapeState.hero.height},null,2));
+const landscapeContext=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'}),landscape=await landscapeContext.newPage(),landscapeErrors=await prepare(landscape),landscapeState=await readState(landscape);assertBase(landscapeState,{dateCount:7,tabletUtilities:true});assert(landscapeState.dock.box?.width>=500,`landscape date deck collapsed back to tiny control ${JSON.stringify(landscapeState.dock.box)}`);assert(!landscapeErrors.length,`landscape browser errors ${JSON.stringify(landscapeErrors)}`);await landscape.screenshot({path:`${OUT}/landscape.png`,fullPage:true});await landscapeContext.close();
+
+const phoneContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-S931N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36'}),phone=await phoneContext.newPage(),phoneErrors=await prepare(phone),phoneState=await readState(phone);assertBase(phoneState,{dateCount:3});assert(phoneState.dock.box?.width>=120,`phone date deck disappeared ${JSON.stringify(phoneState.dock.box)}`);assert(!phoneErrors.length,`phone browser errors ${JSON.stringify(phoneErrors)}`);await phone.screenshot({path:`${OUT}/phone.png`,fullPage:false});await phoneContext.close();
+
+await fs.writeFile(`${OUT}/report.json`,JSON.stringify({initial,stable,forward,back,progressive,expanded,landscapeState,phoneState,requestedDashboardDates},null,2));
+await browser.close();
+console.log(JSON.stringify({status:'PASS',initialExams:initial.exams.items.map(item=>item.title),progressive,requestedDashboardDates},null,2));
