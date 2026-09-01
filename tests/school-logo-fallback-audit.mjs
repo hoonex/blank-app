@@ -44,7 +44,10 @@ await logoPage.route('**/functions/v1/school-logo**',route=>{primaryFallbackRequ
 await logoPage.addInitScript(profile=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light')},makeProfile('7240999','https://school.example'));
 await logoPage.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
 await logoPage.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});
-await logoPage.waitForSelector('#schoolLogo.loaded',{timeout:5000});
+/* Compact Today deliberately hides the legacy hero that owns #schoolLogo.
+ * The fallback contract is data/loading state, not visibility of that retired
+ * surface, so wait for the loaded marker without requiring a rendered box. */
+await logoPage.waitForFunction(()=>document.querySelector('#schoolLogo')?.classList.contains('loaded'),null,{timeout:5000});
 await logoPage.waitForTimeout(5400);
 const primaryState=await logoPage.evaluate(()=>({loaded:document.querySelector('#schoolLogo')?.classList.contains('loaded')||false,src:document.querySelector('#schoolLogo')?.src||''}));
 if(!primaryState.loaded||primaryFallbackRequests!==0)throw new Error(`Primary logo should suppress fallback: ${JSON.stringify({primaryFallbackRequests,primaryState})}`);
