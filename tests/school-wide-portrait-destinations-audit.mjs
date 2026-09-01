@@ -101,13 +101,9 @@ for(const testCase of [
   await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');
 
   const shell=await shellState(page);
-  if(portrait){
-    const schoolIdentitySplit=shell.schoolName&&shell.className&&shell.schoolNameDisplay==='block'&&shell.classNameDisplay==='block'&&shell.className.top>=shell.schoolName.bottom-1;
-    if(shell.desktop||!shell.topbar||!shell.bottom||shell.brandSmallVisible||!schoolIdentitySplit||shell.overflow>1){
-      throw new Error(`${name}: touch topbar/shell did not fully engage ${JSON.stringify(shell)}`);
-    }
-  }else if(!shell.desktop||shell.bottom||shell.overflow>1){
-    throw new Error(`${name}: landscape desktop shell regressed ${JSON.stringify(shell)}`);
+  const schoolIdentitySplit=shell.schoolName&&shell.className&&shell.schoolNameDisplay==='block'&&shell.classNameDisplay==='block'&&shell.className.top>=shell.schoolName.bottom-1;
+  if(shell.desktop||!shell.topbar||!shell.bottom||shell.brandSmallVisible||!schoolIdentitySplit||shell.overflow>1){
+    throw new Error(`${name}: 901–1180 compact shell did not fully engage ${JSON.stringify(shell)}`);
   }
 
   await page.locator('[data-view="schedule"]:visible').first().click();
@@ -182,4 +178,4 @@ for(const testCase of [
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface-with-full-height-lens-and-bottom-nav-return',landscape:'desktop-preserved'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'mobile-surface-with-full-height-lens-and-bottom-nav-return',landscape:'compact-shell-with-landscape-content'},null,2));
