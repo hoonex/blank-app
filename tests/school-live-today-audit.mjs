@@ -21,10 +21,10 @@ await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear
 await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
 await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
 await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
-await page.waitForFunction(()=>document.querySelectorAll('#timetable .flow-period-time').length===7,{timeout:10000});
+await page.waitForFunction(()=>document.querySelector('#timetable')?.querySelectorAll('.flow-period-time').length===7,{timeout:10000});
 await page.waitForFunction(()=>document.querySelector('.upcoming-card .card-heading h2')?.textContent==='다가오는 시험',{timeout:10000});
 await page.waitForTimeout(300);
-const state=await page.evaluate(()=>({android:document.documentElement.dataset.flowAndroidStableGlass,times:[...document.querySelectorAll('#timetable .flow-period-time')].map(node=>node.textContent),current:[...document.querySelectorAll('#timetable .flow-period-current')].map(node=>node.dataset.period),periodShapes:[...document.querySelectorAll('#timetable .period-no')].map(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return{clip:s.clipPath,width:r.width,height:r.height}}),examTitle:document.querySelector('.upcoming-card .card-heading h2')?.textContent,exams:[...document.querySelectorAll('.flow-exam-card h3')].map(node=>node.textContent),examText:document.querySelector('#eventList')?.textContent||'',lens:document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')?getComputedStyle(document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')).display:null,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
+const state=await page.evaluate(()=>{const timetable=document.querySelector('#timetable'),eventList=document.querySelector('#eventList');return{android:document.documentElement.dataset.flowAndroidStableGlass,times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),current:[...(timetable?.querySelectorAll('.flow-period-current')||[])].map(node=>node.dataset.period),periodShapes:[...(timetable?.querySelectorAll('.period-no')||[])].map(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return{clip:s.clipPath,width:r.width,height:r.height}}),examTitle:document.querySelector('.upcoming-card .card-heading h2')?.textContent,exams:[...(eventList?.querySelectorAll(':scope > .flow-exam-card h3')||[])].map(node=>node.textContent),examText:eventList?.textContent||'',lens:document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')?getComputedStyle(document.querySelector('.mobile-bottom-nav>.flow-refraction-copy-lens')).display:null,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}});
 assert(state.android==='true',`Android stable glass flag missing ${JSON.stringify(state)}`);
 assert(state.times.length===7&&state.times.every(text=>/^\d{2}:\d{2}–\d{2}:\d{2}/.test(text)),`period times missing ${JSON.stringify(state.times)}`);
 assert(state.current.length===1&&state.current[0]==='2',`current period highlight incorrect ${JSON.stringify(state.current)}`);
@@ -37,9 +37,9 @@ assert(state.lens===null||state.lens==='none',`Android live refraction copy is s
 assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
 assert(errors.length===0,`browser errors ${JSON.stringify(errors)}`);
 await page.screenshot({path:`${OUT}/initial.png`,fullPage:true});
-const stack=page.locator('#eventList'),box=await stack.boundingBox();assert(box,'exam stack missing geometry');
+const stack=page.locator('#eventList').first(),box=await stack.boundingBox();assert(box,'exam stack missing geometry');
 await page.mouse.move(box.x+box.width/2,box.y+70);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y-10,{steps:8});await page.mouse.up();await page.waitForTimeout(260);
-const after=await page.locator('.flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap to next item: ${after}`);
+const after=await page.locator('#eventList').first().locator(':scope > .flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap to next item: ${after}`);
 await page.waitForTimeout(5000);await page.screenshot({path:`${OUT}/after-5s.png`,fullPage:true});
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,after,errors},null,2));
 await context.close();await browser.close();console.log(JSON.stringify({ok:true,currentPeriod:state.current[0],exams:state.exams,after,lens:state.lens},null,2));
