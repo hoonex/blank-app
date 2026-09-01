@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'school-timetable-polish.js'
+      - 'school-today-topbar.js'
+      - 'school-metrics.js'
       - 'tests/school-live-today-audit.mjs'
       - '.github/workflows/school-live-today-audit.yml'
   workflow_dispatch:
