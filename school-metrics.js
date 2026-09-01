@@ -39,9 +39,10 @@ async function bootSchoolSurface(){
   await import('./school-uiux-v2.js');
 }
 
-/* Keep the entry module non-blocking. Production skips Transit entirely; the
- * localhost lab preserves the historical Transit → cleanup initialization order. */
-void bootSchoolSurface();
+/* The responsive shell must be final before DOM-ready consumers select a nav
+ * target. Transit remains localhost-only, but cleanup + v2 styling now settle
+ * inside this module evaluation instead of racing the first interaction. */
+await bootSchoolSurface();
 
 /* Optical/refraction used to assume School always had five destinations because
  * Transit was one of them. Production now has four, so keep the lens geometry
@@ -89,6 +90,9 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     bottom:78px!important;
     padding-bottom:34px!important;
   }
+}
+@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #todayView .timetable .period-no{min-width:36px!important}
 }`;
   document.head.append(style);
 }
