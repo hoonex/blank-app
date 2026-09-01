@@ -64,6 +64,10 @@ function ensureSdk(src){
 function init(){
   if(document.documentElement.dataset.flowAdfit==='ready')return;
   const kind=appKind();if(!kind)return;
+  /* School first-fold chrome is independent from whether the ad unit itself is
+   * configured. Load the date rail before validating AdFit so the Today header
+   * never depends on third-party SDK success. */
+  if(kind==='school')import('/school-today-topbar.js?v=20260901-1').catch(()=>{});
   const config=configFor(kind);
   if(!validConfig(config)){
     document.documentElement.dataset.flowAdfit='unconfigured';
