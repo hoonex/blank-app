@@ -1,0 +1,63 @@
+/* Flow School Today — responsive tablet composition.
+ * Phones keep a single content column. Portrait tablets keep the timetable
+ * full-width and place meal + upcoming exams side by side underneath it.
+ */
+@media (min-width: 640px) and (max-width: 1024px) and (orientation: portrait){
+  html[data-flow-school-ui="v2"] #todayView .today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:14px!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .timetable-card{
+    grid-column:1/-1!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .right-stack{
+    display:grid!important;
+    grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr)!important;
+    gap:14px!important;
+    align-items:stretch!important;
+    width:100%!important;
+    min-width:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .right-stack > :is(.meal-card,.upcoming-card){
+    min-width:0!important;
+    width:100%!important;
+    height:100%!important;
+    margin:0!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .meal-card,
+  html[data-flow-school-ui="v2"] #todayView .upcoming-card{
+    border-radius:22px!important;
+    corner-shape:squircle!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .upcoming-card #eventList{
+    min-height:0!important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1024px) and (orientation: landscape){
+  html[data-flow-school-ui="v2"] #todayView .today-grid{
+    grid-template-columns:minmax(0,1.55fr) minmax(300px,.85fr)!important;
+    gap:14px!important;
+  }
+  html[data-flow-school-ui="v2"] #todayView .right-stack{
+    min-width:0!important;
+    gap:14px!important;
+  }
+}
+
+@media (max-width: 639px){
+  html[data-flow-school-ui="v2"] #todayView .right-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:14px!important;
+  }
+}
