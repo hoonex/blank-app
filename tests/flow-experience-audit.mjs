@@ -44,10 +44,10 @@ async function runSchool({reducedMotion='no-preference'}={}){
     await page.waitForSelector('#flowTodayDateDock:visible');
     await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24';window.__flowDateChanges=0;input.addEventListener('change',()=>{window.__flowDateChanges++},{capture:true})});counter.count=0;await page.evaluate(()=>{window.__flowHaptics=[]});
     const dial=page.locator('#flowTodayDateDock:visible'),box=await dial.boundingBox();if(!box)throw new Error('School magnetic date rail missing');const x=box.x+box.width/2,y=box.y+box.height/2;
-    await dial.dispatchEvent('pointerdown',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true});
-    await dial.dispatchEvent('pointermove',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x+76,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true});
+    await page.mouse.move(x,y);await page.mouse.down();
+    await page.mouse.move(x+76,y,{steps:6});
     const during=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0}));if(during.date!=='2026-08-24'||during.changes!==0||counter.count!==0)throw new Error(`${label} magnetic date rail committed during drag: ${JSON.stringify({during,dashboardRequests:counter.count})}`);
-    await dial.dispatchEvent('pointerup',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x+76,clientY:y,button:0,buttons:0,bubbles:true,cancelable:true});
+    await page.mouse.up();
     await page.waitForFunction(()=>document.querySelector('#datePicker')?.value!=='2026-08-24');
     const finalState=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0,haptics:window.__flowHaptics.slice()}));
     if(finalState.date!=='2026-08-23')throw new Error(`${label} magnetic date rail expected one-day snap to 2026-08-23, got ${finalState.date}`);
