@@ -109,9 +109,9 @@ html[data-flow-school-ui="v2"] #todayView .flow-exam-feed-empty{padding:28px 8px
 }
 function ensureFeed(){
   const card=$('#todayView .upcoming-card'),old=$('#eventList');if(!card||!old)return null;
-  card.dataset.flowExamFeed='v3';
+  if(card.dataset.flowExamFeed!=='v3')card.dataset.flowExamFeed='v3';
   let feed=$('#flowExamFeedV3');if(!feed){feed=document.createElement('div');feed.id='flowExamFeedV3';feed.dataset.flowExamVisible='0';feed.setAttribute('aria-live','polite');old.after(feed)}
-  const title=$('.card-heading h2',card),kicker=$('.section-kicker',card);if(title)title.textContent='다가오는 시험';if(kicker)kicker.textContent='EXAMS';
+  const title=$('.card-heading h2',card),kicker=$('.section-kicker',card);if(title&&title.textContent!=='다가오는 시험')title.textContent='다가오는 시험';if(kicker&&kicker.textContent!=='EXAMS')kicker.textContent='EXAMS';
   return feed;
 }
 function markup(exams){
@@ -124,7 +124,11 @@ function markup(exams){
 function render(){
   ensureStyle();const feed=ensureFeed();if(!feed)return;const exams=allExams(),visible=Math.min(visibleCount,exams.length),hasMore=visible<exams.length||!exhausted;
   const body=markup(exams);const footer=exams.length?`<div class="flow-exam-feed-sentinel" data-flow-exam-sentinel data-state="${hasMore?'more':'done'}">${hasMore?'아래로 스크롤하면 다음 시험을 이어서 표시합니다.':'이번 학년도 시험을 모두 확인했습니다.'}</div>`:'';
-  const html=body+footer;if(feed.innerHTML!==html)feed.innerHTML=html;feed.dataset.flowExamVisible=String(visible);feed.dataset.flowExamTotal=String(exams.length);feed.dataset.flowExamExhausted=String(exhausted&&!hasMore);
+  const html=body+footer;if(feed.innerHTML!==html)feed.innerHTML=html;
+  const visibleValue=String(visible),totalValue=String(exams.length),exhaustedValue=String(exhausted&&!hasMore);
+  if(feed.dataset.flowExamVisible!==visibleValue)feed.dataset.flowExamVisible=visibleValue;
+  if(feed.dataset.flowExamTotal!==totalValue)feed.dataset.flowExamTotal=totalValue;
+  if(feed.dataset.flowExamExhausted!==exhaustedValue)feed.dataset.flowExamExhausted=exhaustedValue;
 }
 function resetHorizon(){
   const now=new Date(),academicEnd=now.getMonth()>=2?new Date(now.getFullYear()+1,1,28,12):new Date(now.getFullYear(),1,28,12);
