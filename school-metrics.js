@@ -54,6 +54,7 @@ async function bootSchoolSurface(){
 void bootSchoolSurface().finally(()=>{
   delete schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading;
   schoolSurfaceRoot.dataset.flowSchoolSurface='ready';
+  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:refraction-refresh')));
 });
 
 /* Optical/refraction used to assume School always had five destinations because
@@ -125,6 +126,9 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span{font-size:.65rem!important;font-weight:800!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.54rem!important}
+
+  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid{gap:12px!important}
+  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid>.status-card:not(.flow-home-noise){border:0!important}
 
   html[data-flow-school-ui="v2"] .view-header{
     min-height:104px!important;
