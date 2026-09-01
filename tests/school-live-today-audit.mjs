@@ -17,7 +17,7 @@ const context=await browser.newContext({viewport:{width:768,height:1024},isMobil
 const page=await context.newPage();
 const errors=[];page.on('pageerror',error=>errors.push(String(error)));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())});
 await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});if(action==='place')return json(route,{provider:'fixture',place:{id:'school',name:profile.school.name,address:profile.school.address}});return json(route,{})});
-await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');const now=new Date(),start=new Date(now.getTime()-65*60000),pad=v=>String(v).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',lunch:50}))},{profile});
+await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');const now=new Date(),start=new Date(now.getTime()-65*60000),pad=v=>String(v).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}))},{profile});
 await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
 await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
 await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
@@ -37,7 +37,7 @@ assert(state.lens===null||state.lens==='none',`Android live refraction copy is s
 assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
 assert(errors.length===0,`browser errors ${JSON.stringify(errors)}`);
 await page.screenshot({path:`${OUT}/initial.png`,fullPage:true});
-const stack=page.locator('#eventList').first(),box=await stack.boundingBox();assert(box,'exam stack missing geometry');
+const stack=page.locator('#eventList').first();await stack.scrollIntoViewIfNeeded();await page.waitForTimeout(80);const box=await stack.boundingBox();assert(box,'exam stack missing geometry');
 await page.mouse.move(box.x+box.width/2,box.y+70);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y-10,{steps:8});await page.mouse.up();await page.waitForTimeout(260);
 const after=await page.locator('#eventList').first().locator(':scope > .flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap to next item: ${after}`);
 await page.waitForTimeout(5000);await page.screenshot({path:`${OUT}/after-5s.png`,fullPage:true});
