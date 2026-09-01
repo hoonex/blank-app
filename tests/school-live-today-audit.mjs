@@ -58,7 +58,7 @@ function assertUnifiedState(state,{portrait=false,expectNearest=true}={}){
   if(expectNearest)assert(state.exams[0].includes('전국연합'),`first exam is not the nearest meaningful exam ${JSON.stringify(state.exams)}`);
   assert(state.examCards.length===3&&state.examCards[0].height>state.examCards[1].height+25&&Math.abs(state.examCards[1].height-state.examCards[2].height)<=1,`exam hierarchy is not one hero plus two normal cards ${JSON.stringify(state.examCards)}`);
   assert(state.examCards[1].top-state.examCards[0].bottom>=8&&state.examCards[2].top-state.examCards[1].bottom>=8,`three visible exams overlap ${JSON.stringify(state.examCards)}`);
-  assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0,`rear exam stack hint is missing ${JSON.stringify(state.peek)}`);
+  assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0&&parseFloat(state.peek.height)<=24,`rear exam stack hint is missing or too large ${JSON.stringify(state.peek)}`);
   assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
   if(portrait){assert(state.hero.text==='정동고등학교'&&state.hero.display!=='none',`portrait hero school identity missing ${JSON.stringify(state.hero)}`);assert(state.android==='true',`Android stable glass flag missing ${JSON.stringify(state)}`);assert(state.lens===null||state.lens==='none',`Android live refraction copy is still visible ${state.lens}`)}
 }
@@ -68,6 +68,8 @@ const portraitContext=await browser.newContext({viewport:{width:768,height:1024}
 const portrait=await portraitContext.newPage();
 const portraitErrors=await prepare(portrait);const state=await readState(portrait);assertUnifiedState(state,{portrait:true});assert(portraitErrors.length===0,`portrait browser errors ${JSON.stringify(portraitErrors)}`);
 await portrait.screenshot({path:`${OUT}/portrait-initial.png`,fullPage:true});
+await portrait.waitForTimeout(5000);
+const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true});assert(JSON.stringify(portraitStable.exams)===JSON.stringify(state.exams),`exam stack changed without interaction after 5s ${JSON.stringify({initial:state.exams,stable:portraitStable.exams})}`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
 const stack=portrait.locator('#eventList').first();await stack.scrollIntoViewIfNeeded();await portrait.waitForTimeout(80);const box=await stack.boundingBox();assert(box,'exam stack missing geometry');
 const stackGeometry=()=>stack.evaluate(el=>[...el.querySelectorAll(':scope > .flow-exam-card')].map(card=>({depth:card.dataset.depth,top:card.getBoundingClientRect().top,transition:getComputedStyle(card).transitionDuration,transform:getComputedStyle(card).transform})));
 const beforeDrag=await stackGeometry();
@@ -79,10 +81,10 @@ assert(duringDrag[1].top<beforeDrag[1].top-40&&duringDrag[2].top<beforeDrag[2].t
 assert(duringDrag.every(item=>String(item.transition).split(',').every(value=>parseFloat(value)===0)),`drag still has transition lag ${JSON.stringify(duringDrag)}`);
 await portrait.mouse.up();await portrait.waitForTimeout(320);
 const after=await portrait.locator('#eventList').first().locator(':scope > .flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap to next item: ${after}`);
-await portrait.waitForTimeout(5000);const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true,expectNearest:false});assert(portraitStable.exams[0]===after,`snapped exam did not remain stable after 5s ${JSON.stringify({after,stable:portraitStable.exams})}`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
+await portrait.waitForTimeout(1000);const snappedStable=await readState(portrait);assertUnifiedState(snappedStable,{portrait:true,expectNearest:false});assert(snappedStable.exams[0]===after,`snapped exam did not remain stable ${JSON.stringify({after,stable:snappedStable.exams})}`);await portrait.screenshot({path:`${OUT}/portrait-after-drag.png`,fullPage:true});
 await portraitContext.close();
 
 const landscapeContext=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'});
 const landscape=await landscapeContext.newPage();const landscapeErrors=await prepare(landscape);const landscapeState=await readState(landscape);assertUnifiedState(landscapeState);assert(landscapeState.hero.text==='정동고등학교'&&landscapeState.hero.display!=='none',`landscape school identity missing ${JSON.stringify(landscapeState.hero)}`);assert(landscapeErrors.length===0,`landscape browser errors ${JSON.stringify(landscapeErrors)}`);await landscape.screenshot({path:`${OUT}/landscape.png`,fullPage:true});
-await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,portraitStable,beforeDrag,duringDrag,after,landscapeState,portraitErrors,landscapeErrors},null,2));
+await fs.writeFile(`${OUT}/report.json`,JSON.stringify({state,portraitStable,beforeDrag,duringDrag,after,snappedStable,landscapeState,portraitErrors,landscapeErrors},null,2));
 await landscapeContext.close();await browser.close();console.log(JSON.stringify({ok:true,currentPeriod:state.current[0],exams:state.exams,after,portraitHero:state.hero.text,landscapeHero:landscapeState.hero.text},null,2));
