@@ -23,7 +23,8 @@ let horizon=null;
 let exhausted=false;
 let loadingPromise=null;
 let scrollFrame=0;
-let userHasScrolled=false;
+let scrollIntent=false;
+let touchStartY=null;
 
 function readJson(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
 function profile(){return readJson(PROFILE_KEY,null)}
@@ -156,15 +157,21 @@ async function revealMore(){
   })().finally(()=>{loadingPromise=null});
   return loadingPromise;
 }
+function scheduleScrollCheck(){if(scrollFrame)return;scrollFrame=requestAnimationFrame(checkScroll)}
+function armScrollIntent(){scrollIntent=true;scheduleScrollCheck()}
 function checkScroll(){
-  scrollFrame=0;if(!userHasScrolled)return;const sentinel=$('[data-flow-exam-sentinel]');if(!sentinel||sentinel.dataset.state!=='more')return;
-  const rect=sentinel.getBoundingClientRect();if(rect.top<=innerHeight+120&&rect.bottom>=-80)void revealMore();
+  scrollFrame=0;if(!scrollIntent)return;const sentinel=$('[data-flow-exam-sentinel]');if(!sentinel||sentinel.dataset.state!=='more')return;
+  const rect=sentinel.getBoundingClientRect();if(rect.top<=innerHeight+120&&rect.bottom>=-80){scrollIntent=false;void revealMore()}
 }
-function onScroll(){if(scrollY>24)userHasScrolled=true;if(scrollFrame)return;scrollFrame=requestAnimationFrame(checkScroll)}
+function onScroll(){scheduleScrollCheck()}
+function onWheel(event){if(event.deltaY>2)armScrollIntent()}
+function onTouchStart(event){touchStartY=event.touches?.[0]?.clientY??null}
+function onTouchMove(event){const y=event.touches?.[0]?.clientY;if(touchStartY!==null&&Number.isFinite(y)&&touchStartY-y>8)armScrollIntent()}
+function onKeyDown(event){if(['ArrowDown','PageDown','End',' '].includes(event.key))armScrollIntent()}
 function refreshFromDashboard(){[0,120,420,900].forEach(delay=>setTimeout(render,delay))}
 function init(){
   ensureStyle();resetHorizon();render();refreshFromDashboard();
-  addEventListener('scroll',onScroll,{passive:true});
+  addEventListener('scroll',onScroll,{passive:true});addEventListener('wheel',onWheel,{passive:true});addEventListener('touchstart',onTouchStart,{passive:true});addEventListener('touchmove',onTouchMove,{passive:true});addEventListener('keydown',onKeyDown);
   document.addEventListener('change',event=>{if(event.target.matches?.('#datePicker'))refreshFromDashboard()});
   document.addEventListener('click',event=>{if(event.target.closest?.('[data-view="today"]'))refreshFromDashboard()});
   addEventListener('focus',()=>queueMicrotask(render),{passive:true});
