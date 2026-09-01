@@ -28,14 +28,14 @@ function formatMinutes(total){const value=((Math.round(total)%1440)+1440)%1440;r
 function profile(){return readJson(PROFILE_KEY,{})||{}}
 function grade(){return Math.max(1,Math.min(6,Number(profile()?.grade)||1))}
 function schoolKind(){return String(profile()?.school?.kind||'')}
-function bellDefaults(){const kind=schoolKind();if(kind.includes('초등'))return{start:'09:00',lesson:40,break:10,meal:'12:10',lunch:50};if(kind.includes('중학'))return{start:'09:00',lesson:45,break:10,meal:'12:20',lunch:50};return{start:'08:30',lesson:50,break:10,meal:'12:20',lunch:50}}
-function bellConfig(){return{...bellDefaults(),...readJson(BELL_KEY,{})}}
+function bellDefaults(){const kind=schoolKind();if(kind.includes('초등'))return{start:'09:00',lesson:40,break:10,meal:'12:10',mealEnd:'13:00'};if(kind.includes('중학'))return{start:'09:00',lesson:45,break:10,meal:'12:20',mealEnd:'13:10'};return{start:'08:30',lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}}
+function bellConfig(){const cfg={...bellDefaults(),...readJson(BELL_KEY,{})};if(!cfg.mealEnd)cfg.mealEnd=formatMinutes(parseTime(cfg.meal,12*60+20)+50);return cfg}
 function periodWindows(count=7){
-  const cfg=bellConfig(),lesson=Math.max(25,Number(cfg.lesson)||50),brk=Math.max(5,Number(cfg.break)||10),lunch=Math.max(30,Number(cfg.lunch)||50);
-  let cursor=parseTime(cfg.start,8*60+30),meal=parseTime(cfg.meal,12*60+20);const windows=[];
+  const cfg=bellConfig(),lesson=Math.max(25,Number(cfg.lesson)||50),brk=Math.max(5,Number(cfg.break)||10);
+  let cursor=parseTime(cfg.start,8*60+30);const mealStart=parseTime(cfg.meal,12*60+20),mealEnd=Math.max(mealStart+30,parseTime(cfg.mealEnd,mealStart+50));const windows=[];
   for(let period=1;period<=count;period++){
     const start=cursor,end=start+lesson;windows.push({period,start,end});
-    if(period===4)cursor=Math.max(end,meal)+lunch;else cursor=end+brk;
+    if(period===4)cursor=Math.max(end+brk,mealEnd);else cursor=end+brk;
   }
   return windows;
 }
