@@ -46,7 +46,7 @@ async function readState(page){
     };
   });
 }
-function assertUnifiedState(state,{portrait=false}={}){
+function assertUnifiedState(state,{portrait=false,expectNearest=true}={}){
   assert(state.times.length===7&&state.times.every(text=>/^\d{2}:\d{2}–\d{2}:\d{2}/.test(text)),`period times missing ${JSON.stringify(state.times)}`);
   assert(state.current.length===1&&state.current[0]==='2',`current period highlight incorrect ${JSON.stringify(state.current)}`);
   assert(state.periodShapes.every(item=>String(item.clip||'none')==='none'&&Math.abs(item.width-item.height)<=1&&parseFloat(item.radius)>=9&&parseFloat(item.radius)<item.width/2),`period badges are not squircle cells ${JSON.stringify(state.periodShapes)}`);
@@ -55,7 +55,7 @@ function assertUnifiedState(state,{portrait=false}={}){
   assert(state.examTitle==='다가오는 시험',`exam heading missing ${state.examTitle}`);
   assert(state.exams.length===3&&state.visible==='3',`expected three visible exam cards ${JSON.stringify(state)}`);
   assert(!state.examText.includes('토요휴업일'),`holiday leaked into exam stack ${state.examText}`);
-  assert(state.exams[0].includes('전국연합'),`first exam is not the nearest meaningful exam ${JSON.stringify(state.exams)}`);
+  if(expectNearest)assert(state.exams[0].includes('전국연합'),`first exam is not the nearest meaningful exam ${JSON.stringify(state.exams)}`);
   assert(state.examCards.length===3&&state.examCards[0].height>state.examCards[1].height+25&&Math.abs(state.examCards[1].height-state.examCards[2].height)<=1,`exam hierarchy is not one hero plus two normal cards ${JSON.stringify(state.examCards)}`);
   assert(state.examCards[1].top-state.examCards[0].bottom>=8&&state.examCards[2].top-state.examCards[1].bottom>=8,`three visible exams overlap ${JSON.stringify(state.examCards)}`);
   assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0,`rear exam stack hint is missing ${JSON.stringify(state.peek)}`);
@@ -79,7 +79,7 @@ assert(duringDrag[1].top<beforeDrag[1].top-40&&duringDrag[2].top<beforeDrag[2].t
 assert(duringDrag.every(item=>String(item.transition).split(',').every(value=>parseFloat(value)===0)),`drag still has transition lag ${JSON.stringify(duringDrag)}`);
 await portrait.mouse.up();await portrait.waitForTimeout(320);
 const after=await portrait.locator('#eventList').first().locator(':scope > .flow-exam-card[data-depth="0"] h3').textContent();assert(after&&after!==state.exams[0],`exam stack did not magnet-snap to next item: ${after}`);
-await portrait.waitForTimeout(5000);const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true});await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
+await portrait.waitForTimeout(5000);const portraitStable=await readState(portrait);assertUnifiedState(portraitStable,{portrait:true,expectNearest:false});assert(portraitStable.exams[0]===after,`snapped exam did not remain stable after 5s ${JSON.stringify({after,stable:portraitStable.exams})}`);await portrait.screenshot({path:`${OUT}/portrait-after-5s.png`,fullPage:true});
 await portraitContext.close();
 
 const landscapeContext=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',userAgent:'Mozilla/5.0 (Linux; Android 14; SM-T735N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'});
