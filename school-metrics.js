@@ -91,7 +91,8 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
   style.id='flow-school-touch-nav-contract';
   style.textContent=`
 @media(max-width:1180px){
-  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar{background:var(--bg)!important}
+  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar,
+  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(:has(#todayView:not(.hidden))) .mobile-topbar:has(#flowTodayDateDock){background:var(--bg)!important}
 }
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
