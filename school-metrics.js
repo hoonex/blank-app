@@ -27,6 +27,15 @@ function transitLabEnabled(){
   try{return localStorage.getItem('flow-school-transit-lab-v1')!=='off'}catch{return false}
 }
 
+const schoolSurfaceRoot=document.documentElement;
+if(!document.querySelector('#flow-school-surface-ready-gate')){
+  const style=document.createElement('style');
+  style.id='flow-school-surface-ready-gate';
+  style.textContent='html[data-flow-school-surface-loading="true"] #dashboard:not(.hidden){visibility:hidden!important;pointer-events:none!important}';
+  document.head.append(style);
+}
+schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading='true';
+
 async function bootSchoolSurface(){
   if(transitLabEnabled()){
     try{
@@ -39,10 +48,13 @@ async function bootSchoolSurface(){
   await import('./school-uiux-v2.js');
 }
 
-/* The responsive shell must be final before DOM-ready consumers select a nav
- * target. Transit remains localhost-only, but cleanup + v2 styling now settle
- * inside this module evaluation instead of racing the first interaction. */
-await bootSchoolSurface();
+/* Keep the entry module non-blocking, but never expose the transient desktop
+ * shell while its responsive v2 styles are still loading. Navigation contracts
+ * below remain synchronous and the dashboard becomes interactive once settled. */
+void bootSchoolSurface().finally(()=>{
+  delete schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading;
+  schoolSurfaceRoot.dataset.flowSchoolSurface='ready';
+});
 
 /* Optical/refraction used to assume School always had five destinations because
  * Transit was one of them. Production now has four, so keep the lens geometry
