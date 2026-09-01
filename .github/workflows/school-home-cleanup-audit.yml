@@ -21,10 +21,12 @@ jobs:
         run: |
           set -euo pipefail
           node --check school-surface-cleanup.js
+          node --check school-timetable-polish.js
           node --check tests/school-home-cleanup-audit.mjs
           node --check tests/school-wide-portrait-destinations-audit.mjs
           node --check tests/school-mobile-lens-geometry-audit.mjs
           node --check tests/school-today-clay-audit.mjs
+          node --check tests/school-today-actions-audit.mjs
           node --check cloudflare-worker.mjs
           test -f school-today-clay.css
           grep -q "school-today-clay.css" school-uiux-v2.js
@@ -63,6 +65,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-home-cleanup-audit/today-clay
         run: node tests/school-today-clay-audit.mjs
+      - name: Verify Today action hierarchy and circular period badges
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-home-cleanup-audit/today-actions
+        run: node tests/school-today-actions-audit.mjs
       - name: Verify compact School active lens follows its tab
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
