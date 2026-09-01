@@ -15,7 +15,7 @@ html[data-flow-school-ui="v2"] body #todayView .timetable-actions{
 html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{
   box-sizing:border-box!important;
   min-width:104px!important;
-  height:40px!important;
+  height:42px!important;
   padding:3px!important;
   border:0!important;
   border-radius:999px!important;
@@ -39,7 +39,7 @@ html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button.act
 }
 html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action{
   box-sizing:border-box!important;
-  min-height:40px!important;
+  min-height:42px!important;
   padding:0 13px!important;
   border:0!important;
   border-radius:999px!important;
@@ -59,7 +59,7 @@ html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action:activ
   box-shadow:inset 0 3px 8px rgba(58,75,105,.10),inset 0 -1px 1px rgba(255,255,255,.6)!important;
 }
 html[data-flow-school-ui="v2"] body #todayView .meal-card #allergyBtn.flow-school-utility-action{
-  min-height:38px!important;
+  min-height:40px!important;
   padding-inline:12px!important;
   background:color-mix(in srgb,var(--surface) 88%,var(--surface-2))!important;
 }
