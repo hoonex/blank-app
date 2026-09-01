@@ -69,7 +69,7 @@ html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack{position:relativ
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-card{position:absolute;left:0;right:0;top:0;box-sizing:border-box;min-height:112px;padding:15px 16px;border:0;border-radius:18px;corner-shape:squircle;background:color-mix(in srgb,var(--surface) 96%,var(--surface-2));box-shadow:0 9px 24px rgba(43,57,78,.065),inset 0 1px 0 rgba(255,255,255,.75);transform-origin:50% 0;transition:transform .24s cubic-bezier(.2,.9,.22,1),opacity .2s ease,filter .2s ease;will-change:transform,opacity}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-card[data-depth="0"]{z-index:3;transform:translate3d(0,calc(var(--flow-exam-drag,0px) * .52),0) scale(1);opacity:1}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-card[data-depth="1"]{z-index:2;transform:translate3d(8px,94px,-20px) scale(.965);opacity:.86;filter:saturate(.92)}
-html[data-flow-school-ui="v2"] body #todayView .flow-exam-card[data-depth="2"]{z-index:1;transform:translate3d(15px,154px,-42px) scale(.93);opacity:.64;filter:saturate(.86) blur(.18px)}
+html[data-flow-school-ui="v2"] body #todayView .flow-exam-card[data-depth="2"]{z-index:1;transform:translate3d(15px,154px,-42px) scale(.93);opacity:.72;filter:saturate(.9) blur(.08px)}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack[data-swipe="up"] .flow-exam-card[data-depth="0"]{transform:translate3d(0,-78px,0) scale(.975);opacity:0}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-stack[data-swipe="down"] .flow-exam-card[data-depth="0"]{transform:translate3d(0,58px,0) scale(.985);opacity:0}
 html[data-flow-school-ui="v2"] body #todayView .flow-exam-date{display:flex;align-items:center;gap:8px;margin-bottom:7px;color:var(--muted);font-size:.58rem;font-weight:730}
@@ -114,7 +114,7 @@ function examGroup(exam){const text=`${exam.name} ${exam.detail}`;if(/전국연�
 function upcomingExams(){captureAcademicExams();const today=isoLocal(),g=grade(),items=[...academicExamCache,...OFFICIAL_EXAMS_2026.filter(item=>item.grades.includes(g))].filter(item=>item.date>=today).sort((a,b)=>a.date.localeCompare(b.date));const dedup=new Map();for(const item of items){const key=examGroup(item),old=dedup.get(key);if(!old||String(item.detail||'').length>String(old.detail||'').length)dedup.set(key,item)}return[...dedup.values()].sort((a,b)=>a.date.localeCompare(b.date))}
 function examDday(date){const now=new Date(),[y,m,d]=date.split('-').map(Number),target=new Date(y,m-1,d,12),base=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),diff=Math.round((target-base)/86400000);return diff===0?'D-DAY':diff>0?`D-${diff}`:`D+${Math.abs(diff)}`}
 function examDateLabel(date){const[y,m,d]=date.split('-').map(Number);return new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'short'}).format(new Date(y,m-1,d,12))}
-function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]))}
 function examCardMarkup(exam,depth){return `<article class="flow-exam-card" data-depth="${depth}" data-exam-date="${exam.date}"><div class="flow-exam-date"><span class="flow-exam-dday">${examDday(exam.date)}</span><span>${examDateLabel(exam.date)}</span><span>${exam.kind||'시험'}</span></div><h3>${escapeHtml(exam.name)}</h3>${depth===0?`<p>${escapeHtml(exam.detail||'시험 일정을 확인하세요.')}</p>`:''}</article>`}
 function updateQuickExam(exams){
   const card=$('#quickEvent')?.closest('.status-card'),first=exams[0],label=card?.querySelector('.status-label'),quick=$('#quickEvent'),sub=$('#quickEventSub');setTextIfChanged(label,'다음 시험');
@@ -135,5 +135,13 @@ function bindExamStack(box){
 function markAndroidStableGlass(){if(/Android/i.test(navigator.userAgent||'')&&document.documentElement.dataset.flowAndroidStableGlass!=='true')document.documentElement.dataset.flowAndroidStableGlass='true'}
 function enhance(){normalizeActionControls();moveHelpLast();enhanceTimetable();renderExamStack()}
 function scheduleEnhance(){[0,120,360,900,1800,3500,7000].forEach(delay=>setTimeout(enhance,delay))}
-function init(){markAndroidStableGlass();installStyles();scheduleEnhance();document.addEventListener('click',event=>{if(event.target.closest('#todayView,#prevDay,#nextDay,#todayBtn,[data-view="today"],#editSubjectsBtn'))[60,240,700].forEach(delay=>setTimeout(enhance,delay))},true);document.addEventListener('change',event=>{if(event.target.matches('#datePicker,#monthPicker'))[80,320,900].forEach(delay=>setTimeout(enhance,delay))},true);window.addEventListener('focus',()=>setTimeout(enhance,80));setInterval(()=>{if(!document.hidden)enhanceTimetable()},30000)}
+function init(){
+  markAndroidStableGlass();installStyles();scheduleEnhance();
+  document.addEventListener('click',event=>{
+    if(event.target.closest('[data-view="today"]')){queueMicrotask(enhance);return}
+    if(event.target.closest('#prevDay,#nextDay,#todayBtn,#editSubjectsBtn'))[0,120,360,900].forEach(delay=>setTimeout(enhance,delay));
+  });
+  document.addEventListener('change',event=>{if(event.target.matches('#datePicker,#monthPicker'))[0,120,360,900].forEach(delay=>setTimeout(enhance,delay))});
+  window.addEventListener('focus',()=>queueMicrotask(enhance));setInterval(()=>{if(!document.hidden)enhanceTimetable()},30000);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
