@@ -75,15 +75,17 @@
   }
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock{
     height:58px!important;
-    grid-template-columns:30px minmax(0,1fr) 30px!important;
+    grid-template-columns:44px minmax(0,1fr) 44px!important;
     grid-template-rows:45px 4px!important;
     padding:4px 6px 3px!important;
     border-radius:20px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock .flow-date-edge{
-    width:30px!important;
-    height:30px!important;
-    border-radius:10px!important;
+    width:44px!important;
+    height:44px!important;
+    min-width:44px!important;
+    min-height:44px!important;
+    border-radius:14px!important;
     font-size:1rem!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock :is(.flow-date-viewport,.flow-date-rail){height:45px!important}
