@@ -52,16 +52,15 @@ async function snapshot(page){
     const cards=[...document.querySelectorAll('#todayView .status-card')].filter(el=>getComputedStyle(el).display!=='none').map(el=>{
       const s=getComputedStyle(el),r=el.getBoundingClientRect();return{border:[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth],boxShadow:s.boxShadow,background:s.backgroundColor,rect:{left:r.left,top:r.top,width:r.width,height:r.height}};
     });
+    const dock=document.querySelector('#flowTodayDateDock');
     return{
       mode:document.documentElement.dataset.flowGlassMode||'',
+      topbarMode:document.documentElement.dataset.flowTodayTopbar||'',
       claySheet:Boolean(document.querySelector('link[data-flow-school-today-clay]')),
       mobileSchool:styleOf('.mobile-school-button'),
       hero:styleOf('#todayView .school-hero'),
-      heroSchoolName:styleOf('#todayView .school-hero-copy h1'),
-      heroSchoolMeta:styleOf('#todayView .school-hero-copy p'),
-      date:styleOf('#todayView .date-controller'),
-      prev:styleOf('#todayView #prevDay'),
-      next:styleOf('#todayView #nextDay'),
+      dateDock:styleOf('#flowTodayDateDock'),
+      dateDays:[...(dock?.querySelectorAll('.flow-date-day')||[])].map(node=>({offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim(),display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility})),
       statusGrid:styleOf('#todayView .status-grid'),
       statusCards:cards,
       topbar:styleOf('.mobile-topbar'),
@@ -78,36 +77,28 @@ function clay(name,node){
   if(!node)throw new Error(`${name}: missing element`);
   if(!node.boxShadow||node.boxShadow==='none'||!node.boxShadow.includes('inset'))throw new Error(`${name}: soft-clay depth missing ${JSON.stringify(node)}`);
 }
-function visible(name,node){if(!node||node.display==='none'||node.visibility==='hidden'||node.opacity<.95)throw new Error(`${name}: expected visible element ${JSON.stringify(node)}`)}
+function visible(name,node){if(!node||node.display==='none'||node.visibility==='hidden'||node.opacity<.95||node.rect.height<1)throw new Error(`${name}: expected visible element ${JSON.stringify(node)}`)}
 function assertState(name,state){
   if(!state.claySheet)throw new Error(`${name}: Today clay stylesheet did not load`);
-  borderless(`${name}/mobileSchool`,state.mobileSchool);
-  borderless(`${name}/hero`,state.hero);
-  borderless(`${name}/date`,state.date);
-  borderless(`${name}/prev`,state.prev);
-  borderless(`${name}/next`,state.next);
-  borderless(`${name}/statusGrid`,state.statusGrid);
+  if(state.topbarMode!=='ready')throw new Error(`${name}: compact Today topbar contract did not activate ${JSON.stringify(state.topbarMode)}`);
+  visible(`${name}/topbar`,state.topbar);visible(`${name}/mobileSchool`,state.mobileSchool);visible(`${name}/dateDock`,state.dateDock);
+  borderless(`${name}/mobileSchool`,state.mobileSchool);borderless(`${name}/dateDock`,state.dateDock);borderless(`${name}/statusGrid`,state.statusGrid);
+  clay(`${name}/mobileSchool`,state.mobileSchool);clay(`${name}/dateDock`,state.dateDock);
   state.statusCards.forEach((card,index)=>{
     if(card.border.some(v=>!px0(v)))throw new Error(`${name}/statusCard${index}: visible border remains ${JSON.stringify(card)}`);
     clay(`${name}/statusCard${index}`,card);
   });
-  clay(`${name}/mobileSchool`,state.mobileSchool);
-  clay(`${name}/date`,state.date);
-  clay(`${name}/prev`,state.prev);
-  clay(`${name}/next`,state.next);
-  visible(`${name}/heroSchoolName`,state.heroSchoolName);
-  visible(`${name}/heroSchoolMeta`,state.heroSchoolMeta);
-  if(state.heroSchoolName.text!=='정동고등학교')throw new Error(`${name}: wrong School identity in Today Hero ${JSON.stringify(state.heroSchoolName)}`);
-  if(state.heroSchoolMeta.text!=='2학년 6반')throw new Error(`${name}: wrong class identity in Today Hero ${JSON.stringify(state.heroSchoolMeta)}`);
-  if(state.hero.rect.height>150||state.hero.rect.height<124)throw new Error(`${name}: compact Hero height escaped identity-aware range ${JSON.stringify(state.hero.rect)}`);
-  if(state.heroSchoolMeta.rect.bottom>state.date.rect.top-5)throw new Error(`${name}: School identity overlaps date controller ${JSON.stringify({meta:state.heroSchoolMeta.rect,date:state.date.rect})}`);
-  if(state.date.rect.left<state.hero.rect.left-1||state.date.rect.right>state.hero.rect.right+1||state.date.rect.bottom>state.hero.rect.bottom+1)throw new Error(`${name}: date control escaped Hero ${JSON.stringify({hero:state.hero.rect,date:state.date.rect})}`);
+  if(!state.mobileSchool.text.includes('정동고등학교')||!state.mobileSchool.text.includes('2학년 6반'))throw new Error(`${name}: compact School identity missing ${JSON.stringify(state.mobileSchool)}`);
+  if(state.hero.rect.height>1.5)throw new Error(`${name}: oversized School Hero remains in compact first fold ${JSON.stringify(state.hero.rect)}`);
+  if(state.dateDays.length!==5||state.dateDays.filter(day=>day.active==='true').length!==1)throw new Error(`${name}: five-day magnetic rail contract missing ${JSON.stringify(state.dateDays)}`);
+  if(state.dateDock.rect.left<state.topbar.rect.left-1||state.dateDock.rect.right>state.topbar.rect.right+1)throw new Error(`${name}: date dock escaped topbar ${JSON.stringify({topbar:state.topbar.rect,date:state.dateDock.rect})}`);
+  if(state.mobileSchool.rect.left<state.dateDock.rect.right-1)throw new Error(`${name}: date dock overlaps School selector ${JSON.stringify({date:state.dateDock.rect,school:state.mobileSchool.rect})}`);
   if(!state.statusCards.length)throw new Error(`${name}: no visible status cards`);
   if(state.statusGrid.background!=='rgba(0, 0, 0, 0)')throw new Error(`${name}: status tray still has a visible container fill ${JSON.stringify(state.statusGrid)}`);
   if(state.viewport.scrollWidth>state.viewport.width+2)throw new Error(`${name}: horizontal overflow ${JSON.stringify(state.viewport)}`);
 }
 function stableGeometry(name,a,b){
-  for(const key of ['hero','heroSchoolName','heroSchoolMeta','date','statusGrid']){
+  for(const key of ['topbar','mobileSchool','dateDock','hero','statusGrid']){
     const ar=a[key]?.rect,br=b[key]?.rect;if(!ar||!br)continue;
     const max=Math.max(Math.abs(ar.left-br.left),Math.abs(ar.top-br.top),Math.abs(ar.width-br.width),Math.abs(ar.height-br.height));
     if(max>1.5)throw new Error(`${name}: ${key} drifted after 5s ${JSON.stringify({before:ar,after:br,max})}`);
@@ -124,7 +115,7 @@ for(const c of cases){
     await page.goto(BASE,{waitUntil:'domcontentloaded'});
     await page.locator('#dashboard:not(.hidden)').waitFor();
     await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');
-    await page.waitForFunction(()=>document.querySelector('link[data-flow-school-today-clay]')&&getComputedStyle(document.querySelector('#todayView .school-hero')).borderTopWidth==='0px');
+    await page.waitForFunction(()=>document.documentElement.dataset.flowTodayTopbar==='ready'&&document.querySelector('#flowTodayDateDock'));
     await page.waitForTimeout(400);
     const initial=await snapshot(page);assertState(`${name}/initial`,initial);
     await page.screenshot({path:`${OUT}/${name}-initial.png`,fullPage:false});
@@ -137,4 +128,4 @@ for(const c of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps School identity, date control, and separated soft-clay status surfaces stable after 5 seconds'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps Flow + magnetic date rail + compact School identity stable while removing the oversized School hero'},null,2));
