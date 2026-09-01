@@ -41,6 +41,12 @@ async function fixture(page){
   },{profile});
 }
 function assert(condition,message){if(!condition)throw new Error(message)}
+function squircle(metric,label){
+  assert(metric,`${label}: missing metric`);
+  const radius=Number.parseFloat(metric.radius||'0'),half=Math.min(Number(metric.width||0),Number(metric.height||0))/2;
+  assert(radius>=9&&radius<half-1,`${label}: expected squircle radius, not pill/circle ${JSON.stringify(metric)}`);
+  assert(String(metric.clipPath||'none')==='none',`${label}: unexpected clip-path ${JSON.stringify(metric)}`);
+}
 async function renderedState(page){
   return page.evaluate(()=>{
     const style=node=>node?getComputedStyle(node):null;
@@ -79,13 +85,15 @@ for(const [name,width,height,isMobile] of cases){
   const state=await renderedState(page);
   assert(state.order.join('|')==='mode|edit|share',`${name}: action order regressed ${JSON.stringify(state.order)}`);
   assert(state.mode?.border==='0px',`${name}: mode switch has a visible border ${JSON.stringify(state.mode)}`);
+  squircle(state.mode,`${name}/mode`);
   for(const [key,value] of [['edit',state.edit],['share',state.share],['allergy',state.allergy]]){
     assert(value?.border==='0px',`${name}: ${key} action has a visible border ${JSON.stringify(value)}`);
-    assert(Number.parseFloat(value?.radius||'0')>=Number(value?.height||0)/2-1,`${name}: ${key} action is not pill-shaped ${JSON.stringify(value)}`);
+    squircle(value,`${name}/${key}`);
   }
   assert(state.editClass&&state.shareClass&&state.allergyClass,`${name}: utility action classes missing ${JSON.stringify(state)}`);
   assert(state.periods.length>=4,`${name}: timetable period badges missing`);
-  assert(state.periods.every(period=>Math.abs(period.width-period.height)<=1&&String(period.clipPath||'').startsWith('circle(')),`${name}: period badges are not clipped to true circles ${JSON.stringify(state.periods)}`);
+  assert(state.periods.every(period=>Math.abs(period.width-period.height)<=1),`${name}: period badges lost square geometry ${JSON.stringify(state.periods)}`);
+  state.periods.forEach((period,index)=>squircle(period,`${name}/period-${index+1}`));
   assert(state.overflow<=1,`${name}: horizontal overflow ${state.overflow}`);
   assert(errors.length===0,`${name}: browser errors ${JSON.stringify(errors)}`);
   report[name]={state,errors};
@@ -93,4 +101,4 @@ for(const [name,width,height,isMobile] of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,order:['mode','edit','share'],periodShape:'circle',viewports:Object.keys(report)},null,2));
+console.log(JSON.stringify({ok:true,order:['mode','edit','share'],periodShape:'squircle',viewports:Object.keys(report)},null,2));
