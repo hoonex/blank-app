@@ -42,7 +42,9 @@ async function prepare(page){
   });
   await page.addInitScript(({profile})=>{
     localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');
-    const now=new Date(),start=new Date(now.getTime()-65*60000),pad=value=>String(value).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}));
+    const now=new Date(),minuteOfDay=now.getHours()*60+now.getMinutes(),beforeFirstHourBoundary=minuteOfDay<65,pad=value=>String(value).padStart(2,'0');
+    const start=beforeFirstHourBoundary?new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0):new Date(now.getTime()-65*60000),lesson=beforeFirstHourBoundary?65:50,breakMinutes=beforeFirstHourBoundary?0:10,expectedCurrent=beforeFirstHourBoundary?'1':'2';
+    localStorage.setItem('flow-school-live-audit-expected-period',expectedCurrent);localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson,break:breakMinutes,meal:'12:20',mealEnd:'13:10'}));
   },{profile});
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
@@ -65,7 +67,7 @@ async function readState(page){return page.evaluate(()=>{
     topbarMode:document.documentElement.dataset.flowTodayTopbar,android:document.documentElement.dataset.flowAndroidStableGlass,
     hero:box(hero),school:{box:box(school),display:school?getComputedStyle(school).display:null,text:school?.textContent?.replace(/\s+/g,' ').trim()||''},
     dock:{box:box(dock),display:dock?getComputedStyle(dock).display:null,days:dateDays,picker:document.querySelector('#datePicker')?.value||''},dayStrip:document.querySelector('#dayStrip')?getComputedStyle(document.querySelector('#dayStrip')).display:null,
-    times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),current:rows.filter(node=>node.classList.contains('flow-period-current')).map(node=>node.dataset.period),rowRects,periodShapes,actions,
+    times:[...(timetable?.querySelectorAll('.flow-period-time')||[])].map(node=>node.textContent),current:rows.filter(node=>node.classList.contains('flow-period-current')).map(node=>node.dataset.period),expectedCurrent:localStorage.getItem('flow-school-live-audit-expected-period')||'',rowRects,periodShapes,actions,
     exams:{visible:Number(feed?.dataset.flowExamVisible||0),total:Number(feed?.dataset.flowExamTotal||0),exhausted:feed?.dataset.flowExamExhausted||'false',items,text:feed?.textContent||'',oldDisplay:oldEvents?getComputedStyle(oldEvents).display:null},
     utilities:{meal:box(meal),upcoming:box(upcoming)},lens:lens?getComputedStyle(lens).display:null,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,scrollHeight:document.documentElement.scrollHeight
   };
@@ -79,7 +81,7 @@ function assertBase(state,{dateCount,tabletUtilities=false}={}){
   const active=state.dock.days.find(day=>day.active==='true'),near=state.dock.days.find(day=>day.offset==='1')||state.dock.days.find(day=>day.offset==='-1');assert(active&&near&&active.height>=near.height+5,`selected date is not magnified ${JSON.stringify(state.dock.days)}`);assertSquircle(active,'active date');
   assert(state.dayStrip==='none',`redundant weekday strip is still visible ${state.dayStrip}`);
   assert(state.times.length===7&&state.times.every(text=>/^\d{2}:\d{2}–\d{2}:\d{2}/.test(text)),`period times missing ${JSON.stringify(state.times)}`);
-  assert(state.current.length===1&&state.current[0]==='2',`current period highlight incorrect ${JSON.stringify(state.current)}`);
+  assert(state.current.length===1&&state.current[0]===state.expectedCurrent,`current period highlight incorrect ${JSON.stringify({current:state.current,expected:state.expectedCurrent})}`);
   assert(state.rowRects.length===7&&state.rowRects.every((row,index)=>index===0||row.top-state.rowRects[index-1].bottom>=5),`timetable cells are visually merged ${JSON.stringify(state.rowRects)}`);
   assert(state.rowRects.every(row=>(((row.bg!=='transparent'&&row.bg!=='rgba(0, 0, 0, 0)')||row.image!=='none')&&row.shadow!=='none')),`timetable cells lost independent surfaces ${JSON.stringify(state.rowRects)}`);
   assert(state.periodShapes.every(item=>String(item.clip||'none')==='none'&&Math.abs(item.width-item.height)<=1),`period badge circle clipping returned ${JSON.stringify(state.periodShapes)}`);state.periodShapes.forEach((shape,index)=>assertSquircle(shape,`period ${index+1}`));
