@@ -58,6 +58,18 @@
     border-radius:11px!important;
   }
 
+  /* Today now owns a 108px date deck in this header. The legacy centered
+     landscape toolbar would sit directly on top of that deck, so Today alone
+     returns the destination bar to the safe-area bottom and reserves its space. */
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:has(#todayView:not(.hidden)){
+    padding-bottom:64px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-bottom-nav{
+    top:auto!important;
+    bottom:max(7px,env(safe-area-inset-bottom))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .toast{bottom:56px!important}
+
   /* The landscape shell is phone-sized even though 844px is wider than the old
      820px calendar breakpoint. Keep the month and its event context visible
      together instead of carrying desktop 82px week rows into a 390px viewport. */
