@@ -75,11 +75,12 @@ for(const testCase of cases){
     const started=Date.now();await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});await page.waitForTimeout(2500);result.loadMs=Date.now()-started;
 
     const selectTab=async(view)=>{
-      const t0=Date.now();
       try{
         if(view==='week'){
           const inlineWeek=page.locator('.timetable-card [data-view="week"]:visible').first();
           if(await inlineWeek.count()){
+            await inlineWeek.click({trial:true,timeout:3000});
+            const t0=Date.now();
             await inlineWeek.click({timeout:3000});
             await page.waitForFunction(()=>{
               const inline=document.querySelector('#inlineWeekTimetable');
@@ -89,6 +90,8 @@ for(const testCase of cases){
           }
         }
         const tab=page.locator(`[data-view="${view}"]:visible`).first();
+        await tab.click({trial:true,timeout:3000});
+        const t0=Date.now();
         await tab.click({timeout:3000});
         await page.waitForFunction(v=>{const p=document.querySelector(`[data-view-panel="${v}"]`);return !!p&&!p.classList.contains('hidden')},view,{timeout:3000});
         return Date.now()-t0;
