@@ -37,14 +37,10 @@ const context=await browser.newContext({viewport:{width:390,height:844},isMobile
 const page=await context.newPage();page.setDefaultTimeout(10000);await fixtures(page);
 await page.addInitScript(({school})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical')},{school:SCHOOL});
 await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();
-/* Main activates School v2 before its two dynamically attached stylesheets finish.
- * Wait for those real layout layers, then rebuild the refraction source from the
- * settled geometry. This preserves the existing 2px alignment contract. */
-await page.waitForFunction(()=>{
-  const root=document.documentElement,base=document.querySelector('link[data-flow-school-ui-v2]'),system=document.querySelector('link[data-flow-school-ui-v2-system]');
-  return root.dataset.flowSchoolUi==='v2'&&Boolean(base?.sheet)&&Boolean(system?.sheet);
-});
-await page.evaluate(()=>window.dispatchEvent(new CustomEvent('flow:refraction-refresh')));
+/* Refraction may bootstrap before School's dynamically attached visual layers.
+ * Calibrate only after the product declares that its full v2/system/clay CSS set
+ * is loaded; startup/Fouc stability is covered separately by the Today audit. */
+await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
 await page.waitForFunction(()=>document.documentElement.dataset.flowRefractionCopy==='true'&&document.querySelector('.flow-refraction-copy-lens'));
 await page.evaluate(()=>{
   const source=document.querySelector('.product-main'),nav=document.querySelector('#bottomNav'),sr=source.getBoundingClientRect(),nr=nav.getBoundingClientRect();source.style.position='relative';
