@@ -82,12 +82,10 @@ html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcomi
 html[data-flow-school-ui="v2"] #todayView :is(.timetable-card,.meal-card,.upcoming-card) .card-heading h2{font-size:1rem!important;letter-spacing:-.045em!important}
 html[data-flow-school-ui="v2"] #todayView .timetable-card .card-heading>div>p{display:none!important}
 
-/* The date deck is the date navigator. Remove the redundant weekday row. */
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #todayView #dayStrip{display:none!important}
 }
 
-/* One shape language: compact controls are squircles, never mixed pills/circles. */
 html[data-flow-school-ui="v2"] body #todayView .timetable-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;flex-wrap:nowrap!important}
 html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{
   display:inline-grid!important;grid-template-columns:1fr 1fr!important;min-width:112px!important;height:42px!important;padding:3px!important;
@@ -107,7 +105,6 @@ html[data-flow-school-ui="v2"] body #todayView .timetable-actions>.neo-button{
 html[data-flow-school-ui="v2"] body #todayView #editSubjectsBtn.flow-school-utility-action{background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important;color:var(--accent)!important}
 html[data-flow-school-ui="v2"] body #todayView .meal-card #allergyBtn{min-height:38px!important;border-radius:13px!important;corner-shape:squircle!important}
 
-/* Every period is an independent cell again. */
 html[data-flow-school-ui="v2"] body #todayView #timetable{display:grid!important;gap:7px!important;margin-top:2px!important}
 html[data-flow-school-ui="v2"] body #todayView .period-button{
   width:100%!important;min-height:58px!important;margin:0!important;padding:8px 11px!important;border:0!important;border-radius:17px!important;corner-shape:squircle!important;
@@ -129,7 +126,6 @@ html[data-flow-school-ui="v2"] body #todayView .period-name{font-size:.69rem!imp
 html[data-flow-school-ui="v2"] body #todayView .flow-period-time{margin-top:1px!important;font-size:.52rem!important;line-height:1.15!important}
 html[data-flow-school-ui="v2"] body #todayView .neis-timetable-help{margin-top:13px!important;padding-top:13px!important;border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent)!important}
 
-/* Make the ad a deliberate first-fold rail without distorting the ad creative. */
 html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(iframe),
 html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(.flow-adfit-mock){
   width:100%!important;min-height:158px!important;margin:8px 0 17px!important;padding:20px clamp(18px,5vw,56px)!important;
@@ -142,6 +138,25 @@ html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top .flow-adfit-slo
 html[data-flow-school-ui="v2"] #todayView .meal-tabs{margin-bottom:9px!important}
 html[data-flow-school-ui="v2"] #todayView .meal-tab{border-radius:10px!important;corner-shape:squircle!important}
 html[data-flow-school-ui="v2"] #todayView .dish{border-radius:11px!important;corner-shape:squircle!important}
+
+/* Tablets use one touch-first shell in both orientations. This deliberately
+   closes the old 901–1180 desktop-sidebar gap so the date deck and Today body
+   never belong to different responsive systems. */
+@media(min-width:901px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body{padding-bottom:88px!important}
+  html[data-flow-school-ui="v2"] #dashboard.product-shell:not(.hidden){
+    width:100%!important;display:block!important;grid-template-columns:none!important;max-width:none!important;padding:0 18px 24px!important
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .product-main{width:100%!important;min-width:0!important;max-width:none!important;padding:0!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar{position:sticky!important;top:0!important;z-index:60!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
+    position:fixed!important;display:grid!important;left:18px!important;right:18px!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:auto!important;min-height:60px!important;padding:5px!important;border-radius:22px!important
+  }
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{display:block!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-tab{min-height:48px!important;border-radius:15px!important;corner-shape:squircle!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .toast{bottom:84px!important}
+}
 
 @media(min-width:700px) and (max-width:1180px){
   html[data-flow-school-ui="v2"] #todayView{padding-inline:clamp(10px,2.2vw,24px)!important}
