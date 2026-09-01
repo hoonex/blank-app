@@ -74,7 +74,7 @@ for(const [name,width,height,isMobile] of cases){
   page.on('pageerror',error=>pageErrors.push(String(error)));page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('request',request=>{const url=request.url();if(transitAsset.test(url))transitRequests.push(url)});await fixture(page);
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');await page.waitForFunction(()=>document.querySelector('#mealCal')?.textContent?.includes('12:20–13:10'),null,{timeout:5000});
   const home=await homeState(page);
-  if(home.status.join('|')!=='지금|다음 일정'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
+  if(home.status.join('|')!=='지금|다음 시험'||home.lessons||home.meal)throw new Error(`${name}: redundant Today cards remain ${JSON.stringify(home)}`);
   if(expectMobileShell){
     const [nowCard,nextCard]=home.statusRects;
     const sameRow=nowCard&&nextCard&&Math.abs(nowCard.top-nextCard.top)<=2&&nowCard.left<nextCard.left;
@@ -127,4 +127,4 @@ for(const [name,width,height,isMobile] of cases){
   if(pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser errors ${JSON.stringify({pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,after,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 일정'],compactTodayStatusLayout:'borderless-separated-pair',widePortraitStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',widePortraitComposition:'touch-first',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),todayCards:['지금','다음 시험'],compactTodayStatusLayout:'borderless-separated-pair',widePortraitStatusLayout:'unified-divided-shell',widePortraitShell:'mobile',widePortraitComposition:'touch-first',transit:'dormant',transitRequests:0,mealWindow:true},null,2));
