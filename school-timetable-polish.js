@@ -134,8 +134,10 @@ function renderExamStack(){
   const box=$('#eventList'),card=box?.closest('.upcoming-card');if(!box||!card)return;captureAcademicExams();const exams=upcomingExams(),signature=exams.map(item=>`${item.date}:${item.name}:${item.detail||''}`).join('|');if(signature!==examSignature){examSignature=signature;examStackIndex=0}
   const title=$('.card-heading h2',card),kicker=$('.section-kicker',card);setTextIfChanged(title,'다가오는 시험');setTextIfChanged(kicker,'EXAMS');updateQuickExam(exams);
   if(!box.classList.contains('flow-exam-stack'))box.classList.add('flow-exam-stack');const count=String(exams.length);if(box.dataset.flowExamCount!==count)box.dataset.flowExamCount=count;
-  examStackIndex=Math.max(0,Math.min(examStackIndex,Math.max(0,exams.length-1)));const renderKey=`${signature}::${examStackIndex}`;if(box.dataset.flowExamRenderKey===renderKey){bindExamStack(box);return}
-  const visible=exams.slice(examStackIndex,examStackIndex+3),visibleCount=String(visible.length);if(box.dataset.flowExamVisible!==visibleCount)box.dataset.flowExamVisible=visibleCount;const markup=visible.length?visible.map((exam,index)=>examCardMarkup(exam,index)).join('')+(exams.length>1?'<span class="flow-exam-hint">위아래로 넘겨 보기</span>':''):'<div class="flow-exam-empty">다가오는 시험 일정이 없습니다.</div>';
+  examStackIndex=Math.max(0,Math.min(examStackIndex,Math.max(0,exams.length-1)));const visible=exams.slice(examStackIndex,examStackIndex+3),visibleCount=String(visible.length),renderKey=`${signature}::${examStackIndex}`;
+  const renderedCards=$$(':scope > .flow-exam-card',box),contractIntact=visible.length?renderedCards.length===visible.length&&renderedCards.every((node,index)=>node.dataset.depth===String(index)):Boolean($('.flow-exam-empty',box));
+  if(box.dataset.flowExamRenderKey===renderKey&&contractIntact){bindExamStack(box);return}
+  if(box.dataset.flowExamVisible!==visibleCount)box.dataset.flowExamVisible=visibleCount;const markup=visible.length?visible.map((exam,index)=>examCardMarkup(exam,index)).join('')+(exams.length>1?'<span class="flow-exam-hint">위아래로 넘겨 보기</span>':''):'<div class="flow-exam-empty">다가오는 시험 일정이 없습니다.</div>';
   if(box.innerHTML!==markup)box.innerHTML=markup;box.dataset.flowExamRenderKey=renderKey;bindExamStack(box);
 }
 function bindExamStack(box){

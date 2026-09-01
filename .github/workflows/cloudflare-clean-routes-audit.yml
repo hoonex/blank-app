@@ -24,6 +24,7 @@ jobs:
       - name: Validate Cloudflare route worker
         run: |
           node --check cloudflare-worker.mjs
+          node --check school-today-topbar.js
           node --check tests/cloudflare-clean-routes-audit.mjs
           python -m json.tool wrangler.jsonc >/dev/null
           node tests/cloudflare-clean-routes-audit.mjs
@@ -35,6 +36,8 @@ jobs:
           grep -q "school-timetable-polish.js" school-metrics.js
           grep -q "school-uiux-v2.css" sw.js
           grep -q "school-uiux-v2-system.css" sw.js
+          grep -q "school-today-clay.css" sw.js
+          grep -q "school-today-topbar.js" sw.js
 
       - name: Validate Wrangler deployment bundle
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
@@ -66,6 +69,10 @@ jobs:
             'school-uiux-v2.js'
             'school-uiux-v2.css'
             'school-uiux-v2-system.css'
+            'school-today-clay.css'
+            'school-today-topbar.js'
+            'flow-adfit.js'
+            'flow-adfit.css'
             'flow-experience.js'
             'flow-experience.css'
             'sw.js'

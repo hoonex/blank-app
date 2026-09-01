@@ -41,13 +41,19 @@ async function runSchool({reducedMotion='no-preference'}={}){
     if(reducedMotion==='reduce'){
       const animation=await page.locator('.status-grid').evaluate(node=>getComputedStyle(node).animationName);if(animation!=='none')throw new Error(`${label} content settle motion not reduced: ${animation}`);await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,reducedAnimation:animation,errors}
     }
+    await page.waitForSelector('#flowTodayDateDock:visible');
     await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24';window.__flowDateChanges=0;input.addEventListener('change',()=>{window.__flowDateChanges++},{capture:true})});counter.count=0;await page.evaluate(()=>{window.__flowHaptics=[]});
-    const dial=page.locator('.date-label'),box=await dial.boundingBox();if(!box)throw new Error('School date dial missing');const x=box.x+box.width/2,y=box.y+box.height/2;
-    await dial.dispatchEvent('pointerdown',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true});
-    await dial.dispatchEvent('pointermove',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x+76,clientY:y,button:0,buttons:1,bubbles:true,cancelable:true});
-    const during=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0}));if(during.date!=='2026-08-24'||during.changes!==0||counter.count!==0)throw new Error(`${label} tactile date dial committed during drag: ${JSON.stringify({during,dashboardRequests:counter.count})}`);
-    await dial.dispatchEvent('pointerup',{pointerId:71,pointerType:'touch',isPrimary:true,clientX:x+76,clientY:y,button:0,buttons:0,bubbles:true,cancelable:true});
-    await page.waitForTimeout(180);const finalState=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0,haptics:window.__flowHaptics.slice()}));if(finalState.date!=='2026-08-26')throw new Error(`${label} tactile date dial expected 2026-08-26, got ${finalState.date}`);if(finalState.changes!==1)throw new Error(`${label} tactile date dial emitted ${finalState.changes} change events; expected exactly 1 final commit`);if(counter.count>1)throw new Error(`${label} tactile date dial caused ${counter.count} dashboard requests; expected at most 1 after release`);if(finalState.haptics.length<2)throw new Error(`${label} tactile dial haptics missing: ${JSON.stringify(finalState.haptics)}`);
+    const dial=page.locator('#flowTodayDateDock:visible'),box=await dial.boundingBox();if(!box)throw new Error('School magnetic date rail missing');const x=box.x+box.width/2,y=box.y+box.height/2;
+    await page.mouse.move(x,y);await page.mouse.down();
+    await page.mouse.move(x+76,y,{steps:6});
+    const during=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0}));if(during.date!=='2026-08-24'||during.changes!==0||counter.count!==0)throw new Error(`${label} magnetic date rail committed during drag: ${JSON.stringify({during,dashboardRequests:counter.count})}`);
+    await page.mouse.up();
+    await page.waitForFunction(()=>document.querySelector('#datePicker')?.value!=='2026-08-24');
+    const finalState=await page.evaluate(()=>({date:document.querySelector('#datePicker')?.value||'',changes:window.__flowDateChanges||0,haptics:window.__flowHaptics.slice()}));
+    if(finalState.date!=='2026-08-23')throw new Error(`${label} magnetic date rail expected one-day snap to 2026-08-23, got ${finalState.date}`);
+    if(finalState.changes!==1)throw new Error(`${label} magnetic date rail emitted ${finalState.changes} change events; expected exactly 1 final commit`);
+    if(counter.count>1)throw new Error(`${label} magnetic date rail caused ${counter.count} dashboard requests; expected at most 1 after release`);
+    if(finalState.haptics.length<1)throw new Error(`${label} magnetic date rail haptic missing: ${JSON.stringify(finalState.haptics)}`);
     await page.locator('#mobileSettingsBtn:visible').tap();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();const card=page.locator('.flow-experience-settings');await card.waitFor();const ambient=card.locator('[data-flow-experience-toggle="ambient"]');if(await ambient.getAttribute('aria-pressed')!=='true')throw new Error(`${label} ambient preference did not default on`);await ambient.tap();if(await page.locator('html').getAttribute('data-flow-ambient')!=='off')throw new Error(`${label} ambient preference did not disable`);await ambient.tap();if(await page.locator('html').getAttribute('data-flow-ambient')!=='on')throw new Error(`${label} ambient preference did not restore`);
     await page.screenshot({path:`${OUT}/${label}.png`,fullPage:false});clean(label,errors);return{label,state,dateValue:finalState.date,dateChanges:finalState.changes,dashboardRequests:counter.count,haptics:finalState.haptics,errors}
   }finally{await context.close()}

@@ -195,6 +195,22 @@ async function returnToToday(page, fallbackSelector) {
   if (await jump.isVisible()) await jump.click();
   else await visibleClick(page, fallbackSelector);
 }
+async function shiftSchoolDate(page, delta) {
+  const dock = page.locator('#flowTodayDateDock');
+  if (await dock.isVisible()) {
+    const before = await page.locator('#datePicker').inputValue();
+    const box = await dock.boundingBox();
+    if (!box) throw new Error('Visible School date rail has no bounds');
+    const x = box.x + box.width / 2, y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + (delta > 0 ? -46 : 46), y, { steps: 4 });
+    await page.mouse.up();
+    await page.waitForFunction(previous => document.querySelector('#datePicker')?.value !== previous, before, { timeout: 1200 });
+    return;
+  }
+  await visibleClick(page, delta > 0 ? '#nextDay' : '#prevDay');
+}
 function unexpected(errors, allowedStatusText = []) {
   return {
     consoleErrors: errors.consoleErrors.filter(x => !allowedStatusText.some(s => x.includes(s))),
@@ -218,7 +234,7 @@ async function auditSchool(c) {
     await page.locator('#gradeRow [data-grade="2"]').click(); await page.locator('#classRow [data-class="6"]').waitFor(); await page.locator('#classRow [data-class="6"]').click(); await page.locator('#setupSave').click();
     await page.locator('#dashboard:not(.hidden)').waitFor(); await page.locator('#timetable [data-period]').first().waitFor(); await page.waitForTimeout(120);
     states.today = await geom(page, `${c.name} school today`, c.hasTouch); await shot(page, `${c.name}-school-today`);
-    await page.locator('#nextDay').click(); await returnToToday(page, '#prevDay'); await page.locator('#prevDay').click(); await returnToToday(page, '#nextDay');
+    await shiftSchoolDate(page, 1); await shiftSchoolDate(page, -1); await shiftSchoolDate(page, -1); await shiftSchoolDate(page, 1);
     await page.locator('#editSubjectsBtn').click(); const firstPeriod = page.locator('#timetable [data-period]').first(); await firstPeriod.click();
     await page.locator('#subjectDialog').waitFor({ state: 'visible' }); await page.locator('#customSubjectInput').fill('인공지능 기초'); await page.locator('#saveSubjectBtn').click();
     const savedOverride = await page.evaluate(() => localStorage.getItem('flow-school-overrides-v2') || ''); if (!savedOverride.includes('인공지능 기초')) throw new Error(`${c.name} school subject override did not persist`);
