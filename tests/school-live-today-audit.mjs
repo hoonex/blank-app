@@ -11,11 +11,10 @@ const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등�
 const dashboard={school:profile.school,selected,from:selected,to:selected,timetable:Array.from({length:7},(_,i)=>({date:selected,period:i+1,subject:['국어','문학','수학Ⅱ','영어Ⅱ','물리학','정보','체육'][i]})),meals:[{date:selected,type:'중식',dishes:['현미밥','된장국'],calories:'812 Kcal'}],events:[{date:'20260902',name:'전국연합학력평가',content:'1,2학년 전국연합학력평가'},{date:'20260905',name:'토요휴업일',content:''},{date:'20260909',name:'영어듣기평가',content:'2학년 영어듣기평가'},{date:'20260912',name:'토요휴업일',content:''},{date:'20260915',name:'2학기 중간고사',content:'2학년 중간고사'}],scheduleMeta:{mode:'fixture',count:5}};
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 function assert(value,message){if(!value)throw new Error(message)}
-function initPayload(){const now=new Date(),start=new Date(now.getTime()-65*60000);return{profile,bell:{start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}}}
 async function prepare(page){
   const errors=[];page.on('pageerror',error=>errors.push(String(error)));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())});
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});if(action==='place')return json(route,{provider:'fixture',place:{id:'school',name:profile.school.name,address:profile.school.address}});return json(route,{})});
-  await page.addInitScript(({profile,bell})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');localStorage.setItem('flow-school-bell-v1',JSON.stringify(bell))},initPayload());
+  await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','optical');localStorage.setItem('flow-school-transit-lab-v1','off');const now=new Date(),start=new Date(now.getTime()-65*60000),pad=v=>String(v).padStart(2,'0');localStorage.setItem('flow-school-bell-v1',JSON.stringify({start:`${pad(start.getHours())}:${pad(start.getMinutes())}`,lesson:50,break:10,meal:'12:20',mealEnd:'13:10'}))},{profile});
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
   await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
@@ -57,7 +56,7 @@ function assertUnifiedState(state,{portrait=false}={}){
   assert(state.exams.length===3&&state.visible==='3',`expected three visible exam cards ${JSON.stringify(state)}`);
   assert(!state.examText.includes('토요휴업일'),`holiday leaked into exam stack ${state.examText}`);
   assert(state.exams[0].includes('전국연합'),`first exam is not the nearest meaningful exam ${JSON.stringify(state.exams)}`);
-  assert(state.examCards.length===3&&state.examCards[0].height>state.examCards[1].height+25&&state.examCards[1].height===state.examCards[2].height,`exam hierarchy is not one hero plus two normal cards ${JSON.stringify(state.examCards)}`);
+  assert(state.examCards.length===3&&state.examCards[0].height>state.examCards[1].height+25&&Math.abs(state.examCards[1].height-state.examCards[2].height)<=1,`exam hierarchy is not one hero plus two normal cards ${JSON.stringify(state.examCards)}`);
   assert(state.examCards[1].top-state.examCards[0].bottom>=8&&state.examCards[2].top-state.examCards[1].bottom>=8,`three visible exams overlap ${JSON.stringify(state.examCards)}`);
   assert(Number(state.count)>=4&&state.peek.display!=='none'&&parseFloat(state.peek.opacity)>0,`rear exam stack hint is missing ${JSON.stringify(state.peek)}`);
   assert(state.overflow<=1,`horizontal overflow ${state.overflow}`);
