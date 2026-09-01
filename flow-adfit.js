@@ -1,6 +1,7 @@
 import {FLOW_ADFIT_CONFIG} from '/flow-adfit-config.js';
 
 const STYLE_HREF='/flow-adfit.css';
+const SCHOOL_TODAY_STYLE_HREF='/school-today-responsive.css';
 const SDK_SELECTOR='script[data-flow-adfit-sdk]';
 
 function appKind(){
@@ -17,10 +18,12 @@ function validConfig(config){
   const unit=String(config?.unit||'').trim(),width=Number(config?.width),height=Number(config?.height);
   return Boolean(unit)&&Number.isFinite(width)&&width>0&&Number.isFinite(height)&&height>0;
 }
-function ensureStyle(){
-  if([...document.querySelectorAll('link[rel="stylesheet"]')].some(node=>{try{return new URL(node.href,location.href).pathname===STYLE_HREF}catch{return false}}))return;
-  const link=document.createElement('link');link.rel='stylesheet';link.href=STYLE_HREF;link.dataset.flowAdfitStyle='true';document.head.append(link);
+function ensureStylesheet(href,datasetKey){
+  if([...document.querySelectorAll('link[rel="stylesheet"]')].some(node=>{try{return new URL(node.href,location.href).pathname===href}catch{return false}}))return;
+  const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.dataset[datasetKey]='true';document.head.append(link);
 }
+function ensureStyle(){ensureStylesheet(STYLE_HREF,'flowAdfitStyle')}
+function ensureSchoolTodayStyle(){ensureStylesheet(SCHOOL_TODAY_STYLE_HREF,'flowSchoolTodayResponsive')}
 function anchorFor(kind){
   return kind==='school'?document.querySelector('#todayView .school-hero'):document.querySelector('#todayView .content-grid');
 }
@@ -64,10 +67,12 @@ function ensureSdk(src){
 function init(){
   if(document.documentElement.dataset.flowAdfit==='ready')return;
   const kind=appKind();if(!kind)return;
-  /* School first-fold chrome is independent from whether the ad unit itself is
-   * configured. Load the date rail before validating AdFit so the Today header
-   * never depends on third-party SDK success. */
-  if(kind==='school')import('/school-today-topbar.js?v=20260901-1').catch(()=>{});
+  /* School first-fold chrome and responsive Today composition are independent
+   * from whether the third-party ad unit itself is configured. */
+  if(kind==='school'){
+    ensureSchoolTodayStyle();
+    import('/school-today-topbar.js?v=20260901-2').catch(()=>{});
+  }
   const config=configFor(kind);
   if(!validConfig(config)){
     document.documentElement.dataset.flowAdfit='unconfigured';
