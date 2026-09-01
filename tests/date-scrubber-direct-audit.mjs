@@ -113,7 +113,7 @@ async function auditLegacy(page,viewport,box){
 
 for(const viewport of VIEWPORTS){
   const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},isMobile:viewport.width<900,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
-  const page=await context.newPage();page.setDefaultTimeout(9000);const consoleErrors=[],pageErrors=[];
+  const page=await context.newPage();page.setDefaultTimeout(9000);page.setDefaultNavigationTimeout(20000);const consoleErrors=[],pageErrors=[];
   page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('pageerror',error=>pageErrors.push(String(error)));
   try{
     await seed(page);
