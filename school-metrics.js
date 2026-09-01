@@ -27,6 +27,15 @@ function transitLabEnabled(){
   try{return localStorage.getItem('flow-school-transit-lab-v1')!=='off'}catch{return false}
 }
 
+const schoolSurfaceRoot=document.documentElement;
+if(!document.querySelector('#flow-school-surface-ready-gate')){
+  const style=document.createElement('style');
+  style.id='flow-school-surface-ready-gate';
+  style.textContent='html[data-flow-school-surface-loading="true"] #dashboard:not(.hidden){visibility:hidden!important;pointer-events:none!important}';
+  document.head.append(style);
+}
+schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading='true';
+
 async function bootSchoolSurface(){
   if(transitLabEnabled()){
     try{
@@ -39,9 +48,17 @@ async function bootSchoolSurface(){
   await import('./school-uiux-v2.js');
 }
 
-/* Keep the entry module non-blocking. Production skips Transit entirely; the
- * localhost lab preserves the historical Transit → cleanup initialization order. */
-void bootSchoolSurface();
+/* Keep the entry module non-blocking, but never expose the transient desktop
+ * shell while its responsive v2 styles are still loading. Navigation contracts
+ * below remain synchronous and the dashboard becomes interactive once settled. */
+void bootSchoolSurface().finally(()=>{
+  delete schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading;
+  schoolSurfaceRoot.dataset.flowSchoolSurface='ready';
+  /* Refraction may have booted while the dashboard was intentionally hidden.
+   * Re-run the full glass-mode lifecycle after the first visible frame so it
+   * rebuilds the source copy, geometry, filter, and readiness marker together. */
+  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:glass-mode-changed')));
+});
 
 /* Optical/refraction used to assume School always had five destinations because
  * Transit was one of them. Production now has four, so keep the lens geometry
@@ -73,6 +90,10 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
   const style=document.createElement('style');
   style.id='flow-school-touch-nav-contract';
   style.textContent=`
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar,
+  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(:has(#todayView:not(.hidden))) .mobile-topbar:has(#flowTodayDateDock){background:var(--bg)!important}
+}
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
     z-index:90!important;
@@ -89,6 +110,9 @@ if(!document.querySelector('#flow-school-touch-nav-contract')){
     bottom:78px!important;
     padding-bottom:34px!important;
   }
+}
+@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #todayView .timetable .period-no{min-width:36px!important}
 }`;
   document.head.append(style);
 }
@@ -109,6 +133,19 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span{font-size:.65rem!important;font-weight:800!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.54rem!important}
+
+  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid{
+    gap:12px!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid>.status-card:not(.flow-home-noise){border:0!important}
 
   html[data-flow-school-ui="v2"] .view-header{
     min-height:104px!important;

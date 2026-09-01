@@ -19,13 +19,15 @@ function attachStyle(href,key){
   });
 }
 
-/* Do not expose a half-styled v2 tree. All three visual layers are present before
- * the v2 selector becomes active, so Optical source-copy creation and real users
- * see one stable geometry instead of an old-layout -> new-layout transition. */
+/* Do not expose a half-styled v2 tree. All visual layers, including the Today
+ * responsive contract that owns the 901–1180px shell, are present before the
+ * v2 selector becomes active. This also fixes nondeterministic clay/responsive
+ * cascade order when both styles were previously attached by separate loaders. */
 await Promise.all([
   attachStyle('/school-uiux-v2.css?v=20260831-1','data-flow-school-ui-v2'),
   attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system'),
   attachStyle('/school-today-clay.css?v=20260901-1','data-flow-school-today-clay'),
+  attachStyle('/school-today-responsive.css?v=20260901-2','data-flow-school-today-responsive'),
 ]);
 root.dataset.flowSchoolUi='v2';
 root.dataset.flowSchoolUiStyles='ready';

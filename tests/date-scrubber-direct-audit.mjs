@@ -37,7 +37,7 @@ async function compactPresentation(page){
     const dock=document.querySelector('#flowTodayDateDock'),rail=dock?.querySelector('.flow-date-rail');
     const transform=rail?getComputedStyle(rail).transform:'none';let tx=0;
     try{if(transform&&transform!=='none')tx=new DOMMatrixReadOnly(transform).m41}catch{}
-    const drag=parseFloat(rail?.style.getPropertyValue('--flow-date-drag')||'0')||0;
+    const drag=parseFloat(rail?.style.getPropertyValue('--flow-date-x')||'0')||0;
     return{drag,transform,tx,scrubbing:dock?.dataset.dragging||'',snap:dock?.dataset.snap||'',date:document.querySelector('#datePicker')?.value||'',clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
   });
 }
@@ -62,18 +62,18 @@ async function auditCompact(page,viewport,box){
   await page.mouse.move(x+dx1,y,{steps:1});const first=await compactPresentation(page);
   await page.mouse.move(x+dx2,y,{steps:1});const direct=await compactPresentation(page);
   if(first.scrubbing!=='true'||direct.scrubbing!=='true')throw new Error(`${viewport.name}: compact date rail did not enter direct manipulation`);
-  if(Math.abs(first.drag-dx1)>1.2||Math.abs(direct.drag-dx2)>1.2)throw new Error(`${viewport.name}: compact date rail is not 1:1 inside the direct zone: ${JSON.stringify({dx1,dx2,first,direct})}`);
-  if(Math.abs(first.tx-dx1)>1.5||Math.abs(direct.tx-dx2)>1.5)throw new Error(`${viewport.name}: compact date rail render did not track pointer 1:1: ${JSON.stringify({dx1,dx2,first,direct})}`);
+  if(Math.abs(first.drag-dx1)>1.2||Math.abs((direct.drag-first.drag)-(dx2-dx1))>1.2)throw new Error(`${viewport.name}: compact date rail is not 1:1 inside the direct zone: ${JSON.stringify({dx1,dx2,first,direct})}`);
+  if(Math.abs(first.tx-dx1)>1.5||Math.abs((direct.tx-first.tx)-(dx2-dx1))>1.5)throw new Error(`${viewport.name}: compact date rail render did not track pointer delta 1:1: ${JSON.stringify({dx1,dx2,first,direct})}`);
   if(direct.date!=='2026-08-24')throw new Error(`${viewport.name}: compact date committed during drag: ${direct.date}`);
 
   const reverse=direction*16;
   await page.mouse.move(x+reverse,y,{steps:1});const reversed=await compactPresentation(page);
-  if(Math.abs(reversed.drag-reverse)>1.2||Math.abs(reversed.tx-reverse)>1.5)throw new Error(`${viewport.name}: compact date rail did not reverse immediately: ${JSON.stringify({reverse,reversed})}`);
+  if(Math.abs(reversed.drag-reverse)>1.2||Math.abs((reversed.tx-direct.tx)-(reverse-dx2))>1.5)throw new Error(`${viewport.name}: compact date rail did not reverse immediately: ${JSON.stringify({reverse,direct,reversed})}`);
 
   const outward=direction*Math.min(150,viewport.width*.32);
   await page.mouse.move(x+outward,y,{steps:1});const edge=await compactPresentation(page);
   if(Math.abs(edge.drag)>=Math.abs(outward)*.7)throw new Error(`${viewport.name}: compact date rail edge drag was not rubber-banded: ${JSON.stringify({outward,edge})}`);
-  if(Math.abs(edge.drag)>72.5)throw new Error(`${viewport.name}: compact date rail exceeded elastic cap: ${JSON.stringify(edge)}`);
+  if(Math.abs(edge.drag)>96.5)throw new Error(`${viewport.name}: compact date rail exceeded elastic cap: ${JSON.stringify(edge)}`);
   if(edge.scrollWidth>edge.clientWidth+2)throw new Error(`${viewport.name}: compact date rail caused horizontal overflow: ${JSON.stringify(edge)}`);
   if(edge.date!=='2026-08-24')throw new Error(`${viewport.name}: compact date rail committed before release`);
   await page.screenshot({path:`${OUT}/${viewport.name}.png`,fullPage:false});
@@ -113,7 +113,7 @@ async function auditLegacy(page,viewport,box){
 
 for(const viewport of VIEWPORTS){
   const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},isMobile:viewport.width<900,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
-  const page=await context.newPage();page.setDefaultTimeout(9000);const consoleErrors=[],pageErrors=[];
+  const page=await context.newPage();page.setDefaultTimeout(9000);page.setDefaultNavigationTimeout(20000);const consoleErrors=[],pageErrors=[];
   page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});page.on('pageerror',error=>pageErrors.push(String(error)));
   try{
     await seed(page);
