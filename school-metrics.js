@@ -134,7 +134,17 @@ if(!document.querySelector('#flow-school-wide-portrait-destinations')){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span{font-size:.65rem!important;font-weight:800!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.54rem!important}
 
-  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid{gap:12px!important}
+  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid{
+    gap:12px!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important
+  }
   html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid>.status-card:not(.flow-home-noise){border:0!important}
 
   html[data-flow-school-ui="v2"] .view-header{
