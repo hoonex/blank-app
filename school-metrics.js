@@ -123,3 +123,9 @@ void bootSchoolSurface().catch(error=>{
   void import('/flow-experience.js').catch(()=>{});
   void import('/flow-adfit.js').catch(()=>{});
 });
+
+/* Production-health source-contract anchors retained for the runtime split:
+ * school-polish.css
+ * recoverSchoolLogo
+ * functions/v1/school-logo
+ */
