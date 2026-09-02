@@ -50,14 +50,15 @@ html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"][data-k
 html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-rail{transition:none!important}
 html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"][data-kinetic-snap="true"] .flow-date-rail{transition:transform .24s cubic-bezier(.18,.92,.22,1)!important}
 html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-day{pointer-events:auto!important}
+html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-focus{pointer-events:none!important}
 
 /* Settings is one scroll surface. The floating nav overlays it; content owns the clearance. */
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body #flowSchoolSettingsView:not(.hidden){inset:64px 0 0!important;bottom:0!important;padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;overscroll-behavior-y:contain!important}
+  html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){inset:64px 0 0!important;bottom:0!important;padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;overscroll-behavior-y:contain!important}
   html[data-flow-school-ui="v2"] body .product-main{padding-bottom:calc(124px + env(safe-area-inset-bottom))!important}
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav{bottom:calc(10px + env(safe-area-inset-bottom))!important}
 }
-@media(max-width:520px){html[data-flow-school-ui="v2"] body #flowSchoolSettingsView:not(.hidden){top:58px!important;padding-bottom:calc(134px + env(safe-area-inset-bottom))!important}}
+@media(max-width:520px){html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){top:58px!important;padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(134px + env(safe-area-inset-bottom))!important}}
 
 /* Keep the time palette visible through the School shell. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .product-shell,html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .product-main{background-color:color-mix(in srgb,var(--bg) 84%,transparent)!important}
