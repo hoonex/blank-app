@@ -62,9 +62,11 @@ await page.screenshot({path:`${OUT}/phone-kinetic-date.png`,fullPage:false});
 // The exam viewport must read as one hero + three compact cards + a rear peek.
 await page.locator('#flowExamDeckV5').evaluate(node=>node.scrollTo({top:0,behavior:'auto'}));await page.waitForTimeout(100);let exams=await examState(page);const shown=exams.cards.filter(card=>card.display!=='none'&&card.visible>0),active=shown.filter(card=>card.active),compact=shown.filter(card=>!card.active&&card.visible>=44),peek=shown.filter(card=>!card.active&&card.visible>0&&card.visible<24);
 assert(active.length===1&&active[0].index===0,`first exam is not the detailed active card ${JSON.stringify(exams)}`);assert(compact.length>=3,`fewer than three compact exams are readable ${JSON.stringify(shown)}`);assert(peek.length>=1,`rear stack peek is missing ${JSON.stringify(shown)}`);assert(active[0].height>=compact[0].height+45,`active exam is not clearly more detailed ${JSON.stringify({active:active[0],compact:compact[0]})}`);
+await page.locator('#flowExamDeckV5').scrollIntoViewIfNeeded();await page.waitForTimeout(80);
 await page.screenshot({path:`${OUT}/phone-exam-deck-initial.png`,fullPage:false});
 await page.locator('#flowExamDeckV5').evaluate(node=>node.scrollTo({top:84,behavior:'auto'}));await page.waitForTimeout(130);exams=await examState(page);const activeAfter=exams.cards.find(card=>card.active);
 assert(activeAfter?.index===1,`second exam did not become the detailed card after one smooth step ${JSON.stringify(exams)}`);assert(exams.cards.find(card=>card.index===0)?.visible<10,`old detailed card did not leave naturally ${JSON.stringify(exams.cards.find(card=>card.index===0))}`);
+await page.locator('#flowExamDeckV5').scrollIntoViewIfNeeded();await page.waitForTimeout(60);
 await page.screenshot({path:`${OUT}/phone-exam-deck-next.png`,fullPage:false});
 
 // Settings must be a continuous surface under the floating nav, with working ambience and haptics.
