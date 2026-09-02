@@ -38,3 +38,128 @@
     grid-row:4;
   }
 }
+
+/* Late-loaded School date polish.
+ * Keep the kinetic wheel mechanics, but make the chrome read like a quiet
+ * system picker instead of a glossy/generated control. */
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"]{
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
+  height:44px!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  touch-action:pan-y!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport::before,
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport::after{
+  display:none!important;
+  content:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-focus{
+  top:2px!important;
+  bottom:2px!important;
+  width:calc((100% / var(--flow-date-count,5)) - 7px)!important;
+  border:0!important;
+  border-radius:10px!important;
+  corner-shape:round!important;
+  background:color-mix(in srgb,var(--text) 6%,transparent)!important;
+  box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--text) 8%,transparent)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-focus::before{
+  display:none!important;
+  content:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"][data-kinetic-dragging="true"] .flow-date-focus,
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"][data-kinetic-snap="true"] .flow-date-focus{
+  border:0!important;
+  background:color-mix(in srgb,var(--text) 7.5%,transparent)!important;
+  box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--text) 9%,transparent)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-day-v5{
+  grid-template-rows:10px 19px 7px!important;
+  width:calc((100% / var(--flow-date-count,5)) - 5px)!important;
+  height:44px!important;
+  min-height:44px!important;
+  padding:4px 2px 3px!important;
+  border:0!important;
+  border-radius:9px!important;
+  corner-shape:round!important;
+  background:transparent!important;
+  color:color-mix(in srgb,var(--text) 50%,var(--muted))!important;
+  box-shadow:none!important;
+  transform:translate3d(var(--flow-date-base),0,0) translateX(-50%)!important;
+  transition:opacity .12s linear,color .12s linear!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-day-v5[data-preview="true"]{
+  top:-1px!important;
+  width:calc((100% / var(--flow-date-count,5)) - 3px)!important;
+  height:46px!important;
+  color:var(--text)!important;
+  font-weight:600!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-week{
+  font-size:.50rem!important;
+  font-weight:560!important;
+  letter-spacing:.005em!important;
+  color:currentColor!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-num{
+  font-size:.91rem!important;
+  font-weight:630!important;
+  letter-spacing:-.025em!important;
+  color:currentColor!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-day-v5[data-preview="true"] .flow-date-num{
+  font-size:.96rem!important;
+  font-weight:680!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-today{
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  height:7px!important;
+  overflow:visible!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-today:not(:empty)::before{
+  content:""!important;
+  display:block!important;
+  width:4px!important;
+  height:4px!important;
+  border-radius:50%!important;
+  background:var(--accent)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-edge{
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:color-mix(in srgb,var(--text) 62%,var(--muted))!important;
+  font-size:1.22rem!important;
+  font-weight:480!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-edge:active{
+  transform:scale(.94)!important;
+  background:color-mix(in srgb,var(--text) 5%,transparent)!important;
+}
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-focus{
+    width:calc((100% / 3) - 8px)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-week{font-size:.49rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-num{font-size:.90rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-day-v5[data-preview="true"] .flow-date-num{font-size:.95rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] :is(.flow-date-focus,.flow-date-day-v5,.flow-date-edge){transition:none!important}
+}
