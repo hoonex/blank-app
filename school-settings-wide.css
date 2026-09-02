@@ -163,3 +163,9 @@ html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kine
 @media(prefers-reduced-motion:reduce){
   html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kinetic="v5"] :is(.flow-date-focus,.flow-date-day-v5,.flow-date-edge){transition:none!important}
 }
+
+/* The v5 stage overlays its scroll runway. Keeping the first snap at the
+ * runway origin prevents native scroll-snap from jumping the deck to card 5. */
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway-v5{
+  padding-top:0!important;
+}
