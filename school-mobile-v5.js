@@ -9,6 +9,7 @@ const AMBIENT_KEY='flow-ambient-v1';
 const EXAM_KEYWORDS=/시험|평가|모의|중간|기말|고사|수능|학력|듣기/;
 const DAY_WINDOW=40;
 const EXAM_STEP=84;
+const EXAM_STACK_STEP=60;
 let dateState=null,dateRaf=0,dateSuppressUntil=0,lastDetent=0,bootFrame=0;
 let examState={items:[],remote:[],cursor:null,horizon:null,exhausted:false,loading:false,frame:0,interacted:false,signature:''};
 
@@ -155,7 +156,7 @@ async function loadMoreExams(){
   if(examState.loading||examState.exhausted||!examState.interacted)return;examState.loading=true;try{const before=collectExams().length;while(examState.cursor<=examState.horizon){const target=new Date(examState.cursor);examState.cursor=new Date(target.getFullYear(),target.getMonth()+1,1,12);examState.remote.push(...await fetchExamMonth(target));if(collectExams().length>before)break}if(examState.cursor>examState.horizon)examState.exhausted=true;renderExamDeck(true)}finally{examState.loading=false}
 }
 function examCard(item,index){return `<article class="flow-exam-card-v5" data-exam-index="${index}"><div class="flow-exam-top-v5"><span class="flow-exam-dday-v5">${dday(item.date)}</span><span>${dateLabel(item.date)}</span><span>${escapeHtml(item.kind||'시험')}</span></div><h3>${escapeHtml(item.name)}</h3><p class="flow-exam-detail-v5">${escapeHtml(item.detail||'시험 일정을 확인하세요.')}</p></article>`}
-function examY(relative){if(relative<0)return relative*142;if(relative<=1)return relative*136;return 136+(relative-1)*66}
+function examY(relative){if(relative<0)return relative*142;if(relative<=1)return relative*136;return 136+(relative-1)*EXAM_STACK_STEP}
 function setStyleIfChanged(node,name,value){if(node.style.getPropertyValue(name)!==value)node.style.setProperty(name,value)}
 function updateExamStage(){
   const deck=$('#flowExamDeckV5'),stage=$('.flow-exam-stage-v5',deck);if(!deck||!stage)return;const cursor=deck.scrollTop/EXAM_STEP,index=Math.floor(cursor);$$('.flow-exam-card-v5',stage).forEach(card=>{const i=Number(card.dataset.examIndex),rel=i-cursor;if(rel<-1.05||rel>4.3){if(card.style.display!=='none')card.style.display='none';if(card.hasAttribute('data-active'))card.removeAttribute('data-active');return}if(card.style.display!=='block')card.style.display='block';const active=clamp(1-Math.abs(rel),0,1),y=examY(rel),scale=rel<=1?1-.018*Math.max(0,rel):clamp(.982-(rel-1)*.015,.92,.982),opacity=rel<0?clamp(1+rel,0,1):rel<=3?1:clamp(1-(rel-3)*.55,.28,1),isActive=rel>=-.18&&rel<.5;setStyleIfChanged(card,'--flow-active',active.toFixed(3));setStyleIfChanged(card,'--flow-y',`${y.toFixed(2)}px`);setStyleIfChanged(card,'--flow-scale',scale.toFixed(3));setStyleIfChanged(card,'--flow-opacity',opacity.toFixed(3));setStyleIfChanged(card,'--flow-sat',String(clamp(1-(Math.max(0,rel-1)*.035),.86,1)));setStyleIfChanged(card,'--flow-detail-y',`${((1-active)*4).toFixed(2)}px`);if(isActive&&!card.hasAttribute('data-active'))card.setAttribute('data-active','true');else if(!isActive&&card.hasAttribute('data-active'))card.removeAttribute('data-active')});if(examState.interacted&&index>=examState.items.length-4&&!examState.exhausted)void loadMoreExams()
