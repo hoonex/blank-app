@@ -21,6 +21,10 @@ html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #d
   document.head.append(style);
 }
 
+/* Flat landing controls and final nav geometry are tiny, dependency-free rules.
+ * Start them immediately so they are present before the shared material layer paints. */
+void import('./school-runtime-contract-v6-hotfix.js').catch(()=>{});
+
 function transitLabEnabled(){
   const host=location.hostname;
   return(host==='127.0.0.1'||host==='localhost')&&localStorage.getItem(TRANSIT_LAB_KEY)!=='off';
