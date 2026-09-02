@@ -57,7 +57,7 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
   html[data-theme="light"] .bottom-nav{background:rgba(255,255,255,.985)!important}
 
   /* Keep School / University landing header geometry identical on mobile. */
-  .setup-header{height:40px!important;min-height:40px!important}
+  .setup-header{height:44px!important;min-height:44px!important}
   .mobile-header .brand{min-height:40px!important;align-items:center!important}
 
   .main{padding-top:76px!important}
