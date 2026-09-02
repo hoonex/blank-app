@@ -30,3 +30,30 @@ body.dialog-open{overflow:hidden;touch-action:none}
   .week-cell{box-shadow:none!important}
   .week-head,.week-period{background:var(--surface-2)!important}
 }
+
+/* Settings is one continuous destination surface. The floating bottom nav sits
+ * above it; content, rather than the panel itself, owns the nav/safe-area
+ * clearance. This prevents the detached strip/gap seen on real Android devices. */
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"][data-theme] body #dashboard:not(.hidden) #flowSchoolSettingsView:not(.hidden){
+    bottom:0!important;
+    inset-block-end:0!important;
+    padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
+    background:var(--bg)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+    z-index:90!important;
+  }
+}
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"][data-theme] body #dashboard:not(.hidden) #flowSchoolSettingsView:not(.hidden){
+    inset:64px 0 0!important;
+    padding:18px 11px calc(112px + env(safe-area-inset-bottom))!important;
+  }
+}
+@media(max-width:900px) and (max-height:520px){
+  html[data-flow-school-ui="v2"][data-theme] body #dashboard:not(.hidden) #flowSchoolSettingsView:not(.hidden){
+    inset:54px 0 0!important;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom))!important;
+  }
+}

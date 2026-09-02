@@ -68,6 +68,25 @@ async function renderedState(page){
     };
   });
 }
+async function modeState(page){return page.evaluate(()=>{
+  const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
+  const toggle=document.querySelector('.timetable-mode-toggle');
+  const today=toggle?.querySelector('[data-timetable-mode="today"]')||null;
+  const week=[...(toggle?.querySelectorAll('button')||[])].find(node=>node!==today&&node.textContent.trim()==='주간')||null;
+  const info=node=>{const s=node?getComputedStyle(node):null;return{active:Boolean(node?.classList.contains('active')),pressed:node?.getAttribute('aria-pressed')||'',background:s?.backgroundColor||'',image:s?.backgroundImage||'none',color:s?.color||'',classes:node?.className||''}};
+  return{
+    bodyWeek:document.body.classList.contains('flow-inline-week-active'),
+    inlineVisible:shown(document.querySelector('#inlineWeekTimetable')),
+    title:document.querySelector('.timetable-card .card-heading h2')?.textContent?.trim()||'',
+    today:info(today),week:info(week),
+    bottomToday:Boolean(document.querySelector('#bottomNav>[data-view="today"]')?.classList.contains('active')),
+    route:location.pathname,
+  };
+})}
+function selectedSurfaceDiffers(state,selected){
+  const a=selected==='week'?state.week:state.today,b=selected==='week'?state.today:state.week;
+  return Boolean(a&&b&&(a.background!==b.background||a.image!==b.image));
+}
 
 const browser=await chromium.launch({headless:true});
 const report={};
@@ -95,10 +114,31 @@ for(const [name,width,height,isMobile] of cases){
   assert(state.periods.every(period=>Math.abs(period.width-period.height)<=1),`${name}: period badges lost square geometry ${JSON.stringify(state.periods)}`);
   state.periods.forEach((period,index)=>squircle(period,`${name}/period-${index+1}`));
   assert(state.overflow<=1,`${name}: horizontal overflow ${state.overflow}`);
+
+  const initialMode=await modeState(page);
+  assert(!initialMode.bodyWeek&&!initialMode.inlineVisible&&initialMode.title==='오늘 시간표',`${name}: initial Today mode is wrong ${JSON.stringify(initialMode)}`);
+  assert(initialMode.today.active&&initialMode.today.pressed==='true'&&!initialMode.week.active&&initialMode.week.pressed==='false',`${name}: initial segmented state is wrong ${JSON.stringify(initialMode)}`);
+  assert(selectedSurfaceDiffers(initialMode,'today'),`${name}: Today selection surface is visually detached/indistinguishable ${JSON.stringify(initialMode)}`);
+
+  await page.locator('.timetable-mode-toggle button',{hasText:'주간'}).click();
+  await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&document.querySelector('#inlineWeekTimetable')&&!document.querySelector('#inlineWeekTimetable').classList.contains('hidden'));
+  const weekMode=await modeState(page);
+  assert(weekMode.bodyWeek&&weekMode.inlineVisible&&weekMode.title==='주간 시간표',`${name}: Week mode did not engage ${JSON.stringify(weekMode)}`);
+  assert(!weekMode.today.active&&weekMode.today.pressed==='false'&&weekMode.week.active&&weekMode.week.pressed==='true',`${name}: Week segmented state is wrong ${JSON.stringify(weekMode)}`);
+  assert(weekMode.bottomToday&&weekMode.route==='/home',`${name}: inline Week escaped the Today destination ${JSON.stringify(weekMode)}`);
+  assert(selectedSurfaceDiffers(weekMode,'week'),`${name}: Week selection surface is visually detached/indistinguishable ${JSON.stringify(weekMode)}`);
+
+  await page.locator('.timetable-mode-toggle [data-timetable-mode="today"]').click();
+  await page.waitForFunction(()=>!document.body.classList.contains('flow-inline-week-active')&&document.querySelector('#inlineWeekTimetable')?.classList.contains('hidden'));
+  const returnedMode=await modeState(page);
+  assert(!returnedMode.bodyWeek&&!returnedMode.inlineVisible&&returnedMode.title==='오늘 시간표',`${name}: did not return to Today mode ${JSON.stringify(returnedMode)}`);
+  assert(returnedMode.today.active&&returnedMode.today.pressed==='true'&&!returnedMode.week.active&&returnedMode.week.pressed==='false'&&returnedMode.bottomToday,`${name}: returned Today segmented state is wrong ${JSON.stringify(returnedMode)}`);
+  assert(selectedSurfaceDiffers(returnedMode,'today'),`${name}: returned Today selection lost its surface ${JSON.stringify(returnedMode)}`);
+
   assert(errors.length===0,`${name}: browser errors ${JSON.stringify(errors)}`);
-  report[name]={state,errors};
+  report[name]={state,initialMode,weekMode,returnedMode,errors};
   await context.close();
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,order:['mode','edit','share'],periodShape:'squircle',viewports:Object.keys(report)},null,2));
+console.log(JSON.stringify({ok:true,order:['mode','edit','share'],periodShape:'squircle',modeRoundTrip:'today-week-today',viewports:Object.keys(report)},null,2));
