@@ -44,6 +44,9 @@ function visibleDateCount(){return matchMedia('(max-width:520px)').matches||matc
 function installStyle(){
   if($('#flow-school-mobile-v5-style'))return;
   const style=document.createElement('style');style.id='flow-school-mobile-v5-style';style.textContent=`
+/* A saved-profile boot gate must also hide descendants that set visibility inline. */
+html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #dashboard:not(.hidden) *{visibility:hidden!important;pointer-events:none!important}
+
 /* Keep landing geometry deterministic before late School polish arrives. */
 @media(max-width:820px){#landing .landing-header{height:44px!important;min-height:44px!important}}
 
