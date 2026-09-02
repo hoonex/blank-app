@@ -37,7 +37,7 @@ function ymd(date){return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(d
 function weekday(date){return new Intl.DateTimeFormat('ko-KR',{weekday:'short'}).format(date).replace('요일','')}
 function dateLabel(value){const d=fromIso(value);return new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'short'}).format(d)}
 function dday(value){const target=fromIso(value),now=new Date(),base=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),diff=Math.round((target-base)/86400000);return diff===0?'D-DAY':diff>0?`D-${diff}`:`D+${Math.abs(diff)}`}
-function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function haptic(pattern=4){if(!enabled(HAPTIC_KEY)||typeof navigator.vibrate!=='function')return;try{navigator.vibrate(pattern)}catch{}}
 function visibleDateCount(){return matchMedia('(max-width:520px)').matches||matchMedia('(max-width:900px) and (max-height:520px) and (orientation:landscape)').matches?3:5}
 
