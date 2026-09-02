@@ -37,7 +37,7 @@ function ymd(date){return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(d
 function weekday(date){return new Intl.DateTimeFormat('ko-KR',{weekday:'short'}).format(date).replace('요일','')}
 function dateLabel(value){const d=fromIso(value);return new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'short'}).format(d)}
 function dday(value){const target=fromIso(value),now=new Date(),base=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),diff=Math.round((target-base)/86400000);return diff===0?'D-DAY':diff>0?`D-${diff}`:`D+${Math.abs(diff)}`}
-function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function haptic(pattern=4){if(!enabled(HAPTIC_KEY)||typeof navigator.vibrate!=='function')return;try{navigator.vibrate(pattern)}catch{}}
 function visibleDateCount(){return matchMedia('(max-width:520px)').matches||matchMedia('(max-width:900px) and (max-height:520px) and (orientation:landscape)').matches?3:5}
 
@@ -171,17 +171,22 @@ const ambientPalettes={dawn:['#ffe2c2','#e8ecfb'],day:['#fff0b8','#edf2f4'],gold
 function syncAmbientVisibility(){
   if(!enabled(AMBIENT_KEY))return;const now=new Date(),h=now.getHours()+now.getMinutes()/60,phase=h<6.5?'night':h<8.5?'dawn':h<16.5?'day':h<18.5?'golden':h<21?'evening':'night',palette=ambientPalettes[phase]||ambientPalettes.day;root.dataset.flowAmbient='on';root.dataset.flowAmbientPhase=phase;root.style.setProperty('--flow-ambient-a',palette[0]);root.style.setProperty('--flow-ambient-b',palette[1])
 }
+function syncSettingsClearance(){
+  const panel=$('#flowSchoolSettingsView');if(!panel)return false;const touchFirst=matchMedia('(max-width:900px), (min-width:901px) and (max-width:1024px) and (orientation:portrait)').matches;
+  if(!touchFirst){['padding-bottom','scroll-padding-bottom','bottom'].forEach(name=>panel.style.removeProperty(name));return false}
+  const clearance=matchMedia('(max-width:520px)').matches?'134px':'138px';panel.style.setProperty('padding-bottom',`calc(${clearance} + env(safe-area-inset-bottom))`,'important');panel.style.setProperty('scroll-padding-bottom',`calc(${clearance} + env(safe-area-inset-bottom))`,'important');panel.style.setProperty('bottom','0px','important');return true
+}
 function installHapticFallback(){
   document.addEventListener('pointerdown',event=>{if(!event.isPrimary||!event.target.closest?.('.mobile-tab,.flow-settings-segment button,.flow-experience-settings-grid button,.timetable-mode-toggle button'))return;haptic(5)},{capture:true,passive:true});
   document.addEventListener('click',event=>{const button=event.target.closest?.('[data-flow-experience-toggle="haptics"]');if(button&&enabled(HAPTIC_KEY))setTimeout(()=>haptic([8,18,6]),0)},{capture:true,passive:true})
 }
 function installSettingsRepair(){
-  syncAmbientVisibility();[120,700,1500].forEach(delay=>setTimeout(syncAmbientVisibility,delay));setInterval(syncAmbientVisibility,60000);
-  document.addEventListener('click',event=>{if(event.target.closest?.('#mobileSettingsBtn,#settingsBtn'))setTimeout(()=>{syncAmbientVisibility();const panel=$('#flowSchoolSettingsView');if(panel)panel.scrollTop=Math.max(0,panel.scrollTop)},0);if(event.target.closest?.('[data-flow-experience-toggle="ambient"]')){setTimeout(syncAmbientVisibility,0);setTimeout(syncAmbientVisibility,120)}},{capture:true,passive:true})
+  syncAmbientVisibility();syncSettingsClearance();[120,700,1500].forEach(delay=>setTimeout(()=>{syncAmbientVisibility();syncSettingsClearance()},delay));setInterval(syncAmbientVisibility,60000);addEventListener('resize',syncSettingsClearance,{passive:true});
+  document.addEventListener('click',event=>{if(event.target.closest?.('#mobileSettingsBtn,#settingsBtn')){setTimeout(()=>{syncAmbientVisibility();syncSettingsClearance();const panel=$('#flowSchoolSettingsView');if(panel)panel.scrollTop=Math.max(0,panel.scrollTop)},0);setTimeout(syncSettingsClearance,80)}if(event.target.closest?.('[data-flow-experience-toggle="ambient"]')){setTimeout(syncAmbientVisibility,0);setTimeout(syncAmbientVisibility,120)}},{capture:true,passive:true})
 }
 function boot(){
   installStyle();const bind=()=>{bindDateWheel();if(!$('#flowExamDeckV5'))bindExamDeck()};bind();[60,180,520,1100].forEach(delay=>setTimeout(bind,delay));
-  const observer=new MutationObserver(()=>{if(bootFrame)return;bootFrame=requestAnimationFrame(()=>{bootFrame=0;bind()})});observer.observe(document.body,{subtree:true,childList:true});
+  const observer=new MutationObserver(()=>{if(bootFrame)return;bootFrame=requestAnimationFrame(()=>{bootFrame=0;bind();syncSettingsClearance()})});observer.observe(document.body,{subtree:true,childList:true});
   installHapticFallback();installSettingsRepair();root.dataset.flowSchoolMobileV5='ready'
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
