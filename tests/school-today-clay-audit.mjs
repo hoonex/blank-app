@@ -60,6 +60,7 @@ async function snapshot(page){
       mobileSchool:styleOf('.mobile-school-button'),
       hero:styleOf('#todayView .school-hero'),
       dateDock:styleOf('#flowTodayDateDock'),
+      dateFocus:styleOf('#flowTodayDateDock .flow-date-focus'),
       dateDays:[...(dock?.querySelectorAll('.flow-date-day')||[])].map(node=>({offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim(),display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility})),
       statusGrid:styleOf('#todayView .status-grid'),
       statusCards:cards,
@@ -77,13 +78,17 @@ function clay(name,node){
   if(!node)throw new Error(`${name}: missing element`);
   if(!node.boxShadow||node.boxShadow==='none'||!node.boxShadow.includes('inset'))throw new Error(`${name}: soft-clay depth missing ${JSON.stringify(node)}`);
 }
+function flatChrome(name,node){
+  if(!node)throw new Error(`${name}: missing element`);
+  if(node.background!=='rgba(0, 0, 0, 0)'||node.boxShadow!=='none')throw new Error(`${name}: nested chrome surface returned ${JSON.stringify(node)}`);
+}
 function visible(name,node){if(!node||node.display==='none'||node.visibility==='hidden'||node.opacity<.95||node.rect.height<1)throw new Error(`${name}: expected visible element ${JSON.stringify(node)}`)}
 function assertState(name,state,expectedDays){
   if(!state.claySheet)throw new Error(`${name}: Today clay stylesheet did not load`);
   if(state.topbarMode!=='ready')throw new Error(`${name}: compact Today topbar contract did not activate ${JSON.stringify(state.topbarMode)}`);
-  visible(`${name}/topbar`,state.topbar);visible(`${name}/mobileSchool`,state.mobileSchool);visible(`${name}/dateDock`,state.dateDock);
+  visible(`${name}/topbar`,state.topbar);visible(`${name}/mobileSchool`,state.mobileSchool);visible(`${name}/dateDock`,state.dateDock);visible(`${name}/dateFocus`,state.dateFocus);
   borderless(`${name}/mobileSchool`,state.mobileSchool);borderless(`${name}/dateDock`,state.dateDock);borderless(`${name}/statusGrid`,state.statusGrid);
-  clay(`${name}/mobileSchool`,state.mobileSchool);clay(`${name}/dateDock`,state.dateDock);
+  flatChrome(`${name}/mobileSchool`,state.mobileSchool);flatChrome(`${name}/dateDock`,state.dateDock);clay(`${name}/dateFocus`,state.dateFocus);
   state.statusCards.forEach((card,index)=>{
     if(card.border.some(v=>!px0(v)))throw new Error(`${name}/statusCard${index}: visible border remains ${JSON.stringify(card)}`);
     clay(`${name}/statusCard${index}`,card);
@@ -98,7 +103,7 @@ function assertState(name,state,expectedDays){
   if(state.viewport.scrollWidth>state.viewport.width+2)throw new Error(`${name}: horizontal overflow ${JSON.stringify(state.viewport)}`);
 }
 function stableGeometry(name,a,b){
-  for(const key of ['topbar','mobileSchool','dateDock','hero','statusGrid']){
+  for(const key of ['topbar','mobileSchool','dateDock','dateFocus','hero','statusGrid']){
     const ar=a[key]?.rect,br=b[key]?.rect;if(!ar||!br)continue;
     const max=Math.max(Math.abs(ar.left-br.left),Math.abs(ar.top-br.top),Math.abs(ar.width-br.width),Math.abs(ar.height-br.height));
     if(max>1.5)throw new Error(`${name}: ${key} drifted after 5s ${JSON.stringify({before:ar,after:br,max})}`);
@@ -129,4 +134,4 @@ for(const c of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps Flow + responsive magnetic date rail + compact School identity stable while removing the oversized School hero'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps flat outer app chrome, one centered soft-clay date focus, stable School identity, and independent status cards'},null,2));
