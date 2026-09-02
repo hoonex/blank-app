@@ -185,3 +185,36 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway
     scroll-padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
   }
 }
+
+/* Ambient mode is a real page layer, not just state variables. The body
+ * stacking context keeps it behind content while the translucent School
+ * shell lets the time palette remain visible. */
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body{
+  position:relative!important;
+  isolation:isolate;
+  background:transparent!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body::before{
+  content:""!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:-1!important;
+  pointer-events:none!important;
+  opacity:.78!important;
+  background-image:
+    radial-gradient(circle at 15% 4%,color-mix(in srgb,var(--flow-ambient-a) 88%,transparent) 0,transparent 54%),
+    radial-gradient(circle at 88% 94%,color-mix(in srgb,var(--flow-ambient-b) 80%,transparent) 0,transparent 58%),
+    linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 18%,var(--bg)),color-mix(in srgb,var(--flow-ambient-b) 22%,var(--bg)))!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-ambient-phase="day"] body::before{
+  background-image:
+    radial-gradient(circle at 48% -8%,rgba(255,224,128,.72) 0,rgba(255,239,188,.38) 34%,transparent 62%),
+    radial-gradient(circle at 92% 82%,rgba(255,245,209,.54) 0,transparent 56%),
+    linear-gradient(180deg,#fff9e8 0%,#f7f6ec 52%,#edf2f4 100%)!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-ambient-phase="night"] body::before{
+  background-image:
+    radial-gradient(circle at 22% 0%,rgba(130,103,218,.60) 0,rgba(191,174,239,.35) 36%,transparent 62%),
+    radial-gradient(circle at 86% 88%,rgba(111,128,211,.44) 0,transparent 58%),
+    linear-gradient(180deg,#e6def7 0%,#e1e4f5 52%,#d9e2f7 100%)!important;
+}
