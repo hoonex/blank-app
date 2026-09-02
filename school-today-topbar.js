@@ -422,21 +422,35 @@ function closestPreview(dx=0,slot=slotWidth()){
   if(!slot)return 0;
   return Math.max(-3,Math.min(3,Math.round(-dx/slot)));
 }
+function styleVar(node,name,value){if(node.style.getPropertyValue(name)!==value)node.style.setProperty(name,value)}
+function dataValue(node,name,value){const next=String(value);if(node.dataset[name]!==next)node.dataset[name]=next}
+function exposeBufferDays(expose){
+  const{rail}=dockParts();
+  if(!rail)return;
+  const half=Math.floor(visibleCount()/2);
+  [...rail.children].forEach(button=>{
+    const offset=Math.abs(Number(button.dataset.offset)||0),primary=offset<=half;
+    if(primary){button.hidden=false;button.classList.add('flow-date-day');button.classList.remove('flow-date-buffer-day');return}
+    button.hidden=!expose;
+    button.classList.toggle('flow-date-day',expose);
+    button.classList.add('flow-date-buffer-day');
+  });
+}
 function updateRailVisual(dx=0){
   const{dock,rail}=dockParts();
   if(!dock||!rail)return;
-  const slot=slotWidth();
-  rail.style.setProperty('--flow-date-x',`${Number(dx||0).toFixed(1)}px`);
-  dock.dataset.preview=String(closestPreview(dx,slot));
+  const slot=slotWidth(),railX=`${Number(dx||0).toFixed(1)}px`;
+  styleVar(rail,'--flow-date-x',railX);
+  dataValue(dock,'preview',closestPreview(dx,slot));
   [...rail.children].forEach(button=>{
-    const offset=Number(button.dataset.offset)||0;
-    button.style.setProperty('--flow-date-base',`${(offset*slot).toFixed(2)}px`);
+    const offset=Number(button.dataset.offset)||0,base=`${(offset*slot).toFixed(2)}px`;
+    styleVar(button,'--flow-date-base',base);
     const distance=slot?Math.abs(offset*slot+dx)/slot:Math.abs(offset);
-    const scale=Math.max(.76,1.035-Math.min(distance,3.5)*.095);
-    const opacity=Math.max(.24,1-Math.min(distance,3.5)*.235);
-    button.style.setProperty('--flow-date-scale',scale.toFixed(3));
-    button.style.setProperty('--flow-date-opacity',opacity.toFixed(3));
-    button.dataset.preview=String(distance<.5);
+    const scale=Math.max(.76,1.035-Math.min(distance,3.5)*.095).toFixed(3);
+    const opacity=Math.max(.24,1-Math.min(distance,3.5)*.235).toFixed(3);
+    styleVar(button,'--flow-date-scale',scale);
+    styleVar(button,'--flow-date-opacity',opacity);
+    dataValue(button,'preview',distance<.5);
   });
 }
 function layoutRail(){
@@ -444,22 +458,29 @@ function layoutRail(){
   resizeFrame=requestAnimationFrame(()=>updateRailVisual(Number.parseFloat(dockParts().rail?.style.getPropertyValue('--flow-date-x')||'0')||0));
 }
 
-function renderRail(){
+function renderRail({force=false}={}){
   const{dock,rail}=dockParts();
   if(!dock||!rail)return;
   currentIso=activeIso();
-  const count=visibleCount();
-  dock.style.setProperty('--flow-date-count',String(count));
-  dock.dataset.dragging='false';
-  dock.dataset.snap='false';
-  dock.dataset.todaySelected=String(isToday(currentIso));
-  rail.style.setProperty('--flow-date-x','0px');
+  const count=visibleCount(),signature=`${currentIso}|${count}|${todayIso}`;
+  styleVar(dock,'--flow-date-count',String(count));
+  dataValue(dock,'dragging',false);
+  dataValue(dock,'snap',false);
+  dataValue(dock,'todaySelected',isToday(currentIso));
+  styleVar(rail,'--flow-date-x','0px');
+  if(!force&&rail.dataset.signature===signature&&rail.children.length===BUFFER_OFFSETS.length){
+    exposeBufferDays(false);
+    requestAnimationFrame(()=>updateRailVisual(0));
+    return;
+  }
+  rail.dataset.signature=signature;
+  const half=Math.floor(count/2);
   rail.replaceChildren(...BUFFER_OFFSETS.map(offset=>{
-    const value=addDays(currentIso,offset);
-    const date=fromIso(value);
+    const value=addDays(currentIso,offset),date=fromIso(value),primary=Math.abs(offset)<=half;
     const button=document.createElement('button');
     button.type='button';
-    button.className='flow-date-day';
+    button.className=primary?'flow-date-day':'flow-date-buffer-day';
+    button.hidden=!primary;
     button.dataset.offset=String(offset);
     button.dataset.iso=value;
     button.dataset.active=String(offset===0);
@@ -474,7 +495,7 @@ function renderRail(){
 function setDate(value,{feedback=true}={}){
   const picker=$('#datePicker');
   if(!picker)return;
-  picker.value=value;
+  if(picker.value!==value)picker.value=value;
   currentIso=value;
   renderRail();
   picker.dispatchEvent(new Event('change',{bubbles:true}));
@@ -486,26 +507,26 @@ function resetDrag({animate=false}={}){
   const{dock,rail}=dockParts();
   if(!dock||!rail)return;
   clearTimeout(settleTimer);
-  dock.dataset.dragging='false';
-  dock.dataset.snap=String(Boolean(animate));
+  dataValue(dock,'dragging',false);
+  dataValue(dock,'snap',Boolean(animate));
   drag=null;
+  exposeBufferDays(false);
   updateRailVisual(0);
-  if(animate&&!reducedMotion())settleTimer=setTimeout(()=>{dock.dataset.snap='false'},190);
-  else dock.dataset.snap='false';
+  if(animate&&!reducedMotion())settleTimer=setTimeout(()=>dataValue(dock,'snap',false),190);
+  else dataValue(dock,'snap',false);
 }
 function settle(direction){
   const{dock}=dockParts();
   if(!dock)return;
   clearTimeout(settleTimer);
-  dock.dataset.dragging='false';
+  dataValue(dock,'dragging',false);
   if(!direction){resetDrag({animate:true});return}
-  const slot=slotWidth();
-  const target=direction>0?-slot:slot;
-  dock.dataset.snap='true';
+  const slot=slotWidth(),target=direction>0?-slot:slot;
+  dataValue(dock,'snap',true);
   updateRailVisual(target);
   const delay=reducedMotion()?0:175;
   settleTimer=setTimeout(()=>{
-    dock.dataset.snap='false';
+    dataValue(dock,'snap',false);
     shift(direction);
     drag=null;
   },delay);
@@ -517,30 +538,26 @@ function onPointerDown(event){
   const{dock}=dockParts();
   if(!dock)return;
   clearTimeout(settleTimer);
-  dock.dataset.dragging='true';
-  dock.dataset.snap='false';
+  exposeBufferDays(true);
+  dataValue(dock,'dragging',true);
+  dataValue(dock,'snap',false);
   drag={id:event.pointerId,x:event.clientX,lastX:event.clientX,lastT:performance.now(),velocity:0,moved:false};
   try{dock.setPointerCapture?.(event.pointerId)}catch{}
 }
 function onPointerMove(event){
   if(!drag||event.pointerId!==drag.id)return;
-  const now=performance.now();
-  const dt=Math.max(8,now-drag.lastT);
-  const step=event.clientX-drag.lastX;
+  const now=performance.now(),dt=Math.max(8,now-drag.lastT),step=event.clientX-drag.lastX;
   drag.velocity=drag.velocity*.55+(step/dt)*.45;
   drag.lastX=event.clientX;
   drag.lastT=now;
   const raw=event.clientX-drag.x;
   if(Math.abs(raw)>6)drag.moved=true;
-  const sign=Math.sign(raw);
-  const distance=Math.abs(raw);
-  const elastic=sign*Math.min(96,distance<=54?distance:54+(distance-54)*.26);
+  const sign=Math.sign(raw),distance=Math.abs(raw),elastic=sign*Math.min(96,distance<=54?distance:54+(distance-54)*.26);
   updateRailVisual(elastic);
 }
 function onPointerUp(event){
   if(!drag||event.pointerId!==drag.id)return;
-  const dx=event.clientX-drag.x;
-  const velocity=drag.velocity;
+  const dx=event.clientX-drag.x,velocity=drag.velocity;
   if(drag.moved)suppressClickUntil=performance.now()+300;
   try{dockParts().dock?.releasePointerCapture?.(event.pointerId)}catch{}
   const direction=Math.abs(dx)>=32||Math.abs(velocity)>=.3?(dx<0||velocity<-.3?1:-1):0;
@@ -581,7 +598,7 @@ function buildDock(){
   dock.addEventListener('pointermove',onPointerMove);
   dock.addEventListener('pointerup',onPointerUp);
   dock.addEventListener('pointercancel',onPointerCancel);
-  renderRail();
+  renderRail({force:true});
   return dock;
 }
 
@@ -592,20 +609,20 @@ function syncLiveDate(){
   const wasFollowing=activeIso()===todayIso;
   todayIso=nextToday;
   if(wasFollowing)setDate(nextToday,{feedback:false});
-  else renderRail();
+  else renderRail({force:true});
 }
 function syncMode(){
   ensureResponsiveStyle();
   buildDock();
   renderRail();
-  root.dataset.flowTodayTopbar=matchMedia('(max-width:1180px)').matches?'ready':'wide';
+  const mode=matchMedia('(max-width:1180px)').matches?'ready':'wide';
+  if(root.dataset.flowTodayTopbar!==mode)root.dataset.flowTodayTopbar=mode;
 }
 function onResize(){
   const dock=$(`#${DATE_DOCK_ID}`);
   if(!dock)return;
-  const nextCount=visibleCount();
-  const current=Number(dock.style.getPropertyValue('--flow-date-count'))||0;
-  if(current!==nextCount)renderRail();
+  const nextCount=visibleCount(),current=Number(dock.style.getPropertyValue('--flow-date-count'))||0;
+  if(current!==nextCount)renderRail({force:true});
   else layoutRail();
 }
 function init(){
@@ -615,10 +632,10 @@ function init(){
   buildDock();
   syncMode();
   document.addEventListener('change',event=>{
-    if(event.target.matches?.('#datePicker'))requestAnimationFrame(renderRail);
+    if(event.target.matches?.('#datePicker'))requestAnimationFrame(()=>renderRail());
   });
   document.addEventListener('click',event=>{
-    if(event.target.closest?.('[data-view="today"],[data-go-view="today"]'))requestAnimationFrame(syncMode);
+    if(event.target.closest?.('[data-view="today"],[data-go-view="today"]'))requestAnimationFrame(()=>{$(`#${DATE_DOCK_ID}`)?layoutRail():syncMode()});
   });
   addEventListener('resize',onResize,{passive:true});
   addEventListener('orientationchange',()=>setTimeout(onResize,80),{passive:true});
