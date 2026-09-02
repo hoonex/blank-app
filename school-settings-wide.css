@@ -169,3 +169,19 @@ html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock[data-flow-kine
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway-v5{
   padding-top:0!important;
 }
+
+/* Settings content must remain scrollable above the floating mobile nav.
+ * The doubled view id intentionally outranks dynamically injected legacy
+ * settings rules even when those rules are appended later in the document. */
+@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
+    padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;
+    scroll-padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;
+  }
+}
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
+    padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
+    scroll-padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
+  }
+}
