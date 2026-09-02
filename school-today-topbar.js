@@ -34,47 +34,47 @@ function installStyle(){
 html[data-flow-school-ui="v2"] #${DATE_DOCK_ID}{display:none}
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){
-    display:grid!important;grid-template-columns:auto minmax(180px,520px) minmax(104px,154px)!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;
+    display:grid!important;grid-template-columns:auto minmax(220px,480px) minmax(104px,148px)!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
     width:100%!important;min-height:60px!important;height:auto!important;padding:5px clamp(8px,1.8vw,18px)!important;box-sizing:border-box!important;
     background:color-mix(in srgb,var(--surface) 88%,var(--bg))!important;border:0!important;box-shadow:none!important;overflow:visible!important
   }
   html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo{min-width:44px!important;min-height:44px!important;align-self:center!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:1.08rem!important;font-weight:850!important;letter-spacing:-.06em!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:1.08rem!important;font-weight:850!important;letter-spacing:-.055em!important}
   html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy small{display:none!important}
   html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button{
-    position:relative!important;inset:auto!important;display:grid!important;align-content:center!important;justify-items:start!important;
-    min-width:104px!important;max-width:154px!important;min-height:44px!important;height:44px!important;margin:0!important;padding:5px 9px!important;
-    border:0!important;border-radius:14px!important;corner-shape:squircle!important;background:color-mix(in srgb,var(--surface) 78%,transparent)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important;text-align:left!important;backdrop-filter:blur(14px) saturate(1.08)!important;-webkit-backdrop-filter:blur(14px) saturate(1.08)!important
+    position:relative!important;inset:auto!important;display:grid!important;align-content:center!important;justify-items:end!important;
+    min-width:104px!important;max-width:148px!important;min-height:44px!important;height:44px!important;margin:0!important;padding:4px 5px!important;
+    border:0!important;border-radius:12px!important;corner-shape:squircle!important;background:transparent!important;
+    box-shadow:none!important;text-align:right!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important
   }
   html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span,
   html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span{font-size:.62rem!important;font-weight:850!important;letter-spacing:-.025em!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{margin-top:1px!important;color:var(--muted)!important;font-size:.48rem!important;font-weight:680!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span{font-size:.68rem!important;font-weight:850!important;letter-spacing:-.025em!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.52rem!important;font-weight:700!important}
 
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID}{
     --flow-date-x:0px;--flow-date-count:5;display:grid!important;grid-template-columns:44px minmax(0,1fr) 44px!important;align-items:center!important;justify-self:center!important;
-    width:min(100%,520px)!important;min-width:0!important;height:50px!important;padding:3px 4px!important;box-sizing:border-box!important;
-    border:0!important;border-radius:18px!important;corner-shape:squircle!important;background:color-mix(in srgb,var(--surface) 68%,transparent)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.76),0 5px 18px rgba(43,57,78,.045)!important;
-    backdrop-filter:blur(18px) saturate(1.1)!important;-webkit-backdrop-filter:blur(18px) saturate(1.1)!important;
-    overflow:visible!important;touch-action:pan-y!important;user-select:none!important;-webkit-user-select:none!important
+    width:min(100%,480px)!important;min-width:0!important;height:50px!important;padding:3px 0!important;box-sizing:border-box!important;
+    border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important;touch-action:pan-y!important;user-select:none!important;-webkit-user-select:none!important
   }
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-edge{
     display:grid!important;place-items:center!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;padding:0!important;border:0!important;border-radius:13px!important;
-    background:transparent!important;color:color-mix(in srgb,var(--text) 66%,var(--muted))!important;box-shadow:none!important;font-size:1rem!important;line-height:1!important;cursor:pointer!important
+    background:transparent!important;color:color-mix(in srgb,var(--text) 58%,var(--muted))!important;box-shadow:none!important;font-size:1.12rem!important;font-weight:700!important;line-height:1!important;cursor:pointer!important
   }
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-edge:active{transform:scale(.94)!important;background:color-mix(in srgb,var(--surface-2) 58%,transparent)!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-edge:active{transform:scale(.92)!important;background:color-mix(in srgb,var(--surface-2) 64%,transparent)!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-viewport{
-    position:relative!important;grid-column:2;width:100%!important;height:44px!important;min-width:0!important;overflow:hidden!important;border-radius:14px!important
+    position:relative!important;grid-column:2;width:100%!important;height:44px!important;min-width:0!important;overflow:hidden!important;border-radius:15px!important;
+    background:color-mix(in srgb,var(--surface) 24%,transparent)!important
   }
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-focus{
-    position:absolute!important;z-index:0!important;top:0!important;bottom:0!important;left:50%!important;width:calc(100% / var(--flow-date-count,5))!important;transform:translateX(-50%)!important;
-    border-radius:13px!important;corner-shape:squircle!important;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 7%,var(--surface)),color-mix(in srgb,var(--surface) 88%,transparent))!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 4px 12px color-mix(in srgb,var(--accent) 8%,transparent)!important;pointer-events:none!important
+    position:absolute!important;z-index:0!important;top:0!important;bottom:0!important;left:50%!important;width:calc((100% / var(--flow-date-count,5)) - 6px)!important;transform:translateX(-50%)!important;
+    border:1px solid color-mix(in srgb,var(--accent) 11%,transparent)!important;border-radius:14px!important;corner-shape:squircle!important;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 9%,var(--surface)),color-mix(in srgb,var(--surface) 94%,transparent))!important;
+    box-shadow:0 5px 14px color-mix(in srgb,var(--accent) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.9)!important;pointer-events:none!important
   }
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-focus::before{
-    content:"";position:absolute;top:3px;left:50%;width:12px;height:2px;transform:translateX(-50%);border-radius:2px;background:color-mix(in srgb,var(--accent) 74%,transparent)
+    content:"";position:absolute;top:3px;left:50%;width:14px;height:2px;transform:translateX(-50%);border-radius:2px;background:color-mix(in srgb,var(--accent) 78%,transparent)
   }
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-rail{
     position:relative!important;z-index:1!important;display:grid!important;grid-template-columns:repeat(var(--flow-date-count,5),minmax(0,1fr))!important;align-items:center!important;width:100%!important;height:44px!important;
@@ -82,62 +82,75 @@ html[data-flow-school-ui="v2"] #${DATE_DOCK_ID}{display:none}
   }
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID}[data-dragging="true"] .flow-date-rail{transition:none!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day{
-    position:relative!important;display:grid!important;grid-template-columns:auto auto!important;grid-template-rows:1fr auto!important;place-content:center!important;align-items:center!important;column-gap:3px!important;row-gap:0!important;
-    width:calc(100% - 2px)!important;height:44px!important;min-height:44px!important;margin:auto!important;padding:3px 1px!important;box-sizing:border-box!important;border:0!important;border-radius:12px!important;
-    background:transparent!important;color:var(--muted)!important;box-shadow:none!important;opacity:.64!important;transform:scale(.92)!important;
+    position:relative!important;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:11px 18px 8px!important;place-content:center!important;align-items:center!important;justify-items:center!important;row-gap:0!important;
+    width:calc(100% - 6px)!important;height:44px!important;min-height:44px!important;margin:auto!important;padding:4px 2px 2px!important;box-sizing:border-box!important;border:0!important;border-radius:13px!important;
+    background:transparent!important;color:var(--muted)!important;box-shadow:none!important;opacity:.54!important;transform:scale(.88)!important;
     transition:transform .22s cubic-bezier(.16,1,.3,1),opacity .18s ease,color .18s ease!important;cursor:pointer!important
   }
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day[data-near="true"]{opacity:.84!important;transform:scale(.96)!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day[data-near="true"]{opacity:.78!important;transform:scale(.93)!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day[data-active="true"]{opacity:1!important;transform:scale(1)!important;color:var(--accent)!important}
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-week{grid-row:1;align-self:end;font-size:.46rem!important;font-weight:780!important;line-height:1!important}
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-num{grid-row:1;align-self:end;font-size:.78rem!important;font-weight:900!important;line-height:.95!important;letter-spacing:-.05em!important}
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-today{grid-column:1/-1;grid-row:2;height:9px!important;color:var(--accent)!important;font-size:.39rem!important;font-weight:820!important;line-height:1!important;letter-spacing:-.02em!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-week{grid-row:1;font-size:.54rem!important;font-weight:780!important;line-height:1!important;letter-spacing:-.01em!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-num{grid-row:2;font-size:.94rem!important;font-weight:900!important;line-height:1!important;letter-spacing:-.055em!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-today{grid-row:3;height:8px!important;color:var(--accent)!important;font-size:.43rem!important;font-weight:850!important;line-height:1!important;letter-spacing:-.02em!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day[data-active="true"] .flow-date-week{font-size:.57rem!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day[data-active="true"] .flow-date-num{font-size:1.04rem!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-dots{display:none!important}
 
-  html[data-flow-school-ui="v2"] body #todayView .timetable-actions{gap:2px!important}
+  html[data-flow-school-ui="v2"] body #todayView .timetable-actions{gap:5px!important}
   html[data-flow-school-ui="v2"] body #todayView .flow-school-utility-action,
   html[data-flow-school-ui="v2"] body #todayView .timetable-actions>.neo-button{
-    min-height:44px!important;height:44px!important;padding:0 9px!important;background:transparent!important;box-shadow:none!important;border-radius:11px!important;font-size:.57rem!important
+    min-height:44px!important;height:44px!important;padding:0 10px!important;background:transparent!important;box-shadow:none!important;border-radius:12px!important;font-size:.67rem!important;font-weight:790!important
   }
-  html[data-flow-school-ui="v2"] body #todayView #editSubjectsBtn.flow-school-utility-action{background:transparent!important;color:var(--accent)!important;box-shadow:none!important}
-  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{height:44px!important;min-width:98px!important;padding:5px!important;background:transparent!important;box-shadow:none!important}
-  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button{min-height:34px!important;height:34px!important;padding:0 9px!important}
-  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button.active{box-shadow:0 2px 8px rgba(43,57,78,.055),inset 0 1px 0 rgba(255,255,255,.76)!important}
+  html[data-flow-school-ui="v2"] body #todayView #editSubjectsBtn.flow-school-utility-action{
+    background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important;color:var(--accent)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)!important
+  }
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{
+    height:44px!important;min-width:108px!important;padding:4px!important;border-radius:13px!important;
+    background:color-mix(in srgb,var(--surface-2) 62%,transparent)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.58)!important
+  }
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button{min-height:36px!important;height:36px!important;padding:0 10px!important;font-size:.66rem!important}
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button.active{
+    background:var(--surface)!important;box-shadow:0 3px 10px rgba(43,57,78,.065),inset 0 1px 0 rgba(255,255,255,.78)!important
+  }
 
   html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #todayView .school-hero{height:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important}
   html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #todayView .school-hero>*{display:none!important}
 }
 @media(max-width:720px){
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){grid-template-columns:auto minmax(150px,1fr) minmax(92px,118px)!important;gap:5px!important;min-height:58px!important;padding:4px 7px!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:.94rem!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button{min-width:92px!important;max-width:118px!important;padding-inline:7px!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span{font-size:.57rem!important}html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{font-size:.44rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){grid-template-columns:44px minmax(0,1fr) minmax(86px,106px)!important;gap:5px!important;min-height:58px!important;padding:4px 7px!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:.96rem!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button{min-width:86px!important;max-width:106px!important;padding-inline:4px!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span{font-size:.61rem!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{font-size:.47rem!important}
 }
 @media(max-width:520px){
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){grid-template-columns:44px minmax(0,1fr) minmax(88px,104px)!important;min-height:56px!important;padding:3px 5px!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:.88rem!important}
-  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button{min-width:88px!important;max-width:104px!important;height:44px!important;padding:5px 6px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){grid-template-columns:42px minmax(0,1fr) minmax(78px,88px)!important;min-height:56px!important;padding:3px 5px!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .flow-logo-copy strong{font-size:.9rem!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button{min-width:78px!important;max-width:88px!important;height:44px!important;padding:4px 2px!important}
+  html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button span{font-size:.58rem!important}
   html[data-flow-school-ui="v2"] body .mobile-topbar .mobile-school-button small{display:none!important}
-  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID}{--flow-date-count:3;grid-template-columns:minmax(0,1fr)!important;height:48px!important;padding:2px!important;border-radius:16px!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID}{--flow-date-count:3;grid-template-columns:minmax(0,1fr)!important;height:48px!important;padding:2px 0!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-edge{display:none!important}
   html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-viewport{grid-column:1!important}
+  html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} .flow-date-day{width:calc(100% - 8px)!important}
 }
 @media(max-width:900px) and (max-height:520px) and (orientation:landscape){
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#${DATE_DOCK_ID}){
     position:relative!important;display:flex!important;align-items:center!important;justify-content:space-between!important;min-height:50px!important;height:50px!important;padding:3px 8px!important;gap:0!important
   }
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID}{
-    --flow-date-count:3;position:absolute!important;left:max(54px,calc(env(safe-area-inset-left) + 48px))!important;top:3px!important;width:clamp(138px,20vw,170px)!important;height:44px!important;
-    grid-template-columns:minmax(0,1fr)!important;padding:0!important;border-radius:14px!important;background:color-mix(in srgb,var(--surface) 54%,transparent)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.65)!important
+    --flow-date-count:3;position:absolute!important;left:max(54px,calc(env(safe-area-inset-left) + 48px))!important;top:3px!important;width:clamp(176px,21vw,190px)!important;height:44px!important;
+    grid-template-columns:minmax(0,1fr)!important;padding:0!important;background:transparent!important;box-shadow:none!important
   }
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-edge{display:none!important}
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-viewport{grid-column:1!important;height:44px!important}
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-rail{height:44px!important}
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-day{height:44px!important;min-height:44px!important;padding:2px 0!important}
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-week{font-size:.4rem!important}
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-num{font-size:.68rem!important}
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-today{height:7px!important;font-size:.34rem!important}
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-school-button{height:44px!important;min-height:44px!important;max-width:20vw!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-day{height:44px!important;min-height:44px!important;width:calc(100% - 4px)!important;padding:4px 1px 2px!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-week{font-size:.49rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-num{font-size:.86rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-day[data-active="true"] .flow-date-num{font-size:.96rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #${DATE_DOCK_ID} .flow-date-today{height:7px!important;font-size:.38rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-school-button{height:44px!important;min-height:44px!important;max-width:18vw!important;background:transparent!important}
 }
 @media(prefers-reduced-motion:reduce){html[data-flow-school-ui="v2"] body #${DATE_DOCK_ID} :is(.flow-date-rail,.flow-date-day){transition:none!important}}
 `;
