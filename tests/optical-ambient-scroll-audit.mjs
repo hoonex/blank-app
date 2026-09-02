@@ -61,6 +61,24 @@ async function auditRetirement(app,name,width,height){
   }finally{await context.close()}
 }
 
+async function waitForFollowerSettle(page,read){
+  const started=Date.now();
+  let previous=await read();
+  let stableSamples=0;
+  while(Date.now()-started<1200){
+    await page.waitForTimeout(70);
+    const current=await read();
+    const delta=Math.abs(current.actual-previous.actual);
+    const expectedError=Math.abs(current.actual-current.expected);
+    if(delta<=.05&&expectedError<=1.25){
+      stableSamples+=1;
+      if(stableSamples>=2)return{settledA:previous,settledB:current,elapsedMs:Date.now()-started};
+    }else stableSamples=0;
+    previous=current;
+  }
+  throw new Error('scroll follower did not settle after bounded follow-through');
+}
+
 async function scrollReversalAudit(){
   const {context,page}=await prepare('school',390,844);
   try{
@@ -79,9 +97,10 @@ async function scrollReversalAudit(){
     await page.evaluate(()=>window.scrollTo({top:535,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const reverse=await read();
     await page.evaluate(()=>window.scrollTo({top:760,behavior:'instant'}));await page.waitForTimeout(18);await page.evaluate(()=>window.scrollTo({top:610,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));const reverseAgain=await read();
     for(const [label,state] of [['down',down],['reverse',reverse],['reverseAgain',reverseAgain]])assert(Math.abs(state.actual-state.expected)<=1.25,`${label}: refracted scene stale by ${Math.abs(state.actual-state.expected).toFixed(2)}px ${JSON.stringify(state)}`);
-    await page.waitForTimeout(230);const settledA=await read();await page.waitForTimeout(120);const settledB=await read();assert(Math.abs(settledA.actual-settledB.actual)<=.05,'scroll follower did not settle after bounded follow-through');
+    const{settledA,settledB,elapsedMs}=await waitForFollowerSettle(page,read);
+    assert(Math.abs(settledA.actual-settledB.actual)<=.05,'scroll follower did not settle after bounded follow-through');
     await page.screenshot({path:`${OUT}/school-mobile-scroll-reversal.png`,fullPage:false,animations:'disabled'});
-    return{down,reverse,reverseAgain,settledA,settledB};
+    return{down,reverse,reverseAgain,settledA,settledB,settleElapsedMs:elapsedMs};
   }finally{await context.close()}
 }
 

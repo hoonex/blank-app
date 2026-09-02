@@ -42,9 +42,11 @@ async function readTheme(){
 }
 function isOnlyLight(value){return String(value).trim().split(/\s+/).sort().join(' ')==='light only'}
 function rgbLuma(value){
-  const nums=(value.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
+  const source=String(value||'').trim().toLowerCase();
+  const nums=(source.match(/[\d.]+/g)||[]).slice(0,3).map(Number);
   if(nums.length<3)return 0;
-  return .2126*nums[0]+.7152*nums[1]+.0722*nums[2];
+  const rgb=source.startsWith('color(srgb ')?nums.map(channel=>channel*255):nums;
+  return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
 }
 function assertLight(theme,label){
   if(theme.dataTheme!=='light'||theme.themeMode!=='light'||theme.saved!=='light')throw new Error(`${label} app theme is not explicit light: ${JSON.stringify(theme)}`);
