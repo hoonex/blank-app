@@ -29,16 +29,17 @@ async function seed(page){
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await page.locator('#dashboard:not(.hidden)').waitFor();
   await page.waitForFunction(()=>document.documentElement.dataset.flowExperience==='ready');
-  await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24'});
+  await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24';input.dispatchEvent(new Event('change',{bubbles:true}))});
+  await page.waitForFunction(()=>{const input=document.querySelector('#datePicker'),dock=document.querySelector('#flowTodayDateDock');if(!dock||dock.dataset.flowKinetic!=='v5')return true;return dock.querySelector('[data-preview="true"]')?.dataset.iso===input?.value});
 }
 async function visibleBox(locator){try{return await locator.boundingBox()}catch{return null}}
 async function compactPresentation(page){
   return page.evaluate(()=>{
-    const dock=document.querySelector('#flowTodayDateDock'),rail=dock?.querySelector('.flow-date-rail');
+    const dock=document.querySelector('#flowTodayDateDock'),rail=dock?.querySelector('.flow-date-rail'),preview=rail?.querySelector('[data-preview="true"]');
     const transform=rail?getComputedStyle(rail).transform:'none';let tx=0;
     try{if(transform&&transform!=='none')tx=new DOMMatrixReadOnly(transform).m41}catch{}
     const drag=parseFloat(rail?.style.getPropertyValue('--flow-date-x')||'0')||0;
-    return{drag,transform,tx,scrubbing:dock?.dataset.dragging||'',snap:dock?.dataset.snap||'',date:document.querySelector('#datePicker')?.value||'',clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
+    return{drag,transform,tx,dragging:dock?.dataset.kineticDragging||'',snap:dock?.dataset.kineticSnap||'',kinetic:dock?.dataset.flowKinetic||'',preview:preview?.dataset.iso||'',date:document.querySelector('#datePicker')?.value||'',clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
   });
 }
 async function legacyDispatch(page,type,id,x,y,buttons){
@@ -53,7 +54,7 @@ async function legacyPresentation(page){
     return{drag,transform,tx,ty,label:label?.dataset.flowScrubLabel||'',scrubbing:label?.dataset.flowScrubbing||'',date:document.querySelector('#datePicker')?.value||'',center:rect?rect.left+rect.width/2:0,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth};
   });
 }
-function nextIso(value,delta){const [y,m,d]=value.split('-').map(Number),date=new Date(y,m-1,d,12);date.setDate(date.getDate()+delta);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
+function dayDelta(a,b){const A=new Date(`${a}T12:00:00`),B=new Date(`${b}T12:00:00`);return Math.round((B-A)/86400000)}
 
 async function auditCompact(page,viewport,box){
   const x=box.x+box.width/2,y=box.y+box.height/2,direction=x>viewport.width/2?-1:1;
@@ -61,30 +62,33 @@ async function auditCompact(page,viewport,box){
   await page.mouse.move(x,y);await page.mouse.down();
   await page.mouse.move(x+dx1,y,{steps:1});const first=await compactPresentation(page);
   await page.mouse.move(x+dx2,y,{steps:1});const direct=await compactPresentation(page);
-  if(first.scrubbing!=='true'||direct.scrubbing!=='true')throw new Error(`${viewport.name}: compact date rail did not enter direct manipulation`);
-  if(Math.abs(first.drag-dx1)>1.2||Math.abs((direct.drag-first.drag)-(dx2-dx1))>1.2)throw new Error(`${viewport.name}: compact date rail is not 1:1 inside the direct zone: ${JSON.stringify({dx1,dx2,first,direct})}`);
-  if(Math.abs(first.tx-dx1)>1.5||Math.abs((direct.tx-first.tx)-(dx2-dx1))>1.5)throw new Error(`${viewport.name}: compact date rail render did not track pointer delta 1:1: ${JSON.stringify({dx1,dx2,first,direct})}`);
-  if(direct.date!=='2026-08-24')throw new Error(`${viewport.name}: compact date committed during drag: ${direct.date}`);
+  if(first.dragging!=='true'||direct.dragging!=='true'||direct.kinetic!=='v5')throw new Error(`${viewport.name}: kinetic date rail did not enter direct manipulation`);
+  if(Math.abs(first.drag-dx1)>1.2||Math.abs((direct.drag-first.drag)-(dx2-dx1))>1.2)throw new Error(`${viewport.name}: kinetic date rail is not 1:1 in the direct zone: ${JSON.stringify({dx1,dx2,first,direct})}`);
+  if(Math.abs(first.tx-dx1)>1.5||Math.abs((direct.tx-first.tx)-(dx2-dx1))>1.5)throw new Error(`${viewport.name}: kinetic date rail render did not track pointer delta 1:1: ${JSON.stringify({dx1,dx2,first,direct})}`);
+  if(direct.date!=='2026-08-24')throw new Error(`${viewport.name}: kinetic date committed during drag: ${direct.date}`);
 
   const reverse=direction*16;
   await page.mouse.move(x+reverse,y,{steps:1});const reversed=await compactPresentation(page);
-  if(Math.abs(reversed.drag-reverse)>1.2||Math.abs((reversed.tx-direct.tx)-(reverse-dx2))>1.5)throw new Error(`${viewport.name}: compact date rail did not reverse immediately: ${JSON.stringify({reverse,direct,reversed})}`);
+  if(Math.abs(reversed.drag-reverse)>1.2||Math.abs((reversed.tx-direct.tx)-(reverse-dx2))>1.5)throw new Error(`${viewport.name}: kinetic date rail did not reverse immediately: ${JSON.stringify({reverse,direct,reversed})}`);
 
-  const outward=direction*Math.min(150,viewport.width*.32);
-  await page.mouse.move(x+outward,y,{steps:1});const edge=await compactPresentation(page);
-  if(Math.abs(edge.drag)>=Math.abs(outward)*.7)throw new Error(`${viewport.name}: compact date rail edge drag was not rubber-banded: ${JSON.stringify({outward,edge})}`);
-  if(Math.abs(edge.drag)>96.5)throw new Error(`${viewport.name}: compact date rail exceeded elastic cap: ${JSON.stringify(edge)}`);
-  if(edge.scrollWidth>edge.clientWidth+2)throw new Error(`${viewport.name}: compact date rail caused horizontal overflow: ${JSON.stringify(edge)}`);
-  if(edge.date!=='2026-08-24')throw new Error(`${viewport.name}: compact date rail committed before release`);
+  const sweep=direction*Math.min(96,viewport.width*.24);
+  await page.mouse.move(x+sweep,y,{steps:1});const extended=await compactPresentation(page);
+  if(Math.abs(extended.drag-sweep)>1.5||Math.abs((extended.tx-reversed.tx)-(sweep-reverse))>2)throw new Error(`${viewport.name}: kinetic date rail lost direct tracking across a wider sweep: ${JSON.stringify({sweep,reversed,extended})}`);
+  if(extended.scrollWidth>extended.clientWidth+2)throw new Error(`${viewport.name}: kinetic date rail caused horizontal overflow: ${JSON.stringify(extended)}`);
+  if(extended.date!=='2026-08-24')throw new Error(`${viewport.name}: kinetic date rail committed before release`);
   await page.screenshot({path:`${OUT}/${viewport.name}.png`,fullPage:false});
 
-  await page.mouse.up();
-  const expected=nextIso('2026-08-24',direction>0?-1:1);
-  await page.waitForFunction(expectedDate=>document.querySelector('#datePicker')?.value===expectedDate,expected,{timeout:1200});
-  const settled=await compactPresentation(page);
-  if(settled.scrubbing==='true'||settled.date!==expected)throw new Error(`${viewport.name}: compact date rail did not settle to exactly one adjacent day: ${JSON.stringify({expected,settled})}`);
-  if(settled.scrollWidth>settled.clientWidth+2)throw new Error(`${viewport.name}: compact date settle caused horizontal overflow: ${JSON.stringify(settled)}`);
-  return{mode:'compact-rail',viewport,direction,first,direct,reversed,edge,settled};
+  await page.mouse.up();const released=await compactPresentation(page);await page.waitForTimeout(90);const coasting=await compactPresentation(page);
+  if(released.dragging==='true'||coasting.dragging==='true')throw new Error(`${viewport.name}: kinetic dragging state survived pointer release`);
+  if(coasting.date!=='2026-08-24')throw new Error(`${viewport.name}: kinetic date committed before inertia had time to coast: ${JSON.stringify({released,coasting})}`);
+  if(Math.abs(coasting.drag-released.drag)<2&&coasting.preview===released.preview&&coasting.snap!=='true')throw new Error(`${viewport.name}: kinetic date rail stopped immediately on release: ${JSON.stringify({released,coasting})}`);
+  await page.waitForFunction(previous=>document.querySelector('#datePicker')?.value!==previous,'2026-08-24',{timeout:5000});
+  await page.waitForFunction(()=>{const dock=document.querySelector('#flowTodayDateDock'),rail=dock?.querySelector('.flow-date-rail'),x=parseFloat(rail?.style.getPropertyValue('--flow-date-x')||'0')||0;return Math.abs(x)<=1.5&&dock?.dataset.kineticDragging!=='true'&&dock?.dataset.kineticSnap!=='true'},{timeout:1500});
+  const settled=await compactPresentation(page),delta=dayDelta('2026-08-24',settled.date);
+  if(!delta||Math.sign(delta)!==-Math.sign(direction))throw new Error(`${viewport.name}: kinetic date settled in the wrong direction: ${JSON.stringify({direction,delta,settled})}`);
+  if(Math.abs(settled.drag)>1.5)throw new Error(`${viewport.name}: kinetic date did not magnetically settle to center: ${JSON.stringify(settled)}`);
+  if(settled.scrollWidth>settled.clientWidth+2)throw new Error(`${viewport.name}: kinetic date settle caused horizontal overflow: ${JSON.stringify(settled)}`);
+  return{mode:'kinetic-rail',viewport,direction,first,direct,reversed,extended,released,coasting,settled,delta};
 }
 
 async function auditLegacy(page,viewport,box){
@@ -132,13 +136,15 @@ for(const viewport of VIEWPORTS){
 if(!report.failures.length){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',reducedMotion:'reduce'});const page=await context.newPage();
   try{
-    await seed(page);const box=await visibleBox(page.locator('#flowTodayDateDock'));if(!box)throw new Error('reduced-motion: compact date rail missing');
+    await seed(page);const box=await visibleBox(page.locator('#flowTodayDateDock'));if(!box)throw new Error('reduced-motion: kinetic date rail missing');
     const x=box.x+box.width/2,y=box.y+box.height/2;
     await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-34,y,{steps:1});const reduced=await compactPresentation(page);
-    if(Math.abs(reduced.drag+34)>1.2)throw new Error(`reduced-motion: direct tracking was disabled: ${JSON.stringify(reduced)}`);
+    if(reduced.dragging!=='true'||Math.abs(reduced.drag+34)>1.2)throw new Error(`reduced-motion: direct tracking was disabled: ${JSON.stringify(reduced)}`);
     if(reduced.date!=='2026-08-24')throw new Error(`reduced-motion: date committed during drag: ${reduced.date}`);
-    await page.mouse.up();await page.waitForFunction(()=>document.querySelector('#datePicker')?.value==='2026-08-25',null,{timeout:500});
-    report.reducedMotion={...reduced,settled:await compactPresentation(page)};
+    await page.mouse.up();await page.waitForFunction(previous=>document.querySelector('#datePicker')?.value!==previous,'2026-08-24',{timeout:5000});
+    await page.waitForFunction(()=>{const dock=document.querySelector('#flowTodayDateDock'),rail=dock?.querySelector('.flow-date-rail'),x=parseFloat(rail?.style.getPropertyValue('--flow-date-x')||'0')||0;return Math.abs(x)<=1.5&&dock?.dataset.kineticDragging!=='true'&&dock?.dataset.kineticSnap!=='true'},{timeout:1500});
+    const settled=await compactPresentation(page),delta=dayDelta('2026-08-24',settled.date);if(delta<=0)throw new Error(`reduced-motion: kinetic rail settled in the wrong direction: ${JSON.stringify({delta,settled})}`);
+    report.reducedMotion={...reduced,settled,delta};
   }catch(error){report.failures.push(String(error?.stack||error))}finally{await context.close()}
 }
 

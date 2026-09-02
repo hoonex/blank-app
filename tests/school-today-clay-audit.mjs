@@ -52,7 +52,7 @@ async function snapshot(page){
     const cards=[...document.querySelectorAll('#todayView .status-card')].filter(el=>getComputedStyle(el).display!=='none').map(el=>{
       const s=getComputedStyle(el),r=el.getBoundingClientRect();return{border:[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth],boxShadow:s.boxShadow,background:s.backgroundColor,rect:{left:r.left,top:r.top,width:r.width,height:r.height}};
     });
-    const dock=document.querySelector('#flowTodayDateDock');
+    const dock=document.querySelector('#flowTodayDateDock'),allDays=[...(dock?.querySelectorAll('.flow-date-day')||[])],visibleDays=allDays.filter(node=>{const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0});
     return{
       mode:document.documentElement.dataset.flowGlassMode||'',
       topbarMode:document.documentElement.dataset.flowTodayTopbar||'',
@@ -61,7 +61,8 @@ async function snapshot(page){
       hero:styleOf('#todayView .school-hero'),
       dateDock:styleOf('#flowTodayDateDock'),
       dateFocus:styleOf('#flowTodayDateDock .flow-date-focus'),
-      dateDays:[...(dock?.querySelectorAll('.flow-date-day')||[])].map(node=>({offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim(),display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility})),
+      dateBufferCount:allDays.length,
+      dateDays:visibleDays.map(node=>({offset:node.dataset.offset,active:node.dataset.active,text:node.textContent.trim(),display:getComputedStyle(node).display,visibility:getComputedStyle(node).visibility,tabIndex:node.tabIndex,ariaHidden:node.getAttribute('aria-hidden')})),
       statusGrid:styleOf('#todayView .status-grid'),
       statusCards:cards,
       topbar:styleOf('.mobile-topbar'),
@@ -95,7 +96,8 @@ function assertState(name,state,expectedDays){
   });
   if(!state.mobileSchool.text.includes('정동고등학교')||!state.mobileSchool.text.includes('2학년 6반'))throw new Error(`${name}: compact School identity missing ${JSON.stringify(state.mobileSchool)}`);
   if(state.hero.rect.height>1.5)throw new Error(`${name}: oversized School Hero remains in compact first fold ${JSON.stringify(state.hero.rect)}`);
-  if(state.dateDays.length!==expectedDays||state.dateDays.filter(day=>day.active==='true').length!==1)throw new Error(`${name}: responsive magnetic rail contract missing ${JSON.stringify({expectedDays,dateDays:state.dateDays})}`);
+  if(state.dateBufferCount<9||state.dateDays.length!==expectedDays||state.dateDays.filter(day=>day.active==='true').length!==1)throw new Error(`${name}: responsive kinetic rail contract missing ${JSON.stringify({expectedDays,buffer:state.dateBufferCount,dateDays:state.dateDays})}`);
+  if(state.dateDays.some(day=>day.tabIndex<0||day.ariaHidden==='true'))throw new Error(`${name}: visible date lost interaction semantics ${JSON.stringify(state.dateDays)}`);
   if(state.dateDock.rect.left<state.topbar.rect.left-1||state.dateDock.rect.right>state.topbar.rect.right+1)throw new Error(`${name}: date dock escaped topbar ${JSON.stringify({topbar:state.topbar.rect,date:state.dateDock.rect})}`);
   if(state.mobileSchool.rect.left<state.dateDock.rect.right-1)throw new Error(`${name}: date dock overlaps School selector ${JSON.stringify({date:state.dateDock.rect,school:state.mobileSchool.rect})}`);
   if(!state.statusCards.length)throw new Error(`${name}: no visible status cards`);
@@ -122,6 +124,7 @@ for(const c of cases){
     await page.locator('#dashboard:not(.hidden)').waitFor();
     await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfaceCleanup==='ready');
     await page.waitForFunction(()=>document.documentElement.dataset.flowTodayTopbar==='ready'&&document.querySelector('#flowTodayDateDock'));
+    await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolMobileV5==='ready');
     await page.waitForTimeout(400);
     const initial=await snapshot(page);assertState(`${name}/initial`,initial,expectedDays);
     await page.screenshot({path:`${OUT}/${name}-initial.png`,fullPage:false});
@@ -134,4 +137,4 @@ for(const c of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps one School identity capsule, one centered soft-clay date focus, a flat outer rail, and independent status cards'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps one School identity capsule, one centered soft-clay date focus, a visually bounded kinetic rail, and independent status cards'},null,2));
