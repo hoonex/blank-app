@@ -88,7 +88,7 @@ function assertState(name,state,expectedDays){
   if(state.topbarMode!=='ready')throw new Error(`${name}: compact Today topbar contract did not activate ${JSON.stringify(state.topbarMode)}`);
   visible(`${name}/topbar`,state.topbar);visible(`${name}/mobileSchool`,state.mobileSchool);visible(`${name}/dateDock`,state.dateDock);visible(`${name}/dateFocus`,state.dateFocus);
   borderless(`${name}/mobileSchool`,state.mobileSchool);borderless(`${name}/dateDock`,state.dateDock);borderless(`${name}/statusGrid`,state.statusGrid);
-  flatChrome(`${name}/mobileSchool`,state.mobileSchool);flatChrome(`${name}/dateDock`,state.dateDock);clay(`${name}/dateFocus`,state.dateFocus);
+  clay(`${name}/mobileSchool`,state.mobileSchool);flatChrome(`${name}/dateDock`,state.dateDock);clay(`${name}/dateFocus`,state.dateFocus);
   state.statusCards.forEach((card,index)=>{
     if(card.border.some(v=>!px0(v)))throw new Error(`${name}/statusCard${index}: visible border remains ${JSON.stringify(card)}`);
     clay(`${name}/statusCard${index}`,card);
@@ -134,4 +134,4 @@ for(const c of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps flat outer app chrome, one centered soft-clay date focus, stable School identity, and independent status cards'},null,2));
+console.log(JSON.stringify({ok:true,cases:Object.keys(report),contract:'compact Today keeps one School identity capsule, one centered soft-clay date focus, a flat outer rail, and independent status cards'},null,2));
