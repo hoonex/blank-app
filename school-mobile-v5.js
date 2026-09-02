@@ -138,8 +138,8 @@ function magneticSnap(){
   if(!dateState)return;const{dock}=dateParts(),slot=slotWidth(),target=-Math.round(-dateState.position/slot)*slot;dateState.position=target;if(dock)dock.dataset.kineticSnap='true';applyDateVisual(target,true);setTimeout(commitDateWheel,245)
 }
 function runDateInertia(){
-  cancelAnimationFrame(dateRaf);let last=performance.now();
-  const tick=now=>{if(!dateState||dateState.dragging)return;const dt=Math.min(32,Math.max(8,now-last));last=now;dateState.velocity*=Math.pow(.93,dt/16.67);dateState.position+=dateState.velocity*dt;rebaseDateIfNeeded();applyDateVisual(dateState.position);if(Math.abs(dateState.velocity)<.055){dateRaf=0;magneticSnap();return}dateRaf=requestAnimationFrame(tick)};
+  cancelAnimationFrame(dateRaf);let last=performance.now(),started=last;
+  const tick=now=>{if(!dateState||dateState.dragging)return;const dt=Math.min(32,Math.max(8,now-last));last=now;dateState.velocity*=Math.pow(.93,dt/16.67);dateState.position+=dateState.velocity*dt;rebaseDateIfNeeded();applyDateVisual(dateState.position);if(Math.abs(dateState.velocity)<.055||now-started>=420){dateRaf=0;magneticSnap();return}dateRaf=requestAnimationFrame(tick)};
   dateRaf=requestAnimationFrame(tick)
 }
 function bindDateWheel(){
