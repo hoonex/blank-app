@@ -29,7 +29,8 @@ async function seed(page){
   await page.goto(BASE,{waitUntil:'domcontentloaded'});
   await page.locator('#dashboard:not(.hidden)').waitFor();
   await page.waitForFunction(()=>document.documentElement.dataset.flowExperience==='ready');
-  await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24'});
+  await page.locator('#datePicker').evaluate(input=>{input.value='2026-08-24';input.dispatchEvent(new Event('change',{bubbles:true}))});
+  await page.waitForFunction(()=>{const input=document.querySelector('#datePicker'),dock=document.querySelector('#flowTodayDateDock');if(!dock||dock.dataset.flowKinetic!=='v5')return true;return dock.querySelector('[data-preview="true"]')?.dataset.iso===input?.value});
 }
 async function visibleBox(locator){try{return await locator.boundingBox()}catch{return null}}
 async function compactPresentation(page){
