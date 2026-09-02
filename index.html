@@ -12,6 +12,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style id="flow-school-brand-critical">.flow-logo{display:inline-flex;align-items:baseline;gap:7px}.flow-logo-mark{display:none!important}.flow-logo-copy{display:inline-flex;align-items:baseline;gap:6px}.flow-logo-copy strong{font-size:1.32rem;font-weight:820;letter-spacing:-.055em;line-height:1}.flow-logo-copy small{font-size:.66rem;font-weight:760;letter-spacing:.015em;line-height:1}</style>
+  <script id="flow-school-boot-profile">try{if(localStorage.getItem('flow-school-profile-v3'))document.documentElement.dataset.flowSchoolBoot='profile'}catch{}</script>
+  <style id="flow-school-boot-gate">html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #dashboard:not(.hidden){visibility:hidden!important;pointer-events:none!important}html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]){background:#edf2f7}</style>
   <link rel="stylesheet" href="./school.css">
 </head>
 <body>
@@ -255,5 +257,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./school.js"></script>
   <script type="module" src="./school-metrics.js"></script>
+  <script type="module" src="./school-mobile-v5.js"></script>
 </body>
 </html>
