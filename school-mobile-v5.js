@@ -44,6 +44,9 @@ function visibleDateCount(){return matchMedia('(max-width:520px)').matches||matc
 function installStyle(){
   if($('#flow-school-mobile-v5-style'))return;
   const style=document.createElement('style');style.id='flow-school-mobile-v5-style';style.textContent=`
+/* Keep landing geometry deterministic before late School polish arrives. */
+@media(max-width:820px){#landing .landing-header{height:44px!important;min-height:44px!important}}
+
 /* Kinetic date wheel: the focus lens stays fixed while a virtual rail coasts underneath it. */
 html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{touch-action:pan-y!important;cursor:grab!important}
 html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"][data-kinetic-dragging="true"] .flow-date-viewport{cursor:grabbing!important}
@@ -112,7 +115,7 @@ function rebaseDateIfNeeded(){
   if(!dateState)return;const slot=slotWidth();if(Math.abs(dateState.position)<slot*8)return;const shift=Math.trunc(-dateState.position/slot);if(!shift)return;const nextBase=addDays(dateState.base,shift),nextPosition=dateState.position+shift*slot;dateState.base=nextBase;const{rail}=dateParts();if(rail)rail.innerHTML=dayMarkup(nextBase);dateState.position=nextPosition;dateState.preview=0;applyDateVisual(nextPosition,true)
 }
 function commitDateWheel(){
-  if(!dateState)return;const slot=slotWidth(),offset=Math.round(-dateState.position/slot),value=addDays(dateState.base,offset),{dock,input}=dateParts();dateState.base=value;dateState.position=0;dateState.velocity=0;if(dock){delete dock.dataset.kineticSnap;delete dock.dataset.kineticDragging}if(input&&input.value!==value){input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}))}haptic([7,18,5]);setTimeout(()=>{const live=dateParts();if(live.rail)renderDateWindow(live.input?.value||value)},0)
+  if(!dateState)return;const slot=slotWidth(),offset=Math.round(-dateState.position/slot),value=addDays(dateState.base,offset),{dock,input}=dateParts();dateState.base=value;dateState.position=0;dateState.velocity=0;if(dock){delete dock.dataset.kineticSnap;delete dock.dataset.kineticDragging}if(input&&input.value!==value){input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}))}haptic([7,18,5]);setTimeout(()=>{if(dateState?.dragging)return;const live=dateParts();if(live.rail)renderDateWindow(live.input?.value||value)},0)
 }
 function magneticSnap(){
   if(!dateState)return;const{dock}=dateParts(),slot=slotWidth(),target=-Math.round(-dateState.position/slot)*slot;dateState.position=target;if(dock)dock.dataset.kineticSnap='true';applyDateVisual(target,true);setTimeout(commitDateWheel,245)
@@ -134,7 +137,7 @@ function bindDateWheel(){
   const end=event=>{if(!dateState?.dragging||event.pointerId!==dateState.id)return;event.stopImmediatePropagation();dateState.dragging=false;delete dock.dataset.kineticDragging;try{viewport.releasePointerCapture?.(event.pointerId)}catch{}if(dateState.moved){dateSuppressUntil=performance.now()+450;runDateInertia()}else magneticSnap()};
   dock.addEventListener('pointerup',end,true);dock.addEventListener('pointercancel',event=>{if(dateState?.dragging&&event.pointerId===dateState.id){event.stopImmediatePropagation();dateState.dragging=false;delete dock.dataset.kineticDragging;magneticSnap()}},true);
   dock.addEventListener('click',event=>{if(!event.target.closest?.('.flow-date-viewport'))return;event.stopImmediatePropagation();if(performance.now()<dateSuppressUntil){event.preventDefault();return}const day=event.target.closest('.flow-date-day-v5');if(!day)return;event.preventDefault();const offset=Number(day.dataset.offset)||0;dateState.position=-offset*slotWidth();magneticSnap()},true);
-  input.addEventListener('change',()=>setTimeout(()=>renderDateWindow(input.value||iso()),0));
+  input.addEventListener('change',()=>setTimeout(()=>{if(!dateState?.dragging)renderDateWindow(input.value||iso())},0));
   new MutationObserver(()=>{if(dock.dataset.flowKineticBound==='true'&&!rail.querySelector('.flow-date-day-v5')&&!dateState?.dragging)queueMicrotask(()=>renderDateWindow(input.value||iso()))}).observe(rail,{childList:true});
   addEventListener('resize',()=>{if(!dateState?.dragging)renderDateWindow(input.value||iso())},{passive:true});
   return true
