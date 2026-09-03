@@ -91,11 +91,11 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
     transform:translateY(4px)!important
   }
   #landing .landing-header{
-    height:36px!important;
-    min-height:36px!important
+    height:40px!important;
+    min-height:40px!important
   }
   #landing .landing-header .flow-logo{
-    min-height:36px!important
+    min-height:40px!important
   }
 }
 
