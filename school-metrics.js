@@ -92,8 +92,11 @@ async function bootCriticalSchoolSurface(){
      must not extend the reload gate. */
   await Promise.all([import('./school-ia.js'),import('./school-timetable-polish.js')]);
   if(transitLabEnabled()){
-    try{await Promise.all([import('./school-transit.js'),import('./school-transit-map.js'),import('./school-transit-focus.js')])}
-    catch(error){console.warn('[Flow] Transit lab modules failed to load',error)}
+    try{
+      await import('./school-transit.js');
+      await import('./school-transit-map.js');
+      await import('./school-transit-focus.js');
+    }catch(error){console.warn('[Flow] Transit lab modules failed to load',error)}
   }
   await import('./school-surface-cleanup.js');
   await import('./school-uiux-v2.js');
