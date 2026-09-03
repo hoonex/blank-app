@@ -9,7 +9,7 @@ function assert(value,message){if(!value)throw new Error(message)}
 function json(route,body){return route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S931N) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36'});
+const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S931N) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36'});
 const page=await context.newPage();
 await page.route('**/functions/v1/school-data*',route=>{
   const url=new URL(route.request().url()),action=url.searchParams.get('action')||'';
@@ -31,7 +31,7 @@ await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurfac
 await page.locator('.timetable-mode-toggle').waitFor();
 
 const state=await page.evaluate(()=>{
-  const shape=(node,pseudo=null)=>{if(!node)return null;const s=getComputedStyle(node,pseudo);return{radius:s.borderTopLeftRadius,corner:s.getPropertyValue('corner-shape').trim(),height:node.getBoundingClientRect().height}};
+  const shape=(node,pseudo=null)=>{if(!node)return null;const s=getComputedStyle(node,pseudo),r=node.getBoundingClientRect();return{radius:s.borderTopLeftRadius,corner:s.getPropertyValue('corner-shape').trim(),height:r.height,left:r.left,background:s.backgroundColor}};
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
   const today=document.querySelector('.timetable-mode-toggle [data-timetable-mode="today"]');
   const week=document.querySelector('.timetable-mode-toggle [data-timetable-mode="week"]');
@@ -49,8 +49,24 @@ for(const [name,item] of Object.entries(state))if(item)noSquircle(name,item);
 assert(state.toggle.radius==='12px',`toggle wrapper radius drifted ${JSON.stringify(state.toggle)}`);
 for(const name of ['today','week','edit','share'])assert(state[name]?.radius==='10px',`${name}: action radius is not 10px ${JSON.stringify(state[name])}`);
 assert(state.today.radius===state.week.radius&&state.week.radius===state.edit.radius&&state.edit.radius===state.share.radius,`Today/Week/edit/share curvature diverged ${JSON.stringify(state)}`);
+assert(state.share.background!=='rgba(0, 0, 0, 0)',`share action lost its rounded surface ${JSON.stringify(state.share)}`);
 assert(state.nav.radius==='16px',`bottom nav outer radius drifted ${JSON.stringify(state.nav)}`);
 assert(state.tab.radius==='12px'&&state.activeLens.radius==='12px',`bottom nav inner radii diverged ${JSON.stringify({tab:state.tab,activeLens:state.activeLens})}`);
 if(state.lens)assert(state.lens.radius==='12px',`refraction lens radius diverged ${JSON.stringify(state.lens)}`);
+
+await page.locator('.timetable-mode-toggle [data-timetable-mode="week"]').click();
+await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&document.documentElement.dataset.flowInlineWeekRendered==='true');
+await page.waitForTimeout(80);
+const weekState=await page.evaluate(()=>{
+  const toggle=document.querySelector('.timetable-mode-toggle')?.getBoundingClientRect();
+  const wrap=document.querySelector('#todayView .week-table-wrap');
+  const table=document.querySelector('#todayView .week-table');
+  const wr=wrap?.getBoundingClientRect(),tr=table?.getBoundingClientRect();
+  return{toggleLeft:toggle?.left??null,clientWidth:wrap?.clientWidth??null,scrollWidth:wrap?.scrollWidth??null,wrapRight:wr?.right??null,tableRight:tr?.right??null,tableWidth:tr?.width??null};
+});
+assert(weekState.toggleLeft!==null&&Math.abs(weekState.toggleLeft-state.toggle.left)<=1,`Today/Week control jumps between modes ${JSON.stringify({todayLeft:state.toggle.left,weekState})}`);
+assert(weekState.clientWidth!==null&&weekState.scrollWidth<=weekState.clientWidth+1,`360px Week grid still horizontally scrolls ${JSON.stringify(weekState)}`);
+assert(weekState.tableRight<=weekState.wrapRight+1,`360px Week grid clips Friday ${JSON.stringify(weekState)}`);
+
 await context.close();await browser.close();
-console.log(JSON.stringify({ok:true,contract:'circular rounded rectangles only',state},null,2));
+console.log(JSON.stringify({ok:true,contract:'circular rounded rectangles + stable 360px Week fit',state,weekState},null,2));
