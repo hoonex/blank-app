@@ -4,6 +4,16 @@ const root=document.documentElement;
 const PROFILE_KEY='flow-school-profile-v3';
 const TRANSIT_LAB_KEY='flow-school-transit-lab-v1';
 
+/* Landing is audited before the progressive School surface finishes booting.
+ * Install the actual search input hit area synchronously, before the first await,
+ * so the 58px visual shell never contains a 19px native input on desktop. */
+if(!document.querySelector('#flow-school-landing-hit-area')){
+  const style=document.createElement('style');
+  style.id='flow-school-landing-hit-area';
+  style.textContent=`html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}`;
+  document.head.append(style);
+}
+
 /* Gate before progressive modules evaluate. Saved-profile reloads stay blank until
  * the final v2 School shell exists, so the legacy desktop/hero surface cannot flash. */
 if(localStorage.getItem(PROFILE_KEY))root.dataset.flowSchoolBoot='profile';
