@@ -115,6 +115,11 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #
     padding-left:max(7px,env(safe-area-inset-left))!important;
     padding-right:max(7px,env(safe-area-inset-right))!important;
   }
+  /* The bar itself now owns the viewport, so its absolute date rail should use
+     the bar's true midpoint rather than the pre-expansion pixel coordinate. */
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{
+    left:50%!important;
+  }
   html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-actions{
     gap:5px!important;
   }
