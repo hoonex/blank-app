@@ -39,3 +39,4 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #
 document.head.append(style);
 document.addEventListener('click',event=>{const edit=event.target.closest?.('#editSubjectsBtn');if(!edit||!document.body.classList.contains('flow-inline-week-active'))return;document.querySelector('.timetable-mode-toggle [data-timetable-mode="today"]')?.click()},true);
 root.dataset.flowSchoolToolbarGrouping='v1';
+queueMicrotask(()=>void import('./school-global-shell-glass.js'));
