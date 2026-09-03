@@ -14,11 +14,13 @@ const MAGNET_SELECTOR='.mobile-tab,.bottom-item,.nav-item,.neo-button,.primary-b
 const NAV_SELECTOR='.mobile-bottom-nav,.bottom-nav';
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const magnetStates=new WeakMap();
+const navResizeFrames=new WeakMap(),navInstantFrames=new WeakMap();
 let ambientTimer=0,dateGesture=null,suppressDateClickUntil=0,lastTouchAt=0,activeMagnet=null,hoverMagnet=null,sceneTimer=0;
 
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+function setStyleIfChanged(node,name,value){if(node.style.getPropertyValue(name)!==value)node.style.setProperty(name,value)}
 function enabled(key){return localStorage.getItem(key)!=='off'}
 function setEnabled(key,on){localStorage.setItem(key,on?'on':'off')}
 function touchLike(event){return event?.pointerType==='touch'||event?.pointerType==='pen'||matchMedia('(pointer:coarse)').matches}
@@ -127,8 +129,20 @@ function installMagneticControls(){
 function navActive(nav){return $('.mobile-tab.active,.bottom-item.active',nav)||$('.mobile-tab,.bottom-item',nav)}
 function setNavFieldForElement(nav,item,instant=false){
   if(!item)return;const nr=nav.getBoundingClientRect(),ir=item.getBoundingClientRect();if(!nr.width||!ir.width)return;
-  nav.classList.toggle('flow-nav-instant',instant);nav.style.setProperty('--flow-nav-x',`${(ir.left-nr.left).toFixed(2)}px`);nav.style.setProperty('--flow-nav-w',`${ir.width.toFixed(2)}px`);
-  if(instant)requestAnimationFrame(()=>nav.classList.remove('flow-nav-instant'))
+  const x=`${(ir.left-nr.left).toFixed(2)}px`,w=`${ir.width.toFixed(2)}px`;
+  const changed=nav.style.getPropertyValue('--flow-nav-x')!==x||nav.style.getPropertyValue('--flow-nav-w')!==w;
+  if(!changed)return;
+  if(instant&&!nav.classList.contains('flow-nav-instant'))nav.classList.add('flow-nav-instant');
+  else if(!instant&&nav.classList.contains('flow-nav-instant'))nav.classList.remove('flow-nav-instant');
+  setStyleIfChanged(nav,'--flow-nav-x',x);setStyleIfChanged(nav,'--flow-nav-w',w);
+  if(instant){
+    const previous=navInstantFrames.get(nav);if(previous)cancelAnimationFrame(previous);
+    navInstantFrames.set(nav,requestAnimationFrame(()=>{navInstantFrames.delete(nav);nav.classList.remove('flow-nav-instant')}))
+  }
+}
+function scheduleNavField(nav,instant=true){
+  if(navResizeFrames.has(nav))return;
+  navResizeFrames.set(nav,requestAnimationFrame(()=>{navResizeFrames.delete(nav);setNavFieldForElement(nav,navActive(nav),instant)}))
 }
 function settleNav(nav,delay=0){setTimeout(()=>setNavFieldForElement(nav,navActive(nav)),delay)}
 function installNavFields(){
@@ -136,11 +150,11 @@ function installNavFields(){
     if(nav.dataset.flowNavField==='ready')return;nav.dataset.flowNavField='ready';requestAnimationFrame(()=>setNavFieldForElement(nav,navActive(nav),true));
     let dragId=null;
     nav.addEventListener('pointerdown',event=>{if(!motionEnabled())return;const item=event.target.closest?.('.mobile-tab,.bottom-item');if(!item)return;dragId=event.pointerId;nav.classList.add('flow-nav-dragging');setNavFieldForElement(nav,item)},{passive:true});
-    nav.addEventListener('pointermove',event=>{if(!motionEnabled()||dragId!==event.pointerId)return;const nr=nav.getBoundingClientRect();const width=parseFloat(getComputedStyle(nav).getPropertyValue('--flow-nav-w'))||nr.width/Math.max(1,$$('.mobile-tab,.bottom-item',nav).length);const x=clamp(event.clientX-nr.left-width/2,4,nr.width-width-4);nav.style.setProperty('--flow-nav-x',`${x.toFixed(2)}px`)},{passive:true});
+    nav.addEventListener('pointermove',event=>{if(!motionEnabled()||dragId!==event.pointerId)return;const nr=nav.getBoundingClientRect();const width=parseFloat(getComputedStyle(nav).getPropertyValue('--flow-nav-w'))||nr.width/Math.max(1,$$('.mobile-tab,.bottom-item',nav).length);const x=`${clamp(event.clientX-nr.left-width/2,4,nr.width-width-4).toFixed(2)}px`;setStyleIfChanged(nav,'--flow-nav-x',x)},{passive:true});
     const end=event=>{if(dragId!==event.pointerId)return;dragId=null;nav.classList.remove('flow-nav-dragging');settleNav(nav,0);settleNav(nav,120)};
     nav.addEventListener('pointerup',end,{passive:true});nav.addEventListener('pointercancel',end,{passive:true});
     nav.addEventListener('click',()=>{settleNav(nav,0);settleNav(nav,160)},{passive:true});
-    if('ResizeObserver'in window)new ResizeObserver(()=>setNavFieldForElement(nav,navActive(nav),true)).observe(nav)
+    if('ResizeObserver'in window)new ResizeObserver(()=>scheduleNavField(nav,true)).observe(nav)
   })
 }
 

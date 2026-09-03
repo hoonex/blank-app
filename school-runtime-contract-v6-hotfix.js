@@ -41,6 +41,24 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
    polish layer uses a twelve-column balancing grid, so reset each tile's span in
    this touch composition before centering an odd final card. */
 @media(min-width:521px) and (max-width:1180px){
+  #landing .landing-header .flow-logo{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-height:40px!important
+  }
+  #landing .landing-header-actions .landing-mode-switch{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:40px!important;
+    height:40px!important;
+    padding-block:0!important
+  }
+  #landing #schoolSearch{
+    min-height:44px!important;
+    height:44px!important;
+    box-sizing:border-box!important
+  }
   html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:9px!important
