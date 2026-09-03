@@ -169,6 +169,41 @@ style.textContent=`
   }
 }
 
+/* Short touch landscape has enough horizontal room, but the legacy Week toolbar
+   constrains all three navigation buttons into a ~91px track. Preserve a real
+   44px hit box for arrows and a readable current-week action without changing
+   the compact visual language used by the landscape shell. */
+@media(min-width:521px) and (max-width:1180px) and (max-height:620px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar .week-controls{
+    width:max-content!important;
+    min-width:162px!important;
+    max-width:100%!important;
+    grid-template-columns:44px 64px 44px!important;
+    flex:0 0 auto!important;
+    gap:5px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #prevWeek,
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #nextWeek{
+    box-sizing:border-box!important;
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    min-height:44px!important;
+    flex:0 0 44px!important;
+    padding:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #thisWeekBtn{
+    box-sizing:border-box!important;
+    width:64px!important;
+    min-width:64px!important;
+    height:44px!important;
+    min-height:44px!important;
+    flex:0 0 64px!important;
+    padding:0 8px!important;
+    white-space:nowrap!important;
+  }
+}
+
 @media(max-width:380px){
   html[data-flow-school-ui="v2"] body #dashboard #todayView .week-cell{padding-inline:2px!important}
   html[data-flow-school-ui="v2"] body #dashboard #todayView .week-head{font-size:.49rem!important}
