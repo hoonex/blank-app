@@ -12,6 +12,51 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   html[data-flow-school-ui="v2"] body #todayView .status-grid{position:relative!important;z-index:1!important}
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{box-shadow:none!important}
 }
+/* Final landscape invariant. This deliberately has higher specificity than the
+   retired short-landscape toolbar rules, so a late stylesheet cannot move the
+   destination bar back into the header. */
+@media(max-width:1366px) and (max-height:620px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    z-index:90!important;
+    top:auto!important;
+    bottom:max(9px,env(safe-area-inset-bottom))!important;
+    left:50%!important;
+    right:auto!important;
+    width:min(620px,calc(100% - 28px))!important;
+    min-height:58px!important;
+    height:58px!important;
+    max-height:58px!important;
+    padding:5px!important;
+    transform:translateX(-50%)!important;
+    grid-template-rows:48px!important;
+    gap:2px!important;
+    border-radius:16px!important;
+    corner-shape:round!important;
+    overflow:hidden!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-transit-surface="dormant"] body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav{
+    --flow-tab-count:4!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"]:not([data-flow-transit-surface="dormant"]) body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav{
+    --flow-tab-count:5!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
+    min-width:0!important;
+    width:100%!important;
+    min-height:48px!important;
+    height:48px!important;
+    border-radius:11px!important;
+    corner-shape:round!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) .desktop-sidebar,
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #schoolHero{display:none!important}
+  html[data-flow-school-ui="v2"] body{padding-bottom:78px!important}
+}
 /* The School setup utility is a flat action, not a raised neumorphic control. */
 #landing .landing-header-actions .landing-mode-switch{box-shadow:none!important}
 
