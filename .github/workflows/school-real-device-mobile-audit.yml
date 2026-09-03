@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'school-real-device-hotfix.js'
+      - 'school-real-device-refine.js'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
@@ -29,6 +30,7 @@ jobs:
       - name: Validate real-device sources
         run: |
           node --check school-real-device-hotfix.js
+          node --check school-real-device-refine.js
           node --check tests/school-real-device-mobile-audit.mjs
       - name: Install Playwright Chromium
         run: |
