@@ -100,16 +100,16 @@ function installStyle(){
     left:10px!important;
     right:10px!important;
     width:auto!important;
-    min-height:58px!important;
-    height:58px!important;
-    max-height:58px!important;
-    padding:6px!important;
+    min-height:56px!important;
+    height:56px!important;
+    max-height:56px!important;
+    padding:5px!important;
     bottom:calc(8px + env(safe-area-inset-bottom))!important;
     transform:none!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab{
     min-height:44px!important;
-    height:46px!important;
+    height:44px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView:not(.hidden){
     inset:56px 0 0!important;
