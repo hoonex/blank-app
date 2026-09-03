@@ -104,6 +104,7 @@ async function bootCriticalSchoolSurface(){
   await import('./school-real-device-hotfix.js');
   await import('./school-real-device-refine.js');
   await import('./school-final-visual-polish.js');
+  await import('./school-toolbar-grouping.js');
 
   normalizeSchoolSettingsTab();
   root.dataset.flowSchoolSurface='ready';
