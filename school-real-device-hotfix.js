@@ -229,10 +229,11 @@ function installStyle(){
   html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(iframe),
   html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top:has(.flow-adfit-mock){
     width:100%!important;
-    min-height:112px!important;
+    min-height:106px!important;
     height:auto!important;
     margin:5px 0 8px!important;
-    padding:6px 0!important;
+    padding:3px 0!important;
+    gap:0!important;
     border:0!important;
     border-radius:0!important;
     corner-shape:round!important;
@@ -245,11 +246,7 @@ function installStyle(){
     contain:layout paint!important;
     isolation:isolate!important;
   }
-  html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top .flow-adfit-label{
-    margin-bottom:4px!important;
-    font-size:.5rem!important;
-    opacity:.68!important;
-  }
+  html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top .flow-adfit-label{display:none!important}
   html[data-flow-school-ui="v2"] body .flow-adfit-rail--school-top .flow-adfit-slot{
     display:block!important;
     width:320px!important;
