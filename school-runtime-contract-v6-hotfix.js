@@ -78,6 +78,32 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
     justify-self:center!important
   }
 }
+/* Mobile setup uses the same compact typography as before, but the real
+   interactive rectangles must remain large enough after all late School styles
+   have attached. */
+@media(max-width:520px){
+  #landing .landing-header .flow-logo{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-width:44px!important;
+    min-height:44px!important;
+    box-sizing:border-box!important
+  }
+  #landing .landing-header-actions .landing-mode-switch{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:44px!important;
+    height:44px!important;
+    padding-block:0!important;
+    box-sizing:border-box!important
+  }
+  #landing #schoolSearch{
+    min-height:44px!important;
+    height:44px!important;
+    box-sizing:border-box!important
+  }
+}
 /* Kinetic rail state already lives in --flow-date-x; keep the rendered rail on
    that exact displacement while clipping its oversized virtual strip to the dock. */
 html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
