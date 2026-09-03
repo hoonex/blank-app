@@ -1,9 +1,15 @@
 const root=document.documentElement;
 const STYLE_ID='flow-school-global-shell-glass-style';
+let raiseQueued=false;
 
 function raiseStyle(){
   const style=document.querySelector(`#${STYLE_ID}`);
   if(style?.parentElement===document.head)document.head.append(style);
+}
+function queueRaiseStyle(){
+  if(raiseQueued)return;
+  raiseQueued=true;
+  queueMicrotask(()=>{raiseQueued=false;raiseStyle()});
 }
 
 function installStyle(){
@@ -17,11 +23,13 @@ function installStyle(){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .desktop-sidebar{
     display:none!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) .mobile-topbar,
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden):has(#flowTodayDateDock) .mobile-topbar:has(#flowTodayDateDock){
     display:flex!important;
     box-sizing:border-box!important;
     width:100vw!important;
-    max-width:100vw!important;
+    min-width:100vw!important;
+    max-width:none!important;
     min-height:64px!important;
     margin-left:calc(50% - 50vw)!important;
     margin-right:calc(50% - 50vw)!important;
@@ -91,7 +99,8 @@ function installStyle(){
 }
 
 @media(max-width:520px){
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) .mobile-topbar,
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden):has(#flowTodayDateDock) .mobile-topbar:has(#flowTodayDateDock){
     min-height:56px!important;
     height:56px!important;
     padding:3px max(7px,env(safe-area-inset-right)) 3px max(7px,env(safe-area-inset-left))!important;
@@ -132,6 +141,12 @@ function installStyle(){
     min-height:44px!important;
     height:44px!important;
   }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+    top:5px!important;
+    bottom:5px!important;
+    height:auto!important;
+  }
 }
 
 @media(min-width:1181px){
@@ -142,7 +157,8 @@ function installStyle(){
     display:flex!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar,
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowTodayDateDock{
     display:none!important;
     visibility:hidden!important;
     pointer-events:none!important;
@@ -154,8 +170,15 @@ function installStyle(){
 
 installStyle();
 root.dataset.flowSchoolGlobalShell='v1';
+const headObserver=new MutationObserver(records=>{
+  const own=document.querySelector(`#${STYLE_ID}`);
+  const added=records.some(record=>[...record.addedNodes].some(node=>node!==own&&(node.nodeName==='STYLE'||(node.nodeName==='LINK'&&node.rel==='stylesheet'))));
+  if(added)queueRaiseStyle();
+});
+headObserver.observe(document.head,{childList:true});
+window.addEventListener('load',raiseStyle,{once:true,passive:true});
 window.addEventListener('flow:glass-mode-changed',()=>{
-  queueMicrotask(raiseStyle);
+  queueRaiseStyle();
   setTimeout(raiseStyle,180);
 },{passive:true});
-setTimeout(raiseStyle,0);
+for(const delay of [0,120,600,1400])setTimeout(raiseStyle,delay);
