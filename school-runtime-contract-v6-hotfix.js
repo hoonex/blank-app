@@ -55,7 +55,25 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   }
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) .desktop-sidebar,
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #schoolHero{display:none!important}
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"]{
+    grid-template-columns:minmax(0,1fr)!important
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-edge{
+    display:none!important
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
+    grid-column:1!important;
+    width:100%!important;
+    min-width:0!important
+  }
   html[data-flow-school-ui="v2"] body{padding-bottom:78px!important}
+}
+/* Wide portrait tablets are still touch-first: keep Schedule controls stacked. */
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #scheduleView .view-header{
+    flex-direction:column!important;
+    align-items:stretch!important
+  }
 }
 /* The School setup utility is a flat action, not a raised neumorphic control.
    Disable its shadow transition too; otherwise the old raised shadow can remain
@@ -66,8 +84,8 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   animation:none!important
 }
 /* Shared landing polish leaves School four pixels above the University baseline
-   on desktop only. Preserve the matched size/composition and adjust only Y. */
-@media(min-width:901px){#landing .onboarding-main{top:4px!important}}
+   on desktop only. Translate the rendered composition without changing its box. */
+@media(min-width:901px){#landing .onboarding-main{transform:translateY(4px)!important}}
 
 /* Copy-lens owns Optical displacement. The legacy pseudo lens is tint/edge only. */
 html[data-flow-school-ui="v2"][data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body #dashboard.product-shell #bottomNav.mobile-bottom-nav::before{
