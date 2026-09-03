@@ -123,10 +123,10 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-mode-toggle
   background:transparent!important;
   box-shadow:none!important;
   transform:none!important;
-  transition:color 190ms ease!important;
+  transition:color 190ms ease,background-color 190ms ease!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-mode-toggle button.active{
-  background:transparent!important;
+  background:color-mix(in srgb,var(--accent) 3%,transparent)!important;
   box-shadow:none!important;
   transform:none!important;
   color:var(--accent)!important;
