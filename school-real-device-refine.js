@@ -1,3 +1,76 @@
+const SCHOOL_LOGO_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-logo';
+const SCHOOL_LOGO_CACHE_PREFIX='flow-school-logo-fallback-v3:';
+const SCHOOL_PROFILE_KEY='flow-school-profile-v3';
+
+function unsafeSchoolMediaUrl(value=''){
+  const raw=String(value||'').trim();
+  if(!raw||raw.startsWith('data:image/')||raw.startsWith('blob:'))return false;
+  try{
+    const url=new URL(raw,location.href),path=decodeURIComponent(url.pathname).toLowerCase(),query=url.search.toLowerCase();
+    if(!/^https?:$/.test(url.protocol))return true;
+    if(/\/sso(?:\/|$)/.test(path))return true;
+    if(/\/(?:login|signin|auth)(?:\/|$)/.test(path))return true;
+    if(/(?:^|\/)(?:index|login|signin|auth)\.do$/.test(path)&&!/(?:image|img|photo|logo|file|attach|download)/.test(`${path}${query}`))return true;
+    return false;
+  }catch{return true}
+}
+function schoolLogoHost(homepage=''){
+  const raw=String(homepage||'').trim();if(!raw)return'';
+  try{return new URL(/^https?:\/\//i.test(raw)?raw:`https://${raw}`).hostname.replace(/^www\./,'')}
+  catch{return''}
+}
+function schoolCodeFromStorage(){
+  try{return JSON.parse(localStorage.getItem(SCHOOL_PROFILE_KEY)||'null')?.school?.schoolCode||''}
+  catch{return''}
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(typeof reader.result==='string'?reader.result:'');reader.onerror=()=>reject(reader.error||new Error('logo read failed'));reader.readAsDataURL(blob)})
+}
+async function eagerProxyLogo(homepage='',schoolCode=''){
+  const host=schoolLogoHost(homepage),code=String(schoolCode||schoolCodeFromStorage()).trim();if(!host||!code)return'';
+  const cacheKey=`${SCHOOL_LOGO_CACHE_PREFIX}${code}`;
+  try{
+    const cached=JSON.parse(localStorage.getItem(cacheKey)||'null'),age=Date.now()-Number(cached?.savedAt||0),missAge=Date.now()-Number(cached?.missAt||0);
+    if(cached?.dataUrl?.startsWith('data:image/')&&age<14*86400000)return cached.dataUrl;
+    if(cached?.missAt&&missAge<24*86400000)return'';
+  }catch{}
+  try{
+    const url=new URL(SCHOOL_LOGO_EDGE);url.searchParams.set('host',host);
+    const response=await fetch(url,{cache:'force-cache',signal:AbortSignal.timeout?.(3500)});
+    if(response.status===204){try{localStorage.setItem(cacheKey,JSON.stringify({missAt:Date.now()}))}catch{}return''}
+    if(!response.ok)return'';
+    const type=(response.headers.get('content-type')||'').toLowerCase();if(!type.startsWith('image/'))return'';
+    const blob=await response.blob();if(blob.size<32||blob.size>300000)return'';
+    const dataUrl=await blobToDataUrl(blob);if(!dataUrl.startsWith('data:image/'))return'';
+    const source=response.headers.get('x-flow-logo-source')||'logo-proxy-eager';
+    try{localStorage.setItem(cacheKey,JSON.stringify({dataUrl,source,savedAt:Date.now()}))}catch{}
+    return dataUrl;
+  }catch{return''}
+}
+
+/* school.js starts its media request before the progressive School shell finishes
+   booting. Patch Response.json while that request is in flight so navigation/SSO
+   HTML can never be promoted to an image URL. If the primary resolver has no safe
+   logo, resolve the existing same-origin-safe logo proxy now instead of mutating
+   the header several seconds later during idle. */
+if(!globalThis.__flowSchoolMediaResponseGuard){
+  globalThis.__flowSchoolMediaResponseGuard=true;
+  const nativeJson=Response.prototype.json;
+  Response.prototype.json=async function(...args){
+    const body=await nativeJson.apply(this,args),responseUrl=String(this.url||'');
+    if(!responseUrl.includes('/functions/v1/school-data')||!/[?&]action=media(?:&|$)/.test(responseUrl)||!body||typeof body!=='object')return body;
+    const media={...(body.media||{})};let changed=false;
+    if(unsafeSchoolMediaUrl(media.hero)){media.hero='';changed=true}
+    if(unsafeSchoolMediaUrl(media.logo)){media.logo='';media.logoSource='rejected-navigation';changed=true}
+    if(!media.logo&&body.homepage){
+      let code='';try{code=new URL(responseUrl).searchParams.get('school')||''}catch{}
+      const fallback=await eagerProxyLogo(body.homepage,code);
+      if(fallback){media.logo=fallback;media.logoSource='logo-proxy-eager';changed=true}
+    }
+    return changed?{...body,media}:body;
+  };
+}
+
 const style=document.createElement('style');
 style.id='flow-school-real-device-refine-style';
 style.textContent=`
