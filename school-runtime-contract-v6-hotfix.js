@@ -55,24 +55,35 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   }
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) .desktop-sidebar,
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #schoolHero{display:none!important}
-  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"]{
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden):has(#todayView:not(.hidden)) #flowTodayDateDock[data-flow-kinetic="v5"]{
     grid-template-columns:minmax(0,1fr)!important
   }
-  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-edge{
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden):has(#todayView:not(.hidden)) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-edge{
     display:none!important
   }
-  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
-    grid-column:1!important;
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden):has(#todayView:not(.hidden)) #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
+    grid-column:1/-1!important;
+    grid-row:1!important;
+    justify-self:stretch!important;
     width:100%!important;
-    min-width:0!important
+    min-width:0!important;
+    height:44px!important;
+    pointer-events:auto!important
   }
   html[data-flow-school-ui="v2"] body{padding-bottom:78px!important}
 }
-/* Wide portrait tablets are still touch-first: keep Schedule controls stacked. */
+/* Wide portrait tablets are still touch-first: keep destination headers stacked. */
 @media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body #scheduleView .view-header{
+  html[data-flow-school-ui="v2"] body #scheduleView .view-header,
+  html[data-flow-school-ui="v2"] body #schoolView .view-header{
     flex-direction:column!important;
     align-items:stretch!important
+  }
+  html[data-flow-school-ui="v2"] body #schoolView .profile-hero{
+    height:auto!important;
+    min-height:0!important;
+    padding-top:16px!important;
+    padding-bottom:16px!important
   }
 }
 /* The School setup utility is a flat action, not a raised neumorphic control.
@@ -88,7 +99,7 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   #landing .onboarding-main{
     height:450px!important;
     min-height:450px!important;
-    transform:translateY(-4px)!important
+    transform:none!important
   }
   #landing .landing-header{
     height:40px!important;
