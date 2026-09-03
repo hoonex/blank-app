@@ -1,0 +1,50 @@
+import {chromium} from 'playwright';
+import fs from 'node:fs/promises';
+
+const BASE=process.env.FLOW_BASE_URL||'http://127.0.0.1:4173';
+const OUT=process.env.FLOW_TEST_OUT||'school-final-visual-audit';
+const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',address:'대구광역시 동구 반야월북로 199'},grade:2,className:'6'};
+const subjects=['문학','영어Ⅱ','선택과목','선택과목','스포츠 생활2','정보','진로활동'];
+const pad=value=>String(value).padStart(2,'0');
+const assert=(value,message)=>{if(!value)throw new Error(message)};
+const ymd=date=>`${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}`;
+function parse(value){const raw=String(value||'').replace(/\D/g,'').slice(0,8);return raw.length===8?new Date(+raw.slice(0,4),+raw.slice(4,6)-1,+raw.slice(6,8),12):new Date()}
+function weekDates(value){const d=parse(value),day=d.getDay(),monday=new Date(d);monday.setDate(d.getDate()+(day===0?-6:1-day));return Array.from({length:5},(_,i)=>{const next=new Date(monday);next.setDate(monday.getDate()+i);return next})}
+function dashboard(value){const selected=parse(value),days=weekDates(value),rows=[];for(const [dayIndex,day] of days.entries())for(let period=1;period<=7;period++)rows.push({date:ymd(day),period,subject:subjects[(period-1+dayIndex)%subjects.length]});const key=ymd(selected);return{school:profile.school,selected:key,from:ymd(days[0]),to:ymd(days[4]),timetable:rows,meals:[{date:key,type:'중식',dishes:['현미밥','미역국','닭갈비'],calories:'720 Kcal'}],events:[{date:key,name:'2학기 전국 영어듣기능력평가',content:'정상 수업',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}}}
+function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
+async function install(page,fixedEpoch){
+  const errors=[];page.on('pageerror',error=>errors.push(`page:${error.message}`));page.on('console',message=>{if(message.type()==='error')errors.push(`console:${message.text()}`)});
+  await page.route('**/functions/v1/school-data*',route=>{const url=new URL(route.request().url()),action=url.searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard(url.searchParams.get('date')));if(action==='media')return json(route,{media:{}});if(action==='place')return json(route,{provider:'kakao',place:{id:'school',name:profile.school.name,address:profile.school.address}});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6']});return json(route,{})});
+  await page.route('**/functions/v1/school-logo*',route=>route.fulfill({status:204,body:''}));
+  await page.route('https://t1.kakaocdn.net/kas/static/ba.min.js',route=>route.fulfill({status:200,contentType:'application/javascript; charset=utf-8',body:`document.querySelectorAll('.kakao_ad_area').forEach(function(el){el.style.display='block';var f=document.createElement('iframe');f.width='320';f.height='100';f.srcdoc='<body style="margin:0;background:#858b90"></body>';el.append(f);});`}));
+  await page.addInitScript(({profile,fixedEpoch})=>{
+    const NativeDate=Date;
+    class FixedDate extends NativeDate{constructor(...args){super(...(args.length?args:[fixedEpoch]))}static now(){return fixedEpoch}}
+    Object.defineProperty(globalThis,'Date',{value:FixedDate,configurable:true});
+    localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');localStorage.setItem('flow-school-transit-lab-v1','off');localStorage.setItem('flow-ambient-v1','on');
+  },{profile,fixedEpoch});
+  return errors;
+}
+async function ready(page){await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:20000});await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolFinalVisual==='v1'&&document.documentElement.dataset.flowAmbient==='on');await page.locator('#timetable .period-button').first().waitFor();await page.waitForTimeout(220)}
+async function state(page){return page.evaluate(()=>{
+  const rect=node=>{const r=node?.getBoundingClientRect();return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,center:r.left+r.width/2}:null};
+  const cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null;
+  const root=document.documentElement,toggle=document.querySelector('.timetable-mode-toggle'),buttons=[...(toggle?.querySelectorAll('button')||[])],help=document.querySelector('.neis-timetable-help summary'),school=document.querySelector('.mobile-school-button'),dock=document.querySelector('#flowTodayDateDock'),main=document.querySelector('#dashboard .product-main'),card=document.querySelector('#todayView .timetable-card'),edit=document.querySelector('#editSubjectsBtn'),share=document.querySelector('#shareTimetableBtn');
+  const lens=cs(toggle,'::after');
+  return{phase:root.dataset.flowAmbientPhase,ambientA:cs(root)?.getPropertyValue('--flow-ambient-a').trim(),ambientB:cs(root)?.getPropertyValue('--flow-ambient-b').trim(),bodyBackground:cs(document.body)?.backgroundImage,mainBackground:cs(main)?.backgroundColor,cardBackground:cs(card)?.backgroundColor,dock:rect(dock),school:{rect:rect(school),background:cs(school)?.backgroundColor,shadow:cs(school)?.boxShadow},toggle:{rect:rect(toggle),buttons:buttons.map(rect),lens:{display:lens?.display,transform:lens?.transform,transition:lens?.transitionDuration,radius:lens?.borderTopLeftRadius}},edit:rect(edit),share:rect(share),help:{rect:rect(help),background:cs(help)?.backgroundColor,border:cs(help)?.borderTopWidth,color:cs(help)?.color},weekAnimation:cs(document.querySelector('#inlineWeekTimetable'))?.animationName||''};
+})}
+
+const browser=await chromium.launch({headless:true});
+async function phone(name,fixedEpoch,expectedPhase,expectedAmbient){
+  const context=await browser.newContext({viewport:{width:412,height:915},isMobile:true,hasTouch:true,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S931N) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36'});const page=await context.newPage();page.setDefaultTimeout(12000);const errors=await install(page,fixedEpoch);
+  try{await ready(page);let s=await state(page);assert(s.phase===expectedPhase,`${name}: wrong ambient phase ${JSON.stringify(s)}`);assert(s.ambientA.toLowerCase()===expectedAmbient,`${name}: expected visible School ambient palette ${JSON.stringify(s)}`);assert(s.bodyBackground.includes('radial-gradient')&&s.bodyBackground.includes('linear-gradient'),`${name}: ambient background is not rendered ${s.bodyBackground}`);assert(s.mainBackground==='rgba(0, 0, 0, 0)',`${name}: product main still blocks ambient ${s.mainBackground}`);assert(s.dock&&Math.abs(s.dock.center-206)<=1.5,`${name}: date deck is not centered ${JSON.stringify(s.dock)}`);assert(s.school.rect&&s.school.rect.width<=96&&s.school.background!=='rgba(0, 0, 0, 0)'&&s.school.shadow!=='none',`${name}: school identity still reads as stretched/flat ${JSON.stringify(s.school)}`);assert(s.toggle.buttons.length===2&&Math.abs(s.toggle.buttons[0].width-s.toggle.buttons[1].width)<=1,`${name}: Today/Week button widths diverged ${JSON.stringify(s.toggle)}`);assert(s.edit&&s.edit.width>=88&&s.edit.width<=98&&s.share&&s.share.width<=62,`${name}: utility widths are stretched ${JSON.stringify({edit:s.edit,share:s.share})}`);assert(s.help.background==='rgba(0, 0, 0, 0)'&&s.help.border==='0px'&&s.help.rect.height>=44,`${name}: help disclosure still looks like a card ${JSON.stringify(s.help)}`);assert(s.toggle.lens.display!=='none'&&s.toggle.lens.transition!=='0s',`${name}: segmented selection lens is not animated ${JSON.stringify(s.toggle.lens)}`);await page.screenshot({path:`${OUT}/${name}-today.png`,fullPage:false});if(name.includes('evening')){const before=s.toggle.lens.transform;await page.locator('.timetable-mode-toggle [data-timetable-mode="week"]').click();await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active'));await page.waitForTimeout(80);s=await state(page);assert(s.toggle.lens.transform!==before,`${name}: selection lens did not move ${JSON.stringify(s.toggle.lens)}`);assert(s.weekAnimation.includes('flow-school-timetable-enter'),`${name}: Week content has no transition ${s.weekAnimation}`);await page.screenshot({path:`${OUT}/${name}-week.png`,fullPage:false})}assert(errors.length===0,`${name}: browser errors ${JSON.stringify(errors)}`)}finally{await context.close()}
+}
+await fs.mkdir(OUT,{recursive:true});
+await phone('phone-412-day',Date.parse('2026-09-03T04:00:00.000Z'),'day','#fff0b8');
+await phone('phone-412-evening',Date.parse('2026-09-03T09:49:00.000Z'),'evening','#e5d9ff');
+{
+  const context=await browser.newContext({viewport:{width:1280,height:800},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);const errors=await install(page,Date.parse('2026-09-03T09:49:00.000Z'));
+  try{await ready(page);const s=await state(page);assert(s.toggle.buttons.length===2&&Math.abs(s.toggle.buttons[0].width-s.toggle.buttons[1].width)<=1,`desktop: Today/Week widths diverged ${JSON.stringify(s.toggle)}`);assert(s.toggle.rect&&Math.abs(s.toggle.rect.width-112)<=1,`desktop: toggle outer size drifted ${JSON.stringify(s.toggle.rect)}`);assert(s.help.background==='rgba(0, 0, 0, 0)'&&s.help.border==='0px',`desktop: help disclosure regressed ${JSON.stringify(s.help)}`);await page.screenshot({path:`${OUT}/desktop-1280-today.png`,fullPage:false});assert(errors.length===0,`desktop: browser errors ${JSON.stringify(errors)}`)}finally{await context.close()}
+}
+await browser.close();
+console.log(JSON.stringify({ok:true,coverage:['visible day/evening ambience','centered phone date deck','compact school identity','intrinsic timetable utilities','animated equal-width Today/Week control','text-only timetable disclosure','desktop toggle parity']},null,2));

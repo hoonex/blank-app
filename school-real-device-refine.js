@@ -83,6 +83,14 @@ html body #landing #schoolSearch{
   padding-block:0!important;
 }
 
+/* Week navigation is compact visually, but every viewport still needs a real
+   44px interactive target. Keep desktop widths unchanged and grow only height. */
+html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :is(#prevWeek,#thisWeekBtn,#nextWeek){
+  box-sizing:border-box!important;
+  min-height:44px!important;
+  height:44px!important;
+}
+
 @media(max-width:520px){
   /* Preserve the existing soft-clay material contract without restoring the old
      floating tile appearance. On-device this reads as edge definition, not a card. */
