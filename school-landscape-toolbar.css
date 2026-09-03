@@ -185,6 +185,12 @@
     gap:1px!important;
     grid-template-rows:auto repeat(6,44px)!important;
   }
+  html[data-flow-school-ui="v2"] body #scheduleView .calendar-head button{
+    width:44px!important;
+    height:44px!important;
+    min-width:44px!important;
+    min-height:44px!important;
+  }
   html[data-flow-school-ui="v2"] body #scheduleView .calendar-day{
     height:44px!important;
     min-height:44px!important;
@@ -222,4 +228,22 @@
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.mobile-tab,
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-mobile-settings{font-size:.61rem!important;padding-inline:3px!important}
   html[data-flow-school-ui="v2"] body #scheduleView .schedule-layout{grid-template-columns:1fr!important}
+}
+
+/* Touch landing controls keep their actual interactive boxes large enough to
+   acquire without changing the compact visual typography. */
+@media (max-width:1100px){
+  #landing .landing-header .flow-logo,
+  #landing .landing-mode-switch{
+    display:inline-flex!important;
+    align-items:center!important;
+    min-height:44px!important;
+    box-sizing:border-box!important;
+  }
+  #landing .landing-header .flow-logo{min-width:44px!important}
+  #landing #schoolSearch{
+    height:44px!important;
+    min-height:44px!important;
+    box-sizing:border-box!important;
+  }
 }
