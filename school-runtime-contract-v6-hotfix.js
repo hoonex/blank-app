@@ -17,8 +17,7 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
 html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
   overflow:hidden!important;
   min-width:0!important;
-  max-width:100%!important;
-  contain:paint!important
+  max-width:100%!important
 }
 html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-rail{
   transform:translate3d(var(--flow-date-x,0px),0,0)!important
@@ -177,10 +176,13 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .mobile-topbar{
   background-color:color-mix(in srgb,var(--bg) 64%,transparent)!important
 }
 /* Explicit light mode must stay visually light even when the OS preference is
-   dark. Settings owns a top bar outside the dashboard, so keep every School
-   mobile top bar opaque enough during live dark -> light transitions. */
-html[data-flow-school-ui="v2"][data-theme="light"] body .mobile-topbar{
-  background:color-mix(in srgb,var(--bg) 92%,var(--surface))!important
+   dark. Do not depend on the School UI-state flag here: Settings can briefly
+   recompose that state during a live theme transition. */
+html[data-theme="light"][data-theme-mode="light"] body #dashboard.product-shell .product-main>header.mobile-topbar,
+html[data-theme="light"][data-theme-mode="light"] body #flowSchoolSettingsView .mobile-topbar,
+html[data-theme="light"][data-theme-mode="light"] body>.mobile-topbar{
+  background:color-mix(in srgb,var(--bg) 94%,var(--surface))!important;
+  background-color:color-mix(in srgb,var(--bg) 94%,var(--surface))!important
 }
 `;
   document.head.append(style);
@@ -218,7 +220,26 @@ function applySchoolAmbientPalette(){
   root.style.setProperty('--flow-ambient-a',palette[0]);
   root.style.setProperty('--flow-ambient-b',palette[1]);
 }
+function enforceWeeklyHelpOrder(){
+  const card=document.querySelector('#todayView .timetable-card');
+  const shell=document.querySelector('#inlineWeekTimetable');
+  const help=document.querySelector('#neisTimetableHelp');
+  if(!card||!shell||!help||help.parentElement!==card)return;
+  if(card.lastElementChild!==help)card.append(help);
+}
+function bindWeeklyHelpOrder(){
+  const card=document.querySelector('#todayView .timetable-card');
+  if(!card||card.dataset.flowWeeklyHelpOrder==='true')return false;
+  card.dataset.flowWeeklyHelpOrder='true';
+  enforceWeeklyHelpOrder();
+  new MutationObserver(records=>{
+    if(records.some(record=>record.type==='childList'))queueMicrotask(enforceWeeklyHelpOrder);
+  }).observe(card,{childList:true});
+  return true;
+}
 applySchoolAmbientPalette();
+queueMicrotask(bindWeeklyHelpOrder);
+[120,360,900,1800].forEach(delay=>setTimeout(()=>{bindWeeklyHelpOrder();enforceWeeklyHelpOrder()},delay));
 new MutationObserver(records=>{
   if(records.some(record=>record.attributeName==='data-flow-ambient-phase'||record.attributeName==='data-theme'||record.attributeName==='data-flow-ambient'))queueMicrotask(applySchoolAmbientPalette);
 }).observe(root,{attributes:true,attributeFilter:['data-flow-ambient-phase','data-theme','data-flow-ambient']});
