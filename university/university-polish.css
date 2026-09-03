@@ -138,9 +138,24 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 @media(max-width:430px){
   .main{padding-left:9px!important;padding-right:9px!important}
   .view-header h1{font-size:2rem!important}
-  .setup-copy .kicker{display:none!important}
-  .setup-copy h1{font-size:2.55rem!important;line-height:1.02!important}
-  .setup-copy p{font-size:.82rem!important}
+  /* Match the School setup title metrics exactly. This keeps the heading's
+     measured box symmetric without shifting the already-aligned search card. */
+  .setup-copy .kicker{
+    display:block!important;
+    font-size:.54rem!important;
+    line-height:normal!important;
+    letter-spacing:.11em!important;
+    font-weight:800!important
+  }
+  .setup-copy h1{
+    font-size:clamp(2.45rem,11.2vw,3.15rem)!important;
+    line-height:1.01!important;
+    letter-spacing:-.065em!important;
+    margin:10px 0 22px!important;
+    max-width:100%!important;
+    word-break:keep-all!important
+  }
+  .setup-copy p{font-size:.76rem!important}
   .search-card{margin-top:34px!important}
   .course-block strong{font-size:.54rem!important}
   .course-block span{font-size:.43rem!important}
