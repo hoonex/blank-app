@@ -34,37 +34,36 @@ style.textContent=`
     font-weight:760!important;
   }
 
-  /* One rounded-rectangle language for the Today/Week cluster. The wrapper is
-     allowed a 2px larger radius because it contains the controls; every actual
-     action inside the row uses exactly the same 10px circular corner. */
-  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle{
+  /* This is a final geometry contract, not a theme suggestion. #dashboard adds
+     enough specificity that school-today-responsive.css may load later without
+     reintroducing its older 9px/11px curvature. */
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-mode-toggle{
     border-radius:12px!important;
     corner-shape:round!important;
   }
-  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle button,
-  html[data-flow-school-ui="v2"] body #todayView #editSubjectsBtn,
-  html[data-flow-school-ui="v2"] body #todayView #shareTimetableBtn{
+  html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-mode-toggle button,
+  html[data-flow-school-ui="v2"] body #dashboard #todayView #editSubjectsBtn,
+  html[data-flow-school-ui="v2"] body #dashboard #todayView #shareTimetableBtn{
     border-radius:10px!important;
     corner-shape:round!important;
   }
 
   /* Bottom navigation is explicitly circular-rounded, never a superellipse.
-     Keep one radius for every inner interactive/optical layer so the selected
-     lens cannot read as a differently shaped card inside the bar. */
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav{
+     Every inner interactive/optical layer shares the same 12px radius. */
+  html[data-flow-school-ui="v2"] body #dashboard #bottomNav.mobile-bottom-nav{
     border-radius:16px!important;
     corner-shape:round!important;
   }
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.mobile-tab,
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav::before,
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+  html[data-flow-school-ui="v2"] body #dashboard #bottomNav.mobile-bottom-nav>.mobile-tab,
+  html[data-flow-school-ui="v2"] body #dashboard #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"] body #dashboard #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
     border-radius:12px!important;
     corner-shape:round!important;
   }
 
   /* Keep the moving active lens geometry for interaction/optical contracts, but
      lower its standard-mode contrast so it stops reading as a nested giant card. */
-  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) body #bottomNav.mobile-bottom-nav::before{
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) body #dashboard #bottomNav.mobile-bottom-nav::before{
     background:color-mix(in srgb,var(--accent) 2.5%,var(--surface))!important;
     border-color:transparent!important;
     box-shadow:none!important;
