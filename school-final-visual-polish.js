@@ -146,8 +146,8 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
 }
 
 @media(max-width:520px){
-  /* The center date deck must be geometrically centered in the viewport. Side
-     content no longer participates in the center column width calculation. */
+  /* Today app bar is sticky, so a viewport-fixed date deck has identical scroll
+     behavior while making its center independent from padded/asymmetric parents. */
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#flowTodayDateDock){
     position:sticky!important;
     display:flex!important;
@@ -167,9 +167,9 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
     min-width:62px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{
-    position:absolute!important;
-    z-index:2!important;
-    left:50vw!important;
+    position:fixed!important;
+    z-index:62!important;
+    left:50%!important;
     top:3px!important;
     transform:translateX(-50%)!important;
     display:grid!important;
