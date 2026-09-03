@@ -146,8 +146,6 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
 }
 
 @media(max-width:520px){
-  /* Today app bar is sticky, so a viewport-fixed date deck has identical scroll
-     behavior while making its center independent from padded/asymmetric parents. */
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#flowTodayDateDock){
     position:sticky!important;
     display:flex!important;
@@ -167,9 +165,9 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
     min-width:62px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{
-    position:fixed!important;
-    z-index:62!important;
-    left:50%!important;
+    position:absolute!important;
+    z-index:2!important;
+    left:var(--flow-phone-date-center-x,50%)!important;
     top:3px!important;
     transform:translateX(-50%)!important;
     display:grid!important;
@@ -271,4 +269,18 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
 }
 `;
 document.head.append(style);
+
+function centerPhoneDateDock(){
+  const dock=document.querySelector('#flowTodayDateDock');
+  if(!dock||!matchMedia('(max-width:520px)').matches)return;
+  const parent=dock.offsetParent;
+  const parentRect=parent?.getBoundingClientRect?.();
+  const parentLeft=Number(parentRect?.left)||0;
+  const target=(window.innerWidth/2)-parentLeft;
+  dock.style.setProperty('--flow-phone-date-center-x',`${target}px`);
+}
+centerPhoneDateDock();
+requestAnimationFrame(centerPhoneDateDock);
+window.addEventListener('resize',centerPhoneDateDock,{passive:true});
+window.visualViewport?.addEventListener?.('resize',centerPhoneDateDock,{passive:true});
 document.documentElement.dataset.flowSchoolFinalVisual='v1';
