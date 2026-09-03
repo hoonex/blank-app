@@ -169,7 +169,7 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
   html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{
     position:absolute!important;
     z-index:2!important;
-    left:50%!important;
+    left:50vw!important;
     top:3px!important;
     transform:translateX(-50%)!important;
     display:grid!important;
