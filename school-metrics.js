@@ -1,3 +1,5 @@
+import './school-runtime-contract-v6-hotfix.js';
+
 const root=document.documentElement;
 const PROFILE_KEY='flow-school-profile-v3';
 const TRANSIT_LAB_KEY='flow-school-transit-lab-v1';
@@ -20,10 +22,6 @@ html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #d
 }`;
   document.head.append(style);
 }
-
-/* Final geometry rules are dependency-free, so install them before shared native
-   material starts. */
-void import('./school-runtime-contract-v6-hotfix.js').catch(()=>{});
 
 /* Keep the original shared material/native bootstrap deterministic. The gate above
    is already active, so loading metrics-core here cannot expose the legacy shell;
