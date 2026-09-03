@@ -69,6 +69,14 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body{
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body :is(.product-shell,.product-main){background-color:color-mix(in srgb,var(--bg) 62%,transparent)!important;background-image:none!important}
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .mobile-topbar{background-color:color-mix(in srgb,var(--bg) 70%,transparent)!important;backdrop-filter:blur(18px) saturate(1.08)!important;-webkit-backdrop-filter:blur(18px) saturate(1.08)!important}
+/* Secondary School destinations intentionally flatten the Today date deck, but
+   an explicit light theme must keep the shared topbar visibly light even when a
+   dark mobile OS is forcing page colors. Match that structural selector so this
+   contract wins regardless of when the responsive stylesheet finishes loading. */
+html[data-flow-school-ui="v2"][data-theme="light"][data-theme-mode="light"] body #dashboard.product-shell:not(:has(#todayView:not(.hidden))) .mobile-topbar:has(#flowTodayDateDock){
+  background:color-mix(in srgb,var(--bg) 94%,var(--surface))!important;
+  background-color:color-mix(in srgb,var(--bg) 94%,var(--surface))!important
+}
 
 /* Coarse-pointer landscape keeps the same mobile information architecture up to tablet widths. */
 @media(orientation:landscape) and (pointer:coarse) and (hover:none) and (max-width:1366px){
@@ -143,11 +151,19 @@ function syncAmbient(){
 function normalizeInlineWeekButton(){
   const week=$('.timetable-mode-toggle .timetable-mode-button');
   if(!week)return false;
-  /* school.js bound this node while it still lived in the root navigation. Removing
-     data-view prevents the old route listener from reopening #weekView. */
-  if(week.hasAttribute('data-view'))week.removeAttribute('data-view');
+  /* Preserve the semantic Week selector after reparenting so all responsive and
+     functional contracts still see the control. During click dispatch only, hide
+     data-view before school.js's legacy route listener reads it, then restore it. */
+  if(week.dataset.view!=='week')week.dataset.view='week';
   if(week.dataset.timetableMode!=='week')week.dataset.timetableMode='week';
   setAttrIfChanged(week,'aria-label','주간 시간표');
+  if(week.dataset.flowLegacyWeekGuard!=='true'){
+    week.dataset.flowLegacyWeekGuard='true';
+    week.addEventListener('click',()=>{
+      week.removeAttribute('data-view');
+      queueMicrotask(()=>{if(week.isConnected)week.dataset.view='week'});
+    },{capture:true});
+  }
   return true;
 }
 function reconcileTimetableMode(){
