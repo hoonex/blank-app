@@ -21,9 +21,14 @@ html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #d
   document.head.append(style);
 }
 
-/* Flat landing controls and final nav geometry are tiny, dependency-free rules.
- * Start them immediately so they are present before the shared material layer paints. */
+/* Final geometry rules are dependency-free, so install them before shared native
+   material starts. */
 void import('./school-runtime-contract-v6-hotfix.js').catch(()=>{});
+
+/* Keep the original shared material/native bootstrap deterministic. The gate above
+   is already active, so loading metrics-core here cannot expose the legacy shell;
+   it only guarantees flow-native + School base polish before DOMContentLoaded. */
+await import('./school-metrics-core.js');
 
 function transitLabEnabled(){
   const host=location.hostname;
@@ -86,10 +91,6 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
 async function bootCriticalSchoolSurface(){
   ensureAuxiliaryStyles();
   installNavigationContract();
-
-  /* IA is structural and fast; v2 waits only for the four CSS layers that prevent
-     the old desktop/hero shell from painting. Heavy settings/refraction/data helpers
-     must not extend the reload gate. */
   await Promise.all([import('./school-ia.js'),import('./school-timetable-polish.js')]);
   if(transitLabEnabled()){
     try{
@@ -110,9 +111,9 @@ async function bootCriticalSchoolSurface(){
   requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:glass-mode-changed')));
 }
 
-/* Non-critical systems start immediately but do not hold first visible paint. */
+/* Settings/refraction remain progressive; native material is already deterministic
+   through metrics-core above and no longer races landing geometry. */
 void Promise.allSettled([
-  import('./school-metrics-core.js'),
   import('/flow-settings-view.js'),
   import('/flow-refraction.js'),
 ]);
