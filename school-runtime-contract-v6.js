@@ -35,6 +35,9 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #weekView{display:no
   html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle>button.active{
     background:var(--surface)!important;color:var(--accent)!important;box-shadow:0 4px 12px rgba(43,57,78,.08),inset 0 1px 0 rgba(255,255,255,.78)!important
   }
+  html[data-flow-school-ui="v2"] body #todayView .timetable-mode-toggle .flow-week-view-marker{
+    display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:100%!important;min-width:0!important
+  }
   html[data-flow-school-ui="v2"] body #todayView :is(.flow-school-utility-action,.timetable-actions>.neo-button,#allergyBtn){
     min-height:44px!important;height:44px!important;margin:0!important;padding:0 12px!important;box-sizing:border-box!important;
     border-radius:12px!important;corner-shape:round!important;font-size:.61rem!important;line-height:1!important
@@ -151,19 +154,21 @@ function syncAmbient(){
 function normalizeInlineWeekButton(){
   const week=$('.timetable-mode-toggle .timetable-mode-button');
   if(!week)return false;
-  /* Preserve the semantic Week selector after reparenting so all responsive and
-     functional contracts still see the control. During click dispatch only, hide
-     data-view before school.js's legacy route listener reads it, then restore it. */
-  if(week.dataset.view!=='week')week.dataset.view='week';
+  /* Keep legacy route metadata off the reparented button itself. A child marker
+     preserves the semantic Week selector for interaction tooling while clicks
+     still bubble to the real button and its inline-Week handler. */
+  if(week.hasAttribute('data-view'))week.removeAttribute('data-view');
   if(week.dataset.timetableMode!=='week')week.dataset.timetableMode='week';
   setAttrIfChanged(week,'aria-label','주간 시간표');
-  if(week.dataset.flowLegacyWeekGuard!=='true'){
-    week.dataset.flowLegacyWeekGuard='true';
-    week.addEventListener('click',()=>{
-      week.removeAttribute('data-view');
-      queueMicrotask(()=>{if(week.isConnected)week.dataset.view='week'});
-    },{capture:true});
+  let marker=$(':scope > .flow-week-view-marker',week);
+  if(!marker){
+    marker=document.createElement('span');
+    marker.className='flow-week-view-marker';
+    marker.textContent=week.textContent.trim()||'주간';
+    week.textContent='';
+    week.append(marker);
   }
+  if(marker.dataset.view!=='week')marker.dataset.view='week';
   return true;
 }
 function reconcileTimetableMode(){
