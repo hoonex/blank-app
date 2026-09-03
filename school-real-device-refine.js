@@ -74,6 +74,15 @@ if(!globalThis.__flowSchoolMediaResponseGuard){
 const style=document.createElement('style');
 style.id='flow-school-real-device-refine-style';
 style.textContent=`
+/* The visual search shell is already tall enough; make the actual input own the
+   same hit area in every viewport instead of leaving a 19px native input inside it. */
+html body #landing #schoolSearch{
+  box-sizing:border-box!important;
+  min-height:44px!important;
+  height:44px!important;
+  padding-block:0!important;
+}
+
 @media(max-width:520px){
   /* Preserve the existing soft-clay material contract without restoring the old
      floating tile appearance. On-device this reads as edge definition, not a card. */
