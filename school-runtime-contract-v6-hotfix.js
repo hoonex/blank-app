@@ -37,17 +37,26 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
     overflow:hidden!important
   }
 }
-/* Touch-width School information keeps a stable two-column rhythm. When the
-   profile has an odd tile count, the final tile spans the row but retains one
-   column's width and is centered instead of being visually stranded. */
+/* Touch-width School information keeps a stable two-column rhythm. The general
+   polish layer uses a twelve-column balancing grid, so reset each tile's span in
+   this touch composition before centering an odd final card. */
 @media(min-width:521px) and (max-width:1180px){
   html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:9px!important
   }
-  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid>:last-child:nth-child(odd){
+  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid>.info-tile{
+    grid-column:auto!important;
+    width:auto!important;
+    justify-self:stretch!important
+  }
+  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid>.info-tile-empty{
     grid-column:1/-1!important;
-    width:calc(50% - 4.5px)!important;
+    width:auto!important
+  }
+  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid>.info-tile:last-child:nth-child(odd):not(.info-tile-empty){
+    grid-column:1/-1!important;
+    width:calc((100% - 9px)/2)!important;
     justify-self:center!important
   }
 }
