@@ -97,7 +97,7 @@ for(const viewport of [{name:'phone-360',width:360,height:800},{name:'phone-412'
     assert(state.mode.weekly&&state.mode.daily==='none'&&state.mode.week!=='none'&&state.mode.path!=='/week',`${viewport.name}: Week shell state wrong ${JSON.stringify(state.mode)}`);
     assert(state.week.cells>=36&&state.week.visibleCells>=36&&state.week.subjects.some(text=>text&&text!=='—'),`${viewport.name}: Week shell visible but real grid is empty ${JSON.stringify(state.week)}`);
     assert(state.week.prev==='‹'&&state.week.next==='›',`${viewport.name}: phone week navigation still consumes full-width labels ${JSON.stringify(state.week)}`);
-    assert(!state.weekUtilities.edit&&!state.weekUtilities.share,`${viewport.name}: Today-only utilities leak into Week ${JSON.stringify(state.weekUtilities)}`);
+    assert(state.weekUtilities.edit&&state.weekUtilities.share,`${viewport.name}: Week utilities disappeared ${JSON.stringify(state.weekUtilities)}`);
     await page.screenshot({path:`${OUT}/${viewport.name}-week.png`,fullPage:false,animations:'disabled'});
 
     const before=state.week.range;
@@ -115,4 +115,4 @@ for(const viewport of [{name:'phone-360',width:360,height:800},{name:'phone-412'
   }finally{await context.close()}
 }
 await browser.close();
-console.log(JSON.stringify({ok:true,coverage:['visible weekly cells + next-week refresh','phone heading/action separation','44–52px timetable density','compact 44px bottom-nav targets','iframe-shaped AdFit rail','scroll-end nav clearance']},null,2));
+console.log(JSON.stringify({ok:true,coverage:['visible weekly cells + next-week refresh','Week edit/share utilities','phone heading/action separation','44–52px timetable density','compact 44px bottom-nav targets','iframe-shaped AdFit rail','scroll-end nav clearance']},null,2));
