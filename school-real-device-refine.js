@@ -8,10 +8,8 @@ style.textContent=`
     box-shadow:inset 0 1px 0 rgba(255,255,255,.48),inset 0 -1px 0 rgba(43,57,78,.03)!important;
   }
 
-  /* Give the longer exam title the width it actually needs on Korean phone layouts. */
-  html[data-flow-school-ui="v2"] body #todayView .status-grid{
-    grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr)!important;
-  }
+  /* Keep the two status surfaces balanced; solve long Korean exam names through
+     typography instead of stealing width from the current-state card. */
   html[data-flow-school-ui="v2"] body #todayView .status-card:last-child strong{
     font-size:.72rem!important;
     line-height:1.2!important;
