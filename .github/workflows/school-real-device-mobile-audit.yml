@@ -7,6 +7,7 @@ on:
       - 'school-real-device-hotfix.js'
       - 'school-real-device-refine.js'
       - 'school-final-visual-polish.js'
+      - 'school-toolbar-grouping.js'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
@@ -15,6 +16,7 @@ on:
       - 'tests/school-real-device-mobile-audit.mjs'
       - 'tests/school-phone-radius-audit.mjs'
       - 'tests/school-final-visual-audit.mjs'
+      - 'tests/school-toolbar-grouping-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -35,9 +37,11 @@ jobs:
           node --check school-real-device-hotfix.js
           node --check school-real-device-refine.js
           node --check school-final-visual-polish.js
+          node --check school-toolbar-grouping.js
           node --check tests/school-real-device-mobile-audit.mjs
           node --check tests/school-phone-radius-audit.mjs
           node --check tests/school-final-visual-audit.mjs
+          node --check tests/school-toolbar-grouping-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -65,6 +69,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-final-visual-audit
         run: node tests/school-final-visual-audit.mjs
+      - name: Verify toolbar grouping and connected Week navigation
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-toolbar-grouping-audit
+        run: node tests/school-toolbar-grouping-audit.mjs
       - name: Upload real-device screenshots and report
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,4 +82,5 @@ jobs:
           path: |
             school-real-device-mobile-audit
             school-final-visual-audit
+            school-toolbar-grouping-audit
           if-no-files-found: ignore
