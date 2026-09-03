@@ -12,6 +12,7 @@ on:
       - 'flow-adfit.js'
       - 'flow-adfit.css'
       - 'tests/school-real-device-mobile-audit.mjs'
+      - 'tests/school-phone-radius-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -32,6 +33,7 @@ jobs:
           node --check school-real-device-hotfix.js
           node --check school-real-device-refine.js
           node --check tests/school-real-device-mobile-audit.mjs
+          node --check tests/school-phone-radius-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -50,6 +52,10 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-real-device-mobile-audit
         run: node tests/school-real-device-mobile-audit.mjs
+      - name: Verify circular rounded-rectangle curvature
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-phone-radius-audit.mjs
       - name: Upload real-device screenshots and report
         if: always()
         uses: actions/upload-artifact@v4
