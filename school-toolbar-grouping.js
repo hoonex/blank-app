@@ -61,12 +61,16 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .neis-timetable-help[o
   color:color-mix(in srgb,var(--muted) 68%,var(--text))!important;
 }
 
-/* Week movement is one connected segmented bar rather than three floating cards. */
+/* Week movement is one connected segmented bar rather than three floating cards.
+   Give the edge segments one extra CSS pixel so device/subpixel rounding cannot
+   reduce a nominal 44px control below the accessibility hit-target floor. */
 html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar .week-controls{
+  box-sizing:border-box!important;
   display:grid!important;
-  grid-template-columns:44px minmax(0,1fr) 44px!important;
+  grid-template-columns:45px minmax(0,1fr) 45px!important;
   width:100%!important;
-  min-height:44px!important;
+  height:45px!important;
+  min-height:45px!important;
   gap:0!important;
   padding:0!important;
   overflow:hidden!important;
@@ -79,9 +83,9 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar .
 html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar .week-controls .neo-button{
   box-sizing:border-box!important;
   width:100%!important;
-  min-width:44px!important;
-  height:44px!important;
-  min-height:44px!important;
+  min-width:45px!important;
+  height:45px!important;
+  min-height:45px!important;
   margin:0!important;
   padding:0 8px!important;
   border:0!important;
