@@ -11,6 +11,45 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   html:not([data-flow-transit-surface="dormant"]) body #bottomNav.mobile-bottom-nav:not(:has(>[data-view="week"])){grid-template-columns:repeat(5,minmax(0,1fr))!important;--flow-tab-count:5!important}
   html[data-flow-school-ui="v2"] body #todayView .status-grid{position:relative!important;z-index:1!important}
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{box-shadow:none!important}
+  /* Keep the entire fixed-nav geometry in one cascade layer. The 901–1180px
+     tablet shell otherwise contributes left/right/width while the landscape
+     contract contributes translateX(), which can shift the bar half a viewport
+     off-screen. */
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    z-index:90!important;
+    top:auto!important;
+    bottom:max(9px,env(safe-area-inset-bottom))!important;
+    left:50%!important;
+    right:auto!important;
+    width:min(620px,calc(100vw - 28px))!important;
+    max-width:620px!important;
+    min-height:58px!important;
+    height:58px!important;
+    max-height:58px!important;
+    padding:5px!important;
+    transform:translateX(-50%)!important;
+    grid-template-rows:48px!important;
+    gap:2px!important;
+    border-radius:16px!important;
+    corner-shape:round!important;
+    overflow:hidden!important
+  }
+}
+/* Touch-width School information keeps a stable two-column rhythm. When the
+   profile has an odd tile count, the final tile spans the row but retains one
+   column's width and is centered instead of being visually stranded. */
+@media(min-width:521px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important
+  }
+  html[data-flow-school-ui="v2"] body #schoolView #schoolInfoGrid.school-info-grid>:last-child:nth-child(odd){
+    grid-column:1/-1!important;
+    width:calc(50% - 4.5px)!important;
+    justify-self:center!important
+  }
 }
 /* Kinetic rail state already lives in --flow-date-x; keep the rendered rail on
    that exact displacement while clipping its oversized virtual strip to the dock. */
