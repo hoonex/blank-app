@@ -65,8 +65,14 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   transition:none!important;
   animation:none!important
 }
-/* Keep desktop School/University landing geometry on the same 64px baseline. */
-@media(min-width:901px){#landing .onboarding-main{top:4px!important}}
+/* Keep desktop School/University landing geometry on the same compact canvas. */
+@media(min-width:901px){
+  #landing .onboarding-main{
+    top:4px!important;
+    height:450px!important;
+    min-height:450px!important
+  }
+}
 
 /* Copy-lens owns Optical displacement. The legacy pseudo lens is tint/edge only. */
 html[data-flow-school-ui="v2"][data-flow-refraction-copy="true"][data-flow-glass-mode="optical"] body #dashboard.product-shell #bottomNav.mobile-bottom-nav::before{
