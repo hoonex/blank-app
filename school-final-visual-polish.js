@@ -18,7 +18,7 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="light"][data-
 html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="light"][data-flow-ambient-phase="night"]{
   --flow-ambient-a:#d9d3ff!important;--flow-ambient-b:#e7ddff!important
 }
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body{
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body:has(#dashboard:not(.hidden)){
   background-color:var(--bg)!important;
   background-image:
     radial-gradient(920px 680px at var(--flow-ambient-x) -120px,color-mix(in srgb,var(--flow-ambient-a) 92%,transparent),transparent 68%),
@@ -247,6 +247,12 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
   }
   html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard #bottomNav.mobile-bottom-nav{
     background:color-mix(in srgb,var(--surface) 92%,var(--flow-ambient-b))!important;
+  }
+}
+
+@media(min-width:381px) and (max-width:400px){
+  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{
+    width:160px!important;min-width:160px!important;max-width:160px!important
   }
 }
 
