@@ -90,6 +90,13 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
     min-height:450px!important;
     transform:translateY(4px)!important
   }
+  #landing .landing-header{
+    height:36px!important;
+    min-height:36px!important
+  }
+  #landing .landing-header .flow-logo{
+    min-height:36px!important
+  }
 }
 
 /* Copy-lens owns Optical displacement. The legacy pseudo lens is tint/edge only. */
