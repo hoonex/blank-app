@@ -8,6 +8,7 @@ on:
       - 'school-real-device-refine.js'
       - 'school-final-visual-polish.js'
       - 'school-toolbar-grouping.js'
+      - 'school-global-shell-glass.js'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
@@ -17,6 +18,7 @@ on:
       - 'tests/school-phone-radius-audit.mjs'
       - 'tests/school-final-visual-audit.mjs'
       - 'tests/school-toolbar-grouping-audit.mjs'
+      - 'tests/school-device-matrix-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -26,7 +28,7 @@ permissions:
 jobs:
   real-device-mobile:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,10 +40,12 @@ jobs:
           node --check school-real-device-refine.js
           node --check school-final-visual-polish.js
           node --check school-toolbar-grouping.js
+          node --check school-global-shell-glass.js
           node --check tests/school-real-device-mobile-audit.mjs
           node --check tests/school-phone-radius-audit.mjs
           node --check tests/school-final-visual-audit.mjs
           node --check tests/school-toolbar-grouping-audit.mjs
+          node --check tests/school-device-matrix-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -74,6 +78,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-toolbar-grouping-audit
         run: node tests/school-toolbar-grouping-audit.mjs
+      - name: Exercise School functions across phone, tablet, and desktop matrix
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-device-matrix-audit
+        run: node tests/school-device-matrix-audit.mjs
       - name: Upload real-device screenshots and report
         if: always()
         uses: actions/upload-artifact@v4
@@ -83,4 +92,5 @@ jobs:
             school-real-device-mobile-audit
             school-final-visual-audit
             school-toolbar-grouping-audit
+            school-device-matrix-audit
           if-no-files-found: ignore
