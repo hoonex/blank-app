@@ -12,6 +12,11 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   html[data-flow-school-ui="v2"] body #todayView .status-grid{position:relative!important;z-index:1!important}
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{box-shadow:none!important}
 }
+/* Kinetic rail state already lives in --flow-date-x; keep the rendered rail on
+   that exact displacement so direct manipulation remains 1:1 on every shell. */
+html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-rail{
+  transform:translate3d(var(--flow-date-x,0px),0,0)!important
+}
 /* Final landscape invariant. This deliberately has higher specificity than the
    retired short-landscape toolbar rules, so a late stylesheet cannot move the
    destination bar back into the header. */
@@ -72,7 +77,8 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   }
   html[data-flow-school-ui="v2"] body{padding-bottom:78px!important}
 }
-/* Wide portrait tablets are still touch-first: keep destination headers stacked. */
+/* Wide portrait tablets are still touch-first: keep destination headers stacked
+   and bound the image profile to the same compact height used on smaller touch UI. */
 @media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] body #scheduleView .view-header,
   html[data-flow-school-ui="v2"] body #schoolView .view-header{
@@ -80,10 +86,14 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
     align-items:stretch!important
   }
   html[data-flow-school-ui="v2"] body #schoolView .profile-hero{
-    height:auto!important;
-    min-height:0!important;
-    padding-top:16px!important;
-    padding-bottom:16px!important
+    height:205px!important;
+    min-height:205px!important;
+    padding:0!important
+  }
+  html[data-flow-school-ui="v2"] body #schoolView .profile-content{
+    height:205px!important;
+    min-height:205px!important;
+    padding:17px!important
   }
 }
 /* The School setup utility is a flat action, not a raised neumorphic control.
@@ -107,6 +117,9 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   }
   #landing .landing-header .flow-logo{
     min-height:40px!important
+  }
+  #landing .school-search-panel{
+    transform:translateY(30px)!important
   }
 }
 
@@ -144,6 +157,12 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body :is(.product-shell,.
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .mobile-topbar{
   background-color:color-mix(in srgb,var(--bg) 64%,transparent)!important
+}
+/* Explicit light mode must stay visually light even when the OS preference is
+   dark. Keep the top bar opaque enough that a later transparent shorthand cannot
+   expose the dark compositor beneath it during a live theme transition. */
+html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar{
+  background:color-mix(in srgb,var(--bg) 92%,var(--surface))!important
 }
 `;
   document.head.append(style);
