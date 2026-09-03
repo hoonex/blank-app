@@ -125,17 +125,19 @@ const AMBIENT={
   light:{dawn:['#f7dfd8','#d9e8ff'],day:['#dcecff','#f6f8fc'],golden:['#f9d9a5','#e2eaf8'],evening:['#e9daf5','#d8e7fb'],night:['#d6e3f6','#eee5f6']},
   dark:{dawn:['#302a39','#26364a'],day:['#1e3041','#27333f'],golden:['#3c2f27','#263548'],evening:['#332a40','#233449'],night:['#162638','#222c3e']}
 };
+function setAttrIfChanged(node,name,value){if(node&&node.getAttribute(name)!==value)node.setAttribute(name,value)}
 function syncAmbient(){
   const on=localStorage.getItem(AMBIENT_KEY)!=='off';
   const phase=ambientPhase();
   const theme=root.dataset.theme==='dark'?'dark':'light';
   const palette=AMBIENT[theme][phase];
-  root.dataset.flowAmbient=on?'on':'off';
-  root.dataset.flowAmbientPhase=phase;
-  root.style.setProperty('--flow-ambient-a',palette[0]);
-  root.style.setProperty('--flow-ambient-b',palette[1]);
-  const now=new Date(),minutes=now.getHours()*60+now.getMinutes();
-  root.style.setProperty('--flow-ambient-x',`${Math.max(8,Math.min(92,8+(minutes/1439)*84)).toFixed(1)}%`);
+  const ambient=on?'on':'off';
+  if(root.dataset.flowAmbient!==ambient)root.dataset.flowAmbient=ambient;
+  if(root.dataset.flowAmbientPhase!==phase)root.dataset.flowAmbientPhase=phase;
+  if(root.style.getPropertyValue('--flow-ambient-a')!==palette[0])root.style.setProperty('--flow-ambient-a',palette[0]);
+  if(root.style.getPropertyValue('--flow-ambient-b')!==palette[1])root.style.setProperty('--flow-ambient-b',palette[1]);
+  const now=new Date(),minutes=now.getHours()*60+now.getMinutes(),x=`${Math.max(8,Math.min(92,8+(minutes/1439)*84)).toFixed(1)}%`;
+  if(root.style.getPropertyValue('--flow-ambient-x')!==x)root.style.setProperty('--flow-ambient-x',x);
 }
 
 function normalizeInlineWeekButton(){
@@ -143,9 +145,9 @@ function normalizeInlineWeekButton(){
   if(!week)return false;
   /* school.js bound this node while it still lived in the root navigation. Removing
      data-view prevents the old route listener from reopening #weekView. */
-  week.removeAttribute('data-view');
-  week.dataset.timetableMode='week';
-  week.setAttribute('aria-label','주간 시간표');
+  if(week.hasAttribute('data-view'))week.removeAttribute('data-view');
+  if(week.dataset.timetableMode!=='week')week.dataset.timetableMode='week';
+  setAttrIfChanged(week,'aria-label','주간 시간표');
   return true;
 }
 function reconcileTimetableMode(){
@@ -156,11 +158,12 @@ function reconcileTimetableMode(){
   shell.classList.toggle('hidden',!weekly);
   $('#weekView')?.classList.add('hidden');
   const daily=$('#timetable');
-  if(daily)daily.setAttribute('aria-hidden',String(weekly));
-  shell.setAttribute('aria-hidden',String(!weekly));
+  setAttrIfChanged(daily,'aria-hidden',String(weekly));
+  setAttrIfChanged(shell,'aria-hidden',String(!weekly));
   const title=$('#todayView .timetable-card .card-heading h2');
   if(title){const next=weekly?'주간 시간표':'오늘 시간표';if(title.textContent!==next)title.textContent=next}
-  localStorage.setItem(MODE_KEY,weekly?'week':'today');
+  const mode=weekly?'week':'today';
+  if(localStorage.getItem(MODE_KEY)!==mode)localStorage.setItem(MODE_KEY,mode);
   return true;
 }
 function scheduleSync(){
