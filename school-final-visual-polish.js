@@ -132,17 +132,18 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .timetable-mode-toggle
   color:var(--accent)!important;
 }
 
-/* Representation changes still happen immediately for correctness, but the new
-   content settles into place instead of appearing as a hard cut. */
+/* Representation changes still happen immediately for correctness. Animate only
+   opacity/translation so interactive descendants never shrink below their real
+   hit-box size while Today/Week is transitioning. */
 html[data-flow-school-ui="v2"] body #dashboard #todayView #timetable,
 html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayView #inlineWeekTimetable{
   animation:flow-school-timetable-enter 360ms cubic-bezier(.16,1,.3,1) both!important;
   transform-origin:top center!important;
 }
 @keyframes flow-school-timetable-enter{
-  0%{opacity:.42;transform:translate3d(0,6px,0) scale(.995)}
+  0%{opacity:.42;transform:translate3d(0,6px,0)}
   55%{opacity:.94}
-  100%{opacity:1;transform:translate3d(0,0,0) scale(1)}
+  100%{opacity:1;transform:translate3d(0,0,0)}
 }
 
 @media(max-width:520px){
