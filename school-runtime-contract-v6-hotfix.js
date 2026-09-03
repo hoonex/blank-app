@@ -13,7 +13,13 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{box-shadow:none!important}
 }
 /* Kinetic rail state already lives in --flow-date-x; keep the rendered rail on
-   that exact displacement so direct manipulation remains 1:1 on every shell. */
+   that exact displacement while clipping its oversized virtual strip to the dock. */
+html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-viewport{
+  overflow:hidden!important;
+  min-width:0!important;
+  max-width:100%!important;
+  contain:paint!important
+}
 html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .flow-date-rail{
   transform:translate3d(var(--flow-date-x,0px),0,0)!important
 }
@@ -118,6 +124,18 @@ html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-flow-kinetic="v5"] .
   #landing .landing-header .flow-logo{
     min-height:40px!important
   }
+  #landing .onboarding-copy h1{
+    font-size:5.2vw!important;
+    line-height:.95!important
+  }
+  #landing .landing-header-actions .landing-mode-switch{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    height:36px!important;
+    min-height:36px!important;
+    padding-block:0!important
+  }
   #landing .school-search-panel{
     transform:translateY(30px)!important
   }
@@ -159,9 +177,9 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .mobile-topbar{
   background-color:color-mix(in srgb,var(--bg) 64%,transparent)!important
 }
 /* Explicit light mode must stay visually light even when the OS preference is
-   dark. Keep the top bar opaque enough that a later transparent shorthand cannot
-   expose the dark compositor beneath it during a live theme transition. */
-html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar{
+   dark. Settings owns a top bar outside the dashboard, so keep every School
+   mobile top bar opaque enough during live dark -> light transitions. */
+html[data-flow-school-ui="v2"][data-theme="light"] body .mobile-topbar{
   background:color-mix(in srgb,var(--bg) 92%,var(--surface))!important
 }
 `;
