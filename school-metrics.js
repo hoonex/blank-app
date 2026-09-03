@@ -64,8 +64,8 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
   html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>[data-view="school"]{grid-column:3!important;grid-row:1!important}
   html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>#mobileSettingsBtn{grid-column:4!important;grid-row:1!important}
   html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="today"]{grid-column:1!important;grid-row:1!important}
-  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="transit"]{grid-column:2!important;grid-row:1!important}
-  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="schedule"]{grid-column:3!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="schedule"]{grid-column:2!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="transit"]{grid-column:3!important;grid-row:1!important}
   html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="school"]{grid-column:4!important;grid-row:1!important}
   html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>#mobileSettingsBtn{grid-column:5!important;grid-row:1!important}
 }
