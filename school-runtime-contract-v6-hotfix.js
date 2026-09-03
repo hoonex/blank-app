@@ -57,8 +57,14 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) #schoolHero{display:none!important}
   html[data-flow-school-ui="v2"] body{padding-bottom:78px!important}
 }
-/* The School setup utility is a flat action, not a raised neumorphic control. */
-#landing .landing-header-actions .landing-mode-switch{box-shadow:none!important}
+/* The School setup utility is a flat action, not a raised neumorphic control.
+   Disable its shadow transition too; otherwise the old raised shadow can remain
+   visible for a few intermediate frames during first paint. */
+#landing .landing-header-actions .landing-mode-switch{
+  box-shadow:none!important;
+  transition:none!important;
+  animation:none!important
+}
 
 /* Make time ambience materially visible on School instead of being buried under
    an opaque app shell. Cards remain neutral; the page field carries the time cue. */
