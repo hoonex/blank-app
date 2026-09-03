@@ -1,0 +1,54 @@
+const style=document.createElement('style');
+style.id='flow-school-real-device-refine-style';
+style.textContent=`
+@media(max-width:520px){
+  /* Preserve the existing soft-clay material contract without restoring the old
+     floating tile appearance. On-device this reads as edge definition, not a card. */
+  html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .mobile-school-button{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.48),inset 0 -1px 0 rgba(43,57,78,.03)!important;
+  }
+
+  /* Give the longer exam title the width it actually needs on Korean phone layouts. */
+  html[data-flow-school-ui="v2"] body #todayView .status-grid{
+    grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .status-card:last-child strong{
+    font-size:.72rem!important;
+    line-height:1.2!important;
+    letter-spacing:-.035em!important;
+    word-break:keep-all!important;
+    overflow-wrap:anywhere!important;
+  }
+
+  /* Make the help affordance read as a control rather than a stray footer label. */
+  html[data-flow-school-ui="v2"] body #todayView .neis-timetable-help{
+    border-top:0!important;
+    padding-top:3px!important;
+  }
+  html[data-flow-school-ui="v2"] body #todayView .neis-timetable-help summary{
+    box-sizing:border-box!important;
+    min-height:44px!important;
+    padding:0 10px!important;
+    border-radius:10px!important;
+    background:color-mix(in srgb,var(--surface-2) 54%,transparent)!important;
+    color:var(--muted)!important;
+    font-weight:760!important;
+  }
+
+  /* Keep the moving active lens geometry for interaction/optical contracts, but
+     lower its standard-mode contrast so it stops reading as a nested giant card. */
+  html[data-flow-school-ui="v2"]:not([data-flow-glass-mode="optical"]) body #bottomNav.mobile-bottom-nav::before{
+    background:color-mix(in srgb,var(--accent) 2.5%,var(--surface))!important;
+    border-color:transparent!important;
+    box-shadow:none!important;
+  }
+}
+
+@media(min-width:390px) and (max-width:520px){
+  html[data-flow-school-ui="v2"] body #todayView .week-head{font-size:.53rem!important}
+  html[data-flow-school-ui="v2"] body #todayView .week-period{font-size:.54rem!important}
+  html[data-flow-school-ui="v2"] body #todayView .week-subject{font-size:.54rem!important;line-height:1.2!important}
+}
+`;
+document.head.append(style);
+document.documentElement.dataset.flowSchoolRealDeviceRefine='v1';
