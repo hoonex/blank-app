@@ -88,7 +88,7 @@ if(!document.querySelector('#flow-school-runtime-v6-hotfix')){
   #landing .onboarding-main{
     height:450px!important;
     min-height:450px!important;
-    transform:translateY(4px)!important
+    transform:translateY(-4px)!important
   }
   #landing .landing-header{
     height:40px!important;
