@@ -3,6 +3,7 @@ import {FLOW_ADFIT_CONFIG} from '/flow-adfit-config.js';
 const STYLE_HREF='/flow-adfit.css';
 const SCHOOL_TODAY_STYLE_HREF='/school-today-responsive.css';
 const SDK_SELECTOR='script[data-flow-adfit-sdk]';
+const SCHOOL_PROFILE_KEY='flow-school-profile-v3';
 
 function appKind(){
   if(document.querySelector('#dashboard')&&document.querySelector('#todayView'))return'school';
@@ -17,6 +18,12 @@ function configFor(kind){
 function validConfig(config){
   const unit=String(config?.unit||'').trim(),width=Number(config?.width),height=Number(config?.height);
   return Boolean(unit)&&Number.isFinite(width)&&width>0&&Number.isFinite(height)&&height>0;
+}
+function hasPersistedSchoolProfile(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SCHOOL_PROFILE_KEY)||'null');
+    return Boolean(saved?.school?.schoolCode&&saved?.grade&&saved?.className);
+  }catch{return false}
 }
 function ensureStylesheet(href,datasetKey){
   if([...document.querySelectorAll('link[rel="stylesheet"]')].some(node=>{try{return new URL(node.href,location.href).pathname===href}catch{return false}}))return;
@@ -76,6 +83,13 @@ function init(){
   const config=configFor(kind);
   if(!validConfig(config)){
     document.documentElement.dataset.flowAdfit='unconfigured';
+    return;
+  }
+  /* Keep first-run School onboarding free of third-party ad/cookie bootstrap.
+   * A persisted profile means the user has completed setup on a prior page load;
+   * returning sessions retain the normal AdFit slot and SDK behavior. */
+  if(kind==='school'&&!hasPersistedSchoolProfile()){
+    document.documentElement.dataset.flowAdfit='deferred';
     return;
   }
   ensureStyle();

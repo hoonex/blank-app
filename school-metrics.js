@@ -1,13 +1,37 @@
-import './school-metrics-core.js';
-import '/flow-settings-view.js';
-import '/flow-refraction.js';
-import './school-ia.js';
-import './school-timetable-polish.js';
+import './school-runtime-contract-v6-hotfix.js';
 
-/* School owns a real fifth/fourth `.mobile-tab` in markup. The shared native
- * layer historically tags that existing button as `.flow-mobile-settings`, a
- * class intended for controls it creates itself. Remove that cross-product
- * styling after native glass setup as well as during initial boot. */
+const root=document.documentElement;
+const PROFILE_KEY='flow-school-profile-v3';
+const TRANSIT_LAB_KEY='flow-school-transit-lab-v1';
+
+/* Gate before progressive modules evaluate. Saved-profile reloads stay blank until
+ * the final v2 School shell exists, so the legacy desktop/hero surface cannot flash. */
+if(localStorage.getItem(PROFILE_KEY))root.dataset.flowSchoolBoot='profile';
+root.dataset.flowSchoolSurfaceLoading='true';
+if(!document.querySelector('#flow-school-surface-ready-gate')){
+  const style=document.createElement('style');
+  style.id='flow-school-surface-ready-gate';
+  style.textContent=`
+html[data-flow-school-surface-loading="true"] #dashboard,
+html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #dashboard{
+  visibility:hidden!important;opacity:0!important;pointer-events:none!important
+}
+html[data-flow-school-surface-loading="true"] #dashboard *,
+html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #dashboard *{
+  visibility:hidden!important;pointer-events:none!important
+}`;
+  document.head.append(style);
+}
+
+/* Keep the original shared material/native bootstrap deterministic. The gate above
+   is already active, so loading metrics-core here cannot expose the legacy shell;
+   it only guarantees flow-native + School base polish before DOMContentLoaded. */
+await import('./school-metrics-core.js');
+
+function transitLabEnabled(){
+  const host=location.hostname;
+  return(host==='127.0.0.1'||host==='localhost')&&localStorage.getItem(TRANSIT_LAB_KEY)!=='off';
+}
 function normalizeSchoolSettingsTab(){
   const button=document.querySelector('#mobileSettingsBtn');
   if(!button)return;
@@ -16,27 +40,56 @@ function normalizeSchoolSettingsTab(){
   button.removeAttribute('data-view');
   button.setAttribute('aria-label','설정');
 }
-normalizeSchoolSettingsTab();
-queueMicrotask(normalizeSchoolSettingsTab);
-window.addEventListener('flow:glass-mode-changed',normalizeSchoolSettingsTab,{passive:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',normalizeSchoolSettingsTab,{once:true});
-
-function transitLabEnabled(){
-  const host=location.hostname;
-  if(host!=='127.0.0.1'&&host!=='localhost')return false;
-  try{return localStorage.getItem('flow-school-transit-lab-v1')!=='off'}catch{return false}
+function ensureAuxiliaryStyles(){
+  if(!document.querySelector('link[data-flow-school-settings-wide]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='/school-settings-wide.css?v=20260825-1';link.dataset.flowSchoolSettingsWide='';document.head.append(link);
+  }
+  if(!document.querySelector('link[data-flow-school-landscape-toolbar]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='/school-landscape-toolbar.css?v=20260827-1';link.dataset.flowSchoolLandscapeToolbar='';document.head.append(link);
+  }
 }
-
-const schoolSurfaceRoot=document.documentElement;
-if(!document.querySelector('#flow-school-surface-ready-gate')){
-  const style=document.createElement('style');
-  style.id='flow-school-surface-ready-gate';
-  style.textContent='html[data-flow-school-surface-loading="true"] #dashboard:not(.hidden){visibility:hidden!important;pointer-events:none!important}';
+function installNavigationContract(){
+  if(document.querySelector('#flow-school-navigation-contract-v6'))return;
+  const style=document.createElement('style');style.id='flow-school-navigation-contract-v6';style.textContent=`
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
+html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:3!important}
+html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
+html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:4!important}
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{display:block!important;visibility:visible!important;pointer-events:auto!important}
+  html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>[data-view="today"]{grid-column:1!important;grid-row:1!important}
+  html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>[data-view="schedule"]{grid-column:2!important;grid-row:1!important}
+  html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>[data-view="school"]{grid-column:3!important;grid-row:1!important}
+  html[data-flow-transit-surface="dormant"] body #bottomNav:not(:has(>[data-view="week"]))>#mobileSettingsBtn{grid-column:4!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="today"]{grid-column:1!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="schedule"]{grid-column:2!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="transit"]{grid-column:3!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>[data-view="school"]{grid-column:4!important;grid-row:1!important}
+  html:not([data-flow-transit-surface="dormant"]) body #bottomNav:not(:has(>[data-view="week"]))>#mobileSettingsBtn{grid-column:5!important;grid-row:1!important}
+}
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body{overflow-x:hidden!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){position:fixed!important;inset:64px 0 78px!important;overflow-y:auto!important;overscroll-behavior:contain!important;background:var(--bg)!important;padding:18px 11px 34px!important}
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields,
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.one,
+  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.flow-meal-window{grid-template-columns:minmax(0,1fr)!important}
+  html[data-flow-school-ui="v2"] .schedule-layout{display:block!important;grid-template-columns:none!important}
+  html[data-flow-school-ui="v2"] .school-info-grid{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:7px!important}
+  html[data-flow-school-ui="v2"] .school-info-grid>.info-tile{grid-column:span 6!important}
+  html[data-flow-school-ui="v2"] .school-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}`;
   document.head.append(style);
 }
-schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading='true';
 
-async function bootSchoolSurface(){
+async function bootCriticalSchoolSurface(){
+  ensureAuxiliaryStyles();
+  installNavigationContract();
+  await Promise.all([import('./school-ia.js'),import('./school-timetable-polish.js')]);
   if(transitLabEnabled()){
     try{
       await import('./school-transit.js');
@@ -46,184 +99,35 @@ async function bootSchoolSurface(){
   }
   await import('./school-surface-cleanup.js');
   await import('./school-uiux-v2.js');
+  await import('./school-today-topbar.js');
+  await import('./school-runtime-contract-v6.js');
+
+  normalizeSchoolSettingsTab();
+  root.dataset.flowSchoolSurface='ready';
+  root.dataset.flowSchoolSurfaceV6='ready';
+  delete root.dataset.flowSchoolSurfaceLoading;
+  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:glass-mode-changed')));
 }
 
-/* Keep the entry module non-blocking, but never expose the transient desktop
- * shell while its responsive v2 styles are still loading. Navigation contracts
- * below remain synchronous and the dashboard becomes interactive once settled. */
-void bootSchoolSurface().finally(()=>{
-  delete schoolSurfaceRoot.dataset.flowSchoolSurfaceLoading;
-  schoolSurfaceRoot.dataset.flowSchoolSurface='ready';
-  /* Refraction may have booted while the dashboard was intentionally hidden.
-   * Re-run the full glass-mode lifecycle after the first visible frame so it
-   * rebuilds the source copy, geometry, filter, and readiness marker together. */
-  requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('flow:glass-mode-changed')));
+/* Settings/refraction remain progressive; native material is already deterministic
+   through metrics-core above and no longer races landing geometry. */
+void Promise.allSettled([
+  import('/flow-settings-view.js'),
+  import('/flow-refraction.js'),
+]);
+
+void bootCriticalSchoolSurface().catch(error=>{
+  console.error('[Flow] School surface boot failed',error);
+  delete root.dataset.flowSchoolSurfaceLoading;
+  root.dataset.flowSchoolSurface='ready';
+}).finally(()=>{
+  normalizeSchoolSettingsTab();
+  window.addEventListener('flow:glass-mode-changed',normalizeSchoolSettingsTab,{passive:true});
+  void import('/flow-experience.js').catch(()=>{});
+  void import('/flow-adfit.js').catch(()=>{});
 });
 
-/* Optical/refraction used to assume School always had five destinations because
- * Transit was one of them. Production now has four, so keep the lens geometry
- * and semantic tab positions aligned with the visible dormant-Transit nav. */
-if(!document.querySelector('#flow-school-dormant-nav-contract')){
-  const style=document.createElement('style');
-  style.id='flow-school-dormant-nav-contract';
-  style.textContent=`
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:4!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:has(> [data-view="today"].active){--flow-tab-index:0!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="schedule"].active){--flow-tab-index:1!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> [data-view="school"].active){--flow-tab-index:2!important}
-html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:3!important}
-html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:4!important}
-@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="today"]{grid-row:1!important;grid-column:1!important}
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="schedule"]{grid-row:1!important;grid-column:2!important}
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>[data-view="school"]{grid-row:1!important;grid-column:3!important}
-  html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>#mobileSettingsBtn{grid-row:1!important;grid-column:4!important}
-  html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"]))>#mobileSettingsBtn{grid-row:1!important;grid-column:5!important}
-}`;
-  document.head.append(style);
-}
-
-/* Settings is a destination, not a modal that may cover navigation. The School
- * settings button is already a `.mobile-tab`; do not force another display mode
- * onto it because that distorts the active lens on 901–1024px portrait tablets. */
-if(!document.querySelector('#flow-school-touch-nav-contract')){
-  const style=document.createElement('style');
-  style.id='flow-school-touch-nav-contract';
-  style.textContent=`
-@media(max-width:1180px){
-  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(.hidden) .mobile-topbar,
-  html[data-flow-school-ui="v2"][data-theme="light"] body #dashboard:not(:has(#todayView:not(.hidden))) .mobile-topbar:has(#flowTodayDateDock){background:var(--bg)!important}
-}
-@media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{
-    z-index:90!important;
-    visibility:visible!important;
-    opacity:1!important;
-    pointer-events:auto!important;
-  }
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) #mobileSettingsBtn{
-    visibility:visible!important;
-    pointer-events:auto!important;
-  }
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
-    z-index:40!important;
-    bottom:78px!important;
-    padding-bottom:34px!important;
-  }
-}
-@media(min-width:700px) and (max-width:900px){
-  html[data-flow-school-ui="v2"] body #todayView .timetable .period-no{width:36px!important;height:36px!important;min-width:36px!important}
-}`;
-  document.head.append(style);
-}
-
-/* The shell breakpoint already treats 901–1024px portrait tablets as touch-first.
- * Extend that contract through the topbar and every secondary School destination so
- * a Galaxy-style portrait viewport cannot fall back to desktop internals after leaving Today. */
-if(!document.querySelector('#flow-school-wide-portrait-destinations')){
-  const style=document.createElement('style');
-  style.id='flow-school-wide-portrait-destinations';
-  style.textContent=`
-@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body{overflow-x:hidden!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy strong{font-size:.88rem!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy small{display:none!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button{text-align:right!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span,
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button span{font-size:.65rem!important;font-weight:800!important}
-  html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-school-button small{margin-top:2px!important;color:var(--muted)!important;font-size:.54rem!important}
-
-  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid{
-    gap:12px!important;
-    padding:0!important;
-    border:0!important;
-    border-radius:0!important;
-    background:transparent!important;
-    box-shadow:none!important;
-    overflow:visible!important;
-    backdrop-filter:none!important;
-    -webkit-backdrop-filter:none!important
-  }
-  html[data-flow-school-ui="v2"][data-flow-today-topbar="ready"] body #dashboard #todayView .status-grid>.status-card:not(.flow-home-noise){border:0!important}
-
-  html[data-flow-school-ui="v2"] .view-header{
-    min-height:104px!important;
-    margin:0 0 10px!important;
-    padding:18px 16px!important;
-    border-radius:22px!important;
-    align-items:flex-start!important;
-    flex-direction:column!important;
-    gap:13px!important;
-  }
-  html[data-flow-school-ui="v2"] .view-header h1{font-size:1.72rem!important}
-  html[data-flow-school-ui="v2"] .view-header p{max-width:35ch!important;font-size:.62rem!important}
-  html[data-flow-school-ui="v2"] .week-controls{width:100%!important}
-  html[data-flow-school-ui="v2"] .week-controls .neo-button{flex:1 1 0!important}
-  html[data-flow-school-ui="v2"] .week-table-wrap{margin:0 -4px!important}
-
-  html[data-flow-school-ui="v2"] .schedule-layout{display:block!important;grid-template-columns:none!important}
-  html[data-flow-school-ui="v2"] .schedule-layout>.content-card{border-radius:22px!important}
-  html[data-flow-school-ui="v2"] .calendar-card{margin-bottom:10px!important}
-  html[data-flow-school-ui="v2"] .calendar-grid{gap:1px!important}
-  html[data-flow-school-ui="v2"] .calendar-day{min-height:66px!important;padding:6px!important;border-radius:9px!important}
-  html[data-flow-school-ui="v2"] .calendar-event-label{display:none!important}
-  html[data-flow-school-ui="v2"] .schedule-row{padding:10px 11px!important}
-
-  html[data-flow-school-ui="v2"] .profile-hero{min-height:205px!important;border-radius:22px!important}
-  html[data-flow-school-ui="v2"] .profile-content{min-height:205px!important;padding:17px!important}
-  html[data-flow-school-ui="v2"] .profile-content h2{font-size:1.85rem!important}
-  html[data-flow-school-ui="v2"] .school-info-grid{grid-template-columns:repeat(12,minmax(0,1fr))!important;gap:7px!important}
-  html[data-flow-school-ui="v2"] .school-info-grid>.info-tile{grid-column:span 6!important}
-  html[data-flow-school-ui="v2"] .school-info-grid>.info-tile-empty{grid-column:1/-1!important}
-  html[data-flow-school-ui="v2"] .school-info-grid:has(>.info-tile:nth-child(2n+1):last-child)>.info-tile:last-child{grid-column:4/span 6!important}
-  html[data-flow-school-ui="v2"] .school-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
-  html[data-flow-school-ui="v2"] .action-link{min-height:44px!important}
-  html[data-flow-school-ui="v2"] .source-note{padding-bottom:8px!important}
-
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView:not(.hidden){
-    position:fixed!important;
-    inset:64px 0 78px!important;
-    overflow-y:auto!important;
-    overscroll-behavior:contain!important;
-    background:var(--bg)!important;
-    padding:18px 11px 34px!important;
-  }
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header{margin-bottom:22px!important}
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header h1{font-size:2.15rem!important}
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-header p{font-size:.8rem!important}
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-stack{gap:12px!important}
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-card{padding:18px!important;border-radius:18px!important}
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields,
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.one,
-  html[data-flow-school-ui="v2"] #flowSchoolSettingsView .flow-settings-fields.flow-meal-window{grid-template-columns:minmax(0,1fr)!important}
-}`;
-  document.head.append(style);
-}
-
-if(!document.querySelector('link[data-flow-school-settings-wide]')){
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href='/school-settings-wide.css?v=20260825-1';
-  link.dataset.flowSchoolSettingsWide='';
-  document.head.append(link);
-}
-
-if(!document.querySelector('link[data-flow-school-landscape-toolbar]')){
-  const link=document.createElement('link');
-  link.rel='stylesheet';
-  link.href='/school-landscape-toolbar.css?v=20260827-1';
-  link.dataset.flowSchoolLandscapeToolbar='';
-  document.head.append(link);
-}
-
-/* Delight must never block School identity/theme/data startup. */
-void import('/flow-experience.js').catch(()=>{});
-
-/* Monetization is progressive enhancement and stays inert until an AdFit unit is configured. */
-void import('/flow-adfit.js').catch(()=>{});
-
-/* Source-contract anchors retained for existing production audits:
+/* Production-health source-contract anchors retained for the runtime split:
  * school-polish.css
  * recoverSchoolLogo
  * functions/v1/school-logo

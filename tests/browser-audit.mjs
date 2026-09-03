@@ -77,7 +77,7 @@ for(const testCase of cases){
     const selectTab=async(view)=>{
       try{
         if(view==='week'){
-          const inlineWeek=page.locator('.timetable-card [data-view="week"]:visible').first();
+          const inlineWeek=page.locator('.timetable-mode-toggle button:visible',{hasText:'주간'}).first();
           if(await inlineWeek.count()){
             await inlineWeek.click({trial:true,timeout:3000});
             const t0=Date.now();
