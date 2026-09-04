@@ -128,7 +128,7 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidd
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body::before{opacity:.62!important}
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) .product-main{
-  background-color:color-mix(in srgb,var(--bg) 90%,transparent)!important;
+  background-color:transparent!important;
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) :where(
   .status-card:not(.flow-home-noise),.content-card,.calendar-card,.week-card,.info-tile,.rank-card,
@@ -147,18 +147,18 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidd
    like a colored wallpaper behind unrelated neutral controls. */
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) .mobile-topbar{
-    background:color-mix(in srgb,var(--surface) 86%,var(--flow-ambient-a) 14%)!important;
+    background:color-mix(in srgb,var(--surface) 90%,var(--flow-ambient-a) 10%)!important;
     border-bottom-color:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 5%)!important;
   }
   html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
-    background:color-mix(in srgb,var(--flow-glass-fill,rgba(248,250,253,.54)) 91%,var(--flow-ambient-b) 9%)!important;
-    border-color:color-mix(in srgb,var(--flow-glass-edge,rgba(255,255,255,.68)) 88%,var(--flow-ambient-a) 12%)!important;
-    box-shadow:0 10px 28px color-mix(in srgb,var(--flow-glass-depth,rgba(34,51,82,.12)) 86%,var(--flow-ambient-b) 14%),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
+    background:color-mix(in srgb,var(--flow-glass-fill,rgba(248,250,253,.54)) 93%,var(--flow-ambient-b) 7%)!important;
+    border-color:color-mix(in srgb,var(--flow-glass-edge,rgba(255,255,255,.68)) 90%,var(--flow-ambient-a) 10%)!important;
+    box-shadow:0 10px 28px color-mix(in srgb,var(--flow-glass-depth,rgba(34,51,82,.12)) 88%,var(--flow-ambient-b) 12%),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
   }
   html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
     background:
       radial-gradient(130% 112% at var(--flow-lens-light-x,34%) -8%,var(--flow-school-ambient-specular) 0%,rgba(255,255,255,.08) 31%,transparent 60%),
-      linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 7%,rgba(255,255,255,.07)),color-mix(in srgb,var(--flow-ambient-b) 5%,rgba(255,255,255,.018)))!important;
+      linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 6%,rgba(255,255,255,.07)),color-mix(in srgb,var(--flow-ambient-b) 4%,rgba(255,255,255,.018)))!important;
   }
 }
 
@@ -179,9 +179,11 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #
     const style=installVisualContract();
     if(style.parentElement===document.head&&document.head.lastElementChild!==style)document.head.append(style);
   }
+  /* Several School feature styles arrive progressively. Re-raise only during a
+     short bounded boot window; never compete with the shared-shell observer. */
   raiseVisualContract();
-  const headObserver=new MutationObserver(()=>queueMicrotask(raiseVisualContract));
-  headObserver.observe(document.head,{childList:true});
+  [80,220,520,1100].forEach(delay=>setTimeout(raiseVisualContract,delay));
+  window.addEventListener('flow:glass-mode-changed',()=>setTimeout(raiseVisualContract,0),{passive:true});
   root.dataset.flowSchoolVisualContract='v7';
 
   const INSET=5;
