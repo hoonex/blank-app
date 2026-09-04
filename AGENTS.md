@@ -1,13 +1,17 @@
 # Flow Ultraworker Rules
 
-This file is the operating contract for AI/code-agent work in this repository. Read it before changing code.
+This file is Flow's repository-specific operating policy. Read it before changing code.
+
+For substantial Flow engineering work, use the canonical current stable `hoonex/sloar-chat-coder` guidance as the primary general reasoning / continuity layer when it is available. Sloar must treat this `AGENTS.md` as mandatory repository context: Flow-specific product, CI, deployment, performance, security, and UI rules here outrank generic defaults when they differ.
+
+Do **not** vendor or copy the full Sloar skill/state machine into this repository merely to apply it, and do not duplicate Sloar's generic reasoning rules here. If the canonical Sloar source is unavailable in a session, continue with this file plus current repository truth rather than blocking the task.
 
 ## 0. The agent owns implementation
 
 - When the user asks to implement, fix, change, polish, refactor, test, deploy, or otherwise modify Flow, the agent must perform the repository work directly with the available GitHub/code tools.
 - Do **not** hand the task back as a prompt, developer instruction sheet, checklist for another agent, or "copy this into Codex" response unless the user explicitly asks for a prompt or handoff document.
 - Do **not** claim GitHub write access is unavailable until the installed GitHub connector/tools have actually been checked and a real tool/permission failure has occurred.
-- If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. Do not stop merely to ask whether to continue.
+- If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. When Sloar is available, use it to drive the general engineering reasoning while this file supplies the Flow-specific constraints. Do not stop merely to ask whether to continue.
 - If a real blocker prevents implementation, report the exact failing tool/permission/check and preserve the branch/PR state. Do not substitute hypothetical instructions for work that can still be performed.
 - A user-provided screenshot or concrete UI complaint is an acceptance-test input. Reproduce and fix it in the repository rather than only explaining what should be changed.
 - Keep chat handoffs compact. Put durable history in `FLOW_PROJECT_HISTORY.md` and fast-changing state in `FLOW_CURRENT_STATUS.md`; ordinary ULW updates should normally contain only the current SHA/state, meaningful change, and blocker/result rather than replaying long reasoning history.
@@ -18,8 +22,6 @@ This file is the operating contract for AI/code-agent work in this repository. R
 - All code, test, workflow, and documentation changes happen on that branch.
 - Open a PR, run CI, then merge only after required checks pass.
 - If a write accidentally lands on `main`, stop immediately, revert that write, explain what happened, and restart from a fresh branch based on the repaired `main`.
-- For long or disposable-session work, preserve a durable checkpoint only at a coherent working milestone when losing the current session would be expensive, especially before long browser/CI/remote verification. Do **not** publish every micro-step merely for continuity.
-- Keep task identities distinct: the task-start `main`/origin baseline is not the same thing as an intermediate checkpoint or the final PR head. Do not redefine the origin after a checkpoint.
 
 ## 2. Preflight before touching code
 
@@ -31,15 +33,6 @@ Before each ULW task:
 4. Reuse existing data flows/components before adding new runtime layers.
 5. Do not introduce duplicate API requests, duplicate renderers, extra MutationObservers, automatic scroll resets, or hotfix stacks.
 6. Do not expose Vercel, NEIS, Kakao, Supabase, Public Data Portal, or other secret keys in client code or logs.
-
-## 2A. Engineering judgment before implementation
-
-- Identify the authoritative owner of consequential state, geometry, data, lifecycle, and persistence decisions before adding a workaround. Fix the owner when possible instead of synchronizing multiple downstream copies.
-- When two or more plausible representations can satisfy an important requirement, briefly compare two or three internally by invariant fit, lifecycle transfers, failure surface, derived-state drift, and hot-path cost. Prefer the representation that makes the required behavior structurally easiest to keep correct.
-- A fix that needs an extra observer, event interceptor, compatibility shim, or runtime synchronizer should trigger a quick check for a cleaner representation that removes that failure class. Keep the compensating layer only when the repository constraints make it the safer choice.
-- Preserve existing public/observable behavior unless the task explicitly changes it. Structural rewrites should keep at least one minimal regression probe for each consequential existing operation they touch.
-- For async, stateful, pointer/gesture, persistence, routing, and lifecycle changes, test the transition boundary most likely to fail, not only ordinary steady-state cases. Examples include cancellation just before invocation, exact loop/edge boundaries, stale completion after replacement state exists, reload after persistence writes, and pointer capture/cancel transitions.
-- Do not turn this section into ceremony. Skip representation comparison when the repository already fixes the architecture or the choice is trivial and reversible.
 
 ## 3. Loop prevention
 
@@ -95,7 +88,6 @@ For a feature PR:
 - Confirm horizontal overflow is absent across the responsive visual matrix unless a component explicitly requires horizontal scrolling.
 - Confirm console/page errors are zero in the relevant browser audit.
 - Confirm important persistence behavior after reload if localStorage/PWA state is involved.
-- Any material defect discovered during testing, screenshot inspection, or runtime verification must have an explicit final disposition: fixed in the exact final PR bytes with matching evidence, still open and reported as a limitation/blocker, or shown by new evidence to be non-defect/out of scope. A local-only fix that is absent from the final PR head does not count as fixed.
 - Do not merge while relevant CI is red.
 
 For deployment-sensitive changes:
@@ -135,6 +127,5 @@ Before saying a task is finished, verify:
 - [ ] Responsive portrait/landscape and mobile/desktop screenshots were inspected for UI-affecting work.
 - [ ] User-provided screenshot complaints were reproduced and visually checked after the fix.
 - [ ] UI work has no obvious whitespace, hierarchy, wrapping, alignment, or glass-quality regression even if automated checks are green.
-- [ ] Every material defect found during verification is either closed in the exact final PR head or explicitly reported.
 - [ ] PR merged only after checks passed.
 - [ ] Production deploy/route health was checked when relevant.
