@@ -1,7 +1,11 @@
 const root=document.documentElement;
 const STYLE_ID='flow-school-global-shell-glass-style';
+const REFRACTION_INSET=5;
+const REFRACTION_FOLLOW_MS=220;
 let raiseQueued=false;
 let geometryQueued=false;
+let refractionFrame=0;
+let refractionFollowUntil=0;
 
 function raiseStyle(){
   const style=document.querySelector(`#${STYLE_ID}`);
@@ -40,6 +44,35 @@ function queueGeometry(){
   if(geometryQueued)return;
   geometryQueued=true;
   requestAnimationFrame(()=>{geometryQueued=false;applyGeometry()});
+}
+
+/* The sticky compact shell can settle by a sub-pixel after scrollY itself has
+   already stopped. Keep the Optical copy aligned to the *rendered* rectangles
+   for a short bounded window so a quick direction reversal never shows an old
+   scene origin. This supplements the generic refraction scroll loop without a
+   permanent render loop. */
+function syncRefractionGeometry(){
+  if(root.dataset.flowGlassMode!=='optical'||root.dataset.flowRefractionCopy!=='true')return;
+  const dashboard=document.querySelector('#dashboard');
+  if(!dashboard||dashboard.classList.contains('hidden')||window.innerWidth>1180)return;
+  const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
+  const source=document.querySelector('.product-main');
+  if(!nav||!source)return;
+  const navStyle=getComputedStyle(nav),sourceStyle=getComputedStyle(source),navRect=nav.getBoundingClientRect(),sourceRect=source.getBoundingClientRect();
+  if(navStyle.display==='none'||navStyle.visibility==='hidden'||sourceStyle.display==='none'||sourceStyle.visibility==='hidden'||navRect.width<=0||sourceRect.width<=0)return;
+  nav.style.setProperty('--flow-refraction-scene-left',`${(sourceRect.left-(navRect.left+REFRACTION_INSET)).toFixed(2)}px`);
+  nav.style.setProperty('--flow-refraction-scene-top',`${(sourceRect.top-(navRect.top+REFRACTION_INSET)).toFixed(2)}px`);
+}
+function runRefractionFollow(time){
+  refractionFrame=0;
+  syncRefractionGeometry();
+  if(time<refractionFollowUntil)refractionFrame=requestAnimationFrame(runRefractionFollow);
+}
+function queueRefractionFollow(){
+  if(root.dataset.flowGlassMode!=='optical')return;
+  refractionFollowUntil=performance.now()+REFRACTION_FOLLOW_MS;
+  syncRefractionGeometry();
+  if(!refractionFrame)refractionFrame=requestAnimationFrame(runRefractionFollow);
 }
 
 function installStyle(){
@@ -239,8 +272,11 @@ const headObserver=new MutationObserver(records=>{
 headObserver.observe(document.head,{childList:true});
 const bodyObserver=new MutationObserver(()=>queueGeometry());
 bodyObserver.observe(document.body,{childList:true,subtree:true});
-window.addEventListener('resize',queueGeometry,{passive:true});
-window.visualViewport?.addEventListener('resize',queueGeometry,{passive:true});
-window.addEventListener('load',()=>{raiseStyle();applyGeometry()},{once:true,passive:true});
-window.addEventListener('flow:glass-mode-changed',()=>{queueRaiseStyle();queueGeometry();setTimeout(()=>{raiseStyle();applyGeometry()},180)},{passive:true});
-for(const delay of [0,120,600,1400])setTimeout(()=>{raiseStyle();applyGeometry()},delay);
+window.addEventListener('scroll',queueRefractionFollow,{passive:true,capture:true});
+window.visualViewport?.addEventListener('scroll',queueRefractionFollow,{passive:true});
+window.addEventListener('resize',()=>{queueGeometry();queueRefractionFollow()},{passive:true});
+window.visualViewport?.addEventListener('resize',()=>{queueGeometry();queueRefractionFollow()},{passive:true});
+window.addEventListener('load',()=>{raiseStyle();applyGeometry();queueRefractionFollow()},{once:true,passive:true});
+window.addEventListener('flow:refraction-refresh',queueRefractionFollow,{passive:true});
+window.addEventListener('flow:glass-mode-changed',()=>{queueRaiseStyle();queueGeometry();queueRefractionFollow();setTimeout(()=>{raiseStyle();applyGeometry();queueRefractionFollow()},180)},{passive:true});
+for(const delay of [0,120,600,1400])setTimeout(()=>{raiseStyle();applyGeometry();queueRefractionFollow()},delay);
