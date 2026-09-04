@@ -1,13 +1,17 @@
 # Flow Ultraworker Rules
 
-This file is the operating contract for AI/code-agent work in this repository. Read it before changing code.
+This file is Flow's repository-specific operating policy. Read it before changing code.
+
+For substantial Flow engineering work, use the canonical current stable `hoonex/sloar-chat-coder` guidance as the primary general reasoning / continuity layer when it is available. Sloar must treat this `AGENTS.md` as mandatory repository context: Flow-specific product, CI, deployment, performance, security, and UI rules here outrank generic defaults when they differ.
+
+Do **not** vendor or copy the full Sloar skill/state machine into this repository merely to apply it, and do not duplicate Sloar's generic reasoning rules here. If the canonical Sloar source is unavailable in a session, continue with this file plus current repository truth rather than blocking the task.
 
 ## 0. The agent owns implementation
 
 - When the user asks to implement, fix, change, polish, refactor, test, deploy, or otherwise modify Flow, the agent must perform the repository work directly with the available GitHub/code tools.
 - Do **not** hand the task back as a prompt, developer instruction sheet, checklist for another agent, or "copy this into Codex" response unless the user explicitly asks for a prompt or handoff document.
 - Do **not** claim GitHub write access is unavailable until the installed GitHub connector/tools have actually been checked and a real tool/permission failure has occurred.
-- If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. Do not stop merely to ask whether to continue.
+- If the user says `ULW`, continue autonomously through preflight, branch creation, implementation, focused tests, relevant regression CI, screenshot inspection, PR, and merge when the repository rules permit it. When Sloar is available, use it to drive the general engineering reasoning while this file supplies the Flow-specific constraints. Do not stop merely to ask whether to continue.
 - If a real blocker prevents implementation, report the exact failing tool/permission/check and preserve the branch/PR state. Do not substitute hypothetical instructions for work that can still be performed.
 - A user-provided screenshot or concrete UI complaint is an acceptance-test input. Reproduce and fix it in the repository rather than only explaining what should be changed.
 - Keep chat handoffs compact. Put durable history in `FLOW_PROJECT_HISTORY.md` and fast-changing state in `FLOW_CURRENT_STATUS.md`; ordinary ULW updates should normally contain only the current SHA/state, meaningful change, and blocker/result rather than replaying long reasoning history.
