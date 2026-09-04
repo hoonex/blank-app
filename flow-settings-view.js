@@ -14,6 +14,7 @@ function ensureStyles(){
   if($('#flow-settings-view-style'))return;
   const style=document.createElement('style');style.id='flow-settings-view-style';style.textContent=`
 .flow-settings-view{padding-bottom:110px}
+.flow-settings-view.flow-settings-enter:not(.hidden){animation:flow-view-enter var(--flow-motion-medium,240ms) var(--flow-motion-spring,cubic-bezier(.16,1,.3,1)) both!important;transform-origin:50% 18%}
 .flow-settings-view .flow-settings-header{margin-bottom:22px}
 .flow-settings-view .flow-settings-header h1{margin:0 0 7px;font-size:clamp(2rem,4vw,3rem);letter-spacing:-.06em;line-height:1}
 .flow-settings-view .flow-settings-header p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.55}
@@ -42,6 +43,7 @@ html[data-theme] body :is(.mobile-bottom-nav,.bottom-nav)>.flow-mobile-settings{
 }
 @media(max-width:900px) and (max-height:520px){#flowSchoolSettingsView:not(.hidden),#flowUniversitySettingsView:not(.hidden){inset:54px 0 0;padding-top:10px}}
 @media(max-width:430px){.flow-settings-view .flow-settings-card{padding:16px}.flow-settings-view .flow-settings-segment{gap:6px}.flow-settings-view .flow-settings-segment button{font-size:.78rem}}
+@media(prefers-reduced-motion:reduce){.flow-settings-view.flow-settings-enter:not(.hidden){animation:none!important}}
 `;
   document.head.append(style);
 }
@@ -92,8 +94,15 @@ function syncPanel(kind,panel,{fill=true}={}){
 }
 function syncPanels({fill=true}={}){const school=$('#flowSchoolSettingsView'),university=$('#flowUniversitySettingsView');if(school)syncPanel('school',school,{fill});if(university)syncPanel('university',university,{fill})}
 function settingsTriggers(kind){return kind==='school'?$$('#mobileSettingsBtn,#settingsBtn'):$$('.flow-mobile-settings,.flow-university-settings-button')}
+function restartSettingsMotion(panel){
+  panel.classList.remove('flow-settings-enter');
+  void panel.offsetWidth;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  panel.classList.add('flow-settings-enter');
+  panel.addEventListener('animationend',()=>panel.classList.remove('flow-settings-enter'),{once:true});
+}
 function showSettings(kind){
-  dismissToast();const panel=makePanel(kind);if(!panel)return;const group=kind==='school'?'[data-view-panel]':'[data-panel]';$$(group).forEach(node=>node.classList.toggle('hidden',node!==panel));$$('[data-view]').forEach(node=>node.classList.remove('active'));settingsTriggers(kind).forEach(node=>node.classList.add('active'));syncPanel(kind,panel);
+  dismissToast();const panel=makePanel(kind);if(!panel)return;const group=kind==='school'?'[data-view-panel]':'[data-panel]';$$(group).forEach(node=>node.classList.toggle('hidden',node!==panel));restartSettingsMotion(panel);$$('[data-view]').forEach(node=>node.classList.remove('active'));settingsTriggers(kind).forEach(node=>node.classList.add('active'));syncPanel(kind,panel);
   const old=kind==='school'?$('#settingsDialog'):$('#flowUniversitySettingsDialog');if(old?.open)old.close();
 }
 function isSchool(){return Boolean($('#dashboard')&&$('#settingsDialog'))}
