@@ -235,12 +235,12 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :
 `;
 document.head.append(style);
 
-/* The shared follower already owns tab changes. Its only stale case was a late
-   responsive width change that did not resize the nav border box. Observe the
-   actual tab boxes instead of adding another animation/timer loop. */
+/* The shared follower still owns destination changes. Reconcile only when the
+   final tab box changes or that owner writes nav geometry after late responsive
+   CSS has already changed the real track. No polling or animation loop. */
 function installBottomNavTabMetricObserver(){
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
-  if(!nav||nav.dataset.flowTabMetricObserver==='ready'||!('ResizeObserver' in window))return;
+  if(!nav||nav.dataset.flowTabMetricObserver==='ready'||!('ResizeObserver' in window)||!('MutationObserver' in window))return;
   const sync=()=>{
     const dashboard=document.querySelector('#dashboard');
     if(!dashboard||dashboard.classList.contains('hidden')||innerWidth>1180)return;
@@ -248,13 +248,16 @@ function installBottomNavTabMetricObserver(){
     if(!active)return;
     const nr=nav.getBoundingClientRect(),ir=active.getBoundingClientRect();
     if(!nr.width||!ir.width)return;
-    nav.style.setProperty('--flow-nav-x',`${(ir.left-nr.left).toFixed(2)}px`);
-    nav.style.setProperty('--flow-nav-w',`${ir.width.toFixed(2)}px`);
+    const x=`${(ir.left-nr.left).toFixed(2)}px`,w=`${ir.width.toFixed(2)}px`;
+    if(nav.style.getPropertyValue('--flow-nav-x')!==x)nav.style.setProperty('--flow-nav-x',x);
+    if(nav.style.getPropertyValue('--flow-nav-w')!==w)nav.style.setProperty('--flow-nav-w',w);
   };
-  const observer=new ResizeObserver(sync);
-  nav.querySelectorAll(':scope > .mobile-tab').forEach(tab=>observer.observe(tab));
+  const sizeObserver=new ResizeObserver(sync);
+  nav.querySelectorAll(':scope > .mobile-tab').forEach(tab=>sizeObserver.observe(tab));
+  const styleObserver=new MutationObserver(sync);
+  styleObserver.observe(nav,{attributes:true,attributeFilter:['style']});
   nav.dataset.flowTabMetricObserver='ready';
   queueMicrotask(sync);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBottomNavTabMetricObserver,{once:true});else installBottomNavTabMetricObserver();
-document.documentElement.dataset.flowSchoolRealDeviceRefine='v2';
+document.documentElement.dataset.flowSchoolRealDeviceRefine='v3';
