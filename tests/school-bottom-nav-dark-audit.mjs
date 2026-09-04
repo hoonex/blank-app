@@ -28,16 +28,17 @@ function expected(c){
   return{navH:60,lensH:48,lensTop:6};
 }
 async function state(page){return page.evaluate(()=>{
-  const nav=document.querySelector('#bottomNav.mobile-bottom-nav'),tabs=[...nav.querySelectorAll(':scope > .mobile-tab')],copy=nav.querySelector(':scope > .flow-refraction-copy-lens'),top=document.querySelector('.mobile-topbar'),school=document.querySelector('.mobile-school-button'),pseudo=getComputedStyle(nav,'::before'),ns=getComputedStyle(nav),ts=getComputedStyle(top),ss=getComputedStyle(school),r=nav.getBoundingClientRect();
+  const nav=document.querySelector('#bottomNav.mobile-bottom-nav'),tabs=[...nav.querySelectorAll(':scope > .mobile-tab')],copy=nav.querySelector(':scope > .flow-refraction-copy-lens'),top=document.querySelector('.mobile-topbar'),school=document.querySelector('.mobile-school-button'),pseudo=getComputedStyle(nav,'::before'),ns=getComputedStyle(nav),ts=getComputedStyle(top),ss=getComputedStyle(school),rs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body);
   const rect=node=>{const x=node.getBoundingClientRect();return{left:x.left,top:x.top,width:x.width,height:x.height,bottom:x.bottom,right:x.right}};
   return{
     theme:document.documentElement.dataset.theme||'',mode:document.documentElement.dataset.flowGlassMode||'',
     nav:{rect:rect(nav),background:ns.backgroundColor,border:ns.borderColor,shadow:ns.boxShadow,backdrop:ns.backdropFilter||ns.webkitBackdropFilter||'',radius:ns.borderRadius,corner:ns.cornerShape||''},
     lens:{top:pseudo.top,bottom:pseudo.bottom,height:pseudo.height,width:pseudo.width,background:pseudo.backgroundImage,shadow:pseudo.boxShadow,border:pseudo.borderColor,radius:pseudo.borderRadius,corner:pseudo.cornerShape||''},
-    copy:copy?{rect:rect(copy),top:getComputedStyle(copy).top,bottom:getComputedStyle(copy).bottom,height:getComputedStyle(copy).height}:null,
+    copy:copy?{rect:rect(copy),top:getComputedStyle(copy).top,bottom:getComputedStyle(copy).bottom,height:getComputedStyle(copy).height,width:getComputedStyle(copy).width}:null,
     tabs:tabs.map(node=>({rect:rect(node),color:getComputedStyle(node).color})),
     top:{background:ts.backgroundColor,backgroundImage:ts.backgroundImage,shadow:ts.boxShadow,border:ts.borderBottomColor,backdrop:ts.backdropFilter||ts.webkitBackdropFilter||''},
-    school:{background:ss.backgroundColor,shadow:ss.boxShadow,border:ss.borderColor}
+    school:{background:ss.backgroundColor,shadow:ss.boxShadow,border:ss.borderColor},
+    ambient:{root:rs.backgroundImage,body:bs.backgroundImage}
   };
 })}
 function verifyGeometry(c,s){
@@ -48,14 +49,14 @@ function verifyGeometry(c,s){
   if(Math.max(...widths)-Math.min(...widths)>1.25)throw new Error(`${c.name}/${s.theme}/${s.mode}: unequal tab widths ${JSON.stringify(widths)}`);
   if(Math.abs(num(s.lens.top)-e.lensTop)>eps||Math.abs(num(s.lens.height)-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: follower geometry top=${s.lens.top} height=${s.lens.height}, expected ${e.lensTop}/${e.lensH}`);
   if(Math.abs(num(s.lens.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: follower width ${s.lens.width} != tab ${widths[0]}`);
-  if(s.mode==='optical'&&s.copy){const dy=s.copy.rect.top-s.nav.rect.top;if(Math.abs(dy-e.lensTop)>eps||Math.abs(s.copy.rect.height-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy top/height ${dy}/${s.copy.rect.height}, expected ${e.lensTop}/${e.lensH}`)}
+  if(s.mode==='optical'&&s.copy){if(Math.abs(num(s.copy.top)-e.lensTop)>eps||Math.abs(num(s.copy.height)-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy top/height ${s.copy.top}/${s.copy.height}, expected ${e.lensTop}/${e.lensH}`);if(Math.abs(num(s.copy.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy width ${s.copy.width} != tab ${widths[0]}`)}
   if(String(s.nav.corner).includes('squircle')||String(s.lens.corner).includes('squircle'))throw new Error(`${c.name}/${s.theme}/${s.mode}: squircle leaked into bottom nav`);
 }
 function verifyDark(c,s){
   if(s.theme!=='dark')return;
   const topWhite=maxWhiteAlpha(s.top.shadow),buttonWhite=maxWhiteAlpha(s.school.shadow),navWhite=maxWhiteAlpha(s.nav.shadow);
-  if(s.mode==='standard'&&topWhite>.24)throw new Error(`${c.name}/dark: topbar white specular too bright (${topWhite}) ${s.top.shadow}`);
-  if(s.mode==='standard'&&buttonWhite>.22)throw new Error(`${c.name}/dark: school button white specular too bright (${buttonWhite}) ${s.school.shadow}`);
+  if(topWhite>.24)throw new Error(`${c.name}/dark/${s.mode}: topbar white specular too bright (${topWhite}) ${s.top.shadow}`);
+  if(buttonWhite>.22)throw new Error(`${c.name}/dark/${s.mode}: school button white specular too bright (${buttonWhite}) ${s.school.shadow}`);
   if(navWhite>.30)throw new Error(`${c.name}/dark/${s.mode}: nav white specular too bright (${navWhite}) ${s.nav.shadow}`);
 }
 
@@ -69,8 +70,9 @@ for(const c of CASES)for(const theme of ['light','dark'])for(const mode of ['sta
   try{
     await page.addInitScript(({school,theme,mode})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3',theme);localStorage.setItem('flow-glass-mode-v2',mode);localStorage.setItem('flow-ambient-v1','on')},{school:SCHOOL,theme,mode});
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(expected=>document.documentElement.dataset.flowGlassMode===expected,mode);await page.waitForTimeout(220);
-    row.state=await state(page);verifyGeometry(c,row.state);verifyDark(c,row.state);
-    await page.screenshot({path:`${OUT}/${c.name}-${theme}-${mode}.png`,fullPage:false,animations:'disabled'});row.pass=true;
+    row.state=await state(page);
+    await page.screenshot({path:`${OUT}/${c.name}-${theme}-${mode}.png`,fullPage:false,animations:'disabled'});
+    verifyGeometry(c,row.state);verifyDark(c,row.state);row.pass=true;
   }catch(error){row.pass=false;row.error=error?.stack||String(error);report.failures.push({case:c.name,theme,mode,error:row.error});console.error(`${c.name}/${theme}/${mode}: FAIL\n${row.error}`)}finally{report.cases.push(row);await context.close()}
 }
 await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));await browser.close();
