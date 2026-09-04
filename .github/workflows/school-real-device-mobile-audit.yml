@@ -21,6 +21,7 @@ on:
       - 'tests/school-toolbar-grouping-audit.mjs'
       - 'tests/school-device-matrix-audit.mjs'
       - 'tests/school-visual-contract-audit.mjs'
+      - 'tests/school-bottom-nav-dark-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -50,6 +51,7 @@ jobs:
           node --check tests/school-toolbar-grouping-audit.mjs
           node --check tests/school-device-matrix-audit.mjs
           node --check tests/school-visual-contract-audit.mjs
+          node --check tests/school-bottom-nav-dark-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -87,6 +89,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-visual-contract-audit
         run: node tests/school-visual-contract-audit.mjs
+      - name: Verify bottom-nav proportions and dark materials
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-bottom-nav-dark-audit
+        run: node tests/school-bottom-nav-dark-audit.mjs
       - name: Exercise School functions across phone, tablet, and desktop matrix
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -102,5 +109,6 @@ jobs:
             school-final-visual-audit
             school-toolbar-grouping-audit
             school-visual-contract-audit
+            school-bottom-nav-dark-audit
             school-device-matrix-audit
           if-no-files-found: ignore
