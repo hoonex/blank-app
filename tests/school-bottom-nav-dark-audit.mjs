@@ -33,6 +33,7 @@ async function state(page){return page.evaluate(()=>{
   return{
     theme:document.documentElement.dataset.theme||'',mode:document.documentElement.dataset.flowGlassMode||'',
     nav:{rect:rect(nav),background:ns.backgroundColor,border:ns.borderColor,shadow:ns.boxShadow,backdrop:ns.backdropFilter||ns.webkitBackdropFilter||'',radius:ns.borderRadius,corner:ns.cornerShape||''},
+    geometry:{computedW:ns.getPropertyValue('--flow-nav-w').trim(),computedX:ns.getPropertyValue('--flow-nav-x').trim(),inlineW:nav.style.getPropertyValue('--flow-nav-w').trim(),inlineX:nav.style.getPropertyValue('--flow-nav-x').trim(),paddingLeft:ns.paddingLeft,paddingRight:ns.paddingRight,columnGap:ns.columnGap,gridTemplateColumns:ns.gridTemplateColumns,navTransition:ns.transition,pseudoTransition:pseudo.transition,navField:nav.dataset.flowNavField||'',refine:document.documentElement.dataset.flowSchoolRealDeviceRefine||''},
     lens:{top:pseudo.top,bottom:pseudo.bottom,height:pseudo.height,width:pseudo.width,background:pseudo.backgroundImage,shadow:pseudo.boxShadow,border:pseudo.borderColor,radius:pseudo.borderRadius,corner:pseudo.cornerShape||''},
     copy:copy?{rect:rect(copy),top:getComputedStyle(copy).top,bottom:getComputedStyle(copy).bottom,height:getComputedStyle(copy).height,width:getComputedStyle(copy).width}:null,
     tabs:tabs.map(node=>({rect:rect(node),color:getComputedStyle(node).color})),
@@ -48,8 +49,8 @@ function verifyGeometry(c,s){
   if(heights.some(x=>Math.abs(x-e.lensH)>eps))throw new Error(`${c.name}/${s.theme}/${s.mode}: tab heights ${JSON.stringify(heights)} != ${e.lensH}`);
   if(Math.max(...widths)-Math.min(...widths)>1.25)throw new Error(`${c.name}/${s.theme}/${s.mode}: unequal tab widths ${JSON.stringify(widths)}`);
   if(Math.abs(num(s.lens.top)-e.lensTop)>eps||Math.abs(num(s.lens.height)-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: follower geometry top=${s.lens.top} height=${s.lens.height}, expected ${e.lensTop}/${e.lensH}`);
-  if(Math.abs(num(s.lens.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: follower width ${s.lens.width} != tab ${widths[0]}`);
-  if(s.mode==='optical'&&s.copy){if(Math.abs(num(s.copy.top)-e.lensTop)>eps||Math.abs(num(s.copy.height)-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy top/height ${s.copy.top}/${s.copy.height}, expected ${e.lensTop}/${e.lensH}`);if(Math.abs(num(s.copy.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy width ${s.copy.width} != tab ${widths[0]}`)}
+  if(Math.abs(num(s.lens.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: follower width ${s.lens.width} != tab ${widths[0]} geometry=${JSON.stringify(s.geometry)}`);
+  if(s.mode==='optical'&&s.copy){if(Math.abs(num(s.copy.top)-e.lensTop)>eps||Math.abs(num(s.copy.height)-e.lensH)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy top/height ${s.copy.top}/${s.copy.height}, expected ${e.lensTop}/${e.lensH}`);if(Math.abs(num(s.copy.width)-widths[0])>1.5)throw new Error(`${c.name}/${s.theme}/${s.mode}: refraction copy width ${s.copy.width} != tab ${widths[0]} geometry=${JSON.stringify(s.geometry)}`)}
   if(String(s.nav.corner).includes('squircle')||String(s.lens.corner).includes('squircle'))throw new Error(`${c.name}/${s.theme}/${s.mode}: squircle leaked into bottom nav`);
 }
 function verifyDark(c,s){
