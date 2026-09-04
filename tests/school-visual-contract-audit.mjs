@@ -23,6 +23,7 @@ function rows(date){return['문학','영어Ⅱ','수학Ⅱ','정보','스포츠 
 function dashboard(selected){
   const d=parse(selected),day=d.getDay(),monday=new Date(d);monday.setDate(d.getDate()+(day===0?-6:1-day));
   const timetable=[];for(let i=0;i<5;i++){const x=new Date(monday);x.setDate(monday.getDate()+i);timetable.push(...rows(ymd(x)))}
+  if(!timetable.some(row=>row.date===selected))timetable.push(...rows(selected));
   return{school:SCHOOL,selected,from:ymd(monday),to:add(ymd(monday),4),timetable,meals:[{date:selected,type:'중식',dishes:['현미밥','닭갈비(5.6.15.)','계란찜(1.)','배추김치(9.)'],calories:'742 Kcal',nutrition:'탄수화물 90g\n단백질 32g',origin:'쌀 국내산\n닭고기 국내산'}],events:[{date:add(selected,2),name:'학급 행사',content:'학급별 행사',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}};
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
