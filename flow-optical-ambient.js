@@ -134,12 +134,23 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard
 ){background-color:var(--flow-school-ambient-surface-2)!important}
 
 @media(max-width:1180px){
-  /* Some Today/landscape/tablet modules use highly-specific !important neutral
-     topbar rules. This is the final shared shell contract and must win for every
-     compact School destination so the time palette does not stop at the page. */
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+  /* Neutral/standard chrome can take a direct ambient surface tint. Optical keeps
+     its specular gradient stack and only mixes the same palette into that stack. */
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
     background:color-mix(in srgb,var(--surface) 90%,var(--flow-ambient-a) 10%)!important;
     border-bottom-color:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 5%)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+    background:
+      radial-gradient(145% 125% at 16% -34%,var(--flow-school-ambient-specular) 0%,rgba(255,255,255,.20) 32%,transparent 57%),
+      linear-gradient(180deg,color-mix(in srgb,rgba(247,250,255,.66) 94%,var(--flow-ambient-a) 6%),color-mix(in srgb,rgba(244,248,253,.47) 94%,var(--flow-ambient-b) 6%))!important;
+    border-bottom-color:color-mix(in srgb,rgba(255,255,255,.62) 90%,var(--flow-ambient-a) 10%)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-glass-mode="optical"][data-theme="dark"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+    background:
+      radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.19) 0%,rgba(255,255,255,.045) 33%,transparent 58%),
+      linear-gradient(180deg,color-mix(in srgb,rgba(25,31,40,.68) 96%,var(--flow-ambient-a) 4%),color-mix(in srgb,rgba(18,23,30,.53) 96%,var(--flow-ambient-b) 4%))!important;
+    border-bottom-color:color-mix(in srgb,rgba(255,255,255,.14) 92%,var(--flow-ambient-a) 8%)!important;
   }
   html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     background:color-mix(in srgb,var(--flow-glass-fill,rgba(248,250,253,.54)) 93%,var(--flow-ambient-b) 7%)!important;
