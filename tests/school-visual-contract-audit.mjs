@@ -35,17 +35,17 @@ const n=v=>Number.parseFloat(v)||0;
 function expected(c){return c.width<700?{section:12,control:8,pad:15,inset:10}:c.width<=1180?{section:16,control:8,pad:18,inset:18}:{section:18,control:10,pad:18,inset:null}}
 async function visualState(page,c,label){
   return page.evaluate(({width,label})=>{
-    const root=document.documentElement,cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
+    const root=document.documentElement,dashboard=document.querySelector('#dashboard'),cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
     const visible=node=>{if(!node)return false;const s=cs(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};
     const firstVisible=selector=>[...document.querySelectorAll(selector)].find(visible)||null;
     const shapeSelectors=['.status-card','.timetable-card','.meal-card','.upcoming-card','.timetable-mode-toggle','.timetable-mode-toggle button','.flow-school-utility-action','#allergyBtn','.period-button','.period-no','.meal-tab','.dish','.flow-exam-card-v5','.mobile-school-button','#flowTodayDateDock .flow-date-focus','.mobile-tab','.calendar-card','.calendar-day','.info-tile','.flow-settings-card'];
     const shapes=[];
     for(const selector of shapeSelectors){for(const node of document.querySelectorAll(selector)){if(!visible(node))continue;const s=cs(node);shapes.push({selector,cornerShape:s.cornerShape||'',radius:s.borderRadius||''})}}
     const nav=firstVisible('#bottomNav'),today=document.querySelector('#todayView'),status=document.querySelector('#todayView .status-grid'),todayGrid=document.querySelector('#todayView .today-grid'),right=document.querySelector('#todayView .right-stack'),timetable=document.querySelector('#todayView .timetable-card'),meal=document.querySelector('#todayView .meal-card');
-    const schedule=document.querySelector('#scheduleView .schedule-layout'),schoolGrid=document.querySelector('#schoolView .school-info-grid'),settings=document.querySelector('#flowSchoolSettingsView .flow-settings-stack');
+    const schedule=document.querySelector('#scheduleView .schedule-layout'),schoolGrid=document.querySelector('#schoolView .school-info-grid'),settings=document.querySelector('#flowSchoolSettingsView .flow-settings-stack'),scope=cs(dashboard);
     return{
       label,width,contract:root.dataset.flowSchoolVisualContract||'',ambient:root.dataset.flowAmbient||'',phase:root.dataset.flowAmbientPhase||'',
-      tokens:{section:cs(document.body).getPropertyValue('--flow-school-section-gap').trim(),control:cs(document.body).getPropertyValue('--flow-school-control-gap').trim(),pad:cs(document.body).getPropertyValue('--flow-school-card-pad').trim(),inset:cs(document.body).getPropertyValue('--flow-school-page-inset').trim()},
+      tokens:{section:scope.getPropertyValue('--flow-school-section-gap').trim(),control:scope.getPropertyValue('--flow-school-control-gap').trim(),pad:scope.getPropertyValue('--flow-school-card-pad').trim(),inset:scope.getPropertyValue('--flow-school-page-inset').trim()},
       shapes,navShape:nav?{shape:cs(nav).cornerShape||'',radius:cs(nav).borderRadius,lensShape:cs(nav,'::before').cornerShape||'',lensRadius:cs(nav,'::before').borderRadius}:null,
       gaps:{status:status?cs(status).gap:'',today:todayGrid?cs(todayGrid).gap:'',right:right?cs(right).gap:'',schedule:schedule&&visible(schedule)?cs(schedule).gap:'',school:schoolGrid&&visible(schoolGrid)?cs(schoolGrid).gap:'',settings:settings&&visible(settings)?cs(settings).gap:''},
       padding:{today:today?{left:cs(today).paddingLeft,right:cs(today).paddingRight}:null,timetable:timetable?cs(timetable).padding:'',meal:meal?cs(meal).padding:''},
