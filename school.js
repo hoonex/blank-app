@@ -78,7 +78,7 @@ function isHigh(){return !!profile?.school?.kind?.includes('고등')}
 function grade(){return Math.max(1,Math.min(6,Number(profile?.grade)||1))}
 function weekStart(date=selectedDate){const d=noon(date),day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));return d}
 function weekDates(date=selectedDate){const start=weekStart(date);return Array.from({length:5},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d})}
-function queryKey(date=selectedDate){if(!profile)return'';return `${profile.school.schoolCode}:${profile.grade}:${profile.className}:${ymd(weekStart(date))}:${monthKey(date)}`}
+function queryKey(date=selectedDate){if(!profile)return'';return `${profile.school.schoolCode}:${profile.grade}:${profile.className}:${ymd(weekStart(date))}:${monthKey(date)}:${ymd(date)}`}
 function cacheStorageKey(key){return `${CACHE_PREFIX}${key}`}
 
 function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1800)}

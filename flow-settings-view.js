@@ -14,6 +14,7 @@ function ensureStyles(){
   if($('#flow-settings-view-style'))return;
   const style=document.createElement('style');style.id='flow-settings-view-style';style.textContent=`
 .flow-settings-view{padding-bottom:110px}
+.flow-settings-view.flow-settings-enter:not(.hidden){animation:flow-view-enter var(--flow-motion-medium,240ms) var(--flow-motion-spring,cubic-bezier(.16,1,.3,1)) both!important;transform-origin:50% 18%}
 .flow-settings-view .flow-settings-header{margin-bottom:22px}
 .flow-settings-view .flow-settings-header h1{margin:0 0 7px;font-size:clamp(2rem,4vw,3rem);letter-spacing:-.06em;line-height:1}
 .flow-settings-view .flow-settings-header p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.55}
@@ -42,6 +43,7 @@ html[data-theme] body :is(.mobile-bottom-nav,.bottom-nav)>.flow-mobile-settings{
 }
 @media(max-width:900px) and (max-height:520px){#flowSchoolSettingsView:not(.hidden),#flowUniversitySettingsView:not(.hidden){inset:54px 0 0;padding-top:10px}}
 @media(max-width:430px){.flow-settings-view .flow-settings-card{padding:16px}.flow-settings-view .flow-settings-segment{gap:6px}.flow-settings-view .flow-settings-segment button{font-size:.78rem}}
+@media(prefers-reduced-motion:reduce){.flow-settings-view.flow-settings-enter:not(.hidden){animation:none!important}}
 `;
   document.head.append(style);
 }
@@ -55,13 +57,13 @@ function fallbackTheme(kind,value){
 function applyTheme(kind,value){
   const relay=kind==='school'?$(`#themeSegment [data-theme-choice="${value}"]`):$(`#flowUniversitySettingsDialog [data-flow-university-theme-choice="${value}"]`)||$(`.flow-theme-segment [data-university-theme="${value}"]`);
   if(relay)relay.click();else fallbackTheme(kind,value);
-  syncPanels();
+  syncPanels({fill:false});
 }
 function glassValue(){return localStorage.getItem(GLASS_KEY)==='optical'?'optical':'standard'}
 function applyGlass(value){
   const relay=$(`#settingsDialog [data-flow-glass-choice="${value}"]`)||$(`#flowUniversitySettingsDialog [data-flow-glass-choice="${value}"]`);
   if(relay)relay.click();else localStorage.setItem(GLASS_KEY,value==='optical'?'optical':'standard');
-  syncPanels();
+  syncPanels({fill:false});
 }
 function themeButtons(kind){return`<div class="flow-settings-segment" data-flow-settings-theme-host>${[['light','밝게'],['system','기기 설정'],['dark','어둡게']].map(([value,label])=>`<button type="button" data-flow-settings-theme="${value}">${label}</button>`).join('')}</div>`}
 function glassButtons(){return`<div class="flow-settings-segment two">${[['standard','기본'],['optical','Optical']].map(([value,label])=>`<button type="button" data-flow-settings-glass="${value}">${label}</button>`).join('')}</div><small class="flow-settings-meta" data-flow-settings-glass-status></small>`}
@@ -85,15 +87,22 @@ function makePanel(kind){
 }
 function fillSchool(panel){const cfg=schoolBell();for(const key of ['start','lesson','break','meal']){const input=panel.querySelector(`[data-flow-bell="${key}"]`);if(input)input.value=String(cfg[key]??'')}}
 function saveSchool(panel){const value=(key)=>panel.querySelector(`[data-flow-bell="${key}"]`)?.value||'';const cfg={start:value('start')||'08:30',lesson:Math.max(30,Math.min(90,Number(value('lesson'))||50)),break:Math.max(5,Math.min(30,Number(value('break'))||10)),meal:value('meal')||'12:20'};localStorage.setItem(BELL_KEY,JSON.stringify(cfg));panel.querySelector(':focus')?.blur();toast('설정을 저장했습니다.')}
-function syncPanel(kind,panel){
+function syncPanel(kind,panel,{fill=true}={}){
   const theme=themeValue(kind),glass=glassValue();panel.querySelectorAll('[data-flow-settings-theme]').forEach(button=>button.classList.toggle('active',button.dataset.flowSettingsTheme===theme));panel.querySelectorAll('[data-flow-settings-glass]').forEach(button=>button.classList.toggle('active',button.dataset.flowSettingsGlass===glass));
   const status=panel.querySelector('[data-flow-settings-glass-status]');if(status){const refraction=document.documentElement.dataset.flowGlassRefraction||'off';status.textContent=glass==='standard'?'기본 유리 · 뒤 표면을 유지하는 안정 모드':refraction==='true'?'Optical Glass 활성화 · 실시간 굴절 사용':'Optical Glass 선택됨 · 굴절 준비 중 또는 기본 유리로 대체됨'}
-  if(kind==='school')fillSchool(panel)
+  if(kind==='school'&&fill)fillSchool(panel)
 }
-function syncPanels(){const school=$('#flowSchoolSettingsView'),university=$('#flowUniversitySettingsView');if(school)syncPanel('school',school);if(university)syncPanel('university',university)}
+function syncPanels({fill=true}={}){const school=$('#flowSchoolSettingsView'),university=$('#flowUniversitySettingsView');if(school)syncPanel('school',school,{fill});if(university)syncPanel('university',university,{fill})}
 function settingsTriggers(kind){return kind==='school'?$$('#mobileSettingsBtn,#settingsBtn'):$$('.flow-mobile-settings,.flow-university-settings-button')}
+function restartSettingsMotion(panel){
+  panel.classList.remove('flow-settings-enter');
+  void panel.offsetWidth;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  panel.classList.add('flow-settings-enter');
+  panel.addEventListener('animationend',()=>panel.classList.remove('flow-settings-enter'),{once:true});
+}
 function showSettings(kind){
-  dismissToast();const panel=makePanel(kind);if(!panel)return;const group=kind==='school'?'[data-view-panel]':'[data-panel]';$$(group).forEach(node=>node.classList.toggle('hidden',node!==panel));$$('[data-view]').forEach(node=>node.classList.remove('active'));settingsTriggers(kind).forEach(node=>node.classList.add('active'));syncPanel(kind,panel);
+  dismissToast();const panel=makePanel(kind);if(!panel)return;const group=kind==='school'?'[data-view-panel]':'[data-panel]';$$(group).forEach(node=>node.classList.toggle('hidden',node!==panel));restartSettingsMotion(panel);$$('[data-view]').forEach(node=>node.classList.remove('active'));settingsTriggers(kind).forEach(node=>node.classList.add('active'));syncPanel(kind,panel);
   const old=kind==='school'?$('#settingsDialog'):$('#flowUniversitySettingsDialog');if(old?.open)old.close();
 }
 function isSchool(){return Boolean($('#dashboard')&&$('#settingsDialog'))}
@@ -103,7 +112,7 @@ function init(){
   document.addEventListener('click',event=>{const trigger=event.target.closest(kind==='school'?'#mobileSettingsBtn,#settingsBtn':'.flow-mobile-settings,.flow-university-settings-button');if(!trigger)return;event.preventDefault();event.stopImmediatePropagation();showSettings(kind)},true);
   document.addEventListener('click',event=>{const view=event.target.closest('[data-view]');if(view&&!view.matches('#mobileSettingsBtn,.flow-mobile-settings')){dismissToast();settingsTriggers(kind).forEach(node=>node.classList.remove('active'))}});
   window.addEventListener('popstate',()=>{dismissToast();settingsTriggers(kind).forEach(node=>node.classList.remove('active'))},{passive:true});
-  window.addEventListener('flow:glass-mode-changed',syncPanels,{passive:true});
+  window.addEventListener('flow:glass-mode-changed',()=>syncPanels({fill:false}),{passive:true});
   setTimeout(()=>{makePanel(kind);syncPanels()},0)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

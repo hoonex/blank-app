@@ -27,11 +27,11 @@ await page.addInitScript(profile=>{
 },profile);
 await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:20000});
 await page.locator('#dashboard:not(.hidden)').waitFor();
-await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolRealDeviceRefine==='v1');
+await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolGlobalShell==='v1');
 await page.locator('.timetable-mode-toggle').waitFor();
 
 const state=await page.evaluate(()=>{
-  const shape=(node,pseudo=null)=>{if(!node)return null;const s=getComputedStyle(node,pseudo),r=node.getBoundingClientRect();return{radius:s.borderTopLeftRadius,corner:s.getPropertyValue('corner-shape').trim(),height:r.height,left:r.left,background:s.backgroundColor}};
+  const shape=(node,pseudo=null)=>{if(!node)return null;const s=getComputedStyle(node,pseudo),r=node.getBoundingClientRect();return{radius:s.borderTopLeftRadius,corner:s.getPropertyValue('corner-shape').trim(),height:r.height,width:r.width,left:r.left,background:s.backgroundColor,backgroundImage:s.backgroundImage,shadow:s.boxShadow}};
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
   const today=document.querySelector('.timetable-mode-toggle [data-timetable-mode="today"]');
   const week=document.querySelector('.timetable-mode-toggle [data-timetable-mode="week"]');
@@ -45,14 +45,14 @@ const state=await page.evaluate(()=>{
   };
 });
 const noSquircle=(name,item)=>{assert(item,`${name}: missing`);assert(!String(item.corner||'').toLowerCase().includes('squircle'),`${name}: squircle leaked ${JSON.stringify(item)}`)};
+const pill=(name,item)=>{assert(item,`${name}: missing`);const radius=parseFloat(item.radius);assert(Number.isFinite(radius)&&radius>=item.height/2,`${name}: not maximum circular pill curvature ${JSON.stringify(item)}`)};
 for(const [name,item] of Object.entries(state))if(item)noSquircle(name,item);
 assert(state.toggle.radius==='12px',`toggle wrapper radius drifted ${JSON.stringify(state.toggle)}`);
 for(const name of ['today','week','edit','share'])assert(state[name]?.radius==='10px',`${name}: action radius is not 10px ${JSON.stringify(state[name])}`);
 assert(state.today.radius===state.week.radius&&state.week.radius===state.edit.radius&&state.edit.radius===state.share.radius,`Today/Week/edit/share curvature diverged ${JSON.stringify(state)}`);
 assert(state.share.background!=='rgba(0, 0, 0, 0)',`share action lost its rounded surface ${JSON.stringify(state.share)}`);
-assert(state.nav.radius==='16px',`bottom nav outer radius drifted ${JSON.stringify(state.nav)}`);
-assert(state.tab.radius==='12px'&&state.activeLens.radius==='12px',`bottom nav inner radii diverged ${JSON.stringify({tab:state.tab,activeLens:state.activeLens})}`);
-if(state.lens)assert(state.lens.radius==='12px',`refraction lens radius diverged ${JSON.stringify(state.lens)}`);
+pill('bottom nav',state.nav);pill('bottom nav tab',state.tab);pill('active follower lens',state.activeLens);if(state.lens)pill('refraction copy lens',state.lens);
+assert(state.activeLens.backgroundImage!=='none'&&state.activeLens.shadow!=='none',`standard liquid follower is visually missing ${JSON.stringify(state.activeLens)}`);
 
 await page.locator('.timetable-mode-toggle [data-timetable-mode="week"]').click();
 await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&document.documentElement.dataset.flowInlineWeekRendered==='true');
@@ -69,4 +69,4 @@ assert(weekState.clientWidth!==null&&weekState.scrollWidth<=weekState.clientWidt
 assert(weekState.tableRight<=weekState.wrapRight+1,`360px Week grid clips Friday ${JSON.stringify(weekState)}`);
 
 await context.close();await browser.close();
-console.log(JSON.stringify({ok:true,contract:'circular rounded rectangles + stable 360px Week fit',state,weekState},null,2));
+console.log(JSON.stringify({ok:true,contract:'maximum circular pill bottom navigation + stable 360px Week fit',state,weekState},null,2));
