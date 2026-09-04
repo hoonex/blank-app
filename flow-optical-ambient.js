@@ -267,9 +267,28 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #
     const style=installVisualContract();
     if(style.parentElement===document.head&&document.head.lastElementChild!==style)document.head.append(style);
   }
-  raiseVisualContract();
-  [80,220,520,1100].forEach(delay=>setTimeout(raiseVisualContract,delay));
-  window.addEventListener('flow:glass-mode-changed',()=>setTimeout(raiseVisualContract,0),{passive:true});
+  function syncBottomNavMetrics(){
+    const dashboard=document.querySelector('#dashboard'),nav=document.querySelector('#bottomNav.mobile-bottom-nav');
+    if(!dashboard||dashboard.classList.contains('hidden')||!nav||window.innerWidth>1180)return;
+    const active=nav.querySelector(':scope > .mobile-tab.active')||nav.querySelector(':scope > .mobile-tab');
+    if(!active)return;
+    const nr=nav.getBoundingClientRect(),ir=active.getBoundingClientRect();
+    if(!nr.width||!ir.width)return;
+    nav.style.setProperty('--flow-nav-x',`${(ir.left-nr.left).toFixed(2)}px`);
+    nav.style.setProperty('--flow-nav-w',`${ir.width.toFixed(2)}px`);
+    const copy=nav.querySelector(':scope > .flow-refraction-copy-lens');
+    if(copy)copy.style.setProperty('width',`${ir.width.toFixed(2)}px`,'important');
+  }
+  function settleVisualContract(){
+    raiseVisualContract();
+    requestAnimationFrame(()=>requestAnimationFrame(syncBottomNavMetrics));
+  }
+  settleVisualContract();
+  [80,220,520,1100].forEach(delay=>setTimeout(settleVisualContract,delay));
+  window.addEventListener('flow:glass-mode-changed',()=>setTimeout(settleVisualContract,0),{passive:true});
+  window.addEventListener('flow:refraction-refresh',()=>requestAnimationFrame(syncBottomNavMetrics),{passive:true});
+  window.addEventListener('resize',()=>requestAnimationFrame(syncBottomNavMetrics),{passive:true});
+  document.addEventListener('click',event=>{if(event.target.closest?.('#bottomNav .mobile-tab'))requestAnimationFrame(()=>requestAnimationFrame(syncBottomNavMetrics))},{capture:true,passive:true});
   root.dataset.flowSchoolVisualContract='v7';
 
   /* Bounded Optical post-scroll geometry tail; no persistent RAF/render loop. */
