@@ -39,13 +39,19 @@ async function shiftDate(page,delta){const dock=page.locator('#flowTodayDateDock
 async function shell(page,c,label){
   const state=await page.evaluate(()=>{const visible=e=>{if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};const rect=e=>e?(()=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;const nav=document.querySelector('#bottomNav'),top=document.querySelector('.mobile-topbar'),side=document.querySelector('.desktop-sidebar'),before=nav?getComputedStyle(nav,'::before'):null,copy=nav?.querySelector('.flow-refraction-copy-lens');return{ui:document.documentElement.dataset.flowSchoolUi||'',global:document.documentElement.dataset.flowSchoolGlobalShell||'',glass:document.documentElement.dataset.flowGlassMode||'',refraction:document.documentElement.dataset.flowGlassRefraction||'',copyFlag:document.documentElement.dataset.flowRefractionCopy||'',navVisible:visible(nav),topVisible:visible(top),sideVisible:visible(side),navRect:rect(nav),topRect:rect(top),navRadius:nav?getComputedStyle(nav).borderRadius:'',lensRadius:before?.borderRadius||'',lensTransform:before?.transform||'',lensBackground:before?.backgroundImage||'',lensShadow:before?.boxShadow||'',copyVisible:visible(copy),copyTransform:copy?getComputedStyle(copy).transform:''}});
   if(state.ui!=='v2'||state.global!=='v1')throw new Error(`${c.name} ${label}: final School shell missing ${JSON.stringify(state)}`);
-  const desktop=c.viewport.width>=1181;
+  const desktop=c.viewport.width>=1181,shortLandscape=c.viewport.width>c.viewport.height&&c.viewport.height<=620;
   if(desktop){if(!state.sideVisible||state.topVisible||state.navVisible)throw new Error(`${c.name} ${label}: desktop shell leaked phone chrome ${JSON.stringify(state)}`)}
   else{
     if(state.sideVisible||!state.topVisible||!state.navVisible)throw new Error(`${c.name} ${label}: touch shell geometry wrong ${JSON.stringify(state)}`);
     if(!state.topRect||Math.abs(state.topRect.left)>1.5||Math.abs(state.topRect.right-c.viewport.width)>1.5)throw new Error(`${c.name} ${label}: top shell not edge-to-edge ${JSON.stringify(state.topRect)}`);
-    if(!state.navRect||parseFloat(state.navRadius)<state.navRect.height/2)throw new Error(`${c.name} ${label}: bottom nav is not maximum pill curvature ${JSON.stringify(state)}`);
-    if(parseFloat(state.lensRadius)<Math.min(20,state.navRect.height/2-5))throw new Error(`${c.name} ${label}: follower lens lost pill curvature ${JSON.stringify(state)}`);
+    if(shortLandscape){
+      const navRadius=parseFloat(state.navRadius),lensRadius=parseFloat(state.lensRadius);
+      if(!state.navRect||navRadius<12||navRadius>20)throw new Error(`${c.name} ${label}: short-landscape nav curvature drifted ${JSON.stringify(state)}`);
+      if(lensRadius<8||lensRadius>16)throw new Error(`${c.name} ${label}: short-landscape follower curvature drifted ${JSON.stringify(state)}`);
+    }else{
+      if(!state.navRect||parseFloat(state.navRadius)<state.navRect.height/2)throw new Error(`${c.name} ${label}: bottom nav is not maximum pill curvature ${JSON.stringify(state)}`);
+      if(parseFloat(state.lensRadius)<Math.min(20,state.navRect.height/2-5))throw new Error(`${c.name} ${label}: follower lens lost pill curvature ${JSON.stringify(state)}`);
+    }
     if(state.glass!=='optical'&&(state.lensBackground==='none'||state.lensShadow==='none'))throw new Error(`${c.name} ${label}: standard liquid follower is visually missing ${JSON.stringify(state)}`);
   }
   return state;
@@ -61,7 +67,7 @@ for(const c of CASES){
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('.school-search-panel').waitFor();await page.locator('#schoolSearch').fill('정동고');await page.locator('#schoolSearchBtn').click();await page.locator('#schoolResults [data-result-index]').first().click();await page.locator('#setupDialog').waitFor({state:'visible'});await page.locator('#gradeRow [data-grade="2"]').click();await page.locator('#classRow [data-class="6"]').waitFor();await page.locator('#classRow [data-class="6"]').click();await page.locator('#setupSave').click();await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolGlobalShell==='v1');
     result.shells.today=await shell(page,c,'today');await shot(page,`${c.name}-today`);
     const standardLens=result.shells.today.lensTransform;
-    await shiftDate(page,1);await shiftDate(page,-1);
+    await shiftDate(page,1);await page.locator('#timetable .period-button').first().waitFor({state:'visible'});await shiftDate(page,-1);await page.locator('#timetable .period-button').first().waitFor({state:'visible'});
     await page.locator('#editSubjectsBtn').click();const first=page.locator('#timetable .period-button').first();await first.click();await page.locator('#subjectDialog').waitFor({state:'visible'});await page.locator('#customSubjectInput').fill('인공지능 기초');await page.locator('#saveSubjectBtn').click();if(!(await page.evaluate(()=>localStorage.getItem('flow-school-overrides-v2')||'')).includes('인공지능 기초'))throw new Error(`${c.name}: subject edit did not persist`);await first.click();await page.locator('#resetSubjectBtn').click();
     await page.locator('#allergyBtn').click();await page.locator('#allergyDialog').waitFor({state:'visible'});const allergy=page.locator('#allergyGrid input,#allergyGrid button').first();if(await allergy.count())await allergy.click();await page.locator('#saveAllergyBtn').click();if(await page.locator('#mealDetailBtn').isVisible()){await page.locator('#mealDetailBtn').click();if(await page.locator('#mealDetails').evaluate(e=>e.classList.contains('hidden')))throw new Error(`${c.name}: meal detail failed`)}
     await page.locator('#shareTimetableBtn').click();if(!(await page.evaluate(()=>window.__flowShare?.text||'')).includes(SCHOOL.name))throw new Error(`${c.name}: share failed`);
