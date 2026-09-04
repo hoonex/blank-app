@@ -236,14 +236,14 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :
 document.head.append(style);
 
 /* The shared follower still owns destination changes. Reconcile only when the
-   final tab box changes or that owner writes nav geometry after late responsive
-   CSS has already changed the real track. No polling or animation loop. */
+   final tab box changes, the nav owner writes geometry, or the compact dashboard
+   crosses hidden -> visible after those writes. No polling or animation loop. */
 function installBottomNavTabMetricObserver(){
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
-  if(!nav||nav.dataset.flowTabMetricObserver==='ready'||!('ResizeObserver' in window)||!('MutationObserver' in window))return;
+  const dashboard=document.querySelector('#dashboard');
+  if(!nav||!dashboard||nav.dataset.flowTabMetricObserver==='ready'||!('ResizeObserver' in window)||!('MutationObserver' in window))return;
   const sync=()=>{
-    const dashboard=document.querySelector('#dashboard');
-    if(!dashboard||dashboard.classList.contains('hidden')||innerWidth>1180)return;
+    if(dashboard.classList.contains('hidden')||innerWidth>1180)return;
     const active=nav.querySelector(':scope > .mobile-tab.active')||nav.querySelector(':scope > .mobile-tab');
     if(!active)return;
     const nr=nav.getBoundingClientRect(),ir=active.getBoundingClientRect();
@@ -254,10 +254,12 @@ function installBottomNavTabMetricObserver(){
   };
   const sizeObserver=new ResizeObserver(sync);
   nav.querySelectorAll(':scope > .mobile-tab').forEach(tab=>sizeObserver.observe(tab));
-  const styleObserver=new MutationObserver(sync);
-  styleObserver.observe(nav,{attributes:true,attributeFilter:['style']});
+  const navStyleObserver=new MutationObserver(sync);
+  navStyleObserver.observe(nav,{attributes:true,attributeFilter:['style']});
+  const shellObserver=new MutationObserver(sync);
+  shellObserver.observe(dashboard,{attributes:true,attributeFilter:['class']});
   nav.dataset.flowTabMetricObserver='ready';
   queueMicrotask(sync);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBottomNavTabMetricObserver,{once:true});else installBottomNavTabMetricObserver();
-document.documentElement.dataset.flowSchoolRealDeviceRefine='v3';
+document.documentElement.dataset.flowSchoolRealDeviceRefine='v4';
