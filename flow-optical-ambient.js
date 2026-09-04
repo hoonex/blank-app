@@ -129,7 +129,10 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard
 ){background-color:var(--flow-school-ambient-surface-2)!important}
 
 @media(max-width:1180px){
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) .mobile-topbar{
+  /* Some Today/landscape/tablet modules use highly-specific !important neutral
+     topbar rules. This is the final shared shell contract and must win for every
+     compact School destination so the time palette does not stop at the page. */
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
     background:color-mix(in srgb,var(--surface) 90%,var(--flow-ambient-a) 10%)!important;
     border-bottom-color:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 5%)!important;
   }
