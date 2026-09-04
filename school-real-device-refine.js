@@ -234,4 +234,27 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :
 }
 `;
 document.head.append(style);
-document.documentElement.dataset.flowSchoolRealDeviceRefine='v1';
+
+/* The shared follower already owns tab changes. Its only stale case was a late
+   responsive width change that did not resize the nav border box. Observe the
+   actual tab boxes instead of adding another animation/timer loop. */
+function installBottomNavTabMetricObserver(){
+  const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
+  if(!nav||nav.dataset.flowTabMetricObserver==='ready'||!('ResizeObserver' in window))return;
+  const sync=()=>{
+    const dashboard=document.querySelector('#dashboard');
+    if(!dashboard||dashboard.classList.contains('hidden')||innerWidth>1180)return;
+    const active=nav.querySelector(':scope > .mobile-tab.active')||nav.querySelector(':scope > .mobile-tab');
+    if(!active)return;
+    const nr=nav.getBoundingClientRect(),ir=active.getBoundingClientRect();
+    if(!nr.width||!ir.width)return;
+    nav.style.setProperty('--flow-nav-x',`${(ir.left-nr.left).toFixed(2)}px`);
+    nav.style.setProperty('--flow-nav-w',`${ir.width.toFixed(2)}px`);
+  };
+  const observer=new ResizeObserver(sync);
+  nav.querySelectorAll(':scope > .mobile-tab').forEach(tab=>observer.observe(tab));
+  nav.dataset.flowTabMetricObserver='ready';
+  queueMicrotask(sync);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBottomNavTabMetricObserver,{once:true});else installBottomNavTabMetricObserver();
+document.documentElement.dataset.flowSchoolRealDeviceRefine='v2';
