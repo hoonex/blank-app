@@ -24,6 +24,19 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar .
 html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #prevWeek{border-radius:11px 0 0 11px!important}
 html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #thisWeekBtn{border-left:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;border-right:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;background:color-mix(in srgb,var(--accent) 4%,transparent)!important;color:var(--accent)!important}
 html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar #nextWeek{border-radius:0 11px 11px 0!important}
+
+/* School bottom-nav layout has responsive padding and column gaps, so the old
+   generic percentage lens is not authoritative here. Use the measured tab box
+   written by the shared nav-field owner for both the material follower and the
+   Optical refraction aperture. Position/motion remain owned by their existing
+   transform variables. */
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+    width:var(--flow-nav-w)!important;
+  }
+}
+
 @media(max-width:520px){
   html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) .mobile-topbar:has(#flowTodayDateDock){box-sizing:border-box!important;width:100vw!important;max-width:100vw!important;margin-left:calc(50% - 50vw)!important;margin-right:calc(50% - 50vw)!important;padding-left:max(7px,env(safe-area-inset-left))!important;padding-right:max(7px,env(safe-area-inset-right))!important}
   html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{left:50%!important}
