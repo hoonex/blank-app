@@ -18,6 +18,8 @@ This file is the operating contract for AI/code-agent work in this repository. R
 - All code, test, workflow, and documentation changes happen on that branch.
 - Open a PR, run CI, then merge only after required checks pass.
 - If a write accidentally lands on `main`, stop immediately, revert that write, explain what happened, and restart from a fresh branch based on the repaired `main`.
+- For long or disposable-session work, preserve a durable checkpoint only at a coherent working milestone when losing the current session would be expensive, especially before long browser/CI/remote verification. Do **not** publish every micro-step merely for continuity.
+- Keep task identities distinct: the task-start `main`/origin baseline is not the same thing as an intermediate checkpoint or the final PR head. Do not redefine the origin after a checkpoint.
 
 ## 2. Preflight before touching code
 
@@ -29,6 +31,15 @@ Before each ULW task:
 4. Reuse existing data flows/components before adding new runtime layers.
 5. Do not introduce duplicate API requests, duplicate renderers, extra MutationObservers, automatic scroll resets, or hotfix stacks.
 6. Do not expose Vercel, NEIS, Kakao, Supabase, Public Data Portal, or other secret keys in client code or logs.
+
+## 2A. Engineering judgment before implementation
+
+- Identify the authoritative owner of consequential state, geometry, data, lifecycle, and persistence decisions before adding a workaround. Fix the owner when possible instead of synchronizing multiple downstream copies.
+- When two or more plausible representations can satisfy an important requirement, briefly compare two or three internally by invariant fit, lifecycle transfers, failure surface, derived-state drift, and hot-path cost. Prefer the representation that makes the required behavior structurally easiest to keep correct.
+- A fix that needs an extra observer, event interceptor, compatibility shim, or runtime synchronizer should trigger a quick check for a cleaner representation that removes that failure class. Keep the compensating layer only when the repository constraints make it the safer choice.
+- Preserve existing public/observable behavior unless the task explicitly changes it. Structural rewrites should keep at least one minimal regression probe for each consequential existing operation they touch.
+- For async, stateful, pointer/gesture, persistence, routing, and lifecycle changes, test the transition boundary most likely to fail, not only ordinary steady-state cases. Examples include cancellation just before invocation, exact loop/edge boundaries, stale completion after replacement state exists, reload after persistence writes, and pointer capture/cancel transitions.
+- Do not turn this section into ceremony. Skip representation comparison when the repository already fixes the architecture or the choice is trivial and reversible.
 
 ## 3. Loop prevention
 
@@ -84,6 +95,7 @@ For a feature PR:
 - Confirm horizontal overflow is absent across the responsive visual matrix unless a component explicitly requires horizontal scrolling.
 - Confirm console/page errors are zero in the relevant browser audit.
 - Confirm important persistence behavior after reload if localStorage/PWA state is involved.
+- Any material defect discovered during testing, screenshot inspection, or runtime verification must have an explicit final disposition: fixed in the exact final PR bytes with matching evidence, still open and reported as a limitation/blocker, or shown by new evidence to be non-defect/out of scope. A local-only fix that is absent from the final PR head does not count as fixed.
 - Do not merge while relevant CI is red.
 
 For deployment-sensitive changes:
@@ -123,5 +135,6 @@ Before saying a task is finished, verify:
 - [ ] Responsive portrait/landscape and mobile/desktop screenshots were inspected for UI-affecting work.
 - [ ] User-provided screenshot complaints were reproduced and visually checked after the fix.
 - [ ] UI work has no obvious whitespace, hierarchy, wrapping, alignment, or glass-quality regression even if automated checks are green.
+- [ ] Every material defect found during verification is either closed in the exact final PR head or explicitly reported.
 - [ ] PR merged only after checks passed.
 - [ ] Production deploy/route health was checked when relevant.
