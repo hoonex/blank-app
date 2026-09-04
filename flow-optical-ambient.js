@@ -2,20 +2,7 @@
   if(window.__flowOpticalAmbientInstalled)return;
   window.__flowOpticalAmbientInstalled=true;
 
-  /*
-   * Compatibility entry point for retired ambient glass.
-   *
-   * The former floating "dynamic glass" object remains fully retired. Keep this
-   * entry point for cached refraction bundles, and use only a bounded post-scroll
-   * geometry tail so the real Optical copy cannot retain a one-frame stale scene
-   * position after rapid direction reversals. No persistent animation loop runs.
-   *
-   * This module also owns the final, passive School visual contract. Time-of-day
-   * ambient color already comes from flow-experience.js; the contract below lets
-   * that color reach glass, cards and shadows very lightly instead of changing
-   * only the page background. It also normalizes visible School geometry to plain
-   * circular rounding and a small responsive spacing scale.
-   */
+  /* Compatibility entry point for the retired floating ambient glass. */
   try{localStorage.removeItem('flow-optical-jelly-v1')}catch{}
   const root=document.documentElement;
   root.removeAttribute('data-flow-optical-jelly');
@@ -28,8 +15,7 @@
       style=document.createElement('style');
       style.id=VISUAL_STYLE_ID;
       style.textContent=`
-/* Final School visual contract: one spacing rhythm, ordinary round corners, and
-   a restrained time-of-day tint that reaches surfaces instead of the backdrop only. */
+/* One responsive spacing rhythm. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
   --flow-school-page-inset:18px;
   --flow-school-section-gap:16px;
@@ -65,9 +51,10 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
   }
 }
 
-/* Nothing in the visible School product uses a superellipse. Pills remain pills;
-   cards and controls are ordinary rounded rectangles. */
-html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :where(
+/* Final computed shape contract. Repeating the dashboard ID is intentional: old
+   responsive modules still contain !important squircle declarations and the
+   final shared contract must win by specificity, not by racing stylesheet order. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) :where(
   .status-card,.content-card,.timetable-card,.meal-card,.upcoming-card,.calendar-card,
   .week-card,.profile-hero,.info-tile,.rank-card,.national-schedule-card,.flow-settings-card,
   .period-button,.period-no,.meal-tab,.dish,.timetable-mode-toggle,.timetable-mode-toggle button,
@@ -77,48 +64,48 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :where(
   .mobile-tab,.school-actions .neo-button,.month-picker,.calendar-day
 ){corner-shape:round!important}
 
-/* Bottom navigation and the moving material follower are true circular pills. */
+/* Navigation outer surface, tabs, active material follower and Optical copy are
+   all ordinary circular pills, never superellipses. */
 @media(max-width:1180px){
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav,
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
     border-radius:9999px!important;
     corner-shape:round!important;
   }
 }
 
-/* Today spacing uses one hierarchy instead of unrelated 7/8/9/12/16px gaps. */
-html[data-flow-school-ui="v2"] body #todayView{
+/* Today uses the same macro and control gaps instead of unrelated local values. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView{
   --flow-today-gap:var(--flow-school-section-gap)!important;
 }
-html[data-flow-school-ui="v2"] body #todayView .status-grid{
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
   gap:var(--flow-school-control-gap)!important;
   margin-bottom:var(--flow-school-section-gap)!important;
 }
-html[data-flow-school-ui="v2"] body #todayView :where(.today-grid,.right-stack){
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView :where(.today-grid,.right-stack){
   gap:var(--flow-school-section-gap)!important;
 }
-html[data-flow-school-ui="v2"] body #todayView .timetable-actions{
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .timetable-actions{
   gap:var(--flow-school-control-gap)!important;
 }
-html[data-flow-school-ui="v2"] body #todayView :where(.timetable-card,.right-stack>.meal-card,.right-stack>.upcoming-card){
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView :where(.timetable-card,.right-stack>.meal-card,.right-stack>.upcoming-card){
   padding:var(--flow-school-card-pad)!important;
   border-radius:var(--flow-school-card-radius)!important;
 }
-html[data-flow-school-ui="v2"] body #todayView .status-card:not(.flow-home-noise){
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
   border-radius:var(--flow-school-card-radius)!important;
 }
 @media(max-width:1180px){
-  html[data-flow-school-ui="v2"] body #todayView{padding-inline:var(--flow-school-page-inset)!important}
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView{padding-inline:var(--flow-school-page-inset)!important}
 }
-
-/* Other destinations share the same macro rhythm without replacing their layout. */
-html[data-flow-school-ui="v2"] body :where(#scheduleView,#schoolView,#flowSchoolSettingsView) :where(
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :where(#scheduleView,#schoolView,#flowSchoolSettingsView) :where(
   .schedule-layout,.school-info-grid,.school-actions,.flow-settings-stack
 ){gap:var(--flow-school-section-gap)!important}
 
-/* Ambient color is deliberately weak on surfaces. Text colors stay untouched. */
+/* The time palette reaches surfaces and chrome very lightly. Content/text colors
+   are untouched, and the underlying product main remains transparent. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden){
   --flow-school-ambient-surface:color-mix(in srgb,var(--surface) 95%,var(--flow-ambient-a) 5%);
   --flow-school-ambient-surface-2:color-mix(in srgb,var(--surface-2) 94%,var(--flow-ambient-b) 6%);
@@ -127,10 +114,8 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidd
   --flow-school-ambient-specular:color-mix(in srgb,rgba(255,255,255,.82) 90%,var(--flow-ambient-a) 10%);
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body::before{opacity:.62!important}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) .product-main{
-  background-color:transparent!important;
-}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) :where(
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) .product-main{background-color:transparent!important}
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard:not(.hidden) :where(
   .status-card:not(.flow-home-noise),.content-card,.calendar-card,.week-card,.info-tile,.rank-card,
   .national-schedule-card,.flow-settings-card
 ){
@@ -138,31 +123,27 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidd
   border-color:var(--flow-school-ambient-edge)!important;
   box-shadow:0 10px 28px var(--flow-school-ambient-shadow),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
 }
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) :where(
+html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard:not(.hidden) :where(
   .period-button,.dish,.timetable-mode-toggle,.flow-school-utility-action,.timetable-actions>.neo-button,
   #allergyBtn,.month-picker,.calendar-day
 ){background-color:var(--flow-school-ambient-surface-2)!important}
 
-/* The app chrome shares the same time temperature, so the page no longer looks
-   like a colored wallpaper behind unrelated neutral controls. */
 @media(max-width:1180px){
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) .mobile-topbar{
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) .mobile-topbar{
     background:color-mix(in srgb,var(--surface) 90%,var(--flow-ambient-a) 10%)!important;
     border-bottom-color:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 5%)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     background:color-mix(in srgb,var(--flow-glass-fill,rgba(248,250,253,.54)) 93%,var(--flow-ambient-b) 7%)!important;
     border-color:color-mix(in srgb,var(--flow-glass-edge,rgba(255,255,255,.68)) 90%,var(--flow-ambient-a) 10%)!important;
     box-shadow:0 10px 28px color-mix(in srgb,var(--flow-glass-depth,rgba(34,51,82,.12)) 88%,var(--flow-ambient-b) 12%),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
+  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
     background:
       radial-gradient(130% 112% at var(--flow-lens-light-x,34%) -8%,var(--flow-school-ambient-specular) 0%,rgba(255,255,255,.08) 31%,transparent 60%),
       linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 6%,rgba(255,255,255,.07)),color-mix(in srgb,var(--flow-ambient-b) 4%,rgba(255,255,255,.018)))!important;
   }
 }
-
-/* Dark mode keeps the same idea but reduces the tint to prevent muddy surfaces. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #dashboard:not(.hidden){
   --flow-school-ambient-surface:color-mix(in srgb,var(--surface) 97%,var(--flow-ambient-a) 3%);
   --flow-school-ambient-surface-2:color-mix(in srgb,var(--surface-2) 96%,var(--flow-ambient-b) 4%);
@@ -179,13 +160,12 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #
     const style=installVisualContract();
     if(style.parentElement===document.head&&document.head.lastElementChild!==style)document.head.append(style);
   }
-  /* Several School feature styles arrive progressively. Re-raise only during a
-     short bounded boot window; never compete with the shared-shell observer. */
   raiseVisualContract();
   [80,220,520,1100].forEach(delay=>setTimeout(raiseVisualContract,delay));
   window.addEventListener('flow:glass-mode-changed',()=>setTimeout(raiseVisualContract,0),{passive:true});
   root.dataset.flowSchoolVisualContract='v7';
 
+  /* Bounded Optical post-scroll geometry tail; no persistent RAF/render loop. */
   const INSET=5;
   let tailTimers=[];
   const visible=node=>{if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};
