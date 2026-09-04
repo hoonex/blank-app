@@ -17,13 +17,9 @@ function applyGeometry(){
   const visibleDashboard=Boolean(dashboard&&!dashboard.classList.contains('hidden'));
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
   const dock=document.querySelector('#flowTodayDateDock');
-  const shortLandscape=window.innerWidth<=1366&&window.innerHeight<=620&&window.innerWidth>window.innerHeight;
 
   if(nav){
-    if(visibleDashboard&&shortLandscape){
-      nav.style.setProperty('border-radius','16px','important');
-      nav.style.setProperty('corner-shape','round','important');
-    }else if(visibleDashboard&&window.innerWidth<=1180){
+    if(visibleDashboard&&window.innerWidth<=1180){
       nav.style.setProperty('border-radius','9999px','important');
       nav.style.setProperty('corner-shape','round','important');
     }else{
@@ -195,8 +191,8 @@ function installStyle(){
   }
 }
 
-/* Short touch landscape deliberately remains a normal rounded rectangle rather
-   than inheriting the portrait maximum-pill treatment. */
+/* Short landscape keeps compact placement but uses the same circular pill
+   geometry as every other compact School shell. */
 @media(max-width:1366px) and (max-height:620px) and (orientation:landscape){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     position:fixed!important;
@@ -211,21 +207,21 @@ function installStyle(){
     max-height:58px!important;
     padding:5px!important;
     transform:translateX(-50%)!important;
-    border-radius:16px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
     min-height:48px!important;
     height:48px!important;
-    border-radius:11px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens,
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav[data-flow-lens-pressed="true"]::before,
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav[data-flow-lens-dragging="true"]::before{
-    border-radius:11px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
   }
 }
