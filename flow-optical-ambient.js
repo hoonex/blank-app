@@ -100,9 +100,14 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-c
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView{padding-inline:var(--flow-school-page-inset)!important}
 }
-html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :where(#scheduleView,#schoolView,#flowSchoolSettingsView) :where(
-  .schedule-layout,.school-info-grid,.school-actions,.flow-settings-stack
-){gap:var(--flow-school-section-gap)!important}
+/* Keep the destination-level rhythm explicit so late tablet/landscape rules cannot
+   silently return School information tiles to their old 9px compact gap. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout,
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid,
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-actions,
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-stack{
+  gap:var(--flow-school-section-gap)!important;
+}
 
 /* The time palette reaches surfaces and chrome very lightly. Content/text colors
    are untouched, and the underlying product main remains transparent. */
