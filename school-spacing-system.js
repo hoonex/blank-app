@@ -23,7 +23,8 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden){
 
 /* Today: the legacy mobile stylesheet switched these stacks to display:block,
    which made their declared gap values inert and reintroduced 10/11px margins.
-   Keep them as real grids and let the shared section/control tokens own spacing. */
+   Keep Today as a real grid and the utility stack as its established flex column,
+   then let the shared section/control tokens own their rendered spacing. */
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .status-grid{
   gap:var(--flow-school-control-gap)!important;
   margin:0 0 var(--flow-school-section-gap)!important;
@@ -44,10 +45,13 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView
   margin-bottom:var(--flow-school-section-gap)!important;
 }
 @media(max-width:820px){
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid,
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
     display:grid!important;
     grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    display:flex!important;
+    flex-direction:column!important;
   }
 }
 
