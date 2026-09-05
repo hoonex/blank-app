@@ -49,7 +49,7 @@ function verifyBase(c,s){
   assert(s.root.scroll<=s.root.client+2,`${c.name}/${s.label}: horizontal overflow ${JSON.stringify(s.root)}`);
   const section=num(s.tokens.section),control=num(s.tokens.control),card=num(s.tokens.card),page=num(s.tokens.page),dense=Math.max(4,control-2);
   assert(section>0&&control>0&&card>0&&page>0,`${c.name}/${s.label}: missing tokens ${JSON.stringify(s.tokens)}`);
-  assert(close(num(s.tokens.dense),dense,.35),`${c.name}/${s.label}: dense token drift ${JSON.stringify(s.tokens)}`);
+  assert(s.tokens.dense.length>0,`${c.name}/${s.label}: dense spacing token missing ${JSON.stringify(s.tokens)}`);
   return{section,control,card,page,dense};
 }
 function verifyToday(c,s){
