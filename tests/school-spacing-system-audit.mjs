@@ -59,7 +59,15 @@ function verifyToday(c,s){
   assert(close(num(x.right.gap),t.section),`${c.name}: right stack gap ${x.right.gap} != ${t.section}`);
   assert(close(num(x.tt.padding),t.card)&&close(num(x.meal.padding),t.card),`${c.name}: Today card padding drift ${JSON.stringify({tt:x.tt.padding,meal:x.meal.padding,token:t.card})}`);
   assert(close(num(x.status.marginBottom),t.section),`${c.name}: status-to-content margin ${x.status.marginBottom} != ${t.section}`);
-  if(c.width<=820){assert(x.grid.display==='grid'&&x.right.display==='flex',`${c.name}: responsive stack display drift ${JSON.stringify({grid:x.grid.display,right:x.right.display})}`);assert(close(x.boxes.grid.top-x.boxes.status.bottom,t.section,1),`${c.name}: rendered status→Today gap mismatch ${JSON.stringify({actual:x.boxes.grid.top-x.boxes.status.bottom,token:t.section})}`);assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`)}
+  if(c.width<=820){
+    assert(x.grid.display==='grid',`${c.name}: Today stack is not grid ${JSON.stringify({grid:x.grid.display,right:x.right.display})}`);
+    if(c.width<=520)assert(x.right.display==='flex',`${c.name}: phone utility stack must stay flex ${JSON.stringify(x.right)}`);
+    else assert(x.right.display==='grid',`${c.name}: tablet utility stack must stay grid ${JSON.stringify(x.right)}`);
+    assert(close(x.boxes.grid.top-x.boxes.status.bottom,t.section,1),`${c.name}: rendered status→Today gap mismatch ${JSON.stringify({actual:x.boxes.grid.top-x.boxes.status.bottom,token:t.section})}`);
+    assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);
+    if(c.width<=520)assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
+    else assert(close(x.boxes.up.left-x.boxes.meal.right,t.section,1),`${c.name}: rendered meal→upcoming horizontal gap mismatch ${JSON.stringify({actual:x.boxes.up.left-x.boxes.meal.right,token:t.section})}`);
+  }
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift ${JSON.stringify(x.view)}`)}
   return t;
 }
