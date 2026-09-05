@@ -16,6 +16,10 @@ function dashboard(value){
   const selected=parse(value),days=weekDates(value),rows=[];
   for(const [dayIndex,day] of days.entries())for(let period=1;period<=7;period++)rows.push({date:ymd(day),period,subject:subjects[(period-1+dayIndex)%subjects.length]});
   const key=ymd(selected);
+  /* The audit can run on weekends. Keep the Monday-Friday Week fixture intact,
+     but always give the explicitly selected day seven rows so Today exercises
+     the same density/actions contract instead of becoming date-dependent. */
+  if(!rows.some(row=>row.date===key))for(let period=1;period<=7;period++)rows.push({date:key,period,subject:subjects[(period-1)%subjects.length]});
   return{school:profile.school,selected:key,from:ymd(days[0]),to:ymd(days[4]),timetable:rows,meals:[{date:key,type:'중식',dishes:['현미밥','미역국','닭갈비'],calories:'720 Kcal'}],events:[{date:key,name:'학급 활동',content:'정상 수업',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}};
 }
 async function installFixture(page){

@@ -206,7 +206,7 @@ async function shiftSchoolDate(page, delta) {
     await page.mouse.down();
     await page.mouse.move(x + (delta > 0 ? -46 : 46), y, { steps: 4 });
     await page.mouse.up();
-    await page.waitForFunction(previous => document.querySelector('#datePicker')?.value !== previous, before, { timeout: 1200 });
+    await page.waitForFunction(previous => document.querySelector('#datePicker')?.value !== previous, before, { timeout: 3000 });
     return;
   }
   await visibleClick(page, delta > 0 ? '#nextDay' : '#prevDay');
