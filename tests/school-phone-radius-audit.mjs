@@ -7,13 +7,24 @@ const now=new Date();
 const key=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
 function assert(value,message){if(!value)throw new Error(message)}
 function json(route,body){return route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
+function ymd(date){return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}`}
+function parseYmd(value){const raw=String(value||'').replace(/\D/g,'').slice(0,8);return raw.length===8?new Date(+raw.slice(0,4),+raw.slice(4,6)-1,+raw.slice(6,8),12):new Date(now.getFullYear(),now.getMonth(),now.getDate(),12)}
+function dashboard(value){
+  const selected=parseYmd(value),selectedKey=ymd(selected),day=selected.getDay(),monday=new Date(selected),subjects=['문학','영어Ⅱ','수학Ⅱ','정보','화학','체육','자율'];
+  monday.setDate(selected.getDate()+(day===0?-6:1-day));
+  const dates=Array.from({length:5},(_,index)=>{const date=new Date(monday);date.setDate(monday.getDate()+index);return date});
+  const timetable=[];
+  for(const date of dates)for(let i=0;i<7;i++)timetable.push({date:ymd(date),period:i+1,subject:subjects[i]});
+  if(!timetable.some(row=>row.date===selectedKey))for(let i=0;i<7;i++)timetable.push({date:selectedKey,period:i+1,subject:subjects[i]});
+  return{school:profile.school,selected:selectedKey,from:ymd(dates[0]),to:ymd(dates[4]),timetable,meals:[],events:[]};
+}
 
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light',userAgent:'Mozilla/5.0 (Linux; Android 16; SM-S931N) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36'});
 const page=await context.newPage();
 await page.route('**/functions/v1/school-data*',route=>{
   const url=new URL(route.request().url()),action=url.searchParams.get('action')||'';
-  if(action==='dashboard')return json(route,{school:profile.school,timetable:Array.from({length:7},(_,i)=>({date:key,period:i+1,subject:['문학','영어Ⅱ','수학Ⅱ','정보','화학','체육','자율'][i]})),meals:[],events:[]});
+  if(action==='dashboard')return json(route,dashboard(url.searchParams.get('date')||key));
   if(action==='media')return json(route,{media:{}});
   return json(route,{});
 });
