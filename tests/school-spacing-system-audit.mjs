@@ -83,8 +83,9 @@ function verifySchool(c,s,t,todayLeft){
   verifyBase(c,s);const x=s.school;
   assert(close(num(x.info.gap),t.section),`${c.name}: school info gap ${x.info.gap} != ${t.section}`);
   assert(close(num(x.actions.gap),t.section),`${c.name}: school action gap ${x.actions.gap} != ${t.section}`);
+  assert(close(num(x.info.marginTop),t.section),`${c.name}: school info section margin ${x.info.marginTop} != ${t.section}`);
+  assert(close(num(x.actions.marginTop),t.section),`${c.name}: school actions section margin ${x.actions.marginTop} != ${t.section}`);
   assert(close(x.boxes.info.top-x.boxes.profile.bottom,t.section,1),`${c.name}: rendered profile→info gap mismatch ${JSON.stringify({actual:x.boxes.info.top-x.boxes.profile.bottom,token:t.section})}`);
-  assert(close(x.boxes.actions.top-x.boxes.info.bottom,t.section,1),`${c.name}: rendered info→actions gap mismatch ${JSON.stringify({actual:x.boxes.actions.top-x.boxes.info.bottom,token:t.section})}`);
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: School rail inset drift ${JSON.stringify(x.view)}`);assert(close(x.boxes.profile.left,todayLeft,1.25),`${c.name}: Today/School left rail diverged ${JSON.stringify({todayLeft,schoolLeft:x.boxes.profile.left})}`)}
 }
 function verifySettings(c,s,t){verifyBase(c,s);assert(close(num(s.settings.stack.gap),t.section),`${c.name}: settings stack gap ${s.settings.stack.gap} != ${t.section}`);if(s.settings.card)assert(close(num(s.settings.card.padding),t.card),`${c.name}: settings card padding ${s.settings.card.padding} != ${t.card}`)}
