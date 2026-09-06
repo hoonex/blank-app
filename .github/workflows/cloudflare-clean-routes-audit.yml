@@ -27,6 +27,8 @@ jobs:
           node --check flow-optical-ambient.js
           node --check school-final-visual-polish.js
           node --check school-real-device-hotfix.js
+          node --check school-real-device-refine.js
+          node --check school-tablet-rotation-contract.js
           node --check school-today-topbar.js
           node --check school-today-exam-feed.js
           node --check tests/cloudflare-clean-routes-audit.mjs
@@ -38,12 +40,14 @@ jobs:
           grep -q 'installUniversityFetchRetry' university/net-bootstrap.js
           grep -q "school-uiux-v2.js" school-metrics.js
           grep -q "school-timetable-polish.js" school-metrics.js
+          grep -q "school-tablet-rotation-contract.js" school-real-device-refine.js
           grep -q "school-uiux-v2.css" sw.js
           grep -q "school-uiux-v2-system.css" sw.js
           grep -q "school-today-clay.css" sw.js
           grep -q "school-today-responsive.css" sw.js
           grep -q "school-today-topbar.js" sw.js
           grep -q "school-today-exam-feed.js" sw.js
+          grep -q "school-tablet-rotation-contract.js" sw.js
 
       - name: Validate Wrangler deployment bundle
         run: npx --yes wrangler@4.129.0 deploy --dry-run --outdir /tmp/flow-wrangler-dry
@@ -79,6 +83,8 @@ jobs:
             'school-today-responsive.css'
             'school-today-topbar.js'
             'school-today-exam-feed.js'
+            'school-real-device-refine.js'
+            'school-tablet-rotation-contract.js'
             'flow-optical-ambient.js'
             'school-final-visual-polish.js'
             'school-real-device-hotfix.js'
