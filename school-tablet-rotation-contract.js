@@ -255,7 +255,10 @@ function installStyle(){
     line-height:1!important;
   }
 
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav{
+  /* #dashboard is intentionally doubled here: late global-shell rules also use an
+     ID-heavy selector, so the tablet bridge must remain authoritative after those
+     styles are raised again during rotation. */
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     display:grid!important;
     visibility:visible!important;
     opacity:1!important;
@@ -274,29 +277,29 @@ function installStyle(){
     transform:translateX(-50%)!important;
     grid-template-rows:50px!important;
     gap:2px!important;
-    border-radius:31px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
     overflow:hidden!important;
     background:color-mix(in srgb,var(--surface) 91%,transparent)!important;
     box-shadow:0 10px 30px rgba(36,48,69,.12)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-transit-surface="dormant"] body #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"][data-flow-transit-surface="dormant"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     --flow-tab-count:4!important;
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
   }
-  html[data-flow-school-ui="v2"]:not([data-flow-transit-surface="dormant"]) body #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"]:not([data-flow-transit-surface="dormant"]) body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     --flow-tab-count:5!important;
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
   }
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.mobile-tab,
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
     min-width:0!important;
     width:100%!important;
     height:50px!important;
     min-height:50px!important;
     padding:0 8px!important;
     border:0!important;
-    border-radius:25px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
     background:transparent!important;
     box-shadow:none!important;
@@ -305,9 +308,9 @@ function installStyle(){
     overflow:hidden!important;
     text-overflow:ellipsis!important;
   }
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav::before,
-  html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
-    border-radius:25px!important;
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+    border-radius:9999px!important;
     corner-shape:round!important;
   }
   html[data-flow-school-ui="v2"] body #todayView{
