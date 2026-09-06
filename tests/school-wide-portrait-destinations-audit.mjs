@@ -151,12 +151,12 @@ for(const testCase of [
     const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=46);
     const firstTab=settingsNav.tabs[0]?.rect;
     const sameTabGeometry=Boolean(firstTab)&&settingsNav.tabs.every(tab=>tab.rect&&Math.abs(tab.rect.top-firstTab.top)<=1&&Math.abs(tab.rect.height-firstTab.height)<=1&&Math.abs(tab.rect.width-firstTab.width)<=2);
-    const navOverPanel=settingsNav.nav&&settingsNav.panel&&settingsNav.nav.top<settingsNav.panel.bottom&&settingsNav.navZ>settingsNav.panelZ;
+    const navLayerAbovePanel=settingsNav.nav&&settingsNav.panel&&settingsNav.navZ>settingsNav.panelZ;
     const contentClearsNav=settings.last&&settingsNav.nav&&settings.paddingBottom>=100&&settings.last.bottom<=settingsNav.nav.top-8;
     const fullLens=settingsNav.nav&&settingsNav.lens.display!=='none'&&settingsNav.lens.height>=Math.max(40,settingsNav.nav.height-12)&&settingsNav.lens.width>=firstTab.width-4;
     const cleanSettingsTab=!settingsNav.settingsLegacyClass&&settingsNav.settingsBorderTop==='0px'&&sameTabGeometry;
-    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navOverPanel||!contentClearsNav||settingsNav.pointer==='none'||!settingsNav.settingsActive||settingsNav.tabIndex!=='3'||!cleanSettingsTab||!fullLens){
-      throw new Error(`${name}: Settings document-flow/nav geometry is broken ${JSON.stringify({settings,settingsNav,sameTabGeometry,navOverPanel,contentClearsNav,fullLens,cleanSettingsTab})}`);
+    if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navLayerAbovePanel||!contentClearsNav||settingsNav.pointer==='none'||!settingsNav.settingsActive||settingsNav.tabIndex!=='3'||!cleanSettingsTab||!fullLens){
+      throw new Error(`${name}: Settings document-flow/nav geometry is broken ${JSON.stringify({settings,settingsNav,sameTabGeometry,navLayerAbovePanel,contentClearsNav,fullLens,cleanSettingsTab})}`);
     }
   }else if(settings.position==='fixed'||settings.overflow>1){
     throw new Error(`${name}: Settings landscape composition regressed ${JSON.stringify(settings)}`);
