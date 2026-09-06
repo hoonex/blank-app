@@ -1,4 +1,4 @@
-export const FLOW_RELEASE='school-shell-v18-20260907';
+export const FLOW_RELEASE='school-shell-v19-20260907';
 
 export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
@@ -89,7 +89,8 @@ function injectColorSchemeContract(html){
 async function htmlShellResponse(request,env,shell,{school=false}={}){
   const assetUrl=new URL(request.url);
   assetUrl.pathname=shell;
-  const response=await env.ASSETS.fetch(new Request(assetUrl,request));
+  const assetRequest=new Request(assetUrl,request);
+  const response=await env.ASSETS.fetch(new Request(assetRequest,{redirect:'follow'}));
   if(request.method==='HEAD'||!response.ok)return responseWithHeaders(response,{school});
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return responseWithHeaders(response,{school});
