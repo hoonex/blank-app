@@ -1,8 +1,10 @@
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 
-const base=process.env.FLOW_PRODUCTION_URL||'https://flow-student-blush.vercel.app';
+const base=process.env.FLOW_PRODUCTION_URL||'https://blank-app.agfvrd.workers.dev';
 const out='production-map-audit';
+const PROFILE_KEY='flow-university-profile-v1';
+const TIMETABLE_KEY='flow-university-timetable-v1';
 const profile=Object.freeze({
   id:'0000005',
   name:'경북대학교',
@@ -23,27 +25,77 @@ page.on('requestfailed',req=>failed.push({url:req.url(),error:req.failure()?.err
 page.on('response',res=>{if(res.status()>=400)httpErrors.push({url:res.url(),status:res.status()})});
 page.on('request',req=>{if(req.method()==='POST'&&req.url().includes('/functions/v1/university-campus')&&req.url().includes('action=route'))routeRequests.push(req.url())});
 
-await page.addInitScript(({profile})=>{
+await page.addInitScript(({profile,profileKey,timetableKey})=>{
   const day=(new Date().getDay()+6)%7;
   const timetable={source:'production-map-audit',year:2026,semester:'2학기',subjects:[
     {id:'a',name:'소프트웨어설계',professor:'테스트',credit:3,place:'IT대학 2호관',times:[{day,startMinutes:540,endMinutes:615,start:'09:00',end:'10:15',place:'IT대학 2호관'}]},
     {id:'b',name:'자료구조',professor:'테스트',credit:3,place:'공대9호관',times:[{day,startMinutes:630,endMinutes:705,start:'10:30',end:'11:45',place:'공대9호관'}]},
     {id:'c',name:'교양세미나',professor:'테스트',credit:2,place:'법과대학',times:[{day,startMinutes:780,endMinutes:855,start:'13:00',end:'14:15',place:'법과대학'}]}
   ]};
-  localStorage.setItem('flow-university-profile-v1',JSON.stringify(profile));
-  localStorage.setItem('flow-university-timetable-v1',JSON.stringify(timetable));
+  localStorage.setItem(profileKey,JSON.stringify(profile));
+  localStorage.setItem(timetableKey,JSON.stringify(timetable));
   localStorage.setItem('flow-university-theme-v1','light');
-},{profile});
+},{profile,profileKey:PROFILE_KEY,timetableKey:TIMETABLE_KEY});
+
+async function diagnostic(stage,error){
+  const state=await page.evaluate(({profileKey,timetableKey})=>({
+    href:location.href,
+    path:location.pathname,
+    readyState:document.readyState,
+    profileRaw:localStorage.getItem(profileKey),
+    timetableRaw:localStorage.getItem(timetableKey),
+    setupClass:document.querySelector('#setupView')?.className||'',
+    appClass:document.querySelector('#appView')?.className||'',
+    campusExists:Boolean(document.querySelector('#campusView')),
+    campusClass:document.querySelector('#campusView')?.className||'',
+    campusPanel:document.querySelector('#campusView')?.dataset.panel||'',
+    activeViews:[...document.querySelectorAll('[data-view].active')].map(x=>x.dataset.view||x.textContent?.trim()||''),
+    scripts:[...document.scripts].map(x=>x.src).filter(Boolean),
+    moduleResources:performance.getEntriesByType('resource').map(x=>x.name).filter(x=>/\/university\/(?:university|campus|campus-interactive|poi-icons)\.js(?:\?|$)/.test(x)),
+  }),{profileKey:PROFILE_KEY,timetableKey:TIMETABLE_KEY}).catch(e=>({evaluateError:String(e)}));
+  const payload={
+    stage,
+    error:String(error?.stack||error||''),
+    state,
+    consoleErrors,
+    pageErrors,
+    httpErrors,
+    failed:failed.filter(x=>!x.url.includes('dge.hs.kr')),
+  };
+  await writeFile(`${out}/diagnostic.json`,JSON.stringify(payload,null,2));
+  await page.screenshot({path:`${out}/diagnostic.png`,fullPage:true}).catch(()=>{});
+  console.error(`Production campus diagnostic (${stage}): ${JSON.stringify(payload,null,2)}`);
+  return payload;
+}
+
+async function assertFixturePresent(){
+  const fixture=await page.evaluate(({profileKey,timetableKey})=>({
+    profile:localStorage.getItem(profileKey),
+    timetable:localStorage.getItem(timetableKey),
+  }),{profileKey:PROFILE_KEY,timetableKey:TIMETABLE_KEY});
+  if(!fixture.profile||!fixture.timetable)throw new Error(`Production campus fixture did not survive navigation: ${JSON.stringify(fixture)}`);
+}
+
+async function waitForCampusView(){
+  try{
+    await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
+  }catch(error){
+    await diagnostic('campus-view-visible',error);
+    throw error;
+  }
+}
 
 async function openCampus(){
   await page.goto(`${base}/university/campus`,{waitUntil:'domcontentloaded',timeout:30000});
-  await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
+  await assertFixturePresent().catch(async error=>{await diagnostic('fixture-after-navigation',error);throw error});
+  await waitForCampusView();
   try{
     await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000});
   }catch(firstError){
     await page.reload({waitUntil:'domcontentloaded',timeout:30000});
-    await page.locator('#campusView:not(.hidden)').waitFor({timeout:15000});
-    await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000}).catch(()=>{throw firstError});
+    await assertFixturePresent().catch(async error=>{await diagnostic('fixture-after-reload',error);throw error});
+    await waitForCampusView();
+    await page.waitForFunction(()=>document.querySelector('#campusMapWrap')?.dataset.interactiveMap==='ready',{timeout:30000}).catch(async()=>{await diagnostic('interactive-map-ready',firstError);throw firstError});
   }
 }
 
