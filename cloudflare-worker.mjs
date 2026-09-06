@@ -1,4 +1,4 @@
-export const FLOW_RELEASE='school-shell-v15-20260831';
+export const FLOW_RELEASE='school-shell-v16-20260906';
 
 export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
@@ -21,6 +21,8 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
   '/school-today-clay.css',
   '/sw.js',
 ]);
+
+const FLOW_COLOR_SCHEME_CONTRACT=`<style id="flow-color-scheme-contract">html:not([data-theme="dark"]){color-scheme:only light!important}html[data-theme="dark"]{color-scheme:dark!important}</style><script id="flow-color-scheme-guard">(()=>{const meta=document.querySelector('meta[name="color-scheme"]');if(!meta)return;const keep=()=>{if(meta.content!=='light dark')meta.content='light dark'};keep();new MutationObserver(keep).observe(meta,{attributes:true,attributeFilter:['content']})})();</script>`;
 
 const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
 #todayView .status-grid>.status-card:nth-child(2),#todayView .status-grid>.status-card:nth-child(3){display:none!important}
@@ -76,21 +78,29 @@ function responseWithHeaders(response,{school=false}={}){
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 
-async function schoolHtmlResponse(request,env,shell){
+function injectColorSchemeContract(html){
+  const meta=/<meta\s+name=["']color-scheme["']\s+content=["'][^"']*["']\s*\/?>/i;
+  if(meta.test(html))html=html.replace(meta,'<meta name="color-scheme" content="light dark">');
+  else html=html.replace('</head>','<meta name="color-scheme" content="light dark"></head>');
+  if(!html.includes('flow-color-scheme-contract'))html=html.replace('</head>',`${FLOW_COLOR_SCHEME_CONTRACT}</head>`);
+  return html;
+}
+
+async function htmlShellResponse(request,env,shell,{school=false}={}){
   const assetUrl=new URL(request.url);
   assetUrl.pathname=shell;
   const response=await env.ASSETS.fetch(new Request(assetUrl,request));
-  if(request.method==='HEAD'||!response.ok)return responseWithHeaders(response,{school:true});
+  if(request.method==='HEAD'||!response.ok)return responseWithHeaders(response,{school});
   const type=response.headers.get('content-type')||'';
-  if(!type.includes('text/html'))return responseWithHeaders(response,{school:true});
-  let html=await response.text();
-  if(!html.includes('flow-school-production-critical'))html=html.replace('</head>',`${SCHOOL_CRITICAL_STYLE}</head>`);
-  if(!html.includes('flow-school-cache-recovery'))html=html.replace('</body>',`${SCHOOL_RECOVERY_SCRIPT}</body>`);
+  if(!type.includes('text/html'))return responseWithHeaders(response,{school});
+  let html=injectColorSchemeContract(await response.text());
+  if(school&&!html.includes('flow-school-production-critical'))html=html.replace('</head>',`${SCHOOL_CRITICAL_STYLE}</head>`);
+  if(school&&!html.includes('flow-school-cache-recovery'))html=html.replace('</body>',`${SCHOOL_RECOVERY_SCRIPT}</body>`);
   const headers=new Headers(response.headers);
   headers.delete('content-length');
   headers.delete('content-encoding');
   headers.delete('etag');
-  headers.set('cache-control','no-store, max-age=0, must-revalidate');
+  if(school)headers.set('cache-control','no-store, max-age=0, must-revalidate');
   headers.set('x-flow-release',FLOW_RELEASE);
   return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
@@ -99,14 +109,12 @@ export default{
   async fetch(request,env){
     if(request.method!=='GET'&&request.method!=='HEAD')return env.ASSETS.fetch(request);
     const url=new URL(request.url);
+    const normalized=normalizedPath(url.pathname);
     const schoolShell=schoolShellFor(url.pathname);
-    if(schoolShell)return schoolHtmlResponse(request,env,schoolShell);
-    const shell=ROUTE_SHELLS[normalizedPath(url.pathname)];
-    if(shell){
-      const assetUrl=new URL(request.url);
-      assetUrl.pathname=shell;
-      return env.ASSETS.fetch(new Request(assetUrl,request));
-    }
+    if(schoolShell)return htmlShellResponse(request,env,schoolShell,{school:true});
+    const shell=ROUTE_SHELLS[normalized];
+    if(shell)return htmlShellResponse(request,env,shell);
+    if(normalized==='/university/index.html'||normalized==='/admin/index.html')return htmlShellResponse(request,env,normalized);
     const response=await env.ASSETS.fetch(request);
     if(SCHOOL_CRITICAL_ASSETS.has(url.pathname))return responseWithHeaders(response,{school:true});
     return response;
