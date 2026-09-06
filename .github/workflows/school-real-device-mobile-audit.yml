@@ -9,6 +9,7 @@ on:
       - 'school-final-visual-polish.js'
       - 'school-toolbar-grouping.js'
       - 'school-global-shell-glass.js'
+      - 'school-settings-wide.css'
       - 'school-spacing-system.js'
       - 'school-metrics.js'
       - 'school-ia.js'
@@ -24,6 +25,7 @@ on:
       - 'tests/school-visual-contract-audit.mjs'
       - 'tests/school-bottom-nav-dark-audit.mjs'
       - 'tests/school-spacing-system-audit.mjs'
+      - 'tests/school-settings-responsive-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -56,6 +58,7 @@ jobs:
           node --check tests/school-visual-contract-audit.mjs
           node --check tests/school-bottom-nav-dark-audit.mjs
           node --check tests/school-spacing-system-audit.mjs
+          node --check tests/school-settings-responsive-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -98,6 +101,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-spacing-system-audit
         run: node tests/school-spacing-system-audit.mjs
+      - name: Verify School Settings across responsive classes
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-settings-responsive-audit
+        run: node tests/school-settings-responsive-audit.mjs
       - name: Verify bottom-nav proportions and dark materials
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -119,6 +127,7 @@ jobs:
             school-toolbar-grouping-audit
             school-visual-contract-audit
             school-spacing-system-audit
+            school-settings-responsive-audit
             school-bottom-nav-dark-audit
             school-device-matrix-audit
           if-no-files-found: ignore
