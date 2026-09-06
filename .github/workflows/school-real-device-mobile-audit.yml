@@ -24,6 +24,7 @@ on:
       - 'tests/school-visual-contract-audit.mjs'
       - 'tests/school-bottom-nav-dark-audit.mjs'
       - 'tests/school-spacing-system-audit.mjs'
+      - 'tests/school-settings-responsive-sweep-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -56,6 +57,7 @@ jobs:
           node --check tests/school-visual-contract-audit.mjs
           node --check tests/school-bottom-nav-dark-audit.mjs
           node --check tests/school-spacing-system-audit.mjs
+          node --check tests/school-settings-responsive-sweep-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -103,6 +105,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-bottom-nav-dark-audit
         run: node tests/school-bottom-nav-dark-audit.mjs
+      - name: Sweep School Settings across responsive boundaries
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-settings-responsive-sweep-audit
+        run: node tests/school-settings-responsive-sweep-audit.mjs
       - name: Exercise School functions across phone, tablet, and desktop matrix
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -120,5 +127,6 @@ jobs:
             school-visual-contract-audit
             school-spacing-system-audit
             school-bottom-nav-dark-audit
+            school-settings-responsive-sweep-audit
             school-device-matrix-audit
           if-no-files-found: ignore
