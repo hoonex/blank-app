@@ -10,9 +10,11 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'university/university.js'
       - 'university/campus.js'
       - 'university/campus-interactive.js'
       - 'university/campus-interactive.css'
+      - 'university/poi-icons.js'
       - 'scripts/production-map-audit.mjs'
       - '.github/workflows/production-map-audit.yml'
   workflow_dispatch:
@@ -38,6 +40,7 @@ jobs:
           node --check scripts/production-map-audit.mjs
           grep -q 'flow:campus-current-route' university/campus.js
           grep -q 'flow:campus-current-route' university/campus-interactive.js
+          grep -q "location.pathname==='/university/campus'" university/campus.js
           grep -q 'currentRouteRequestDelta' scripts/production-map-audit.mjs
           grep -q "id:'0000005'" scripts/production-map-audit.mjs
           grep -q "address:'대구광역시 북구 대학로 80'" scripts/production-map-audit.mjs
@@ -47,15 +50,51 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          url='https://blank-app.agfvrd.workers.dev/university/campus'
-          for i in {1..60}; do
-            if curl -fsSL --max-time 10 "$url" | grep -q 'campus-interactive.js'; then
-              echo 'Interactive campus asset is live.'
+          base='https://blank-app.agfvrd.workers.dev'
+          assets=(
+            'university/university.js'
+            'university/campus.js'
+            'university/campus-interactive.js'
+            'university/poi-icons.js'
+          )
+          for i in {1..40}; do
+            echo "University production convergence attempt $i/40"
+            ok=1
+            page='/tmp/flow-production-campus.html'
+            code=$(curl --silent --show-error --location \
+              --header 'cache-control: no-cache' \
+              --connect-timeout 10 --max-time 20 \
+              --output "$page" --write-out '%{http_code}' \
+              "$base/university/campus?flow_deploy=$GITHUB_SHA" || true)
+            if [[ "$code" != '200' ]] || ! grep -q 'campus-interactive.js' "$page" 2>/dev/null; then
+              echo "WAIT /university/campus -> HTTP $code / campus shell marker missing"
+              ok=0
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              for asset in "${assets[@]}"; do
+                deployed="/tmp/flow-${asset//\//_}"
+                code=$(curl --silent --show-error --location \
+                  --header 'cache-control: no-cache' \
+                  --connect-timeout 10 --max-time 20 \
+                  --output "$deployed" --write-out '%{http_code}' \
+                  "$base/$asset?flow_deploy=$GITHUB_SHA" || true)
+                if [[ "$code" != '200' ]] || ! cmp -s "$asset" "$deployed"; then
+                  echo "WAIT /$asset -> HTTP $code / deployed bytes do not match main"
+                  ok=0
+                  break
+                fi
+                echo "OK /$asset -> exact repository bytes"
+              done
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              echo 'University production assets match the audited commit.'
               exit 0
             fi
-            sleep 2
+            sleep 5
           done
-          echo 'Timed out waiting for production interactive campus asset.' >&2
+          echo 'Timed out waiting for exact University production assets.' >&2
           exit 1
       - name: Install Playwright Chromium
         if: github.event_name != 'pull_request'
