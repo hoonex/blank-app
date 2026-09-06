@@ -1,0 +1,81 @@
+name: Telemetry CORS health
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/flow-quest-event/index.ts'
+      - '.github/workflows/telemetry-cors-health.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/flow-quest-event/index.ts'
+      - '.github/workflows/telemetry-cors-health.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '37 * * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  telemetry-cors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Validate telemetry origin contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          file='supabase/functions/flow-quest-event/index.ts'
+          test -s "$file"
+          grep -q 'https://blank-app.agfvrd.workers.dev' "$file"
+          grep -q 'https://flow-student-blush.vercel.app' "$file"
+          grep -q 'Access-Control-Allow-Origin' "$file"
+          grep -q 'Access-Control-Allow-Methods' "$file"
+          grep -q 'POST, OPTIONS' "$file"
+          grep -q 'Access-Control-Allow-Headers' "$file"
+          grep -q 'content-type' "$file"
+          grep -q 'req.method === "OPTIONS"' "$file"
+
+      - name: Verify production telemetry CORS preflight
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/flow-quest-event'
+          origin='https://blank-app.agfvrd.workers.dev'
+          headers='/tmp/flow-quest-cors-headers.txt'
+          code=$(curl --silent --show-error \
+            --request OPTIONS \
+            --header "Origin: $origin" \
+            --header 'Access-Control-Request-Method: POST' \
+            --header 'Access-Control-Request-Headers: content-type' \
+            --dump-header "$headers" \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --connect-timeout 10 --max-time 20 \
+            "$endpoint")
+          test "$code" = '204'
+          python - "$headers" "$origin" <<'PY'
+          import sys
+          from pathlib import Path
+
+          path, origin = sys.argv[1:]
+          headers = {}
+          for raw in Path(path).read_text(errors='replace').splitlines():
+              if ':' not in raw:
+                  continue
+              key, value = raw.split(':', 1)
+              headers[key.strip().lower()] = value.strip()
+
+          assert headers.get('access-control-allow-origin') == origin, headers
+          methods = {x.strip().upper() for x in headers.get('access-control-allow-methods', '').split(',') if x.strip()}
+          assert {'POST', 'OPTIONS'} <= methods, headers
+          allowed_headers = {x.strip().lower() for x in headers.get('access-control-allow-headers', '').split(',') if x.strip()}
+          assert 'content-type' in allowed_headers, headers
+          assert 'origin' in headers.get('vary', '').lower(), headers
+          print('flow-quest-event CORS preflight OK')
+          PY
