@@ -24,9 +24,11 @@ const env={ASSETS:{fetch:async request=>{
 
 function assertColorSchemeContract(html,label){
   assert.match(html,/<meta name="color-scheme" content="light dark">/,`${label} must advertise authored light+dark support to Android WebView/Samsung Internet.`);
-  assert.match(html,/id="flow-color-scheme-contract"/,`${label} must pin the rendered scheme to Flow's own theme state.`);
-  assert.match(html,/html:not\(\[data-theme="dark"\]\)\{color-scheme:only light!important\}/,`${label} must keep explicit light mode light even inside a dark host app.`);
+  assert.match(html,/id="flow-color-scheme-contract"/,`${label} must install the host-dark color-scheme contract.`);
+  assert.match(html,/html:not\(\[data-theme="dark"\]\)\{color-scheme:light dark!important\}/,`${label} must advertise authored dual-scheme support while Flow is visually light.`);
+  assert.match(html,/@media\(prefers-color-scheme:dark\)\{html:not\(\[data-theme="dark"\]\)\{color-scheme:dark!important\}\}/,`${label} must handshake with a dark host so force-dark engines see an authored dark-capable page.`);
   assert.match(html,/html\[data-theme="dark"\]\{color-scheme:dark!important\}/,`${label} must preserve Flow's own dark mode.`);
+  assert.match(html,/html:not\(\[data-theme="dark"\]\) :is\(input,select,textarea\)\{color-scheme:light!important\}/,`${label} must keep native form controls light when Flow is explicitly light.`);
   assert.match(html,/id="flow-color-scheme-guard"/,`${label} must keep runtime theme code from removing the WebView support signal.`);
 }
 
@@ -66,4 +68,4 @@ calls.length=0;
 await worker.fetch(new Request('https://blank-app.agfvrd.workers.dev/schedule',{method:'POST',body:'x'}),env);
 assert.deepEqual(calls[0],{pathname:'/schedule',search:'',method:'POST'},'Non-navigation methods must not be rewritten.');
 
-console.log(JSON.stringify({routes:Object.keys(ROUTE_SHELLS).length,schoolShell:'/index.html',universityShell:'/university/index.html',colorSchemeContract:'light-dark-advertised/app-theme-pinned',status:'ok'},null,2));
+console.log(JSON.stringify({routes:Object.keys(ROUTE_SHELLS).length,schoolShell:'/index.html',universityShell:'/university/index.html',colorSchemeContract:'host-dark-handshake/authored-theme-preserved',status:'ok'},null,2));
