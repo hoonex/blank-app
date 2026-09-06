@@ -41,12 +41,14 @@ await page.locator('#schoolSearch').fill('정동고');await page.locator('#schoo
 await page.locator('#setupDialog').waitFor({state:'visible'});await page.locator('#gradeRow [data-grade="2"]').click();await page.locator('#classRow [data-class="6"]').waitFor();await page.locator('#classRow [data-class="6"]').click();await page.locator('#setupSave').click();
 await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolGlobalShell==='v1');
 
-await page.locator('#bottomNav [data-view="schedule"]').click();await page.locator('#scheduleView:not(.hidden)').waitFor();await page.waitForTimeout(120);
+await page.locator('#bottomNav [data-view="schedule"]').click();await page.locator('#scheduleView:not(.hidden)').waitFor();
+await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(120);
 const schedule=await shellGeometry(page);
 assert(schedule.topVisible&&schedule.logoVisible&&schedule.schoolVisible,'Schedule shared topbar is incomplete',schedule);
 await page.screenshot({path:`${OUT}/390x844-schedule-shell.png`,fullPage:false,animations:'disabled'});
 
-await page.locator('#mobileSettingsBtn').click();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();await page.waitForTimeout(160);
+await page.locator('#mobileSettingsBtn').click();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
+await page.evaluate(()=>window.scrollTo(0,0));await page.waitForTimeout(160);
 const settings=await shellGeometry(page);
 assert(settings.topVisible&&settings.logoVisible&&settings.schoolVisible,'Settings must retain the complete shared topbar',settings);
 assert(settings.settingsVisible,'Settings view must be visible',settings);
