@@ -1,3 +1,5 @@
+import './school-tablet-rotation-contract.js';
+
 const SCHOOL_LOGO_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-logo';
 const SCHOOL_LOGO_CACHE_PREFIX='flow-school-logo-fallback-v3:';
 const SCHOOL_PROFILE_KEY='flow-school-profile-v3';
