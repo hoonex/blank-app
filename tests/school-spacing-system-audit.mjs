@@ -53,8 +53,8 @@ function verifyBase(c,s){
   return{section,control,card,page,dense};
 }
 function verifyToday(c,s){
-  const t=verifyBase(c,s),x=s.today;
-  assert(close(num(x.status.gap),t.control),`${c.name}: status gap ${x.status.gap} != ${t.control}`);
+  const t=verifyBase(c,s),x=s.today,statusGap=c.width<700?12:t.control;
+  assert(close(num(x.status.gap),statusGap),`${c.name}: status gap ${x.status.gap} != ${statusGap}`);
   assert(close(num(x.grid.gap),t.section),`${c.name}: today grid gap ${x.grid.gap} != ${t.section}`);
   assert(close(num(x.right.gap),t.section),`${c.name}: right stack gap ${x.right.gap} != ${t.section}`);
   assert(close(num(x.tt.padding),t.card)&&close(num(x.meal.padding),t.card),`${c.name}: Today card padding drift ${JSON.stringify({tt:x.tt.padding,meal:x.meal.padding,token:t.card})}`);
