@@ -10,6 +10,7 @@ on:
       - 'school-toolbar-grouping.js'
       - 'school-global-shell-glass.js'
       - 'school-spacing-system.js'
+      - 'school-settings-wide.css'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
