@@ -30,7 +30,6 @@ jobs:
           node --check scripts/university-audit-search-fixture.mjs
           node --check scripts/campus-audit.mjs
           node --check scripts/campus-map-interaction-audit.mjs
-          node --check scripts/vercel-rest.mjs
           test -f university/index.html
           test -f university/campus.css
           test -f scripts/university-audit-search-fixture.mjs
@@ -48,6 +47,7 @@ jobs:
           grep -q 'campus-interactive.css' university/index.html
           grep -q '/university/net-bootstrap.js' sw.js
           grep -q '/university/campus' vercel.json
+          ! test -e scripts/vercel-rest.mjs
       - name: Verify university core server APIs
         shell: bash
         run: |

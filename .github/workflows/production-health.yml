@@ -22,17 +22,19 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Verify Flow School runtime
+      - name: Verify Flow runtime and deployment contracts
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml vercel.json scripts/vercel-rest.mjs university/index.html university/university.css university/university-polish.css university/university.js university/dashboard.css university/dashboard.js university/dashboard-memo-panel.css university/dashboard-memo-panel.js university/ui-unify.css university/ui-unify-v2.css university/ui-unify.js university/poi-icons.js university/campus.css university/campus.js university/campus-interactive.css university/campus-interactive.js; do
+          for file in index.html school.css school.js school-metrics.js school-v5.css school-hotfix.css school-polish.css sw.js manifest.webmanifest robots.txt sitemap.xml cloudflare-worker.mjs wrangler.jsonc vercel.json scripts/vercel-static-build.mjs university/index.html university/university.css university/university-polish.css university/university.js university/dashboard.css university/dashboard.js university/dashboard-memo-panel.css university/dashboard-memo-panel.js university/ui-unify.css university/ui-unify-v2.css university/ui-unify.js university/poi-icons.js university/campus.css university/campus.js university/campus-interactive.css university/campus-interactive.js; do
             test -s "$file"
             echo "OK $file"
           done
           node --input-type=module --check < school.js
           node --check school-metrics.js
           node --check sw.js
+          node --check cloudflare-worker.mjs
+          node --check scripts/vercel-static-build.mjs
           node --check university/university.js
           node --check university/dashboard.js
           node --check university/dashboard-memo-panel.js
@@ -40,8 +42,9 @@ jobs:
           node --input-type=module --check < university/poi-icons.js
           node --input-type=module --check < university/campus.js
           node --input-type=module --check < university/campus-interactive.js
-          node --check scripts/vercel-rest.mjs
+          python -m json.tool wrangler.jsonc >/dev/null
           python -m json.tool vercel.json >/dev/null
+          python -m json.tool manifest.webmanifest >/dev/null
           grep -q 'Flow School' index.html
           grep -q 'school-metrics.js' index.html
           grep -q 'flow-school-profile-v3' school.js
@@ -61,7 +64,9 @@ jobs:
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
           grep -q 'only light' school-polish.css
-          grep -q 'flow-school-shell-v15' sw.js
+          grep -q "const CACHE='flow-school-shell-v16'" sw.js
+          grep -q "cache='flow-school-shell-v16'" cloudflare-worker.mjs
+          grep -Eq "FLOW_RELEASE='school-shell-v[0-9]+-[0-9]{8}'" cloudflare-worker.mjs
           grep -q "cache:'no-cache'" sw.js
           grep -q '/university/poi-icons.js' sw.js
           grep -q '/university/index.html' sw.js
@@ -81,10 +86,12 @@ jobs:
           grep -q '"/home"' vercel.json
           grep -q '"/schedule"' vercel.json
           grep -q '"/university/timetable"' vercel.json
-          grep -q 'UNIVERSITY_CLEAN_ROUTES' scripts/vercel-rest.mjs
-          grep -q 'flow-student-blush.vercel.app' robots.txt
-          grep -q 'flow-student-blush.vercel.app' sitemap.xml
-          grep -q 'ssoProtection: null' scripts/vercel-rest.mjs
+          grep -q 'blank-app.agfvrd.workers.dev' robots.txt
+          grep -q 'blank-app.agfvrd.workers.dev' sitemap.xml
+          grep -q '"id": "/"' manifest.webmanifest
+          ! test -e scripts/vercel-rest.mjs
+          ! test -e VERCEL_REST.md
+          ! test -e .github/workflows/transit-kric-probe.yml
           ! test -e school-extras.js
 
       - name: Verify NEIS school API

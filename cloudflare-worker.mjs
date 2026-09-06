@@ -1,4 +1,4 @@
-export const FLOW_RELEASE='school-shell-v17-20260906';
+export const FLOW_RELEASE='school-shell-v18-20260907';
 
 export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
@@ -57,7 +57,7 @@ const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
 }
 </style>`;
 
-const SCHOOL_RECOVERY_SCRIPT=`<script id="flow-school-cache-recovery">(()=>{const cache='flow-school-shell-v15',guard='flow-sw-v15-reloaded';if('caches'in window)caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('flow-school-shell-')&&key!==cache).map(key=>caches.delete(key)))).catch(()=>{});if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const hadController=Boolean(navigator.serviceWorker.controller);let reloadArmed=hadController&&sessionStorage.getItem(guard)!=='1';if(reloadArmed)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloadArmed)return;reloadArmed=false;sessionStorage.setItem(guard,'1');location.reload()},{once:true});const registration=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await registration.update()}catch{}},{once:true})})();</script>`;
+const SCHOOL_RECOVERY_SCRIPT=`<script id="flow-school-cache-recovery">(()=>{const cache='flow-school-shell-v16',guard='flow-sw-v16-reloaded';if('caches'in window)caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('flow-school-shell-')&&key!==cache).map(key=>caches.delete(key)))).catch(()=>{});if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const hadController=Boolean(navigator.serviceWorker.controller);let reloadArmed=hadController&&sessionStorage.getItem(guard)!=='1';if(reloadArmed)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloadArmed)return;reloadArmed=false;sessionStorage.setItem(guard,'1');location.reload()},{once:true});const registration=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await registration.update()}catch{}},{once:true})})();</script>`;
 
 function normalizedPath(pathname){
   if(pathname.length>1&&pathname.endsWith('/'))return pathname.slice(0,-1);

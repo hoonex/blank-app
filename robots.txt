@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://flow-student-blush.vercel.app/sitemap.xml
+Sitemap: https://blank-app.agfvrd.workers.dev/sitemap.xml
