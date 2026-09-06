@@ -57,9 +57,11 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView
   }
 }
 
-/* Schedule: both cards use the same inter-section distance at every width.
-   This deliberately replaces the old mobile .calendar-card margin-bottom:10px
-   and block layout, while calendar cells use a denser derived token. */
+/* Schedule: spacing follows the tokens without changing the established
+   responsive composition. Landscape keeps the calendar + event context row;
+   compact portrait keeps the touch-first vertical stack. Grid layouts consume
+   the shared gap directly, while block portrait stacks use the same token as
+   the calendar's bottom margin. */
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView>.view-header{
   margin-bottom:var(--flow-school-section-gap)!important;
 }
@@ -71,6 +73,11 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleV
   margin:0!important;
   padding:var(--flow-school-card-pad)!important;
 }
+@media(max-width:1120px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout>.calendar-card{
+    margin-bottom:var(--flow-school-section-gap)!important;
+  }
+}
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-head{
   margin-bottom:var(--flow-school-control-gap)!important;
 }
@@ -79,12 +86,6 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleV
 }
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-list{
   gap:var(--flow-school-control-gap)!important;
-}
-@media(max-width:1120px){
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-  }
 }
 
 /* School profile: remove the separate 9/14/15px legacy rhythm. The information
