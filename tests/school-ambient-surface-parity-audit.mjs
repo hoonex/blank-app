@@ -48,6 +48,18 @@ async function clickVisible(page,selector){
   }
   throw new Error(`No visible target: ${selector}`);
 }
+async function settleSurface(page){
+  await page.addStyleTag({content:`
+    html[data-flow-school-ui="v2"] #dashboard,
+    html[data-flow-school-ui="v2"] #dashboard *,
+    html[data-flow-school-ui="v2"] #dashboard *::before,
+    html[data-flow-school-ui="v2"] #dashboard *::after{
+      transition:none!important;
+      animation:none!important;
+    }
+  `});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
 async function readState(page){
   return page.evaluate(()=>{
     const root=document.documentElement;
@@ -140,7 +152,7 @@ async function capture(browser,entry,ambient){
     await page.locator('#dashboard:not(.hidden)').waitFor();
     await page.locator('#todayView .period-button').first().waitFor();
     await page.waitForFunction(expected=>document.documentElement.dataset.flowExperience==='ready'&&document.documentElement.dataset.flowAmbient===expected,ambient);
-    await page.waitForTimeout(120);
+    await settleSurface(page);
     const before=await readState(page);
     await page.screenshot({path:`${OUT}/${entry.name}-${ambient}-today.png`,fullPage:false,animations:'disabled'});
     await clickVisible(page,'[data-view="schedule"]');
