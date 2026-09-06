@@ -24,6 +24,9 @@ jobs:
       - name: Validate Cloudflare route worker
         run: |
           node --check cloudflare-worker.mjs
+          node --check flow-optical-ambient.js
+          node --check school-final-visual-polish.js
+          node --check school-real-device-hotfix.js
           node --check school-today-topbar.js
           node --check school-today-exam-feed.js
           node --check tests/cloudflare-clean-routes-audit.mjs
@@ -76,6 +79,9 @@ jobs:
             'school-today-responsive.css'
             'school-today-topbar.js'
             'school-today-exam-feed.js'
+            'flow-optical-ambient.js'
+            'school-final-visual-polish.js'
+            'school-real-device-hotfix.js'
             'flow-adfit.js'
             'flow-adfit.css'
             'flow-experience.js'
