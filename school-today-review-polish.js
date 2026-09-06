@@ -10,9 +10,10 @@ style.textContent=`
 }
 
 /* The two status cards need the same breathing room as the base Today system.
-   The old phone override compressed the pair to 8px and made them read as one block. */
+   The old phone override compressed the pair to 8px and made them read as one block.
+   Match the spacing-system selector weight so its compact token cannot re-tighten it. */
 @media(max-width:699px){
-  html[data-flow-school-ui="v2"] body #dashboard #todayView .status-grid{
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden):has(#todayView:not(.hidden)) #todayView .status-grid{
     gap:12px!important;
   }
 }
@@ -20,6 +21,13 @@ style.textContent=`
 /* Today used light-oriented ambient/specular mixes after the rest of School had
    already switched to the dark material tokens. Normalize only Today surfaces;
    other destinations keep their established dark-mode treatment. */
+html[data-flow-school-ui="v2"][data-theme="dark"] body:has(#dashboard:not(.hidden) #todayView:not(.hidden)){
+  background-color:var(--bg)!important;
+  background-image:
+    radial-gradient(760px 560px at 78% -12%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 68%),
+    radial-gradient(720px 560px at 4% 108%,color-mix(in srgb,var(--surface-2) 34%,transparent),transparent 72%),
+    linear-gradient(145deg,color-mix(in srgb,var(--surface-2) 42%,var(--bg)),var(--bg))!important;
+}
 html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard #todayView .status-card:not(.flow-home-noise){
   background:color-mix(in srgb,var(--surface) 96%,var(--surface-2))!important;
   box-shadow:0 10px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.055)!important;
