@@ -32,7 +32,8 @@ function validate(label,state){
   if(state.weekInNav)throw new Error(`${label}: Week control unexpectedly remained in destination nav`);
   if(state.items.length!==5||state.items.filter(item=>item.settings).length!==1||!state.items.some(item=>item.view==='transit'))throw new Error(`${label}: expected five localhost destinations including Transit ${JSON.stringify(state.items)}`);
   if(state.items.some(item=>item.rect.width<44||item.rect.height<44))throw new Error(`${label}: landscape bottom target is clipped/undersized ${JSON.stringify(state.items)}`);
-  if(state.navRadius<state.nav.height/2||state.lensRadius<Math.min(20,state.nav.height/2-5)||/squircle|superellipse/i.test(state.navCorner))throw new Error(`${label}: bottom nav/follower lost maximum circular pill geometry ${JSON.stringify({navRadius:state.navRadius,lensRadius:state.lensRadius,navHeight:state.nav.height,corner:state.navCorner})}`);
+  const nonRoundCorner=/squircle/i.test(state.navCorner)||(/superellipse/i.test(state.navCorner)&&!/superellipse\(\s*1(?:\.0+)?\s*\)/i.test(state.navCorner));
+  if(state.navRadius<state.nav.height/2||state.lensRadius<Math.min(20,state.nav.height/2-5)||nonRoundCorner)throw new Error(`${label}: bottom nav/follower lost maximum circular pill geometry ${JSON.stringify({navRadius:state.navRadius,lensRadius:state.lensRadius,navHeight:state.nav.height,corner:state.navCorner})}`);
   if(state.scrollWidth>state.clientWidth+2)throw new Error(`${label}: horizontal overflow ${JSON.stringify({clientWidth:state.clientWidth,scrollWidth:state.scrollWidth})}`);
   if(state.bodyPaddingBottom<58)throw new Error(`${label}: fixed bottom nav has no content reserve ${state.bodyPaddingBottom}px`);
   if(state.sidebarVisible)throw new Error(`${label}: desktop sidebar survived on touch landscape`);

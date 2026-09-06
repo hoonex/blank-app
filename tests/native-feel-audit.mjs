@@ -153,6 +153,7 @@ async function runSchool(reducedMotion) {
         legacyOpen: Boolean(legacy?.open),
         visible: Boolean(panel && !panel.classList.contains('hidden')),
         position: style?.position || '',
+        overflowY: style?.overflowY || '',
         top: panel?.getBoundingClientRect().top ?? -1,
         scrollTop: panel?.scrollTop ?? -1,
       };
@@ -179,7 +180,7 @@ async function runSchool(reducedMotion) {
       if (material.activeIndicatorOpacity < .9) throw new Error(`${label} active material indicator is not visible: ${JSON.stringify(material)}`);
     }
     if (settingsState.legacyOpen || !settingsState.visible || !dialogOpen || material.motionMedium !== '240ms') throw new Error(`${label} shared layer/functionality missing: ${JSON.stringify({ settingsState, dialogOpen, material })}`);
-    if (settingsState.position !== 'fixed' || settingsState.top < 50 || settingsState.scrollTop !== 0) throw new Error(`${label} settings did not open as an independent first-fold page: ${JSON.stringify(settingsState)}`);
+    if (settingsState.position !== 'relative' || settingsState.overflowY !== 'visible' || settingsState.top < 50 || settingsState.scrollTop !== 0) throw new Error(`${label} settings did not open in the shared document-flow first fold: ${JSON.stringify(settingsState)}`);
     assertClean(label, errors);
     return { label, viewAnimations, settingsAnimations, sheetAnimations, material, settingsState, dialogOpen, errors };
   } finally { await context.close(); }
