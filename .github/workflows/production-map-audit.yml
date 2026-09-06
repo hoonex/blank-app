@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
     paths:
+      - 'cloudflare-worker.mjs'
       - 'university/**'
       - 'scripts/production-map-audit.mjs'
       - '.github/workflows/production-map-audit.yml'
   pull_request:
     branches: [main]
     paths:
+      - 'cloudflare-worker.mjs'
       - 'university/university.js'
       - 'university/campus.js'
       - 'university/campus-interactive.js'
@@ -41,6 +43,7 @@ jobs:
           grep -q 'flow:campus-current-route' university/campus.js
           grep -q 'flow:campus-current-route' university/campus-interactive.js
           grep -q "location.pathname==='/university/campus'" university/campus.js
+          grep -q "redirect:'follow'" cloudflare-worker.mjs
           grep -q 'currentRouteRequestDelta' scripts/production-map-audit.mjs
           grep -q "id:'0000005'" scripts/production-map-audit.mjs
           grep -q "address:'대구광역시 북구 대학로 80'" scripts/production-map-audit.mjs
@@ -61,14 +64,19 @@ jobs:
             echo "University production convergence attempt $i/40"
             ok=1
             page='/tmp/flow-production-campus.html'
-            code=$(curl --silent --show-error --location \
+            requested="$base/university/campus?flow_deploy=$GITHUB_SHA"
+            result=$(curl --silent --show-error --location \
               --header 'cache-control: no-cache' \
               --connect-timeout 10 --max-time 20 \
-              --output "$page" --write-out '%{http_code}' \
-              "$base/university/campus?flow_deploy=$GITHUB_SHA" || true)
-            if [[ "$code" != '200' ]] || ! grep -q 'campus-interactive.js' "$page" 2>/dev/null; then
-              echo "WAIT /university/campus -> HTTP $code / campus shell marker missing"
+              --output "$page" --write-out '%{http_code}|%{url_effective}' \
+              "$requested" || true)
+            code="${result%%|*}"
+            effective="${result#*|}"
+            if [[ "$code" != '200' ]] || [[ "$effective" != "$requested" ]] || ! grep -q 'campus-interactive.js' "$page" 2>/dev/null; then
+              echo "WAIT /university/campus -> HTTP $code / effective $effective / expected clean URL $requested"
               ok=0
+            else
+              echo 'OK /university/campus -> 200 without a browser-visible canonicalization redirect'
             fi
 
             if [[ "$ok" == '1' ]]; then
@@ -89,12 +97,12 @@ jobs:
             fi
 
             if [[ "$ok" == '1' ]]; then
-              echo 'University production assets match the audited commit.'
+              echo 'University production assets and clean Campus URL match the audited commit.'
               exit 0
             fi
             sleep 5
           done
-          echo 'Timed out waiting for exact University production assets.' >&2
+          echo 'Timed out waiting for exact University production assets and clean Campus route.' >&2
           exit 1
       - name: Install Playwright Chromium
         if: github.event_name != 'pull_request'
