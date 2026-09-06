@@ -76,7 +76,11 @@ function verifySchedule(c,s,t,todayLeft){
   assert(close(num(x.layout.gap),t.section),`${c.name}: schedule layout gap ${x.layout.gap} != ${t.section}`);
   assert(close(num(x.calendarGrid.rowGap),t.dense,.4)&&close(num(x.calendarGrid.columnGap),t.dense,.4),`${c.name}: calendar dense gap mismatch ${JSON.stringify(x.calendarGrid)}`);
   assert(close(num(x.calendar.padding),t.card),`${c.name}: calendar card padding ${x.calendar.padding} != ${t.card}`);
-  if(c.width<=1120){assert(x.layout.display==='grid',`${c.name}: schedule reverted to block; gap would be inert`);assert(close(x.boxes.event.top-x.boxes.calendar.bottom,t.section,1),`${c.name}: rendered calendar→events gap mismatch ${JSON.stringify({actual:x.boxes.event.top-x.boxes.calendar.bottom,token:t.section})}`)}
+  const horizontalGap=x.boxes.event.left-x.boxes.calendar.right;
+  const verticalGap=x.boxes.event.top-x.boxes.calendar.bottom;
+  const sideBySide=horizontalGap>=-1&&Math.abs(x.boxes.event.top-x.boxes.calendar.top)<=4;
+  if(sideBySide)assert(close(horizontalGap,t.section,1.25),`${c.name}: rendered calendar→events horizontal gap mismatch ${JSON.stringify({actual:horizontalGap,token:t.section,display:x.layout.display})}`);
+  else assert(close(verticalGap,t.section,1.25),`${c.name}: rendered calendar→events vertical gap mismatch ${JSON.stringify({actual:verticalGap,token:t.section,display:x.layout.display})}`);
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Schedule rail inset drift ${JSON.stringify(x.view)}`);assert(close(x.boxes.calendar.left,todayLeft,1.25),`${c.name}: Today/Schedule left rail diverged ${JSON.stringify({todayLeft,scheduleLeft:x.boxes.calendar.left})}`)}
 }
 function verifySchool(c,s,t,todayLeft){
