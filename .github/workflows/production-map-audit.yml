@@ -26,8 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
       - name: Validate campus audit sources
@@ -47,7 +47,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          url='https://flow-student-blush.vercel.app/university/campus'
+          url='https://blank-app.agfvrd.workers.dev/university/campus'
           for i in {1..60}; do
             if curl -fsSL --max-time 10 "$url" | grep -q 'campus-interactive.js'; then
               echo 'Interactive campus asset is live.'
@@ -60,14 +60,14 @@ jobs:
       - name: Install Playwright Chromium
         if: github.event_name != 'pull_request'
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.63.0
           npx playwright install chromium
       - name: Audit production interactive map
         if: github.event_name != 'pull_request'
         env:
-          FLOW_PRODUCTION_URL: https://flow-student-blush.vercel.app
+          FLOW_PRODUCTION_URL: https://blank-app.agfvrd.workers.dev
         run: node scripts/production-map-audit.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always() && github.event_name != 'pull_request'
         with:
           name: production-campus-map-audit

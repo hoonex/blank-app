@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Validate AdFit sources
         run: |
           node --check flow-adfit-config.js
@@ -33,7 +33,7 @@ jobs:
           ! grep -q 'flow-optical-jelly-v1' flow-adfit-config.js
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.63.0
           npx playwright install chromium
       - name: Start local Flow server
         run: |
@@ -52,7 +52,7 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/adfit-school-top-audit.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: adfit-layout-audit

@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 9
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Validate Cloudflare route worker
         run: |
@@ -43,7 +43,7 @@ jobs:
           grep -q "school-today-exam-feed.js" sw.js
 
       - name: Validate Wrangler deployment bundle
-        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/flow-wrangler-dry
+        run: npx --yes wrangler@4.129.0 deploy --dry-run --outdir /tmp/flow-wrangler-dry
 
       - name: Verify deployed clean routes survive refresh
         id: live_routes

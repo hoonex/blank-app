@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Validate map sources
         run: |
           set -euo pipefail
@@ -54,7 +54,7 @@ jobs:
           grep -q "실시간 열차 위치" school-transit-map.js
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.63.0
           npx playwright install chromium
       - name: Verify stop-marker coordinate anchoring
         run: node tests/transit-marker-anchor-audit.mjs
@@ -72,7 +72,7 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/transit-official-road-visual-audit.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: transit-live-map-audit

@@ -1,7 +1,8 @@
 {
-  "name": "Flow School — 시간표 · 급식 · 학사일정",
+  "id": "/",
+  "name": "Flow School",
   "short_name": "Flow School",
-  "description": "학교를 한 번 선택하면 시간표, 급식, 학사일정과 학교정보를 바로 확인하는 학생용 학교생활 앱",
+  "description": "시간표, 급식, 학사일정, 통학 흐름을 한 곳에서 확인하는 학생 대시보드",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
