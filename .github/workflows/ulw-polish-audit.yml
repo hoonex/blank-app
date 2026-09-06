@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Validate sources
@@ -44,7 +44,7 @@ jobs:
           ! grep -q 'campus-geolocation-bridge.js' sw.js
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.63.0
           npx playwright install chromium
       - name: Start local server
         run: |
@@ -54,7 +54,7 @@ jobs:
           exit 1
       - name: Run browser audit
         run: node scripts/ulw-polish-audit.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ulw-polish-audit

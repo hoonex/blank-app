@@ -19,17 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Validate sources
         run: |
           node --check school-timetable-polish.js
           node --check tests/school-live-today-audit.mjs
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.63.0
           npx playwright install chromium
       - name: Start local Flow server
         run: |
@@ -47,7 +47,7 @@ jobs:
         run: node tests/school-live-today-audit.mjs
       - name: Upload screenshots and report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: school-live-today-audit
           path: school-live-today-audit
