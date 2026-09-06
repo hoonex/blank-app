@@ -10,6 +10,7 @@ on:
       - 'school-toolbar-grouping.js'
       - 'school-global-shell-glass.js'
       - 'school-spacing-system.js'
+      - 'school-settings-wide.css'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
@@ -25,6 +26,7 @@ on:
       - 'tests/school-bottom-nav-dark-audit.mjs'
       - 'tests/school-spacing-system-audit.mjs'
       - 'tests/school-settings-responsive-sweep-audit.mjs'
+      - 'tests/school-settings-shell-parity-audit.mjs'
       - 'tests/school-settings-short-desktop-diagnostic.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
@@ -59,6 +61,7 @@ jobs:
           node --check tests/school-bottom-nav-dark-audit.mjs
           node --check tests/school-spacing-system-audit.mjs
           node --check tests/school-settings-responsive-sweep-audit.mjs
+          node --check tests/school-settings-shell-parity-audit.mjs
           node --check tests/school-settings-short-desktop-diagnostic.mjs
       - name: Install Playwright Chromium
         run: |
@@ -111,6 +114,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-bottom-nav-dark-audit
         run: node tests/school-bottom-nav-dark-audit.mjs
+      - name: Verify Settings uses the shared mobile shell
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-settings-shell-parity-audit
+        run: node tests/school-settings-shell-parity-audit.mjs
       - name: Sweep School Settings across responsive boundaries
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -133,6 +141,7 @@ jobs:
             school-visual-contract-audit
             school-spacing-system-audit
             school-bottom-nav-dark-audit
+            school-settings-shell-parity-audit
             school-settings-responsive-sweep-audit
             school-device-matrix-audit
           if-no-files-found: ignore

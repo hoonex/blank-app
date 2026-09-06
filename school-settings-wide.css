@@ -170,9 +170,7 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway
   padding-top:0!important;
 }
 
-/* Settings content must remain scrollable above the floating mobile nav.
- * The doubled view id intentionally outranks dynamically injected legacy
- * settings rules even when those rules are appended later in the document. */
+/* Settings content must remain scrollable above the floating mobile nav. */
 @media(max-width:900px),(min-width:901px) and (max-width:1024px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
     padding-bottom:calc(138px + env(safe-area-inset-bottom))!important;
@@ -181,6 +179,37 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway
 }
 @media(max-width:520px){
   html[data-flow-school-ui="v2"] body #flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
+    padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
+    scroll-padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
+  }
+}
+
+/* Settings is a normal destination, not a viewport overlay. Keep the same
+ * document-flow shell and mobile topbar used by Schedule and School. The
+ * intentionally high specificity outranks the legacy fixed-sheet rules that
+ * are injected later by flow-settings-view/mobile-v5. */
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard #flowSchoolSettingsView#flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
+    position:relative!important;
+    z-index:auto!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    overscroll-behavior:auto!important;
+    background:transparent!important;
+    margin:0!important;
+    padding:0 0 calc(138px + env(safe-area-inset-bottom))!important;
+    scroll-padding:0 0 calc(138px + env(safe-area-inset-bottom))!important;
+  }
+}
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard #flowSchoolSettingsView#flowSchoolSettingsView#flowSchoolSettingsView:not(.hidden){
     padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
     scroll-padding-bottom:calc(134px + env(safe-area-inset-bottom))!important;
   }
