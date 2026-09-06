@@ -66,7 +66,7 @@ async function settingsState(page){return page.evaluate(()=>{
   const fields=[...document.querySelectorAll('#flowSchoolSettingsView .flow-settings-fields')].filter(shown);
   const style=panel?getComputedStyle(panel):null;
   const last=panel?.querySelector('.flow-settings-stack')?.lastElementChild||null;
-  return{position:style?.position||'',panel:box(panel),columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),fieldRects:fields.map(box),paddingBottom:Number.parseFloat(style?.paddingBottom||'0')||0,last:box(last),scrollTop:panel?.scrollTop||0,scrollHeight:panel?.scrollHeight||0,clientHeight:panel?.clientHeight||0,viewportHeight:window.innerHeight,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+  return{position:style?.position||'',panel:box(panel),columns:fields.map(node=>getComputedStyle(node).gridTemplateColumns),fieldRects:fields.map(box),paddingBottom:Number.parseFloat(style?.paddingBottom||'0')||0,last:box(last),scrollTop:panel?.scrollTop||0,scrollHeight:panel?.scrollHeight||0,clientHeight:panel?.clientHeight||0,windowScrollY:window.scrollY,documentScrollHeight:document.documentElement.scrollHeight,viewportHeight:window.innerHeight,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
 })}
 async function navigationState(page){return page.evaluate(()=>{
   const shown=node=>Boolean(node&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0);
@@ -142,21 +142,21 @@ for(const testCase of [
   await page.locator('#mobileSettingsBtn:visible,#settingsBtn:visible').first().click();
   await page.waitForSelector('#flowSchoolSettingsView:not(.hidden)');
   await page.waitForSelector('#flowSchoolSettingsView .flow-settings-fields');
-  await page.locator('#flowSchoolSettingsView').evaluate(node=>{node.scrollTop=node.scrollHeight});
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   await page.waitForTimeout(60);
   const settings=await settingsState(page),settingsNav=await navigationState(page);
   if(portrait){
     const single=settings.columns.length>0&&settings.columns.every(value=>value.trim().split(/\s+/).filter(Boolean).length===1);
-    const mobileSurface=settings.position==='fixed'&&settings.panel&&settings.panel.top>=60&&settings.panel.top<=68&&settings.panel.width>=950&&Math.abs(settings.panel.bottom-settings.viewportHeight)<=2;
+    const mobileSurface=settings.position!=='fixed'&&settings.panel&&settings.panel.width>=900;
     const fourTabs=settingsNav.tabs.length===4&&settingsNav.tabs.every(tab=>tab.rect&&tab.rect.height>=46);
     const firstTab=settingsNav.tabs[0]?.rect;
     const sameTabGeometry=Boolean(firstTab)&&settingsNav.tabs.every(tab=>tab.rect&&Math.abs(tab.rect.top-firstTab.top)<=1&&Math.abs(tab.rect.height-firstTab.height)<=1&&Math.abs(tab.rect.width-firstTab.width)<=2);
-    const navOverPanel=settingsNav.nav&&settingsNav.panel&&Math.abs(settingsNav.panel.bottom-settingsNav.viewportHeight)<=2&&settingsNav.nav.top<settingsNav.panel.bottom&&settingsNav.nav.bottom<=settingsNav.panel.bottom+1&&settingsNav.navZ>settingsNav.panelZ;
+    const navOverPanel=settingsNav.nav&&settingsNav.panel&&settingsNav.nav.top<settingsNav.panel.bottom&&settingsNav.navZ>settingsNav.panelZ;
     const contentClearsNav=settings.last&&settingsNav.nav&&settings.paddingBottom>=100&&settings.last.bottom<=settingsNav.nav.top-8;
     const fullLens=settingsNav.nav&&settingsNav.lens.display!=='none'&&settingsNav.lens.height>=Math.max(40,settingsNav.nav.height-12)&&settingsNav.lens.width>=firstTab.width-4;
     const cleanSettingsTab=!settingsNav.settingsLegacyClass&&settingsNav.settingsBorderTop==='0px'&&sameTabGeometry;
     if(!single||!mobileSurface||settings.overflow>1||!settingsNav.visible||!fourTabs||!navOverPanel||!contentClearsNav||settingsNav.pointer==='none'||!settingsNav.settingsActive||settingsNav.tabIndex!=='3'||!cleanSettingsTab||!fullLens){
-      throw new Error(`${name}: Settings bottom-nav/lens geometry is broken ${JSON.stringify({settings,settingsNav,sameTabGeometry,navOverPanel,contentClearsNav,fullLens,cleanSettingsTab})}`);
+      throw new Error(`${name}: Settings document-flow/nav geometry is broken ${JSON.stringify({settings,settingsNav,sameTabGeometry,navOverPanel,contentClearsNav,fullLens,cleanSettingsTab})}`);
     }
   }else if(settings.position==='fixed'||settings.overflow>1){
     throw new Error(`${name}: Settings landscape composition regressed ${JSON.stringify(settings)}`);
@@ -180,4 +180,4 @@ for(const testCase of [
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'continuous-surface-under-floating-nav-with-clear-scroll-end',landscape:'compact-shell-with-landscape-content'},null,2));
+console.log(JSON.stringify({ok:true,widePortrait:'all-school-destinations-touch-first',topbar:'mobile-internals',settings:'normal-destination-under-shared-topbar-with-clear-scroll-end',landscape:'compact-shell-with-landscape-content'},null,2));
