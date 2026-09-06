@@ -169,6 +169,49 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body{
     radial-gradient(820px 560px at calc(100% - var(--flow-ambient-x)) 110%,color-mix(in srgb,var(--flow-ambient-b) 14%,transparent),transparent 72%)!important;
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body::before{opacity:.36!important}
+
+/* Dark chrome is a theme material, not a time-ambience effect. Keep the subdued
+   specular stack even when ambience is off, and never mix the phase palette into it. */
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+    background:var(--surface)!important;
+    border-bottom-color:rgba(255,255,255,.08)!important;
+    box-shadow:0 9px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10)!important;
+    backdrop-filter:blur(22px) saturate(140%) brightness(.97)!important;
+    -webkit-backdrop-filter:blur(22px) saturate(140%) brightness(.97)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
+    background:color-mix(in srgb,var(--surface-2) 86%,transparent)!important;
+    border-color:rgba(255,255,255,.08)!important;
+    box-shadow:0 5px 16px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.11)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme="dark"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+    background:
+      radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 33%,transparent 58%),
+      linear-gradient(180deg,rgba(25,31,40,.68),rgba(18,23,30,.53))!important;
+    border-bottom-color:rgba(255,255,255,.14)!important;
+    box-shadow:0 10px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.15)!important;
+    backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme="dark"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
+    background:color-mix(in srgb,var(--surface-2) 80%,transparent)!important;
+    border-color:rgba(255,255,255,.10)!important;
+    box-shadow:0 5px 16px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.13)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+    background:var(--flow-glass-fill)!important;
+    border-color:var(--flow-glass-edge)!important;
+    box-shadow:0 12px 30px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.11)!important;
+  }
+  html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
+    background:
+      radial-gradient(130% 112% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.18) 0%,rgba(255,255,255,.045) 31%,transparent 60%),
+      linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))!important;
+    border-color:rgba(255,255,255,.16)!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(0,0,0,.18),0 7px 17px rgba(0,0,0,.22)!important;
+  }
+}
 `;
       document.head.append(style);
     }
