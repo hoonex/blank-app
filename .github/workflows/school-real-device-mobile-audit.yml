@@ -9,6 +9,7 @@ on:
       - 'school-final-visual-polish.js'
       - 'school-toolbar-grouping.js'
       - 'school-global-shell-glass.js'
+      - 'school-spacing-system.js'
       - 'school-metrics.js'
       - 'school-ia.js'
       - 'school-today-responsive.css'
@@ -22,6 +23,7 @@ on:
       - 'tests/school-device-matrix-audit.mjs'
       - 'tests/school-visual-contract-audit.mjs'
       - 'tests/school-bottom-nav-dark-audit.mjs'
+      - 'tests/school-spacing-system-audit.mjs'
       - '.github/workflows/school-real-device-mobile-audit.yml'
   workflow_dispatch:
 
@@ -44,6 +46,7 @@ jobs:
           node --check school-final-visual-polish.js
           node --check school-toolbar-grouping.js
           node --check school-global-shell-glass.js
+          node --check school-spacing-system.js
           node --check flow-optical-ambient.js
           node --check tests/school-real-device-mobile-audit.mjs
           node --check tests/school-phone-radius-audit.mjs
@@ -52,6 +55,7 @@ jobs:
           node --check tests/school-device-matrix-audit.mjs
           node --check tests/school-visual-contract-audit.mjs
           node --check tests/school-bottom-nav-dark-audit.mjs
+          node --check tests/school-spacing-system-audit.mjs
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -89,6 +93,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-visual-contract-audit
         run: node tests/school-visual-contract-audit.mjs
+      - name: Verify rendered School spacing system
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-spacing-system-audit
+        run: node tests/school-spacing-system-audit.mjs
       - name: Verify bottom-nav proportions and dark materials
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -109,6 +118,7 @@ jobs:
             school-final-visual-audit
             school-toolbar-grouping-audit
             school-visual-contract-audit
+            school-spacing-system-audit
             school-bottom-nav-dark-audit
             school-device-matrix-audit
           if-no-files-found: ignore
