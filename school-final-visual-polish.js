@@ -1,8 +1,8 @@
 const style=document.createElement('style');
 style.id='flow-school-final-visual-polish-style';
 style.textContent=`
-/* Final School visual contract. Time ambience must be visible on the rendered
-   surface, not merely present as hidden custom properties behind opaque shells. */
+/* Final School visual contract. Time ambience owns the wallpaper/scene only;
+   content surfaces and product chrome keep their normal material. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="light"][data-flow-ambient-phase="dawn"]{
   --flow-ambient-a:#ffe8d8!important;--flow-ambient-b:#e9e5ff!important
 }
@@ -31,12 +31,6 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard .product-
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #todayView{
   background-color:transparent!important;
   background-image:none!important;
-}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #todayView .status-card:not(.flow-home-noise){
-  background:color-mix(in srgb,var(--surface) 89%,var(--flow-ambient-a))!important;
-}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #todayView :is(.timetable-card,.meal-card,.upcoming-card){
-  background:color-mix(in srgb,var(--surface) 91%,var(--flow-ambient-b))!important;
 }
 
 /* Timetable help is an inline disclosure, not another card/button. Keep the 44px
@@ -156,7 +150,7 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
     height:56px!important;
     padding:3px 7px!important;
     gap:0!important;
-    background:color-mix(in srgb,var(--surface) 82%,var(--flow-ambient-a,transparent))!important;
+    background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
     overflow:visible!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .flow-logo{
@@ -199,7 +193,7 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
     border:0!important;
     border-radius:10px!important;
     corner-shape:round!important;
-    background:color-mix(in srgb,var(--surface) 64%,var(--flow-ambient-b,transparent))!important;
+    background:color-mix(in srgb,var(--surface) 64%,transparent)!important;
     box-shadow:0 2px 7px rgba(43,57,78,.04),inset 0 1px 0 rgba(255,255,255,.58),inset 0 -1px 0 rgba(43,57,78,.025)!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .mobile-school-button span{
@@ -245,9 +239,6 @@ html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayVie
   }
   html[data-flow-school-ui="v2"] body.flow-inline-week-active #dashboard #todayView .timetable-actions{
     justify-content:flex-start!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard #bottomNav.mobile-bottom-nav{
-    background:color-mix(in srgb,var(--surface) 92%,var(--flow-ambient-b))!important;
   }
 }
 
