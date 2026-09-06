@@ -309,10 +309,6 @@ function installStyle(){
     padding-bottom:calc(118px + env(safe-area-inset-bottom))!important;
     scroll-padding-bottom:calc(118px + env(safe-area-inset-bottom))!important;
   }
-
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #todayView :is(.status-card,.timetable-card,.meal-card,.upcoming-card){
-    background-color:color-mix(in srgb,var(--surface) 91%,transparent)!important;
-  }
 }
 `;
   document.head.append(style);

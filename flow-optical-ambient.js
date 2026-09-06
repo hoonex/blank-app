@@ -148,29 +148,10 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) 
   gap:var(--flow-school-section-gap)!important;
 }
 
-/* The time palette reaches surfaces and chrome very lightly. Content/text colors
-   are untouched, and the underlying product main remains transparent. */
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard:not(.hidden){
-  --flow-school-ambient-surface:color-mix(in srgb,var(--surface) 95%,var(--flow-ambient-a) 5%);
-  --flow-school-ambient-surface-2:color-mix(in srgb,var(--surface-2) 94%,var(--flow-ambient-b) 6%);
-  --flow-school-ambient-edge:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 4%);
-  --flow-school-ambient-shadow:color-mix(in srgb,rgba(31,42,68,.11) 84%,var(--flow-ambient-b) 16%);
-  --flow-school-ambient-specular:color-mix(in srgb,rgba(255,255,255,.82) 90%,var(--flow-ambient-a) 10%);
-}
+/* Time ambience is wallpaper-only: it may change the scene behind School, but it
+   must not restyle cards, rows, calendar cells, controls, top chrome, or nav. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body::before{opacity:.62!important}
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) .product-main{background-color:transparent!important}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard:not(.hidden) :where(
-  .status-card:not(.flow-home-noise),.content-card,.calendar-card,.week-card,.info-tile,.rank-card,
-  .national-schedule-card,.flow-settings-card
-){
-  background-color:var(--flow-school-ambient-surface)!important;
-  border-color:var(--flow-school-ambient-edge)!important;
-  box-shadow:0 10px 28px var(--flow-school-ambient-shadow),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
-}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard#dashboard:not(.hidden) :where(
-  .period-button,.dish,.timetable-mode-toggle,.flow-school-utility-action,.timetable-actions>.neo-button,
-  #allergyBtn,.month-picker,.calendar-day
-){background-color:var(--flow-school-ambient-surface-2)!important}
 
 /* Dark keeps the same time-of-day hue, but the atmosphere is mixed into the dark
    base instead of painting a light pastel wallpaper behind dark cards. */
@@ -189,74 +170,47 @@ html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body{
 }
 html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body::before{opacity:.36!important}
 
+/* Dark chrome is a theme material, not a time-ambience effect. Keep the subdued
+   specular stack even when ambience is off, and never mix the phase palette into it. */
 @media(max-width:1180px){
-  /* Neutral/standard chrome can take a direct ambient surface tint. Optical keeps
-     its specular gradient stack and only mixes the same palette into that stack. */
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
-    background:color-mix(in srgb,var(--surface) 90%,var(--flow-ambient-a) 10%)!important;
-    border-bottom-color:color-mix(in srgb,var(--text) 6%,var(--flow-ambient-a) 5%)!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
-    background:color-mix(in srgb,var(--surface) 96%,var(--flow-ambient-a) 4%)!important;
-    border-bottom-color:color-mix(in srgb,rgba(255,255,255,.08) 94%,var(--flow-ambient-a) 6%)!important;
+  html[data-flow-school-ui="v2"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+    background:var(--surface)!important;
+    border-bottom-color:rgba(255,255,255,.08)!important;
     box-shadow:0 9px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10)!important;
     backdrop-filter:blur(22px) saturate(140%) brightness(.97)!important;
     -webkit-backdrop-filter:blur(22px) saturate(140%) brightness(.97)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
+  html[data-flow-school-ui="v2"][data-theme="dark"]:not([data-flow-glass-mode="optical"]) body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
     background:color-mix(in srgb,var(--surface-2) 86%,transparent)!important;
     border-color:rgba(255,255,255,.08)!important;
     box-shadow:0 5px 16px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.11)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
-    background:
-      radial-gradient(145% 125% at 16% -34%,var(--flow-school-ambient-specular) 0%,rgba(255,255,255,.20) 32%,transparent 57%),
-      linear-gradient(180deg,color-mix(in srgb,rgba(247,250,255,.66) 94%,var(--flow-ambient-a) 6%),color-mix(in srgb,rgba(244,248,253,.47) 94%,var(--flow-ambient-b) 6%))!important;
-    border-bottom-color:color-mix(in srgb,rgba(255,255,255,.62) 90%,var(--flow-ambient-a) 10%)!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-glass-mode="optical"][data-theme="dark"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
+  html[data-flow-school-ui="v2"][data-theme="dark"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar{
     background:
       radial-gradient(145% 125% at 16% -34%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 33%,transparent 58%),
-      linear-gradient(180deg,color-mix(in srgb,rgba(25,31,40,.68) 96%,var(--flow-ambient-a) 4%),color-mix(in srgb,rgba(18,23,30,.53) 96%,var(--flow-ambient-b) 4%))!important;
-    border-bottom-color:color-mix(in srgb,rgba(255,255,255,.14) 92%,var(--flow-ambient-a) 8%)!important;
+      linear-gradient(180deg,rgba(25,31,40,.68),rgba(18,23,30,.53))!important;
+    border-bottom-color:rgba(255,255,255,.14)!important;
     box-shadow:0 10px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.15)!important;
     backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
     -webkit-backdrop-filter:blur(18px) saturate(145%) brightness(.97) contrast(1.03)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-flow-glass-mode="optical"][data-theme="dark"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
+  html[data-flow-school-ui="v2"][data-theme="dark"][data-flow-glass-mode="optical"] body #dashboard#dashboard#dashboard#dashboard:not(.hidden) .mobile-topbar .mobile-school-button{
     background:color-mix(in srgb,var(--surface-2) 80%,transparent)!important;
     border-color:rgba(255,255,255,.10)!important;
     box-shadow:0 5px 16px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.13)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
-    background:color-mix(in srgb,var(--flow-glass-fill,rgba(248,250,253,.54)) 93%,var(--flow-ambient-b) 7%)!important;
-    border-color:color-mix(in srgb,var(--flow-glass-edge,rgba(255,255,255,.68)) 90%,var(--flow-ambient-a) 10%)!important;
-    box-shadow:0 10px 28px color-mix(in srgb,var(--flow-glass-depth,rgba(34,51,82,.12)) 88%,var(--flow-ambient-b) 12%),inset 0 1px 0 var(--flow-school-ambient-specular)!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
-    background:
-      radial-gradient(130% 112% at var(--flow-lens-light-x,34%) -8%,var(--flow-school-ambient-specular) 0%,rgba(255,255,255,.08) 31%,transparent 60%),
-      linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 6%,rgba(255,255,255,.07)),color-mix(in srgb,var(--flow-ambient-b) 4%,rgba(255,255,255,.018)))!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
-    background:color-mix(in srgb,var(--flow-glass-fill) 97%,var(--flow-ambient-b) 3%)!important;
-    border-color:color-mix(in srgb,var(--flow-glass-edge) 96%,var(--flow-ambient-a) 4%)!important;
+  html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+    background:var(--flow-glass-fill)!important;
+    border-color:var(--flow-glass-edge)!important;
     box-shadow:0 12px 30px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.11)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
+  html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard#dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before{
     background:
       radial-gradient(130% 112% at var(--flow-lens-light-x,34%) -8%,rgba(255,255,255,.18) 0%,rgba(255,255,255,.045) 31%,transparent 60%),
-      linear-gradient(180deg,color-mix(in srgb,var(--flow-ambient-a) 3%,rgba(255,255,255,.035)),color-mix(in srgb,var(--flow-ambient-b) 2%,rgba(255,255,255,.008)))!important;
+      linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008))!important;
     border-color:rgba(255,255,255,.16)!important;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -1px 0 rgba(0,0,0,.18),0 7px 17px rgba(0,0,0,.22)!important;
   }
-}
-html[data-flow-school-ui="v2"][data-flow-ambient="on"][data-theme="dark"] body #dashboard:not(.hidden){
-  --flow-school-ambient-surface:color-mix(in srgb,var(--surface) 97%,var(--flow-ambient-a) 3%);
-  --flow-school-ambient-surface-2:color-mix(in srgb,var(--surface-2) 96%,var(--flow-ambient-b) 4%);
-  --flow-school-ambient-edge:color-mix(in srgb,rgba(255,255,255,.08) 92%,var(--flow-ambient-a) 8%);
-  --flow-school-ambient-shadow:color-mix(in srgb,rgba(0,0,0,.24) 91%,var(--flow-ambient-b) 9%);
-  --flow-school-ambient-specular:color-mix(in srgb,rgba(255,255,255,.14) 92%,var(--flow-ambient-a) 8%);
 }
 `;
       document.head.append(style);

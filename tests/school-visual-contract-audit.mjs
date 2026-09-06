@@ -71,7 +71,7 @@ function verify(c,state){
 async function ambientProbe(page,c){
   const result=await page.evaluate(()=>{
     const root=document.documentElement,card=document.querySelector('#todayView .timetable-card'),top=[...document.querySelectorAll('.mobile-topbar')].find(x=>getComputedStyle(x).display!=='none'),nav=[...document.querySelectorAll('#bottomNav')].find(x=>getComputedStyle(x).display!=='none');
-    const read=()=>({palette:getComputedStyle(root).getPropertyValue('--flow-ambient-a').trim(),card:getComputedStyle(card).backgroundColor,top:top?getComputedStyle(top).backgroundColor:'',nav:nav?getComputedStyle(nav).backgroundColor:'',backdrop:getComputedStyle(document.body,'::before').opacity});
+    const read=()=>({palette:getComputedStyle(root).getPropertyValue('--flow-ambient-a').trim(),rootBackground:getComputedStyle(root).backgroundImage,bodyBackground:getComputedStyle(document.body).backgroundImage,card:getComputedStyle(card).backgroundColor,top:top?getComputedStyle(top).backgroundColor:'',nav:nav?getComputedStyle(nav).backgroundColor:'',backdrop:getComputedStyle(document.body,'::before').opacity});
     const original=root.dataset.flowAmbientPhase||'day';
     root.dataset.flowAmbientPhase='day';const day=read();
     root.dataset.flowAmbientPhase='evening';const evening=read();
@@ -79,9 +79,10 @@ async function ambientProbe(page,c){
     return{day,evening};
   });
   if(result.day.palette===result.evening.palette)throw new Error(`${c.name}: real School ambient phase palette did not change ${JSON.stringify(result)}`);
-  if(result.day.card===result.evening.card)throw new Error(`${c.name}: time palette does not reach card surface ${JSON.stringify(result)}`);
-  if(c.width<1181&&result.day.top===result.evening.top)throw new Error(`${c.name}: time palette does not reach top shell ${JSON.stringify(result)}`);
-  if(c.width<1181&&result.day.nav===result.evening.nav)throw new Error(`${c.name}: time palette does not reach bottom glass ${JSON.stringify(result)}`);
+  if(result.day.rootBackground===result.evening.rootBackground&&result.day.bodyBackground===result.evening.bodyBackground)throw new Error(`${c.name}: time palette no longer reaches the ambient scene ${JSON.stringify(result)}`);
+  if(result.day.card!==result.evening.card)throw new Error(`${c.name}: time palette leaked into card surface ${JSON.stringify(result)}`);
+  if(c.width<1181&&result.day.top!==result.evening.top)throw new Error(`${c.name}: time palette leaked into top shell ${JSON.stringify(result)}`);
+  if(c.width<1181&&result.day.nav!==result.evening.nav)throw new Error(`${c.name}: time palette leaked into bottom glass ${JSON.stringify(result)}`);
   if(n(result.day.backdrop)>.7||n(result.evening.backdrop)>.7)throw new Error(`${c.name}: ambient backdrop is too dominant ${JSON.stringify(result)}`);
   return result;
 }
