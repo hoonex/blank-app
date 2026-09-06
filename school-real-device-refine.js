@@ -1,5 +1,3 @@
-import './school-tablet-rotation-contract.js';
-
 const SCHOOL_LOGO_EDGE='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-logo';
 const SCHOOL_LOGO_CACHE_PREFIX='flow-school-logo-fallback-v3:';
 const SCHOOL_PROFILE_KEY='flow-school-profile-v3';
@@ -237,3 +235,4 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :
 `;
 document.head.append(style);
 document.documentElement.dataset.flowSchoolRealDeviceRefine='v1';
+queueMicrotask(()=>void import('./school-tablet-rotation-contract.js'));
