@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS = new Set([
   "https://raw.githack.com",
   "https://flow-student-blush.vercel.app",
+  "https://blank-app.agfvrd.workers.dev",
 ]);
 
 const QUEST_EVENTS = new Set([
