@@ -17,7 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
 
       - name: Verify Flow School runtime
         shell: bash
@@ -150,7 +153,7 @@ jobs:
           print('dashboard API OK:', school.get('name'))
           PY
 
-      - name: Verify university API
+      - name: Verify university core API
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
@@ -166,6 +169,14 @@ jobs:
           assert all(x.get('division')=='대학' for x in schools), schools
           print('university search OK:', len(schools))
           PY
+
+      - name: Probe Everytime public-share import
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data'
           curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 25 \
             -X POST -H 'content-type: application/json' \
             -d '{"url":"https://everytime.kr/@de9YHaTAnl47JtxH0muz"}' \
@@ -176,5 +187,5 @@ jobs:
           tt=data.get('timetable') or {}
           subjects=tt.get('subjects') or []
           assert subjects and any((s.get('times') or []) for s in subjects), data
-          print('Everytime import OK:', len(subjects))
+          print('Everytime import probe OK:', len(subjects))
           PY
