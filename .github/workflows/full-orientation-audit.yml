@@ -22,6 +22,7 @@ jobs:
           node --check flow-native.js
           node --check flow-refraction.js
           node --check flow-experience.js
+          node --check flow-optical-ambient.js
           node --check scripts/full-orientation-audit.mjs
           node --check tests/native-feel-audit.mjs
           node --check tests/liquid-glass-tab-lens-audit.mjs
@@ -35,6 +36,7 @@ jobs:
           node --check tests/settings-wide-composition-audit.mjs
           node --check tests/university-page-header-audit.mjs
           node --check tests/flow-experience-audit.mjs
+          node --check tests/school-ambient-surface-parity-audit.mjs
           node --check tests/date-scrubber-direct-audit.mjs
           test -f flow-material.css
           test -f flow-refraction.css
@@ -92,6 +94,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/flow-experience-audit.mjs
+      - name: Verify School time ambience stays background-only
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-ambient-surface-parity-audit.mjs
       - name: Verify direct date scrubber tracking and edge resistance
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -135,4 +141,5 @@ jobs:
             optical-nav-layout-audit/
             university-page-header-audit/
             flow-experience-audit/
+            school-ambient-surface-parity-audit/
           retention-days: 7
