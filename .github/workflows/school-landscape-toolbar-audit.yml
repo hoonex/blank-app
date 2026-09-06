@@ -24,6 +24,7 @@ jobs:
           node --check school-tablet-rotation-contract.js
           node --check tests/school-landscape-toolbar-audit.mjs
           node --check tests/school-tablet-rotation-audit.mjs
+          node --check tests/school-tablet-breakpoint-sweep-audit.mjs
           test -s school-landscape-toolbar.css
           grep -q 'school-landscape-toolbar.css' school-metrics.js
           grep -q 'school-landscape-toolbar.css' sw.js
@@ -50,6 +51,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/school-tablet-rotation-audit.mjs
+      - name: Sweep School tablet rotation breakpoints
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-tablet-breakpoint-sweep-audit.mjs
       - uses: actions/upload-artifact@v7
         if: always()
         with:
