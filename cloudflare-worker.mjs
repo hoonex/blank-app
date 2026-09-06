@@ -1,4 +1,4 @@
-export const FLOW_RELEASE='school-shell-v16-20260906';
+export const FLOW_RELEASE='school-shell-v17-20260906';
 
 export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
@@ -22,7 +22,7 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
   '/sw.js',
 ]);
 
-const FLOW_COLOR_SCHEME_CONTRACT=`<style id="flow-color-scheme-contract">html:not([data-theme="dark"]){color-scheme:only light!important}html[data-theme="dark"]{color-scheme:dark!important}</style><script id="flow-color-scheme-guard">(()=>{const meta=document.querySelector('meta[name="color-scheme"]');if(!meta)return;const keep=()=>{if(meta.content!=='light dark')meta.content='light dark'};keep();new MutationObserver(keep).observe(meta,{attributes:true,attributeFilter:['content']})})();</script>`;
+const FLOW_COLOR_SCHEME_CONTRACT=`<style id="flow-color-scheme-contract">html:not([data-theme="dark"]){color-scheme:light dark!important}@media(prefers-color-scheme:dark){html:not([data-theme="dark"]){color-scheme:dark!important}}html[data-theme="dark"]{color-scheme:dark!important}html:not([data-theme="dark"]) :is(input,select,textarea){color-scheme:light!important}</style><script id="flow-color-scheme-guard">(()=>{const meta=document.querySelector('meta[name="color-scheme"]');if(!meta)return;const keep=()=>{if(meta.content!=='light dark')meta.content='light dark'};keep();new MutationObserver(keep).observe(meta,{attributes:true,attributeFilter:['content']})})();</script>`;
 
 const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
 #todayView .status-grid>.status-card:nth-child(2),#todayView .status-grid>.status-card:nth-child(3){display:none!important}
