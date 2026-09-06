@@ -2,7 +2,7 @@
  * Keep a compact header, keep destination navigation at the viewport bottom,
  * remove the desktop School hero/sidebar, and let the wider canvas improve
  * content composition instead of switching back to the legacy desktop shell. */
-@media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
+@media (max-width:1366px) and (max-height:620px) and (orientation:landscape){
   html[data-flow-school-ui="v2"] body{
     overflow-x:hidden!important;
     padding-bottom:78px!important;
@@ -218,7 +218,7 @@
 /* Calendar row geometry is a viewport contract, not a runtime-state contract.
    Keep the compact six-row month grid stable during first paint and in isolated
    schedule surfaces before School v2 has attached its root data attribute. */
-@media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
+@media (max-width:1366px) and (max-height:620px) and (orientation:landscape){
   body #scheduleView .calendar-grid{
     gap:1px!important;
     grid-template-rows:auto repeat(6,44px)!important;
