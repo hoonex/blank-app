@@ -33,7 +33,7 @@ async function fixtures(page){
 }
 async function clickVisible(page,selector){const items=page.locator(selector);for(let i=0;i<await items.count();i++){const item=items.nth(i);if(await item.isVisible()){await item.click();return item}}throw new Error(`No visible target: ${selector}`)}
 const n=v=>Number.parseFloat(v)||0;
-function expected(c){return c.width<700?{section:12,control:8,pad:15,inset:10}:c.width<=1180?{section:16,control:8,pad:18,inset:18}:{section:18,control:10,pad:18,inset:null}}
+function expected(c){return c.width<700?{section:12,control:8,pad:15,inset:10,status:12}:c.width<=1180?{section:16,control:8,pad:18,inset:18,status:8}:{section:18,control:10,pad:18,inset:null,status:10}}
 async function visualState(page,c,label){
   return page.evaluate(({width,label})=>{
     const root=document.documentElement,dashboard=document.querySelector('#dashboard'),cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
@@ -60,7 +60,7 @@ function verify(c,state){
   if(state.navShape){if(String(state.navShape.shape).includes('squircle')||String(state.navShape.lensShape).includes('squircle'))throw new Error(`${c.name}/${state.label}: nav squircle leaked ${JSON.stringify(state.navShape)}`);if(c.width<1181&&n(state.navShape.radius)<24)throw new Error(`${c.name}/${state.label}: compact nav lost pill curvature ${JSON.stringify(state.navShape)}`)}
   if(n(state.tokens.section)!==e.section||n(state.tokens.control)!==e.control||n(state.tokens.pad)!==e.pad)throw new Error(`${c.name}/${state.label}: spacing tokens drifted expected=${JSON.stringify(e)} got=${JSON.stringify(state.tokens)}`);
   if(state.label==='today'){
-    if(Math.abs(n(state.gaps.status)-e.control)>.25||Math.abs(n(state.gaps.today)-e.section)>.25||Math.abs(n(state.gaps.right)-e.section)>.25)throw new Error(`${c.name}: Today gaps inconsistent ${JSON.stringify(state.gaps)}`);
+    if(Math.abs(n(state.gaps.status)-e.status)>.25||Math.abs(n(state.gaps.today)-e.section)>.25||Math.abs(n(state.gaps.right)-e.section)>.25)throw new Error(`${c.name}: Today gaps inconsistent expected status=${e.status}px ${JSON.stringify(state.gaps)}`);
     if(Math.abs(n(state.padding.timetable)-e.pad)>.25||Math.abs(n(state.padding.meal)-e.pad)>.25)throw new Error(`${c.name}: Today card padding inconsistent ${JSON.stringify(state.padding)}`);
     if(c.width<1181&&(Math.abs(n(state.padding.today.left)-e.inset)>.25||Math.abs(n(state.padding.today.right)-e.inset)>.25))throw new Error(`${c.name}: Today outer inset asymmetric ${JSON.stringify(state.padding.today)}`);
   }
