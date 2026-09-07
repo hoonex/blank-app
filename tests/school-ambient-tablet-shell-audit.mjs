@@ -22,7 +22,7 @@ async function clickVisible(page,selector){const all=page.locator(selector);for(
 
 await mkdir(OUT,{recursive:true});
 const browser=await chromium.launch({headless:true});
-const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
+const report={generatedAt:new Date().toISOString(),cases:[],desktopSafety:null,failures:[]};
 for(const glass of ['standard','optical'])for(const ambient of ['off','on']){
   const context=await browser.newContext({viewport:PORTRAIT,isMobile:false,hasTouch:true,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(15000);
   try{
@@ -34,6 +34,16 @@ for(const glass of ['standard','optical'])for(const ambient of ['off','on']){
     const liveToggle=await state(page,'live-toggle');assertShell(`${glass}/${ambient}/live-toggle`,liveToggle,{landscape:true,ambient:toggled});await page.screenshot({path:`${OUT}/${glass}-${ambient}-live-toggle.png`,fullPage:false,animations:'disabled'});
     report.cases.push({glass,ambient,portrait,landscape,liveToggle});console.log(`${glass}/${ambient}: PASS`);
   }catch(error){const message=String(error?.stack||error);report.failures.push({glass,ambient,message});console.error(`${glass}/${ambient}: FAIL\n${message}`);try{await page.screenshot({path:`${OUT}/${glass}-${ambient}-failure.png`,fullPage:false,animations:'disabled'})}catch{}}
+  await context.close();
+}
+{
+  const context=await browser.newContext({viewport:LANDSCAPE,isMobile:false,hasTouch:false,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(15000);
+  try{
+    await fixture(page,{glass:'standard',ambient:'off'});await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolTabletRotation&&document.documentElement.dataset.flowSchoolRuntimeV6==='ready');await page.waitForTimeout(220);
+    const desktop=await state(page,'non-touch-desktop');
+    if(desktop.maxTouchPoints!==0||desktop.tabletMode!=='wide'||desktop.topbarMode!=='wide'||!desktop.side.visible||desktop.nav.visible)throw new Error(`1536x1024 non-touch desktop was stolen by compact tablet shell ${JSON.stringify(desktop)}`);
+    report.desktopSafety=desktop;await page.screenshot({path:`${OUT}/non-touch-1536x1024-desktop.png`,fullPage:false,animations:'disabled'});console.log('non-touch 1536x1024 desktop: PASS');
+  }catch(error){const message=String(error?.stack||error);report.failures.push({glass:'standard',ambient:'off',case:'non-touch-desktop',message});console.error(`non-touch desktop: FAIL\n${message}`)}
   await context.close();
 }
 await browser.close();await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));if(report.failures.length)process.exit(1);console.log('School ambient tablet shell PASS');
