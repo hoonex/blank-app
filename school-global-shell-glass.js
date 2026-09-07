@@ -16,6 +16,9 @@ function queueRaiseStyle(){
   raiseQueued=true;
   queueMicrotask(()=>{raiseQueued=false;raiseStyle()});
 }
+function compactSchoolLayout(){
+  return root.dataset.flowSchoolLayout?root.dataset.flowSchoolLayout!=='desktop':window.innerWidth<=1180;
+}
 function applyGeometry(){
   const dashboard=document.querySelector('#dashboard');
   const visibleDashboard=Boolean(dashboard&&!dashboard.classList.contains('hidden'));
@@ -23,7 +26,7 @@ function applyGeometry(){
   const dock=document.querySelector('#flowTodayDateDock');
 
   if(nav){
-    if(visibleDashboard&&window.innerWidth<=1180){
+    if(visibleDashboard&&compactSchoolLayout()){
       nav.style.setProperty('border-radius','9999px','important');
       nav.style.setProperty('corner-shape','round','important');
     }else{
@@ -32,8 +35,8 @@ function applyGeometry(){
     }
   }
 
-  /* Wide touch devices must keep the product's pre-existing date controller.
-     The global shell only owns <=1180px chrome and never hides date controls. */
+  /* The responsive classifier owns whether a wide touch viewport is tablet or
+     desktop. The glass shell never hides or rewrites the date controls itself. */
   if(dock){
     dock.style.removeProperty('display');
     dock.style.removeProperty('visibility');
@@ -54,7 +57,7 @@ function queueGeometry(){
 function syncRefractionGeometry(){
   if(root.dataset.flowGlassMode!=='optical'||root.dataset.flowRefractionCopy!=='true')return;
   const dashboard=document.querySelector('#dashboard');
-  if(!dashboard||dashboard.classList.contains('hidden')||window.innerWidth>1180)return;
+  if(!dashboard||dashboard.classList.contains('hidden')||!compactSchoolLayout())return;
   const nav=document.querySelector('#bottomNav.mobile-bottom-nav');
   const source=document.querySelector('.product-main');
   if(!nav||!source)return;
