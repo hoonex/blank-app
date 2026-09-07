@@ -77,9 +77,9 @@ let selectedTimetableTitle='';
 function restoreTimetableSelection(){
   if(!selectedTimetableTitle)return;
   const grid=document.querySelector('#timeGrid');if(!grid)return;
-  const block=[...grid.querySelectorAll('.course-block.flow-editable-class:not(.custom)')].find(node=>node.getAttribute('title')===selectedTimetableTitle);
+  const block=[...grid.querySelectorAll('.course-block:not(.custom)')].find(node=>node.getAttribute('title')===selectedTimetableTitle);
   if(!block)return;
-  block.classList.add('flow-time-selected');
+  block.classList.add('flow-editable-class','flow-time-selected');
   block.dataset.timeSelected='true';
   block.setAttribute('aria-pressed','true');
   if(!block.querySelector('[data-time-selection-rail]')){
