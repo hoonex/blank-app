@@ -32,6 +32,8 @@ jobs:
           grep -q 'school-tablet-rotation-contract.js' school-real-device-refine.js
           grep -q 'school-tablet-rotation-contract.js' sw.js
           grep -q 'pointer:coarse' school-tablet-rotation-contract.js
+          grep -q 'maxTouchPoints' school-tablet-rotation-contract.js
+          grep -q '1536px' school-tablet-rotation-contract.js
           grep -q 'orientation:landscape' school-landscape-toolbar.css
           grep -q 'repeat(4,minmax(0,1fr))' school-landscape-toolbar.css
       - name: Install Playwright Chromium
