@@ -9,8 +9,10 @@ on:
       - 'school-mobile-v5.js'
       - 'school-real-device-refine.js'
       - 'school-tablet-rotation-contract.js'
+      - 'school-desktop-tablet-redesign.js'
       - 'school-today-topbar.js'
       - 'tests/school-ambient-tablet-shell-audit.mjs'
+      - 'tests/school-desktop-tablet-redesign-audit.mjs'
       - '.github/workflows/production-school-tablet-audit.yml'
   pull_request:
     branches: [main]
@@ -20,8 +22,10 @@ on:
       - 'school-mobile-v5.js'
       - 'school-real-device-refine.js'
       - 'school-tablet-rotation-contract.js'
+      - 'school-desktop-tablet-redesign.js'
       - 'school-today-topbar.js'
       - 'tests/school-ambient-tablet-shell-audit.mjs'
+      - 'tests/school-desktop-tablet-redesign-audit.mjs'
       - '.github/workflows/production-school-tablet-audit.yml'
   schedule:
     - cron: '23 */6 * * *'
@@ -34,7 +38,7 @@ permissions:
 jobs:
   production-school-tablet:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -46,15 +50,20 @@ jobs:
           node --check school-mobile-v5.js
           node --check school-real-device-refine.js
           node --check school-tablet-rotation-contract.js
+          node --check school-desktop-tablet-redesign.js
           node --check school-today-topbar.js
           node --check tests/school-ambient-tablet-shell-audit.mjs
-          grep -q 'TOUCH_LANDSCAPE_DIMENSIONS' school-tablet-rotation-contract.js
+          node --check tests/school-desktop-tablet-redesign-audit.mjs
+          grep -q 'WIDE_TOUCH_TABLET' school-tablet-rotation-contract.js
+          grep -q 'flowSchoolLayout' school-tablet-rotation-contract.js
           grep -q 'maxTouchPoints' school-tablet-rotation-contract.js
           grep -q '1536px' school-tablet-rotation-contract.js
+          grep -q 'flowSchoolDesktopTabletUi' school-desktop-tablet-redesign.js
           grep -q 'assertDateRailDirect' tests/school-ambient-tablet-shell-audit.mjs
           grep -q 'DOMMatrixReadOnly' tests/school-ambient-tablet-shell-audit.mjs
           grep -q 'LANDSCAPE={width:1536,height:1024}' tests/school-ambient-tablet-shell-audit.mjs
           grep -q 'non-touch 1536x1024 desktop' tests/school-ambient-tablet-shell-audit.mjs
+          grep -q 'large-desktop' tests/school-desktop-tablet-redesign-audit.mjs
       - name: Wait for exact School production assets
         if: github.event_name != 'pull_request'
         run: |
@@ -64,6 +73,7 @@ jobs:
             'school-mobile-v5.js'
             'school-real-device-refine.js'
             'school-tablet-rotation-contract.js'
+            'school-desktop-tablet-redesign.js'
             'school-today-topbar.js'
           )
           for i in {1..40}; do
@@ -100,12 +110,12 @@ jobs:
             fi
 
             if [[ "$ok" == '1' ]]; then
-              echo 'School production shell and tablet runtime assets match the audited commit.'
+              echo 'School production shell and desktop/tablet runtime assets match the audited commit.'
               exit 0
             fi
             sleep 5
           done
-          echo 'Timed out waiting for exact School production tablet assets.' >&2
+          echo 'Timed out waiting for exact School production desktop/tablet assets.' >&2
           exit 1
       - name: Install Playwright Chromium
         if: github.event_name != 'pull_request'
@@ -118,20 +128,29 @@ jobs:
           FLOW_BASE_URL: https://blank-app.agfvrd.workers.dev
           FLOW_AMBIENT_TABLET_OUT: production-school-tablet-audit
         run: node tests/school-ambient-tablet-shell-audit.mjs
+      - name: Audit canonical production School desktop tablet redesign
+        if: github.event_name != 'pull_request'
+        env:
+          FLOW_BASE_URL: https://blank-app.agfvrd.workers.dev
+          FLOW_DT_OUT: production-school-desktop-tablet-redesign
+        run: node tests/school-desktop-tablet-redesign-audit.mjs
       - uses: actions/upload-artifact@v7
         if: always() && github.event_name != 'pull_request'
         with:
           name: production-school-tablet-audit
-          path: production-school-tablet-audit/
+          path: |
+            production-school-tablet-audit/
+            production-school-desktop-tablet-redesign/
           retention-days: 5
       - name: Log successful production School tablet audit
         if: success() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          summary=$(jq -c '{cases:(.cases|map({glass,ambient,tabletMode:.landscape.tabletMode,topbarMode:.landscape.topbarMode,firstTx:.railDirect.first.tx,directTx:.railDirect.direct.tx})),desktop:{tabletMode:.desktopSafety.tabletMode,topbarMode:.desktopSafety.topbarMode,sidebarVisible:.desktopSafety.side.visible,navVisible:.desktopSafety.nav.visible},failures}' production-school-tablet-audit/report.json)
+          tablet=$(jq -c '{cases:(.cases|map({glass,ambient,tabletMode:.landscape.tabletMode,topbarMode:.landscape.topbarMode,firstTx:.railDirect.first.tx,directTx:.railDirect.direct.tx})),desktop:{tabletMode:.desktopSafety.tabletMode,topbarMode:.desktopSafety.topbarMode,sidebarVisible:.desktopSafety.side.visible,navVisible:.desktopSafety.nav.visible},failures}' production-school-tablet-audit/report.json)
+          redesign=$(jq -c '{cases:(.cases|map({name,layout:.state.layout,statusCount:.state.statusCount})),failures}' production-school-desktop-tablet-redesign/report.json)
           short=${GITHUB_SHA:0:7}
-          body=$(printf '### Production School tablet audit — %s\n\nPASS: canonical Cloudflare production preserved the 960x1536 -> 1536x1024 touch-tablet shell, direct date-rail tracking, ambient/glass parity, and non-touch desktop safety.\n\n```json\n%s\n```' "$short" "$summary")
+          body=$(printf '### Production School desktop/tablet audit — %s\n\nPASS: canonical Cloudflare production preserved the touch-tablet shell, direct date-rail tracking, ambient/glass parity, non-touch desktop safety, and the new desktop/tablet v2 composition.\n\n```json\n{"tablet":%s,"redesign":%s}\n```' "$short" "$tablet" "$redesign")
           gh issue comment 229 --body "$body"
       - name: Log failed production School tablet audit
         if: failure() && github.event_name == 'push'
@@ -139,5 +158,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           short=${GITHUB_SHA:0:7}
-          body=$(printf '### Production School tablet audit — %s\n\nFAIL: canonical production School tablet browser audit failed.\n\nRun: https://github.com/%s/actions/runs/%s' "$short" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          body=$(printf '### Production School desktop/tablet audit — %s\n\nFAIL: canonical production School desktop/tablet browser audit failed.\n\nRun: https://github.com/%s/actions/runs/%s' "$short" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
           gh issue comment 229 --body "$body"
