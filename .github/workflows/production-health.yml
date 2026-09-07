@@ -64,8 +64,8 @@ jobs:
           grep -q 'body.dialog-open' school-hotfix.css
           grep -q 'week-cell' school-polish.css
           grep -q 'only light' school-polish.css
-          grep -q "const CACHE='flow-school-shell-v16'" sw.js
-          grep -q "cache='flow-school-shell-v16'" cloudflare-worker.mjs
+          grep -q "const CACHE='flow-school-shell-v17'" sw.js
+          grep -q "cache='flow-school-shell-v17'" cloudflare-worker.mjs
           grep -Eq "FLOW_RELEASE='school-shell-v[0-9]+-[0-9]{8}'" cloudflare-worker.mjs
           grep -q "cache:'no-cache'" sw.js
           grep -q '/university/poi-icons.js' sw.js
