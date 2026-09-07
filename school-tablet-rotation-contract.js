@@ -37,6 +37,40 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .status-card:not(.flow-home-noise){
   border:0!important;
 }
+html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) .mobile-topbar .flow-logo-copy small{
+  display:none!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid{
+  grid-template-columns:repeat(12,minmax(0,1fr))!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid>.info-tile{
+  grid-column:span 3!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid>.info-tile-empty{
+  grid-column:1/-1!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+1):last-child)>.info-tile:last-child{
+  grid-column:5/span 4!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+2):last-child)>.info-tile:nth-last-child(2){
+  grid-column:3/span 4!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+2):last-child)>.info-tile:last-child{
+  grid-column:7/span 4!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+3):last-child)>.info-tile:nth-last-child(-n+3){
+  grid-column:span 4!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #landing .school-search-panel{
+  transform:translateY(-30px)!important;
+}
+html[data-flow-school-ui="v2"] body #switchDialog[open]{
+  z-index:240!important;
+}
+html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hidden) .mobile-topbar,
+html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hidden) .desktop-sidebar{
+  pointer-events:none!important;
+}
 @media (min-width:900px) and (max-width:1180px) and (orientation:portrait){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid{
     grid-template-columns:minmax(0,1fr)!important;
