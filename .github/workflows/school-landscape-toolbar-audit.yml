@@ -25,12 +25,15 @@ jobs:
           node --check tests/school-landscape-toolbar-audit.mjs
           node --check tests/school-tablet-rotation-audit.mjs
           node --check tests/school-tablet-breakpoint-sweep-audit.mjs
+          node --check tests/school-ambient-tablet-shell-audit.mjs
           test -s school-landscape-toolbar.css
           grep -q 'school-landscape-toolbar.css' school-metrics.js
           grep -q 'school-landscape-toolbar.css' sw.js
           grep -q 'school-tablet-rotation-contract.js' school-real-device-refine.js
           grep -q 'school-tablet-rotation-contract.js' sw.js
           grep -q 'pointer:coarse' school-tablet-rotation-contract.js
+          grep -q 'maxTouchPoints' school-tablet-rotation-contract.js
+          grep -q '1536px' school-tablet-rotation-contract.js
           grep -q 'orientation:landscape' school-landscape-toolbar.css
           grep -q 'repeat(4,minmax(0,1fr))' school-landscape-toolbar.css
       - name: Install Playwright Chromium
@@ -55,6 +58,10 @@ jobs:
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
         run: node tests/school-tablet-breakpoint-sweep-audit.mjs
+      - name: Verify ambient on/off wide-touch tablet shell
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/school-ambient-tablet-shell-audit.mjs
       - uses: actions/upload-artifact@v7
         if: always()
         with:
