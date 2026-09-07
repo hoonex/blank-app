@@ -95,15 +95,6 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
     align-items:start!important;
     gap:14px!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #flowSchoolSettingsView .flow-settings-stack{
-    max-width:none!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    align-items:start!important;
-    gap:14px!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #flowSchoolSettingsView .flow-settings-save{
-    grid-column:1/-1!important;
-  }
 }
 @media (min-width:900px) and (max-width:1180px) and (orientation:portrait){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid{
