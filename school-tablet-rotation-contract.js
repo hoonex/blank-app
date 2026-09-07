@@ -37,15 +37,49 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .status-card:not(.flow-home-noise){
   border:0!important;
 }
+@media (min-width:900px) and (max-width:1180px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .timetable-card,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
+    grid-column:1/-1!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
 @media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout > .content-card:not(.calendar-card){
     padding-top:10px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView #scheduleGrid{
+    margin-top:-3px!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #transitView.flow-transit-focused .flow-transit-search{
     margin-bottom:6px!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #transitView.flow-transit-focused .flow-transit-summary{
     margin-bottom:0!important;
+  }
+}
+@media (min-width:1181px) and (max-width:1366px) and (max-height:620px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body:has(#flowSchoolSettingsView:not(.hidden)) #dashboard.product-shell:not(.hidden){
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0 14px 20px!important;
+    grid-template-columns:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body:has(#flowSchoolSettingsView:not(.hidden)) #dashboard:not(.hidden) .desktop-sidebar{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body:has(#flowSchoolSettingsView:not(.hidden)) #dashboard:not(.hidden) .mobile-topbar{
+    display:grid!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body:has(#flowSchoolSettingsView:not(.hidden)) #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+    display:grid!important;
   }
 }
 `;
