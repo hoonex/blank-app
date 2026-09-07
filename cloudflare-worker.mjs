@@ -1,4 +1,4 @@
-export const FLOW_RELEASE='school-shell-v19-20260907';
+export const FLOW_RELEASE='school-shell-v20-20260907';
 
 export const ROUTE_SHELLS=Object.freeze({
   '/home':'/index.html',
@@ -18,6 +18,7 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
   '/school-ia.js',
   '/school-metrics.js',
   '/school-surface-cleanup.js',
+  '/school-desktop-tablet-redesign.js',
   '/school-today-clay.css',
   '/sw.js',
 ]);
@@ -25,7 +26,6 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
 const FLOW_COLOR_SCHEME_CONTRACT=`<style id="flow-color-scheme-contract">html:not([data-theme="dark"]){color-scheme:light dark!important}@media(prefers-color-scheme:dark){html:not([data-theme="dark"]){color-scheme:dark!important}}html[data-theme="dark"]{color-scheme:dark!important}html:not([data-theme="dark"]) :is(input,select,textarea){color-scheme:light!important}</style><script id="flow-color-scheme-guard">(()=>{const meta=document.querySelector('meta[name="color-scheme"]');if(!meta)return;const keep=()=>{if(meta.content!=='light dark')meta.content='light dark'};keep();new MutationObserver(keep).observe(meta,{attributes:true,attributeFilter:['content']})})();</script>`;
 
 const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
-#todayView .status-grid>.status-card:nth-child(2),#todayView .status-grid>.status-card:nth-child(3){display:none!important}
 #bottomNav>[data-view="week"]{display:none!important}
 @media(max-width:900px){
   .mobile-school-button{border:0!important;background:var(--surface)!important;box-shadow:0 7px 16px rgba(52,70,101,.11),inset 0 1px 1px rgba(255,255,255,.88)!important}
@@ -46,6 +46,7 @@ const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
   #todayView .progress-track{margin-top:7px!important}
 }
 @media(max-width:520px){
+  #todayView .status-grid>.status-card:nth-child(2),#todayView .status-grid>.status-card:nth-child(3){display:none!important}
   #todayView .school-hero,#todayView .school-hero-content{min-height:106px!important}
   #todayView .school-hero{border-radius:23px!important}
   #todayView .school-hero-copy{top:13px!important;left:15px!important}
@@ -57,7 +58,7 @@ const SCHOOL_CRITICAL_STYLE=`<style id="flow-school-production-critical">
 }
 </style>`;
 
-const SCHOOL_RECOVERY_SCRIPT=`<script id="flow-school-cache-recovery">(()=>{const cache='flow-school-shell-v16',guard='flow-sw-v16-reloaded';if('caches'in window)caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('flow-school-shell-')&&key!==cache).map(key=>caches.delete(key)))).catch(()=>{});if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const hadController=Boolean(navigator.serviceWorker.controller);let reloadArmed=hadController&&sessionStorage.getItem(guard)!=='1';if(reloadArmed)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloadArmed)return;reloadArmed=false;sessionStorage.setItem(guard,'1');location.reload()},{once:true});const registration=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await registration.update()}catch{}},{once:true})})();</script>`;
+const SCHOOL_RECOVERY_SCRIPT=`<script id="flow-school-cache-recovery">(()=>{const cache='flow-school-shell-v17',guard='flow-sw-v17-reloaded';if('caches'in window)caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('flow-school-shell-')&&key!==cache).map(key=>caches.delete(key)))).catch(()=>{});if('serviceWorker'in navigator)window.addEventListener('load',async()=>{try{const hadController=Boolean(navigator.serviceWorker.controller);let reloadArmed=hadController&&sessionStorage.getItem(guard)!=='1';if(reloadArmed)navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloadArmed)return;reloadArmed=false;sessionStorage.setItem(guard,'1');location.reload()},{once:true});const registration=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await registration.update()}catch{}},{once:true})})();</script>`;
 
 function normalizedPath(pathname){
   if(pathname.length>1&&pathname.endsWith('/'))return pathname.slice(0,-1);

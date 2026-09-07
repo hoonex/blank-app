@@ -3,6 +3,7 @@ import './school-runtime-contract-v6-hotfix.js';
 const root=document.documentElement;
 const PROFILE_KEY='flow-school-profile-v3';
 const TRANSIT_LAB_KEY='flow-school-transit-lab-v1';
+const BASE_STYLE_HREFS=['./school-v5.css','./school-hotfix.css','./school-polish.css'];
 
 /* Landing is audited before the progressive School surface finishes booting.
  * Install the actual search input hit area synchronously, before the first await,
@@ -33,10 +34,28 @@ html[data-flow-school-boot="profile"]:not([data-flow-school-surface="ready"]) #d
   document.head.append(style);
 }
 
+function waitForBaseStyles(){
+  return Promise.all(BASE_STYLE_HREFS.map(href=>{
+    const link=document.querySelector(`link[href="${href}"]`);
+    if(!link)return Promise.reject(new Error(`Missing School base stylesheet: ${href}`));
+    if(link.sheet)return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      const loaded=()=>{cleanup();resolve()};
+      const failed=()=>{cleanup();reject(new Error(`Failed to load School base stylesheet: ${href}`))};
+      const cleanup=()=>{link.removeEventListener('load',loaded);link.removeEventListener('error',failed)};
+      link.addEventListener('load',loaded,{once:true});
+      link.addEventListener('error',failed,{once:true});
+      if(link.sheet)loaded();
+    });
+  }));
+}
+
 /* Keep the original shared material/native bootstrap deterministic. The gate above
-   is already active, so loading metrics-core here cannot expose the legacy shell;
-   it only guarantees flow-native + School base polish before DOMContentLoaded. */
+   is already active, so loading metrics-core here cannot expose the legacy shell.
+   DOMContentLoaded must also wait until the three base polish styles have settled;
+   otherwise landing geometry can be sampled between their insertion and load. */
 await import('./school-metrics-core.js');
+await waitForBaseStyles();
 
 function transitLabEnabled(){
   const host=location.hostname;
@@ -116,6 +135,7 @@ async function bootCriticalSchoolSurface(){
   await import('./school-final-visual-polish.js');
   await import('./school-today-review-polish.js');
   await import('./school-toolbar-grouping.js');
+  await import('./school-desktop-tablet-redesign.js');
 
   normalizeSchoolSettingsTab();
   root.dataset.flowSchoolSurface='ready';
