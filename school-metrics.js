@@ -10,7 +10,7 @@ const TRANSIT_LAB_KEY='flow-school-transit-lab-v1';
 if(!document.querySelector('#flow-school-landing-hit-area')){
   const style=document.createElement('style');
   style.id='flow-school-landing-hit-area';
-  style.textContent=`html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}`;
+  style.textContent=`html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}@media(min-width:821px){html body #landing .school-search-panel{transform:translateY(-30px)!important}}`;
   document.head.append(style);
 }
 
