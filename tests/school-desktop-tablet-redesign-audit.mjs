@@ -27,6 +27,9 @@ async function state(page){return page.evaluate(()=>{
   const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null;
   return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},timetable:box(timetable),meal:box(meal),statusCount:status.length};
 })}
+function assertTwoColumn(name,s){
+  if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: wide viewport wastes horizontal space instead of using the two-column Today layout ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+}
 function assertState(c,s){
   if(s.ui!=='v2'||s.layout!==c.expect)throw new Error(`${c.name}: layout marker mismatch ${JSON.stringify({ui:s.ui,layout:s.layout})}`);
   if(s.viewport.scrollWidth>s.viewport.clientWidth+2)throw new Error(`${c.name}: horizontal overflow ${JSON.stringify(s.viewport)}`);
@@ -35,13 +38,16 @@ function assertState(c,s){
     if(!s.top.visible||!s.dock.visible||s.dock.days!==5)throw new Error(`${c.name}: tablet app bar/date rail incomplete ${JSON.stringify({top:s.top,dock:s.dock})}`);
     if(!s.nav.visible||s.nav.position!=='fixed'||s.nav.radius<24)throw new Error(`${c.name}: tablet floating pill nav missing ${JSON.stringify(s.nav)}`);
     if(s.hero.visible)throw new Error(`${c.name}: legacy Today hero visible on tablet ${JSON.stringify(s.hero)}`);
+    if(c.name!=='tablet-portrait')assertTwoColumn(c.name,s);
   }else{
     if(!s.sidebar.visible||!s.sideNav.visible)throw new Error(`${c.name}: desktop command bar missing ${JSON.stringify({sidebar:s.sidebar,sideNav:s.sideNav})}`);
     if((s.sidebar.box?.height||999)>92||(s.sidebar.box?.width||0)<900)throw new Error(`${c.name}: desktop sidebar was not redesigned horizontally ${JSON.stringify(s.sidebar)}`);
     if((s.sideNav.box?.width||0)<360||(s.sideNav.box?.height||999)>58)throw new Error(`${c.name}: desktop nav is not a horizontal control group ${JSON.stringify(s.sideNav)}`);
     if(s.top.visible||s.nav.visible)throw new Error(`${c.name}: mobile chrome leaked into desktop ${JSON.stringify({top:s.top,nav:s.nav})}`);
     if(!s.hero.visible||s.hero.imageVisible||s.hero.shadeVisible||(s.hero.box?.height||999)>110)throw new Error(`${c.name}: desktop neutral Today header contract failed ${JSON.stringify(s.hero)}`);
-    if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${c.name}: desktop two-column dashboard missing ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+    assertTwoColumn(c.name,s);
+    const used=(s.meal?.right||0)-(s.timetable?.left||0);
+    if(used<1260)throw new Error(`${c.name}: desktop Today workspace is artificially capped and under-uses the shell ${JSON.stringify({used,shell:s.shell,timetable:s.timetable,meal:s.meal})}`);
   }
 }
 
