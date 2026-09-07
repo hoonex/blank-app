@@ -1,0 +1,143 @@
+name: Production School tablet audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'school.js'
+      - 'school-metrics.js'
+      - 'school-mobile-v5.js'
+      - 'school-real-device-refine.js'
+      - 'school-tablet-rotation-contract.js'
+      - 'school-today-topbar.js'
+      - 'tests/school-ambient-tablet-shell-audit.mjs'
+      - '.github/workflows/production-school-tablet-audit.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'school.js'
+      - 'school-metrics.js'
+      - 'school-mobile-v5.js'
+      - 'school-real-device-refine.js'
+      - 'school-tablet-rotation-contract.js'
+      - 'school-today-topbar.js'
+      - 'tests/school-ambient-tablet-shell-audit.mjs'
+      - '.github/workflows/production-school-tablet-audit.yml'
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  production-school-tablet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Validate School tablet production audit sources
+        run: |
+          set -euo pipefail
+          node --check school-mobile-v5.js
+          node --check school-real-device-refine.js
+          node --check school-tablet-rotation-contract.js
+          node --check school-today-topbar.js
+          node --check tests/school-ambient-tablet-shell-audit.mjs
+          grep -q 'TOUCH_LANDSCAPE_DIMENSIONS' school-tablet-rotation-contract.js
+          grep -q 'maxTouchPoints' school-tablet-rotation-contract.js
+          grep -q '1536px' school-tablet-rotation-contract.js
+          grep -q 'assertDateRailDirect' tests/school-ambient-tablet-shell-audit.mjs
+          grep -q 'DOMMatrixReadOnly' tests/school-ambient-tablet-shell-audit.mjs
+          grep -q 'LANDSCAPE={width:1536,height:1024}' tests/school-ambient-tablet-shell-audit.mjs
+          grep -q 'non-touch 1536x1024 desktop' tests/school-ambient-tablet-shell-audit.mjs
+      - name: Wait for exact School production assets
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          base='https://blank-app.agfvrd.workers.dev'
+          assets=(
+            'school-mobile-v5.js'
+            'school-real-device-refine.js'
+            'school-tablet-rotation-contract.js'
+            'school-today-topbar.js'
+          )
+          for i in {1..40}; do
+            echo "School production convergence attempt $i/40"
+            ok=1
+            shell='/tmp/flow-production-school.html'
+            code=$(curl --silent --show-error --location \
+              --header 'cache-control: no-cache' \
+              --connect-timeout 10 --max-time 20 \
+              --output "$shell" --write-out '%{http_code}' \
+              "$base/?flow_deploy=$GITHUB_SHA" || true)
+            if [[ "$code" != '200' ]] || ! grep -q 'Flow School' "$shell" 2>/dev/null; then
+              echo "WAIT / -> HTTP $code / expected Flow School shell"
+              ok=0
+            else
+              echo 'OK / -> 200 Flow School'
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              for asset in "${assets[@]}"; do
+                deployed="/tmp/flow-live-${asset//\//_}"
+                code=$(curl --silent --show-error --location \
+                  --header 'cache-control: no-cache' \
+                  --connect-timeout 10 --max-time 20 \
+                  --output "$deployed" --write-out '%{http_code}' \
+                  "$base/$asset?flow_deploy=$GITHUB_SHA" || true)
+                if [[ "$code" != '200' ]] || ! cmp -s "$asset" "$deployed"; then
+                  echo "WAIT /$asset -> HTTP $code / deployed bytes do not match audited main"
+                  ok=0
+                  break
+                fi
+                echo "OK /$asset -> 200 exact repository bytes"
+              done
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              echo 'School production shell and tablet runtime assets match the audited commit.'
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Timed out waiting for exact School production tablet assets.' >&2
+          exit 1
+      - name: Install Playwright Chromium
+        if: github.event_name != 'pull_request'
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install chromium
+      - name: Audit canonical production School tablet shell
+        if: github.event_name != 'pull_request'
+        env:
+          FLOW_BASE_URL: https://blank-app.agfvrd.workers.dev
+          FLOW_AMBIENT_TABLET_OUT: production-school-tablet-audit
+        run: node tests/school-ambient-tablet-shell-audit.mjs
+      - uses: actions/upload-artifact@v7
+        if: always() && github.event_name != 'pull_request'
+        with:
+          name: production-school-tablet-audit
+          path: production-school-tablet-audit/
+          retention-days: 5
+      - name: Log successful production School tablet audit
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          summary=$(jq -c '{cases:(.cases|map({glass,ambient,tabletMode:.landscape.tabletMode,topbarMode:.landscape.topbarMode,firstTx:.railDirect.first.tx,directTx:.railDirect.direct.tx})),desktop:{tabletMode:.desktopSafety.tabletMode,topbarMode:.desktopSafety.topbarMode,sidebarVisible:.desktopSafety.side.visible,navVisible:.desktopSafety.nav.visible},failures}' production-school-tablet-audit/report.json)
+          short=${GITHUB_SHA:0:7}
+          body=$(printf '### Production School tablet audit — %s\n\nPASS: canonical Cloudflare production preserved the 960x1536 -> 1536x1024 touch-tablet shell, direct date-rail tracking, ambient/glass parity, and non-touch desktop safety.\n\n```json\n%s\n```' "$short" "$summary")
+          gh issue comment 229 --body "$body"
+      - name: Log failed production School tablet audit
+        if: failure() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          short=${GITHUB_SHA:0:7}
+          body=$(printf '### Production School tablet audit — %s\n\nFAIL: canonical production School tablet browser audit failed.\n\nRun: https://github.com/%s/actions/runs/%s' "$short" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          gh issue comment 229 --body "$body"
