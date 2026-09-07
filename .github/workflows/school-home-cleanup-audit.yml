@@ -47,7 +47,7 @@ jobs:
           grep -q "await import('./school-transit-focus.js')" school-metrics.js
           ! grep -q "^const SHELL=.*school-transit" sw.js
           ! grep -q "school-transit-today.js" school-metrics.js
-          grep -q "const CACHE='flow-school-shell-v16'" sw.js
+          grep -q "const CACHE='flow-school-shell-v17'" sw.js
           grep -Eq "FLOW_RELEASE='school-shell-v[0-9]+-[0-9]{8}'" cloudflare-worker.mjs
           grep -q "flow-school-production-critical" cloudflare-worker.mjs
           grep -q "flow-school-cache-recovery" cloudflare-worker.mjs
