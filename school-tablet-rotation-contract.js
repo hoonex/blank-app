@@ -34,12 +34,18 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
   grid-column:auto!important;
 }
+html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .status-card:not(.flow-home-noise){
+  border:0!important;
+}
 @media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .status-card:not(.flow-home-noise){
-    border:0!important;
-  }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout > .content-card:not(.calendar-card){
     padding-top:10px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #transitView.flow-transit-focused .flow-transit-search{
+    margin-bottom:6px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #transitView.flow-transit-focused .flow-transit-summary{
+    margin-bottom:0!important;
   }
 }
 `;
