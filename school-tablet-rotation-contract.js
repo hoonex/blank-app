@@ -205,10 +205,8 @@ function installStyle(){
     width:100%!important;
     height:44px!important;
     transform:translate3d(var(--flow-date-x,0px),0,0)!important;
-    transition:transform .26s cubic-bezier(.2,.9,.2,1)!important;
     will-change:transform!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock[data-dragging="true"] .flow-date-rail{transition:none!important}
   html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock :is(.flow-date-day,.flow-date-buffer-day){
     --flow-date-base:0px;
     --flow-date-scale:.84;
