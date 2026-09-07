@@ -162,3 +162,10 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
   .schedule-actions .soft-button{padding:0 7px!important;font-size:.62rem!important}
   .backup-actions{grid-template-columns:1fr}
 }
+
+/* Normal phones can carry two compact metadata columns without turning every
+   short field into a full-width card. Keep one column only for very narrow screens. */
+@media(min-width:351px) and (max-width:430px){
+  .basic-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .basic-item{min-width:0!important;padding:13px 14px!important}
+}
