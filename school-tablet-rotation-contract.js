@@ -1,11 +1,17 @@
 const root=document.documentElement;
 const STYLE_ID='flow-school-tablet-rotation-contract-style';
 const COMPACT_QUERY='(max-width:1180px)';
-const TOUCH_LANDSCAPE_QUERY='(max-width:1366px) and (max-height:900px) and (orientation:landscape) and (pointer:coarse)';
+const TOUCH_LANDSCAPE_DIMENSIONS='(max-width:1536px) and (max-height:1024px) and (orientation:landscape)';
 let syncFrame=0;
 
+function touchLandscapeShell(){
+  if(!matchMedia(TOUCH_LANDSCAPE_DIMENSIONS).matches)return false;
+  const touchCapable=Number(navigator.maxTouchPoints||0)>0;
+  const touchPrimary=matchMedia('(pointer:coarse)').matches||matchMedia('(hover:none)').matches;
+  return touchCapable&&touchPrimary;
+}
 function compactShell(){
-  return matchMedia(COMPACT_QUERY).matches||matchMedia(TOUCH_LANDSCAPE_QUERY).matches;
+  return matchMedia(COMPACT_QUERY).matches||touchLandscapeShell();
 }
 
 function installStyle(){
@@ -13,10 +19,10 @@ function installStyle(){
   const style=document.createElement('style');
   style.id=STYLE_ID;
   style.textContent=`
-/* Compact School owns one top date shell. The legacy hero must never return after
-   portrait/landscape rotation, even when the viewport crosses the 1180px boundary. */
-@media (max-width:1180px), (max-width:1366px) and (max-height:900px) and (orientation:landscape) and (pointer:coarse){
-  html[data-flow-school-ui="v2"] body #todayView #schoolHero{
+/* Compact School owns one top date shell. The runtime dataset is authoritative so
+   desktop-like tablet UAs cannot choose a different shell from mobile tablet UAs. */
+@media (max-width:1180px), (max-width:1536px) and (max-height:1024px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #todayView #schoolHero{
     display:none!important;
     width:0!important;
     height:0!important;
@@ -29,33 +35,33 @@ function installStyle(){
   }
 }
 
-/* Galaxy Tab / large Android WebView landscape commonly lands around 1280x800 CSS
-   pixels. Bridge the compact shell through that touch-landscape band instead of
-   falling back to the half-desktop state that only showed the date arrows. */
-@media (max-width:1366px) and (max-height:900px) and (orientation:landscape) and (pointer:coarse){
-  html[data-flow-school-ui="v2"] body{
+/* Large Android tablets can expose a desktop-like 1536x1024 CSS viewport while
+   still being touch-first. Keep that whole touch-landscape band on the same
+   compact School shell instead of falling back to desktop sidebar + legacy hero. */
+@media (max-width:1536px) and (max-height:1024px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body{
     overflow-x:hidden!important;
     padding-bottom:84px!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard.product-shell:not(.hidden){
     display:block!important;
     width:100%!important;
     max-width:none!important;
     padding:0 16px 24px!important;
     grid-template-columns:none!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .desktop-sidebar,
-  html[data-flow-school-ui="v2"] body #dashboard #todayView #schoolHero{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .desktop-sidebar,
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard #todayView #schoolHero{
     display:none!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .product-main{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .product-main{
     width:100%!important;
     max-width:none!important;
     min-width:0!important;
     margin:0!important;
     padding:0!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-topbar{
     position:sticky!important;
     top:0!important;
     z-index:70!important;
@@ -74,19 +80,19 @@ function installStyle(){
     box-shadow:none!important;
     overflow:visible!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo{
     display:flex!important;
     align-items:center!important;
     min-width:72px!important;
     min-height:44px!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy strong{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy strong{
     font-size:1.03rem!important;
     font-weight:850!important;
     letter-spacing:-.055em!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy small{display:none!important}
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-school-button{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-topbar .flow-logo-copy small{display:none!important}
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-school-button{
     position:relative!important;
     inset:auto!important;
     display:grid!important;
@@ -107,7 +113,7 @@ function installStyle(){
     text-align:right!important;
     overflow:hidden!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .mobile-school-button :is(span,small){
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:not(.hidden) .mobile-school-button :is(span,small){
     display:block!important;
     max-width:100%!important;
     overflow:hidden!important;
@@ -115,7 +121,7 @@ function installStyle(){
     white-space:nowrap!important;
   }
 
-  html[data-flow-school-ui="v2"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard:has(#todayView:not(.hidden)) #flowTodayDateDock{
     --flow-date-count:5;
     --flow-date-x:0px;
     display:grid!important;
@@ -137,7 +143,7 @@ function installStyle(){
     user-select:none!important;
     -webkit-user-select:none!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-edge{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-edge{
     display:grid!important;
     place-items:center!important;
     width:44px!important;
@@ -155,7 +161,7 @@ function installStyle(){
     font-weight:700!important;
     line-height:1!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-viewport{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-viewport{
     position:relative!important;
     grid-column:2!important;
     width:100%!important;
@@ -166,7 +172,7 @@ function installStyle(){
     background:transparent!important;
     isolation:isolate!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-focus{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-focus{
     position:absolute!important;
     z-index:0!important;
     top:0!important;
@@ -181,7 +187,7 @@ function installStyle(){
     box-shadow:0 5px 14px color-mix(in srgb,var(--accent) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.82)!important;
     pointer-events:none!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-focus::before{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-focus::before{
     content:""!important;
     position:absolute!important;
     top:3px!important;
@@ -192,7 +198,7 @@ function installStyle(){
     border-radius:2px!important;
     background:color-mix(in srgb,var(--accent) 78%,transparent)!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-rail{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-rail{
     position:absolute!important;
     z-index:1!important;
     inset:0!important;
@@ -202,8 +208,8 @@ function installStyle(){
     transition:transform .26s cubic-bezier(.2,.9,.2,1)!important;
     will-change:transform!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock[data-dragging="true"] .flow-date-rail{transition:none!important}
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock :is(.flow-date-day,.flow-date-buffer-day){
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock[data-dragging="true"] .flow-date-rail{transition:none!important}
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock :is(.flow-date-day,.flow-date-buffer-day){
     --flow-date-base:0px;
     --flow-date-scale:.84;
     position:absolute!important;
@@ -229,24 +235,24 @@ function installStyle(){
     transform:translate3d(var(--flow-date-base),0,0) translateX(-50%) scale(var(--flow-date-scale))!important;
     transform-origin:50% 50%!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-day[data-preview="true"]{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-day[data-preview="true"]{
     color:var(--accent)!important;
     font-weight:850!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-week{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-week{
     grid-row:1!important;
     font-size:.54rem!important;
     font-weight:780!important;
     line-height:1!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-num{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-num{
     grid-row:2!important;
     font-size:.95rem!important;
     font-weight:900!important;
     line-height:1!important;
     letter-spacing:-.055em!important;
   }
-  html[data-flow-school-ui="v2"] body #flowTodayDateDock .flow-date-today{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #flowTodayDateDock .flow-date-today{
     grid-row:3!important;
     height:8px!important;
     color:var(--accent)!important;
@@ -258,7 +264,7 @@ function installStyle(){
   /* #dashboard is intentionally doubled here: late global-shell rules also use an
      ID-heavy selector, so the tablet bridge must remain authoritative after those
      styles are raised again during rotation. */
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     display:grid!important;
     visibility:visible!important;
     opacity:1!important;
@@ -283,16 +289,16 @@ function installStyle(){
     background:color-mix(in srgb,var(--surface) 91%,transparent)!important;
     box-shadow:0 10px 30px rgba(36,48,69,.12)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-transit-surface="dormant"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"][data-flow-transit-surface="dormant"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     --flow-tab-count:4!important;
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
   }
-  html[data-flow-school-ui="v2"]:not([data-flow-transit-surface="dormant"]) body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"]:not([data-flow-transit-surface="dormant"]) body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
     --flow-tab-count:5!important;
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.mobile-tab,
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-mobile-settings{
     min-width:0!important;
     width:100%!important;
     height:50px!important;
@@ -308,18 +314,18 @@ function installStyle(){
     overflow:hidden!important;
     text-overflow:ellipsis!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav::before,
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #dashboard#dashboard:not(.hidden) #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
     border-radius:9999px!important;
     corner-shape:round!important;
   }
-  html[data-flow-school-ui="v2"] body #todayView{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body #todayView{
     width:100%!important;
     max-width:1180px!important;
     margin-inline:auto!important;
     padding:6px 10px 16px!important;
   }
-  html[data-flow-school-ui="v2"] body .product-main{
+  html[data-flow-school-ui="v2"][data-flow-school-tablet-rotation="compact"] body .product-main{
     padding-bottom:calc(124px + env(safe-area-inset-bottom))!important;
     scroll-padding-bottom:calc(124px + env(safe-area-inset-bottom))!important;
   }
@@ -328,17 +334,35 @@ function installStyle(){
   document.head.append(style);
 }
 
+function syncHero(compact){
+  const hero=document.getElementById('schoolHero');
+  if(!hero)return;
+  if(compact){
+    hero.dataset.flowTabletHeroSuppressed='true';
+    hero.hidden=true;
+    hero.style.setProperty('display','none','important');
+    return;
+  }
+  if(hero.dataset.flowTabletHeroSuppressed==='true'){
+    delete hero.dataset.flowTabletHeroSuppressed;
+    hero.hidden=false;
+    hero.style.removeProperty('display');
+  }
+}
+function applyCompactState(){
+  const compact=compactShell();
+  const next=compact?'ready':'wide';
+  if(root.dataset.flowTodayTopbar!==next)root.dataset.flowTodayTopbar=next;
+  root.dataset.flowSchoolTabletRotation=compact?'compact':'wide';
+  syncHero(compact);
+}
 function syncCompactState(){
   cancelAnimationFrame(syncFrame);
-  syncFrame=requestAnimationFrame(()=>{
-    const next=compactShell()?'ready':'wide';
-    if(root.dataset.flowTodayTopbar!==next)root.dataset.flowTodayTopbar=next;
-    root.dataset.flowSchoolTabletRotation=compactShell()?'compact':'wide';
-  });
+  syncFrame=requestAnimationFrame(applyCompactState);
 }
 
 installStyle();
-syncCompactState();
+applyCompactState();
 window.addEventListener('resize',syncCompactState,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(syncCompactState,60),{passive:true});
 window.visualViewport?.addEventListener?.('resize',syncCompactState,{passive:true});
