@@ -70,3 +70,33 @@ export function decoratePoiNode(node,type,item={}){
   node.innerHTML=poiIconSvg(type);
   return null;
 }
+
+// Timetable rendering replaces #timeGrid children. Preserve the visible selection
+// affordance across that replacement so a selected class never loses its resize rail.
+let selectedTimetableTitle='';
+function restoreTimetableSelection(){
+  if(!selectedTimetableTitle)return;
+  const grid=document.querySelector('#timeGrid');if(!grid)return;
+  const block=[...grid.querySelectorAll('.course-block:not(.custom)')].find(node=>node.getAttribute('title')===selectedTimetableTitle);
+  if(!block)return;
+  block.classList.add('flow-editable-class','flow-time-selected');
+  block.dataset.timeSelected='true';
+  block.setAttribute('aria-pressed','true');
+  if(!block.querySelector('[data-time-selection-rail]')){
+    const rail=document.createElement('span');
+    rail.className='flow-time-selection-rail';
+    rail.dataset.timeSelectionRail='';
+    rail.setAttribute('aria-hidden','true');
+    block.append(rail);
+  }
+}
+const timetableGrid=document.querySelector('#timeGrid');
+if(timetableGrid)new MutationObserver(()=>queueMicrotask(restoreTimetableSelection)).observe(timetableGrid,{childList:true});
+document.addEventListener('click',event=>{
+  const block=event.target.closest?.('#timeGrid .course-block.flow-editable-class:not(.custom)');
+  if(!block)return;
+  queueMicrotask(()=>{
+    if(block.dataset.timeSelected==='true')selectedTimetableTitle=block.getAttribute('title')||'';
+    else if(document.querySelector('#classTimeDialog')?.open)selectedTimetableTitle='';
+  });
+});

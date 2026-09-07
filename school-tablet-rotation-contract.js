@@ -30,6 +30,9 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) .desktop-sidebar{
   display:grid!important;
 }
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView{
+  max-width:1320px!important;
+}
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-card,
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
   grid-column:auto!important;
@@ -70,6 +73,28 @@ html[data-flow-school-ui="v2"] body #switchDialog[open]{
 html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hidden) .mobile-topbar,
 html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hidden) .desktop-sidebar{
   pointer-events:none!important;
+}
+@media (min-width:351px) and (max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard #schoolView .school-info-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard #schoolView .school-info-grid>.info-tile{
+    min-width:0!important;
+    padding:12px 13px!important;
+  }
+}
+@media (min-width:900px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .timetable-card,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
+    grid-column:auto!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.16fr) minmax(320px,.84fr)!important;
+    align-items:start!important;
+    gap:14px!important;
+  }
 }
 @media (min-width:900px) and (max-width:1180px) and (orientation:portrait){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid{
