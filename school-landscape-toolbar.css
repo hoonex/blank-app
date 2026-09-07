@@ -85,7 +85,7 @@
     height:44px!important;
   }
 
-  /* Bottom destination bar deliberately stays a normal rounded rectangle.
+  /* Bottom destination bar is one floating tablet pill in every orientation.
      Production has four slots with dormant Transit; localhost/audits retain five. */
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav{
     display:grid!important;
@@ -103,7 +103,7 @@
     transform:translateX(-50%)!important;
     grid-template-rows:48px!important;
     gap:2px!important;
-    border-radius:16px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
     overflow:hidden!important;
   }
@@ -123,7 +123,7 @@
     min-height:48px!important;
     padding:0 7px!important;
     border:0!important;
-    border-radius:11px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
     background:transparent!important;
     box-shadow:none!important;
@@ -134,7 +134,7 @@
   }
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav::before,
   html[data-flow-school-ui="v2"] body #bottomNav.mobile-bottom-nav>.flow-refraction-copy-lens{
-    border-radius:11px!important;
+    border-radius:9999px!important;
     corner-shape:round!important;
   }
 
