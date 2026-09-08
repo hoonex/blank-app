@@ -86,6 +86,12 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
     padding:12px 13px!important;
   }
 }
+/* Normal desktop uses the sidebar as the sole Today/Week navigation surface. */
+@media (min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-mode-toggle{
+    display:none!important;
+  }
+}
 /* Content proportions have only two families: phone and desktop. Tablet chrome
    stays tablet-specific, but tablet content uses the same proportions as desktop. */
 @media (min-width:521px) and (min-height:521px){
