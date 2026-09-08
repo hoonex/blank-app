@@ -248,8 +248,13 @@ async function auditSchool(c) {
     states.settings = await geom(page, `${c.name} school settings`, c.hasTouch); await shot(page, `${c.name}-school-settings`, false); await page.locator('#flowSchoolSettingsView [data-flow-save-school]').click();
     const bell = await page.evaluate(() => JSON.parse(localStorage.getItem('flow-school-bell-v1') || '{}')); if (bell.start !== '08:20' || bell.meal !== '12:10') throw new Error(`${c.name} school settings did not persist: ${JSON.stringify(bell)}`);
     await visibleClick(page, '[data-view="today"]'); await page.locator('#todayView:not(.hidden)').waitFor();
-    const inlineWeekToggle = page.locator('.timetable-mode-toggle [data-view="week"]'); await inlineWeekToggle.scrollIntoViewIfNeeded(); await inlineWeekToggle.click(); await page.locator('#inlineWeekTimetable:not(.hidden)').waitFor();
-    states.week = await geom(page, `${c.name} school inline week`, c.hasTouch); await page.locator('#nextWeek').click(); await page.waitForTimeout(80); await page.locator('#thisWeekBtn').click(); await shot(page, `${c.name}-school-week`);
+    if (c.viewport.width >= 1181) {
+      await visibleClick(page, '.desktop-sidebar [data-view="week"]'); await page.locator('#weekView:not(.hidden)').waitFor();
+      states.week = await geom(page, `${c.name} school native week`, c.hasTouch); await shot(page, `${c.name}-school-week`);
+    } else {
+      const inlineWeekToggle = page.locator('.timetable-mode-toggle [data-view="week"]'); await inlineWeekToggle.scrollIntoViewIfNeeded(); await inlineWeekToggle.click(); await page.locator('#inlineWeekTimetable:not(.hidden)').waitFor();
+      states.week = await geom(page, `${c.name} school inline week`, c.hasTouch); await page.locator('#nextWeek').click(); await page.waitForTimeout(80); await page.locator('#thisWeekBtn').click(); await shot(page, `${c.name}-school-week`);
+    }
     await visibleClick(page, '[data-view="schedule"]'); await page.waitForFunction(() => !document.querySelector('#scheduleView')?.classList.contains('hidden'));
     states.schedule = await geom(page, `${c.name} school schedule`, c.hasTouch); await page.locator('#nextMonth').click(); await page.waitForTimeout(80); await page.locator('#prevMonth').click(); if (!(await page.locator('#calendarGrid .calendar-day').count())) throw new Error(`${c.name} school calendar missing`); await shot(page, `${c.name}-school-schedule`);
     await visibleClick(page, '[data-view="school"]'); await page.waitForFunction(() => !document.querySelector('#schoolView')?.classList.contains('hidden')); await page.locator('#schoolInfoGrid .info-tile').first().waitFor();
