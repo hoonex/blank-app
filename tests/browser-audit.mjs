@@ -80,19 +80,21 @@ for(const testCase of cases){
           const inlineWeek=page.locator('.timetable-mode-toggle button:visible',{hasText:'주간'}).first();
           if(await inlineWeek.count()){
             await inlineWeek.click({trial:true,timeout:3000});
-            const t0=Date.now();
-            await inlineWeek.click({timeout:3000});
-            await page.waitForFunction(()=>{
-              const inline=document.querySelector('#inlineWeekTimetable');
-              return document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden');
-            },null,{timeout:3000});
+            const t0=Date.now();await inlineWeek.click({timeout:3000});
+            await page.waitForFunction(()=>{const inline=document.querySelector('#inlineWeekTimetable');return document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden')},null,{timeout:3000});
+            return Date.now()-t0;
+          }
+          const railWeek=page.locator('#desktopSidebar [data-view="week"]:visible').first();
+          if(await railWeek.count()){
+            await railWeek.click({trial:true,timeout:3000});
+            const t0=Date.now();await railWeek.click({timeout:3000});
+            await page.waitForFunction(()=>{const inline=document.querySelector('#inlineWeekTimetable'),panel=document.querySelector('#weekView');return (document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden'))||!!panel&&!panel.classList.contains('hidden')},null,{timeout:3000});
             return Date.now()-t0;
           }
         }
         const tab=page.locator(`[data-view="${view}"]:visible`).first();
         await tab.click({trial:true,timeout:3000});
-        const t0=Date.now();
-        await tab.click({timeout:3000});
+        const t0=Date.now();await tab.click({timeout:3000});
         await page.waitForFunction(v=>{const p=document.querySelector(`[data-view-panel="${v}"]`);return !!p&&!p.classList.contains('hidden')},view,{timeout:3000});
         return Date.now()-t0;
       }catch(error){result.interactionErrors.push(`tab:${view}:${String(error).split('\n')[0]}`);return null}
@@ -104,7 +106,7 @@ for(const testCase of cases){
     await page.evaluate(()=>window.scrollTo(0,Math.max(0,Math.min(900,document.documentElement.scrollHeight-innerHeight-10))));await page.waitForTimeout(120);result.scrollBefore=await page.evaluate(()=>scrollY);await page.waitForTimeout(1200);result.scrollAfter=await page.evaluate(()=>scrollY);result.autoScrollDelta=Math.round(result.scrollAfter-result.scrollBefore);
 
     await selectTab('week');
-    result.weekScroll=await page.evaluate(()=>{const el=document.querySelector('.week-table-wrap');if(!el)return null;el.scrollLeft=Math.max(0,Math.min(420,el.scrollWidth-el.clientWidth));return{left:el.scrollLeft,width:el.clientWidth,scrollWidth:el.scrollWidth}});
+    result.weekScroll=await page.evaluate(()=>{const el=document.querySelector('#inlineWeekTimetable:not(.hidden) .week-table-wrap,#weekView:not(.hidden) .week-table-wrap');if(!el)return null;el.scrollLeft=Math.max(0,Math.min(420,el.scrollWidth-el.clientWidth));return{left:el.scrollLeft,width:el.clientWidth,scrollWidth:el.scrollWidth}});
     const y0=await page.evaluate(()=>scrollY);await page.mouse.wheel(0,500);await page.waitForTimeout(250);const y1=await page.evaluate(()=>scrollY);result.weekVerticalScrollDelta=Math.round(y1-y0);
 
     await selectTab('schedule');
