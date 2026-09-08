@@ -89,7 +89,7 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
 @media (min-width:521px) and (min-height:521px){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .today-grid{
-    grid-template-columns:minmax(0,1.42fr) minmax(320px,.72fr)!important;
+    grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
     align-items:start!important;
     gap:16px!important;
   }
@@ -106,7 +106,7 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #scheduleView .schedule-layout{
     display:grid!important;
-    grid-template-columns:minmax(0,1.16fr) minmax(320px,.84fr)!important;
+    grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr)!important;
     align-items:start!important;
     gap:16px!important;
   }
