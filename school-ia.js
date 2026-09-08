@@ -5,14 +5,26 @@ let mode='today';
 let legacyWeekButton=null;
 let inlineWeek=null;
 
+function usesNativeWeekDestination(){
+  const desktopWorkspace=matchMedia('(min-width:1181px) and (min-height:681px)').matches;
+  if(!desktopWorkspace)return false;
+  const wideTouchTablet=matchMedia('(min-width:1181px) and (max-width:1536px) and (max-height:1024px) and (orientation:landscape)').matches;
+  if(!wideTouchTablet)return true;
+  const touchCapable=Number(navigator.maxTouchPoints||0)>0;
+  const touchPrimary=matchMedia('(pointer:coarse)').matches||matchMedia('(hover:none)').matches;
+  return !(touchCapable&&touchPrimary);
+}
+
 function installStyles(){
   if($('#flow-school-ia-style'))return;
   const style=document.createElement('style');
   style.id='flow-school-ia-style';
   style.textContent=`
-/* School information architecture: Week is a representation of the Today timetable, not a separate destination. */
+/* Week is an inline Today representation on compact surfaces. Normal desktop
+   workspaces keep the native Week destination in the persistent side rail. */
 html[data-theme] body .mobile-bottom-nav{--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
-.side-nav>[data-view="week"]{display:none!important}
+@media(max-width:1180px),(max-height:680px){.side-nav>[data-view="week"]{display:none!important}}
+html[data-flow-school-layout="tablet"] .side-nav>[data-view="week"]{display:none!important}
 .timetable-mode-toggle{display:inline-grid;grid-template-columns:1fr 1fr;min-width:92px;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid color-mix(in srgb,var(--text) 6%,transparent)}
 .timetable-mode-toggle button{min-width:0;min-height:32px;padding:0 9px;border:0;border-radius:9px;background:transparent!important;box-shadow:none!important;color:var(--muted);font-size:.61rem;font-weight:800;cursor:pointer;position:relative!important;z-index:auto!important;overflow:visible!important}
 .timetable-mode-toggle button.active{background:var(--surface)!important;color:var(--accent)!important;box-shadow:0 2px 8px rgba(35,52,86,.08)!important}
@@ -31,7 +43,7 @@ html[data-theme] body .mobile-bottom-nav{--flow-tab-count:5!important;grid-templ
 .timetable-card .week-subject{font-size:.56rem!important;line-height:1.22!important;overflow-wrap:anywhere;word-break:keep-all;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .timetable-card .week-cell.is-today-column{background:color-mix(in srgb,var(--accent) 7%,var(--surface))!important}
 .timetable-card .week-head.is-today-column{background:color-mix(in srgb,var(--accent) 15%,var(--surface-2))!important;color:var(--accent)!important}
-/* The old route host stays rendered off-canvas so route/motion contracts remain intact; all visible Week UI lives inside Today. */
+/* The old route host stays rendered off-canvas only while compact inline Week is active. */
 .flow-inline-week-active #weekView{position:absolute!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;min-height:1px!important;margin:0!important;padding:0!important;overflow:hidden!important;pointer-events:none!important}
 .flow-inline-week-active .timetable-card #dayStrip,.flow-inline-week-active .timetable-card #timetable{display:none!important}
 .flow-inline-week-active .timetable-card .inline-week-timetable{display:grid!important}
@@ -106,6 +118,7 @@ function setBottomTodayActive(){
 }
 
 function buildInlineWeek(){
+  if(usesNativeWeekDestination())return null;
   if(inlineWeek)return inlineWeek;
   const card=$('.timetable-card'),mobileWeek=$('#bottomNav>[data-view="week"]'),range=$('#weekRangeText'),controls=$('#weekView .week-controls'),wrap=$('#weekView .week-table-wrap');
   if(!card||!mobileWeek||!range||!controls||!wrap)return null;
@@ -126,6 +139,7 @@ function buildInlineWeek(){
 }
 
 function activateInlineWeek(){
+  if(usesNativeWeekDestination())return;
   if(!inlineWeek)buildInlineWeek();if(!inlineWeek)return;
   mode='week';localStorage.setItem(MODE_KEY,'week');
   document.body.classList.add('flow-inline-week-active');
@@ -141,6 +155,7 @@ function activateInlineWeek(){
 }
 
 function setTimetableMode(next,{drive=false}={}){
+  if(usesNativeWeekDestination())return;
   const normalized=next==='week'?'week':'today';if(!inlineWeek)buildInlineWeek();if(!inlineWeek)return;
   if(normalized==='week'){
     if(drive&&legacyWeekButton){legacyWeekButton.click();return}
@@ -191,8 +206,15 @@ function installNavigationReset(){
 }
 
 function init(){
-  if(!$('#dashboard'))return;installStyles();trimPageCopy();buildInlineWeek();installMonthPicker();installDedicatedSchoolSwitch();installNavigationReset();
+  if(!$('#dashboard'))return;installStyles();trimPageCopy();installMonthPicker();installDedicatedSchoolSwitch();installNavigationReset();
   setTimeout(trimPageCopy,0);
+  if(usesNativeWeekDestination()){
+    mode='today';localStorage.setItem(MODE_KEY,'today');document.body.classList.remove('flow-inline-week-active');
+    const weekView=$('#weekView');weekView?.removeAttribute('aria-hidden');
+    const desktopWeek=$('.side-nav>[data-view="week"]');if(desktopWeek){desktopWeek.hidden=false;desktopWeek.removeAttribute('aria-hidden');desktopWeek.removeAttribute('tabindex')}
+    return;
+  }
+  buildInlineWeek();
   if(location.pathname==='/week')activateInlineWeek();else setTimetableMode('today',{drive:false});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
