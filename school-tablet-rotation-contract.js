@@ -84,28 +84,31 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
     padding:12px 13px!important;
   }
 }
-@media (min-width:900px) and (orientation:landscape){
+/* Content proportions have only two families: phone and desktop. Tablet chrome
+   stays tablet-specific, but tablet content uses the same proportions as desktop. */
+@media (min-width:521px) and (min-height:521px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .today-grid{
+    grid-template-columns:minmax(0,1.42fr) minmax(320px,.72fr)!important;
+    align-items:start!important;
+    gap:16px!important;
+  }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .timetable-card,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-card,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
     grid-column:auto!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #scheduleView .schedule-layout{
     display:grid!important;
     grid-template-columns:minmax(0,1.16fr) minmax(320px,.84fr)!important;
     align-items:start!important;
-    gap:14px!important;
-  }
-}
-@media (min-width:900px) and (max-width:1180px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid{
-    grid-template-columns:minmax(0,1fr)!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .timetable-card,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
-    grid-column:1/-1!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack{
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:16px!important;
   }
 }
 @media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
