@@ -162,7 +162,7 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
     word-break:keep-all!important
   }
   .setup-copy p{font-size:.76rem!important}
-  .search-card{margin-top:16px!important}
+  .search-card{margin-top:7px!important}
   .course-block strong{font-size:.54rem!important}
   .course-block span{font-size:.43rem!important}
   .schedule-actions .soft-button{padding:0 7px!important;font-size:.62rem!important}
