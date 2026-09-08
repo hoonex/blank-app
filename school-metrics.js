@@ -91,6 +91,15 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] #weekView:not(.hidden) .week-cell:not(.week-head){
     min-height:clamp(64px,calc((100vh - 250px)/7),104px)!important
   }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack{
+    grid-template-rows:max-content max-content!important;
+    align-content:start!important;
+    align-items:start!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack>:is(.meal-card,.upcoming-card){
+    height:auto!important;
+    align-self:start!important
+  }
 }
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
