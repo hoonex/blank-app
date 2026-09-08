@@ -103,6 +103,16 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
     height:auto!important;
     align-self:start!important
   }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .upcoming-card[data-flow-exam-feed="v3"]{
+    min-height:0!important;
+    height:max-content!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #flowExamFeedV3{
+    min-height:0!important;
+    height:max-content!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important
+  }
 }
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
