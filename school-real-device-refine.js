@@ -235,4 +235,4 @@ html[data-flow-school-ui="v2"] body #dashboard #todayView .inline-week-toolbar :
 `;
 document.head.append(style);
 document.documentElement.dataset.flowSchoolRealDeviceRefine='v1';
-queueMicrotask(()=>void import('./school-tablet-rotation-contract.js'));
+await import('./school-tablet-rotation-contract.js');
