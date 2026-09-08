@@ -11,7 +11,10 @@ const BASE_STYLE_HREFS=['./school-v5.css','./school-hotfix.css','./school-polish
 if(!document.querySelector('#flow-school-landing-hit-area')){
   const style=document.createElement('style');
   style.id='flow-school-landing-hit-area';
-  style.textContent=`html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}`;
+  style.textContent=`
+html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}
+@media(min-width:901px){html body #landing .school-search-panel{transform:none!important}}
+`;
   document.head.append(style);
 }
 
