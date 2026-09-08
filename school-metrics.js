@@ -87,6 +87,11 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:3!important}
 html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
 html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:4!important}
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] #weekView:not(.hidden) .week-cell:not(.week-head){
+    min-height:clamp(64px,calc((100vh - 250px)/7),104px)!important
+  }
+}
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
