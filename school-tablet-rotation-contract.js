@@ -91,6 +91,24 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-mode-toggle{
     display:none!important;
   }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"][data-flow-glass-mode="optical"] body #dashboard.product-shell:not(.hidden) #desktopSidebar.desktop-sidebar{
+    background:
+      radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.76) 0%,rgba(255,255,255,.19) 30%,transparent 56%),
+      linear-gradient(145deg,rgba(249,251,255,.66),rgba(244,248,253,.47))!important;
+    border-color:rgba(255,255,255,.72)!important;
+    box-shadow:0 22px 62px rgba(31,48,80,.12),inset 0 1px 0 rgba(255,255,255,.91)!important;
+    backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
+    -webkit-backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"][data-flow-glass-mode="optical"][data-theme="dark"] body #dashboard.product-shell:not(.hidden) #desktopSidebar.desktop-sidebar{
+    background:
+      radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 31%,transparent 57%),
+      linear-gradient(145deg,rgba(25,31,39,.65),rgba(17,21,27,.51))!important;
+    border-color:rgba(255,255,255,.15)!important;
+    box-shadow:0 24px 66px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.16)!important;
+    backdrop-filter:blur(23px) saturate(142%) brightness(.965) contrast(1.035)!important;
+    -webkit-backdrop-filter:blur(23px) saturate(142%) brightness(.965) contrast(1.035)!important;
+  }
 }
 /* Content proportions have only two families: phone and desktop. Tablet chrome
    stays tablet-specific, but tablet content uses the same proportions as desktop. */
