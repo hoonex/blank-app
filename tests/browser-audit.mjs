@@ -77,20 +77,19 @@ for(const testCase of cases){
     const selectTab=async(view)=>{
       try{
         if(view==='week'){
-          const inlineWeek=page.locator('.timetable-mode-toggle button:visible',{hasText:'주간'}).first();
-          if(await inlineWeek.count()){
-            await inlineWeek.click({trial:true,timeout:3000});
-            const t0=Date.now();await inlineWeek.click({timeout:3000});
-            await page.waitForFunction(()=>{const inline=document.querySelector('#inlineWeekTimetable');return document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden')},null,{timeout:3000});
-            return Date.now()-t0;
-          }
-          const railWeek=page.locator('#desktopSidebar [data-view="week"]:visible').first();
-          if(await railWeek.count()){
+          const layout=await page.evaluate(()=>document.documentElement.dataset.flowSchoolLayout||'');
+          if(layout==='desktop'){
+            const railWeek=page.locator('#desktopSidebar [data-view="week"]:visible').first();
             await railWeek.click({trial:true,timeout:3000});
             const t0=Date.now();await railWeek.click({timeout:3000});
-            await page.waitForFunction(()=>{const inline=document.querySelector('#inlineWeekTimetable'),panel=document.querySelector('#weekView');return (document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden'))||!!panel&&!panel.classList.contains('hidden')},null,{timeout:3000});
+            await page.waitForFunction(()=>{const panel=document.querySelector('#weekView');return !!panel&&!panel.classList.contains('hidden')},null,{timeout:3000});
             return Date.now()-t0;
           }
+          const inlineWeek=page.locator('.timetable-mode-toggle button:visible',{hasText:'주간'}).first();
+          await inlineWeek.click({trial:true,timeout:3000});
+          const t0=Date.now();await inlineWeek.click({timeout:3000});
+          await page.waitForFunction(()=>{const inline=document.querySelector('#inlineWeekTimetable');return document.body.classList.contains('flow-inline-week-active')&&!!inline&&!inline.classList.contains('hidden')},null,{timeout:3000});
+          return Date.now()-t0;
         }
         const tab=page.locator(`[data-view="${view}"]:visible`).first();
         await tab.click({trial:true,timeout:3000});
