@@ -142,7 +142,7 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
   }
 }
 /* Content proportions have only two families: phone and desktop. Tablet chrome
-   stays tablet-specific, but tablet content uses the same proportions as desktop. */
+   stays tablet-specific, but Today content uses the same proportions as desktop. */
 @media (min-width:521px) and (min-height:521px){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
@@ -170,6 +170,14 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
     grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr)!important;
     align-items:start!important;
     gap:16px!important;
+  }
+}
+/* Portrait tablets keep Schedule touch-first. This is destination ergonomics,
+   not a third Today content-ratio family. */
+@media (min-width:521px) and (max-width:1180px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout{
+    display:block!important;
+    grid-template-columns:none!important;
   }
 }
 @media (max-width:1180px) and (max-height:620px) and (orientation:landscape){
