@@ -39,7 +39,7 @@ async function visualState(page,c,label){
     const root=document.documentElement,dashboard=document.querySelector('#dashboard'),cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
     const visible=node=>{if(!node)return false;const s=cs(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};
     const firstVisible=selector=>[...document.querySelectorAll(selector)].find(visible)||null;
-    const shapeSelectors=['.status-card','.timetable-card','.meal-card','.upcoming-card','.timetable-mode-toggle','.timetable-mode-toggle button','.flow-school-utility-action','#allergyBtn','.period-button','.period-no','.meal-tab','.dish','.flow-exam-card-v5','.mobile-school-button','#flowTodayDateDock .flow-date-focus','.mobile-tab','.calendar-card','.calendar-day','.info-tile','.flow-settings-card'];
+    const shapeSelectors=['.status-card','.timetable-card','.meal-card','.upcoming-card','.timetable-mode-toggle','.timetable-mode-toggle button','.flow-school-utility-action','#allergyBtn','.period-button','.period-no','.meal-tab','.dish','.flow-exam-card-v5','.mobile-school-button','#flowTodayDateDock .flow-date-focus','.mobile-tab','.calendar-card','.calendar-day','.info-tile','.flow-settings-card','#desktopSidebar .nav-item'];
     const shapes=[];
     for(const selector of shapeSelectors){for(const node of document.querySelectorAll(selector)){if(!visible(node))continue;const s=cs(node);shapes.push({selector,cornerShape:s.cornerShape||'',radius:s.borderRadius||''})}}
     const nav=firstVisible('#bottomNav'),today=document.querySelector('#todayView'),status=document.querySelector('#todayView .status-grid'),todayGrid=document.querySelector('#todayView .today-grid'),right=document.querySelector('#todayView .right-stack'),timetable=document.querySelector('#todayView .timetable-card'),meal=document.querySelector('#todayView .meal-card');
@@ -97,7 +97,15 @@ for(const c of CASES){
     await page.addInitScript(school=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-ambient-v1','on')},SCHOOL);
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolVisualContract==='v7'&&document.documentElement.dataset.flowExperience==='ready');
     row.states.today=await visualState(page,c,'today');verify(c,row.states.today);row.ambient=await ambientProbe(page,c);
-    const week=page.locator('.timetable-mode-toggle [data-timetable-mode="week"],.timetable-mode-toggle [data-view="week"]').first();if(await week.count()){await week.click();await page.locator('#inlineWeekTimetable:not(.hidden)').waitFor();row.states.week=await visualState(page,c,'week');verify(c,row.states.week)}
+    const layout=await page.evaluate(()=>document.documentElement.dataset.flowSchoolLayout||'');
+    if(layout==='desktop'){
+      await clickVisible(page,'#desktopSidebar [data-view="week"]');
+      await page.locator('#weekView:not(.hidden)').waitFor();
+      row.states.week=await visualState(page,c,'week');verify(c,row.states.week);
+    }else{
+      const week=page.locator('.timetable-mode-toggle [data-timetable-mode="week"],.timetable-mode-toggle [data-view="week"]').first();
+      if(await week.count()){await week.click();await page.locator('#inlineWeekTimetable:not(.hidden)').waitFor();row.states.week=await visualState(page,c,'week');verify(c,row.states.week)}
+    }
     await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await visualState(page,c,'schedule');verify(c,row.states.schedule);
     await clickVisible(page,'[data-view="school"]');await page.locator('#schoolView:not(.hidden)').waitFor();await page.locator('#schoolInfoGrid .info-tile').first().waitFor();row.states.school=await visualState(page,c,'school');verify(c,row.states.school);
     await clickVisible(page,'#settingsBtn,#mobileSettingsBtn');await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();row.states.settings=await visualState(page,c,'settings');verify(c,row.states.settings);
