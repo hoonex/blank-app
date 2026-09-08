@@ -48,6 +48,14 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/browser-audit.mjs
 
+      - name: Diagnose shared tablet desktop ratio cascade
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check tests/school-ratio-cascade-diagnostic.mjs
+          node tests/school-ratio-cascade-diagnostic.mjs
+
       - name: Verify School desktop workspace hierarchy
         if: success()
         env:
