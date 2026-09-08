@@ -1,7 +1,10 @@
 import {chromium} from 'playwright';
 const base=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173';
 const browser=await chromium.launch({headless:true});
-const page=await browser.newPage({viewport:{width:1366,height:768}});
+/* Inline Week is a compact-surface composition. Desktop owns a native Week
+   destination in the persistent rail, so keep this placement audit on the
+   compact surface where the weekly table and NEIS help share one card. */
+const page=await browser.newPage({viewport:{width:1024,height:768}});
 const errors=[];page.on('pageerror',error=>errors.push(String(error)));
 await page.goto(`${base}/`,{waitUntil:'domcontentloaded'});
 await page.waitForFunction(()=>document.querySelector('#neisTimetableHelp')&&document.querySelector('#inlineWeekTimetable'));
