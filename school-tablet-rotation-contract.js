@@ -86,24 +86,53 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
     padding:12px 13px!important;
   }
 }
-/* Normal desktop uses the sidebar as the sole Today/Week navigation surface. */
+/* Normal desktop is a two-column workspace. This final contract intentionally
+   wins over older desktop redesign styles that used a block shell. */
 @media (min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden){
+    display:grid!important;
+    grid-template-columns:216px minmax(0,1fr)!important;
+    grid-template-rows:auto!important;
+    align-items:start!important;
+    align-content:start!important;
+    gap:18px!important;
+    width:min(1720px,calc(100% - 32px))!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    padding:16px 0 42px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden)>#desktopSidebar.desktop-sidebar{
+    grid-column:1!important;
+    grid-row:1!important;
+    align-self:start!important;
+    display:flex!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden)>.product-main{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:start!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    transform:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden)>#bottomNav.mobile-bottom-nav{
+    display:none!important;
+  }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-mode-toggle{
     display:none!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"][data-flow-glass-mode="optical"] body #dashboard.product-shell:not(.hidden) #desktopSidebar.desktop-sidebar{
-    background:
-      radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.76) 0%,rgba(255,255,255,.19) 30%,transparent 56%),
-      linear-gradient(145deg,rgba(249,251,255,.66),rgba(244,248,253,.47))!important;
+    background:radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.76) 0%,rgba(255,255,255,.19) 30%,transparent 56%),linear-gradient(145deg,rgba(249,251,255,.66),rgba(244,248,253,.47))!important;
     border-color:rgba(255,255,255,.72)!important;
     box-shadow:0 22px 62px rgba(31,48,80,.12),inset 0 1px 0 rgba(255,255,255,.91)!important;
     backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
     -webkit-backdrop-filter:blur(23px) saturate(168%) brightness(1.025) contrast(1.02)!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"][data-flow-glass-mode="optical"][data-theme="dark"] body #dashboard.product-shell:not(.hidden) #desktopSidebar.desktop-sidebar{
-    background:
-      radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 31%,transparent 57%),
-      linear-gradient(145deg,rgba(25,31,39,.65),rgba(17,21,27,.51))!important;
+    background:radial-gradient(150% 105% at -8% -4%,rgba(255,255,255,.16) 0%,rgba(255,255,255,.035) 31%,transparent 57%),linear-gradient(145deg,rgba(25,31,39,.65),rgba(17,21,27,.51))!important;
     border-color:rgba(255,255,255,.15)!important;
     box-shadow:0 24px 66px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.16)!important;
     backdrop-filter:blur(23px) saturate(142%) brightness(.965) contrast(1.035)!important;
@@ -113,21 +142,25 @@ html[data-flow-school-ui="v2"] body:has(#switchDialog[open]) #dashboard:not(.hid
 /* Content proportions have only two families: phone and desktop. Tablet chrome
    stays tablet-specific, but tablet content uses the same proportions as desktop. */
 @media (min-width:521px) and (min-height:521px){
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .today-grid,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .today-grid{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    display:grid!important;
     grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
     align-items:start!important;
     gap:16px!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .timetable-card,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .timetable-card,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.timetable-card,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.timetable-card,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
     grid-column:auto!important;
+    min-width:0!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #todayView .right-stack,
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #todayView .right-stack{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:grid!important;
     grid-template-columns:minmax(0,1fr)!important;
+    gap:16px!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard #scheduleView .schedule-layout,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #scheduleView .schedule-layout{
