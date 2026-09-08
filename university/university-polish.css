@@ -47,11 +47,10 @@ html[data-theme="light"] .setup{background:radial-gradient(circle at 70% 16%,rgb
 @media(min-width:821px){
   .setup-header{min-height:40px!important}
 }
-/* School's final desktop landing contract intentionally lowers the search task
-   by 30px. Mirror that final rendered baseline here so the two mode landings
-   remain visually symmetric after School's progressive shell has settled. */
+/* Keep the University desktop task at its natural grid baseline. School now
+   neutralizes its obsolete late +30px transform with a deterministic override. */
 @media(min-width:901px){
-  .search-card{transform:translateY(30px)!important}
+  .search-card{transform:none!important}
 }
 
 @media (hover:none) and (pointer:coarse){
