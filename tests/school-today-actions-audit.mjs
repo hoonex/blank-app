@@ -50,16 +50,21 @@ function squircle(metric,label){
 async function renderedState(page){
   return page.evaluate(()=>{
     const style=node=>node?getComputedStyle(node):null;
+    const shown=node=>{if(!node)return false;const s=style(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};
     const metric=node=>{if(!node)return null;const s=style(node),r=node.getBoundingClientRect();return{border:s.borderTopWidth,radius:s.borderTopLeftRadius,clipPath:s.clipPath,width:r.width,height:r.height,background:s.backgroundColor,color:s.color}};
     const actions=document.querySelector('.timetable-actions');
-    const order=actions?[...actions.children].map(node=>node.classList.contains('timetable-mode-toggle')?'mode':node.id==='editSubjectsBtn'?'edit':node.id==='shareTimetableBtn'?'share':node.id||node.className):[];
+    const label=node=>node.classList.contains('timetable-mode-toggle')?'mode':node.id==='editSubjectsBtn'?'edit':node.id==='shareTimetableBtn'?'share':node.id||node.className;
+    const order=actions?[...actions.children].map(label):[];
+    const visibleOrder=actions?[...actions.children].filter(shown).map(label):[];
     const periods=[...document.querySelectorAll('#timetable .period-no')].map(metric);
     return{
-      order,
+      order,visibleOrder,
       mode:metric(document.querySelector('.timetable-mode-toggle')),
       edit:metric(document.querySelector('#editSubjectsBtn')),
       share:metric(document.querySelector('#shareTimetableBtn')),
       allergy:metric(document.querySelector('#allergyBtn')),
+      railToday:metric(document.querySelector('#desktopSidebar [data-view="today"]')),
+      railWeek:metric(document.querySelector('#desktopSidebar [data-view="week"]')),
       editClass:document.querySelector('#editSubjectsBtn')?.classList.contains('flow-school-utility-action')||false,
       shareClass:document.querySelector('#shareTimetableBtn')?.classList.contains('flow-school-utility-action')||false,
       allergyClass:document.querySelector('#allergyBtn')?.classList.contains('flow-school-utility-action')||false,
@@ -75,10 +80,15 @@ async function modeState(page){return page.evaluate(()=>{
   const week=[...(toggle?.querySelectorAll('button')||[])].find(node=>node!==today&&node.textContent.trim()==='주간')||null;
   const info=node=>{const s=node?getComputedStyle(node):null;return{active:Boolean(node?.classList.contains('active')),pressed:node?.getAttribute('aria-pressed')||'',background:s?.backgroundColor||'',image:s?.backgroundImage||'none',color:s?.color||'',classes:node?.className||''}};
   return{
+    layout:document.documentElement.dataset.flowSchoolLayout||'',
     bodyWeek:document.body.classList.contains('flow-inline-week-active'),
     inlineVisible:shown(document.querySelector('#inlineWeekTimetable')),
+    weekDestinationVisible:shown(document.querySelector('#weekView')),
+    todayDestinationVisible:shown(document.querySelector('#todayView')),
     title:document.querySelector('.timetable-card .card-heading h2')?.textContent?.trim()||'',
     today:info(today),week:info(week),
+    railToday:info(document.querySelector('#desktopSidebar [data-view="today"]')),
+    railWeek:info(document.querySelector('#desktopSidebar [data-view="week"]')),
     bottomToday:Boolean(document.querySelector('#bottomNav>[data-view="today"]')?.classList.contains('active')),
     route:location.pathname,
   };
@@ -102,9 +112,16 @@ for(const [name,width,height,isMobile] of cases){
   await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
   await page.waitForFunction(()=>document.querySelector('.timetable-mode-toggle')&&document.querySelector('#shareTimetableBtn')&&document.querySelectorAll('#timetable .period-no').length>=4);
   const state=await renderedState(page);
-  assert(state.order.join('|')==='mode|edit|share',`${name}: action order regressed ${JSON.stringify(state.order)}`);
-  assert(state.mode?.border==='0px',`${name}: mode switch has a visible border ${JSON.stringify(state.mode)}`);
-  squircle(state.mode,`${name}/mode`);
+  const desktop=width>=1181&&height>=681;
+  assert(state.order.join('|')==='mode|edit|share',`${name}: action DOM order regressed ${JSON.stringify(state.order)}`);
+  assert(state.visibleOrder.join('|')===(desktop?'edit|share':'mode|edit|share'),`${name}: visible action order regressed ${JSON.stringify(state.visibleOrder)}`);
+  if(desktop){
+    assert(state.mode?.width===0&&state.mode?.height===0,`${name}: duplicate Today/Week control leaked into desktop ${JSON.stringify(state.mode)}`);
+    squircle(state.railToday,`${name}/rail-today`);squircle(state.railWeek,`${name}/rail-week`);
+  }else{
+    assert(state.mode?.border==='0px',`${name}: mode switch has a visible border ${JSON.stringify(state.mode)}`);
+    squircle(state.mode,`${name}/mode`);
+  }
   for(const [key,value] of [['edit',state.edit],['share',state.share],['allergy',state.allergy]]){
     assert(value?.border==='0px',`${name}: ${key} action has a visible border ${JSON.stringify(value)}`);
     squircle(value,`${name}/${key}`);
@@ -116,6 +133,23 @@ for(const [name,width,height,isMobile] of cases){
   assert(state.overflow<=1,`${name}: horizontal overflow ${state.overflow}`);
 
   const initialMode=await modeState(page);
+  if(desktop){
+    assert(initialMode.layout==='desktop'&&initialMode.todayDestinationVisible&&!initialMode.weekDestinationVisible,`${name}: initial desktop destination is wrong ${JSON.stringify(initialMode)}`);
+    assert(initialMode.railToday.active&&!initialMode.railWeek.active,`${name}: initial desktop rail state is wrong ${JSON.stringify(initialMode)}`);
+    await page.locator('#desktopSidebar [data-view="week"]').click();
+    await page.locator('#weekView:not(.hidden)').waitFor();
+    const weekMode=await modeState(page);
+    assert(weekMode.weekDestinationVisible&&!weekMode.todayDestinationVisible&&weekMode.railWeek.active&&!weekMode.railToday.active,`${name}: desktop Week rail did not engage ${JSON.stringify(weekMode)}`);
+    await page.locator('#desktopSidebar [data-view="today"]').click();
+    await page.locator('#todayView:not(.hidden)').waitFor();
+    const returnedMode=await modeState(page);
+    assert(returnedMode.todayDestinationVisible&&!returnedMode.weekDestinationVisible&&returnedMode.railToday.active&&!returnedMode.railWeek.active,`${name}: desktop rail did not return to Today ${JSON.stringify(returnedMode)}`);
+    assert(errors.length===0,`${name}: browser errors ${JSON.stringify(errors)}`);
+    report[name]={state,initialMode,weekMode,returnedMode,errors};
+    await context.close();
+    continue;
+  }
+
   assert(!initialMode.bodyWeek&&!initialMode.inlineVisible&&initialMode.title==='오늘 시간표',`${name}: initial Today mode is wrong ${JSON.stringify(initialMode)}`);
   assert(initialMode.today.active&&initialMode.today.pressed==='true'&&!initialMode.week.active&&initialMode.week.pressed==='false',`${name}: initial segmented state is wrong ${JSON.stringify(initialMode)}`);
   assert(selectedSurfaceDiffers(initialMode,'today'),`${name}: Today selection surface is visually detached/indistinguishable ${JSON.stringify(initialMode)}`);
@@ -141,4 +175,4 @@ for(const [name,width,height,isMobile] of cases){
 }
 await browser.close();
 await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
-console.log(JSON.stringify({ok:true,order:['mode','edit','share'],periodShape:'squircle',modeRoundTrip:'today-week-today',viewports:Object.keys(report)},null,2));
+console.log(JSON.stringify({ok:true,compactOrder:['mode','edit','share'],desktopOrder:['edit','share'],periodShape:'squircle',compactModeRoundTrip:'today-week-today',desktopModeRoundTrip:'rail-today-week-today',viewports:Object.keys(report)},null,2));
