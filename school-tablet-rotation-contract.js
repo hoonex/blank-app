@@ -1,3 +1,5 @@
+import './school-desktop-workspace.js';
+
 const root=document.documentElement;
 const MOBILE_QUERY='(max-width:520px)';
 const TABLET_QUERY='(min-width:521px) and (max-width:1180px)';
