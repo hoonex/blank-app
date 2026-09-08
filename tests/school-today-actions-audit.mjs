@@ -110,13 +110,16 @@ for(const [name,width,height,isMobile] of cases){
   await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:15000});
   await page.waitForSelector('#dashboard:not(.hidden)',{timeout:10000});
   await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
-  await page.waitForFunction(()=>document.querySelector('.timetable-mode-toggle')&&document.querySelector('#shareTimetableBtn')&&document.querySelectorAll('#timetable .period-no').length>=4);
-  const state=await renderedState(page);
   const desktop=width>=1181&&height>=681;
-  assert(state.order.join('|')==='mode|edit|share',`${name}: action DOM order regressed ${JSON.stringify(state.order)}`);
+  await page.waitForFunction(expectDesktop=>{
+    const actionsReady=document.querySelector('#shareTimetableBtn')&&document.querySelectorAll('#timetable .period-no').length>=4;
+    return Boolean(actionsReady&&(expectDesktop||document.querySelector('.timetable-mode-toggle')));
+  },desktop);
+  const state=await renderedState(page);
+  assert(state.order.join('|')===(desktop?'edit|share':'mode|edit|share'),`${name}: action DOM order regressed ${JSON.stringify(state.order)}`);
   assert(state.visibleOrder.join('|')===(desktop?'edit|share':'mode|edit|share'),`${name}: visible action order regressed ${JSON.stringify(state.visibleOrder)}`);
   if(desktop){
-    assert(state.mode?.width===0&&state.mode?.height===0,`${name}: duplicate Today/Week control leaked into desktop ${JSON.stringify(state.mode)}`);
+    assert(state.mode===null,`${name}: duplicate Today/Week control leaked into desktop ${JSON.stringify(state.mode)}`);
     squircle(state.railToday,`${name}/rail-today`);squircle(state.railWeek,`${name}/rail-week`);
   }else{
     assert(state.mode?.border==='0px',`${name}: mode switch has a visible border ${JSON.stringify(state.mode)}`);
