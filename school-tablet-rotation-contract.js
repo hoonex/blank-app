@@ -66,8 +66,10 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+3):last-child)>.info-tile:nth-last-child(-n+3){
   grid-column:span 4!important;
 }
-html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #landing .school-search-panel{
-  transform:translateY(-30px)!important;
+@media (min-width:821px){
+  html body #landing .school-search-panel{
+    transform:translateY(-30px)!important;
+  }
 }
 html[data-flow-school-ui="v2"] body #switchDialog[open]{
   z-index:240!important;
