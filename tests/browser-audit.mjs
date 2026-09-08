@@ -72,7 +72,9 @@ for(const testCase of cases){
       },{once:true});
     },{profile});
 
-    const started=Date.now();await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});await page.waitForTimeout(2500);result.loadMs=Date.now()-started;
+    const started=Date.now();await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});await page.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});
+    await page.waitForFunction(()=>['mobile','tablet','desktop'].includes(document.documentElement.dataset.flowSchoolLayout||''),null,{timeout:5000});
+    await page.waitForTimeout(2500);result.loadMs=Date.now()-started;
 
     const selectTab=async(view)=>{
       try{
@@ -113,7 +115,7 @@ for(const testCase of cases){
     if(await dotted.count()){await dotted.click();await page.waitForTimeout(350)}
     result.scheduleState=await page.evaluate(()=>({path:location.pathname,selectedDays:document.querySelectorAll('.calendar-day.selected').length,selectedPanel:document.querySelector('#selectedDayPanel')?.textContent?.trim()||'',scheduleVisible:!document.querySelector('[data-view-panel="schedule"]')?.classList.contains('hidden')}));
 
-    await selectTab('today');const idleStart=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);await page.waitForTimeout(2000);const idleEnd=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);result.idleMutations2s=idleEnd-idleStart;
+    await selectTab('today');await page.waitForTimeout(140);const idleStart=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);await page.waitForTimeout(2000);const idleEnd=await page.evaluate(()=>window.__flowAudit?.unexpectedMutations||0);result.idleMutations2s=idleEnd-idleStart;
 
     result.metrics=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,domNodes:document.getElementsByTagName('*').length,stylesheets:document.styleSheets.length,scripts:document.scripts.length,longTasks:window.__flowAudit?.longTasks||[],mutationCount:window.__flowAudit?.mutations||0,unexpectedMutationCount:window.__flowAudit?.unexpectedMutations||0,navCount:document.querySelectorAll('[data-view]').length}));
     await page.screenshot({path:`${OUT}/${testCase.name}-today.png`,fullPage:true});await selectTab('week');await page.screenshot({path:`${OUT}/${testCase.name}-week.png`,fullPage:true});await selectTab('schedule');await page.screenshot({path:`${OUT}/${testCase.name}-schedule.png`,fullPage:true});
