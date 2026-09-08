@@ -137,6 +137,12 @@ async function bootCriticalSchoolSurface(){
   await import('./school-toolbar-grouping.js');
   await import('./school-desktop-tablet-redesign.js');
 
+  /* The responsive content contract intentionally owns the final cascade. Tablet
+     chrome remains tablet-specific, while content uses only mobile/desktop ratios. */
+  const contentRatioStyle=document.getElementById('flow-school-layout-contract-style');
+  if(contentRatioStyle)document.head.append(contentRatioStyle);
+  root.dataset.flowSchoolContentRatio='ready';
+
   normalizeSchoolSettingsTab();
   root.dataset.flowSchoolSurface='ready';
   root.dataset.flowSchoolSurfaceV6='ready';
