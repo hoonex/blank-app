@@ -174,7 +174,7 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
   .product-shell:not(.hidden){display:block!important;width:100%!important;padding:0 0 70px!important}
   .desktop-sidebar{display:none!important}
   .product-main{padding:0 10px!important}
-  .mobile-topbar{display:flex!important;align-items:center!important;justify-content:space-between!important;position:sticky!important;top:0!important;z-index:60!important;height:54px!important;padding:6px 2px!important;background:color-mix(in srgb,var(--bg) 92%,transparent)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .mobile-topbar{display:flex!important;align-items:center!important;justify-content:space-between!important;position:sticky!important;top:0!important;z-index:60!important;height:54px!important;padding:6px 2px!important;background:color-mix(in srgb,var(--bg) 92%,transparent)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px) saturate(130%)}
   .mobile-topbar .flow-logo{min-height:40px!important;align-items:center!important}
   .mobile-school-button{display:block;max-width:46vw;padding:7px 10px;border:0;border-radius:12px;background:var(--surface);color:var(--text);text-align:right;box-shadow:0 5px 15px rgba(28,38,60,.06)}
   .mobile-school-button span,.mobile-school-button small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -214,6 +214,10 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
    and track. On a desktop workspace, keep those five related fields together
    instead of pushing the final track tile into a centered orphan row. */
 @media(min-width:1181px){
+  /* Desktop/tablet redesign is injected after this stylesheet and normally owns a
+     four-column parent grid. This higher-specificity contract keeps the profile on
+     the same twelve-track system used by the child spans below. */
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #schoolInfoGrid.school-info-grid{grid-template-columns:repeat(12,minmax(0,1fr))!important}
   #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(5){grid-column:auto/span 2!important}
   #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(4){grid-column:auto/span 4!important}
   #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(3),
