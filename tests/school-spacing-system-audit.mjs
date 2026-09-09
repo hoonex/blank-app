@@ -61,12 +61,17 @@ function verifyToday(c,s){
   assert(close(num(x.status.marginBottom),t.section),`${c.name}: status-to-content margin ${x.status.marginBottom} != ${t.section}`);
   if(c.width<=820){
     assert(x.grid.display==='grid',`${c.name}: Today stack is not grid ${JSON.stringify({grid:x.grid.display,right:x.right.display})}`);
-    if(c.width<=520)assert(x.right.display==='flex',`${c.name}: phone utility stack must stay flex ${JSON.stringify(x.right)}`);
-    else assert(x.right.display==='grid',`${c.name}: tablet utility stack must stay grid ${JSON.stringify(x.right)}`);
     assert(close(x.boxes.grid.top-x.boxes.status.bottom,t.section,1),`${c.name}: rendered status→Today gap mismatch ${JSON.stringify({actual:x.boxes.grid.top-x.boxes.status.bottom,token:t.section})}`);
-    assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);
-    if(c.width<=520)assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
-    else assert(close(x.boxes.up.left-x.boxes.meal.right,t.section,1),`${c.name}: rendered meal→upcoming horizontal gap mismatch ${JSON.stringify({actual:x.boxes.up.left-x.boxes.meal.right,token:t.section})}`);
+    if(c.width<=520){
+      assert(x.right.display==='flex',`${c.name}: phone utility stack must stay flex ${JSON.stringify(x.right)}`);
+      assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);
+      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
+    }else{
+      assert(x.right.display==='grid',`${c.name}: non-phone utility rail must stay grid ${JSON.stringify(x.right)}`);
+      assert(close(x.boxes.right.left-x.boxes.tt.right,t.section,1),`${c.name}: rendered timetable→utility horizontal gap mismatch ${JSON.stringify({actual:x.boxes.right.left-x.boxes.tt.right,token:t.section})}`);
+      assert(close(x.boxes.right.top,x.boxes.tt.top,1),`${c.name}: shared desktop proportion lost top alignment ${JSON.stringify({timetableTop:x.boxes.tt.top,rightTop:x.boxes.right.top})}`);
+      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
+    }
   }
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift ${JSON.stringify(x.view)}`)}
   return t;
@@ -101,7 +106,7 @@ for(const c of CASES){
   const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:c.mobile,hasTouch:c.touch,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);await fixtures(page);const row={name:c.name,viewport:{width:c.width,height:c.height},states:{}};
   try{
     await page.addInitScript(school=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-school-transit-lab-v1','off')},SCHOOL);
-    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSpacingSystem==='v1'&&document.documentElement.dataset.flowSchoolSurface==='ready');await page.waitForTimeout(100);
+    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSpacingSystem==='v1'&&document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolContentRatio==='ready');await page.waitForTimeout(100);
     row.states.today=await state(page,'today');const tokens=verifyToday(c,row.states.today);const todayLeft=row.states.today.today.boxes.tt.left;await page.screenshot({path:`${OUT}/${c.name}-today.png`,fullPage:false,animations:'disabled'});
     await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await state(page,'schedule');verifySchedule(c,row.states.schedule,tokens,todayLeft);await page.screenshot({path:`${OUT}/${c.name}-schedule.png`,fullPage:false,animations:'disabled'});
     await clickVisible(page,'[data-view="school"]');await page.locator('#schoolView:not(.hidden)').waitFor();await page.locator('#schoolInfoGrid .info-tile').first().waitFor();row.states.school=await state(page,'school');verifySchool(c,row.states.school,tokens,todayLeft);

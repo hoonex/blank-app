@@ -299,15 +299,17 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView
   background:var(--surface)!important;
   box-shadow:0 8px 24px rgba(38,50,72,.055)!important;
 }
+/* Tablet chrome stays tablet-specific, but content proportions are the desktop proportions. */
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView .today-grid{
   display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  gap:14px!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
+  align-items:start!important;
+  gap:16px!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView .right-stack{
   display:grid!important;
-  grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  gap:14px!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:16px!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView :is(.timetable-card,.meal-card,.upcoming-card),
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body :is(#weekView,#scheduleView,#schoolView,#flowSchoolSettingsView) .content-card{
@@ -317,7 +319,10 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body :is(#weekV
   box-shadow:var(--flow-dt-shadow)!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body .schedule-layout{
-  gap:14px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr)!important;
+  align-items:start!important;
+  gap:16px!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body .view-header{
   margin:4px 2px 14px!important;
@@ -325,13 +330,6 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body .view-head
 @media(min-width:900px){
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView .status-grid{
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView .today-grid{
-    grid-template-columns:minmax(0,1.28fr) minmax(320px,.72fr)!important;
-    align-items:start!important;
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #todayView .right-stack{
-    grid-template-columns:minmax(0,1fr)!important;
   }
 }
 
@@ -577,7 +575,7 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #todayVie
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #todayView .today-grid{
   display:grid!important;
-  grid-template-columns:minmax(0,1.42fr) minmax(350px,.72fr)!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
   align-items:start!important;
   gap:16px!important;
 }
@@ -597,7 +595,7 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body .view-hea
   margin:2px 2px 14px!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body .schedule-layout{
-  grid-template-columns:minmax(0,1.16fr) minmax(340px,.84fr)!important;
+  grid-template-columns:minmax(0,1.16fr) minmax(0,.84fr)!important;
   gap:16px!important;
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body .school-info-grid{
@@ -621,9 +619,6 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body .flow-adf
     grid-template-columns:auto minmax(360px,1fr) auto auto!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard .countdown-pill{display:none!important}
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #todayView .today-grid{
-    grid-template-columns:minmax(0,1.3fr) minmax(330px,.7fr)!important;
-  }
 }
 
 html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard,

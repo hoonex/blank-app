@@ -48,6 +48,23 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/browser-audit.mjs
 
+      - name: Diagnose shared tablet desktop ratio cascade
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: |
+          node --check tests/school-ratio-cascade-diagnostic.mjs
+          node tests/school-ratio-cascade-diagnostic.mjs
+
+      - name: Verify School desktop workspace hierarchy
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+          FLOW_TEST_OUT: school-desktop-workspace-audit
+        run: |
+          node --check tests/school-desktop-workspace-audit.mjs
+          node tests/school-desktop-workspace-audit.mjs
+
       - name: Verify Light theme on dark mobile OS
         if: success()
         env:
@@ -134,6 +151,7 @@ jobs:
           name: browser-audit
           path: |
             browser-audit-artifacts
+            school-desktop-workspace-audit
             school-calendar-audit
             contextual-shell-audit
             native-feel-audit

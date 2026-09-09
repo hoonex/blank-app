@@ -44,13 +44,11 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .flow-adfit-rail--school-top{
   margin-bottom:var(--flow-school-section-gap)!important;
 }
-@media(max-width:820px){
+@media(max-width:520px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
     display:grid!important;
     grid-template-columns:minmax(0,1fr)!important;
   }
-}
-@media(max-width:520px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
     display:flex!important;
     flex-direction:column!important;

@@ -31,10 +31,11 @@ async function measure(page){return page.evaluate(()=>{
   const share=document.querySelector('#shareTimetableBtn');
   const help=document.querySelector('.neis-timetable-help summary');
   const buttons=[document.querySelector('#prevWeek'),document.querySelector('#thisWeekBtn'),document.querySelector('#nextWeek')];
+  const sidebarWeek=document.querySelector('#desktopSidebar [data-view="week"]');
   const cs=node=>node?getComputedStyle(node):null;
   return{
     viewport:innerWidth,
-    topbar:rect(topbar),actions:rect(actions),toggle:rect(toggle),edit:rect(edit),share:rect(share),
+    topbar:rect(topbar),actions:rect(actions),toggle:rect(toggle),toggleVisible:shown(toggle),edit:rect(edit),share:rect(share),sidebarWeek:rect(sidebarWeek),sidebarWeekVisible:shown(sidebarWeek),
     visible:{edit:shown(edit),share:shown(share)},
     help:{rect:rect(help),color:cs(help)?.color,background:cs(help)?.backgroundColor,border:cs(help)?.borderTopWidth,editColor:cs(edit)?.color},
     weekButtons:buttons.map(rect),
@@ -44,6 +45,11 @@ async function measure(page){return page.evaluate(()=>{
 function assertActionGrouping(name,s){
   assert(s.actions&&s.toggle&&s.edit&&s.share,`${name}: action geometry missing ${JSON.stringify(s)}`);
   assert(s.edit.left-s.toggle.right>=12,`${name}: edit action still hugs Today/Week toggle ${JSON.stringify({toggle:s.toggle,edit:s.edit})}`);
+  assert(Math.abs(s.actions.right-s.share.right)<=2.5,`${name}: share action is not docked to the right edge ${JSON.stringify({actions:s.actions,share:s.share})}`);
+  assert(s.edit.right<=s.share.left+1,`${name}: edit/share ordering broke ${JSON.stringify({edit:s.edit,share:s.share})}`);
+}
+function assertDesktopActions(name,s){
+  assert(s.actions&&s.edit&&s.share&&s.sidebarWeekVisible&&!s.toggleVisible,`${name}: desktop rail/action geometry missing ${JSON.stringify(s)}`);
   assert(Math.abs(s.actions.right-s.share.right)<=2.5,`${name}: share action is not docked to the right edge ${JSON.stringify({actions:s.actions,share:s.share})}`);
   assert(s.edit.right<=s.share.left+1,`${name}: edit/share ordering broke ${JSON.stringify({edit:s.edit,share:s.share})}`);
 }
@@ -74,7 +80,13 @@ for(const viewport of [{name:'phone-360',width:360,height:800},{name:'phone-412'
 }
 {
   const context=await browser.newContext({viewport:{width:1280,height:800},locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);const errors=await install(page);
-  try{await ready(page);let s=await measure(page);assertActionGrouping('desktop Today',s);await page.locator('.timetable-mode-toggle [data-timetable-mode="week"]').click();await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active'));await page.waitForTimeout(90);s=await measure(page);assert(s.visible.edit&&s.visible.share,`desktop Week: utilities disappeared ${JSON.stringify(s.visible)}`);assertActionGrouping('desktop Week',s);assertConnectedWeek('desktop Week',s);await page.screenshot({path:`${OUT}/desktop-1280-week.png`,fullPage:false,animations:'disabled'});assert(errors.length===0,`desktop: browser errors ${JSON.stringify(errors)}`)}finally{await context.close()}
+  try{
+    await ready(page);let s=await measure(page);assertDesktopActions('desktop Today',s);
+    await page.locator('#desktopSidebar [data-view="week"]').click();await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')||!document.querySelector('#weekView')?.classList.contains('hidden'));await page.waitForTimeout(90);s=await measure(page);
+    assertDesktopActions('desktop Week',s);
+    if(s.weekActive)assertConnectedWeek('desktop Week',s);
+    await page.screenshot({path:`${OUT}/desktop-1280-week.png`,fullPage:false,animations:'disabled'});assert(errors.length===0,`desktop: browser errors ${JSON.stringify(errors)}`)
+  }finally{await context.close()}
 }
 await browser.close();
-console.log(JSON.stringify({ok:true,coverage:['viewport-edge mobile header','left mode / right utility grouping','Week edit/share persistence','muted timetable disclosure','connected Week navigation','Week edit bridge','desktop parity']},null,2));
+console.log(JSON.stringify({ok:true,coverage:['viewport-edge mobile header','left mode / right utility grouping','Week edit/share persistence','muted timetable disclosure','connected Week navigation','Week edit bridge','desktop rail Week navigation']},null,2));

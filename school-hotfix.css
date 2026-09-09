@@ -56,4 +56,11 @@ body.dialog-open{overflow:hidden;touch-action:none}
     inset:54px 0 0!important;
     padding-bottom:calc(92px + env(safe-area-inset-bottom))!important;
   }
+
+  /* In short phone landscape the event list already provides the selected-day
+   * context. Hiding the duplicate summary keeps the first real event above the
+   * fold without shrinking the 44px calendar or month-control hit targets. */
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView:not(.hidden) .selected-day-panel{
+    display:none!important;
+  }
 }

@@ -95,11 +95,22 @@ for(const c of cases){
   await shot(page,`${c.name}-today-fold.png`,false);
   await shot(page,`${c.name}-today-full.png`,true);
 
-  await page.locator('.timetable-mode-button:visible').first().click();
-  await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&!document.querySelector('#inlineWeekTimetable')?.classList.contains('hidden'));
-  await page.waitForTimeout(250);
-  const week=await measure(page,'#inlineWeekTimetable:not(.hidden)');
-  assertLayout(`${c.name} dashboard inline week`,week);
+  const desktop=c.viewport.width>=1181;
+  let week;
+  if(desktop){
+    const weekRail=page.locator('.desktop-sidebar [data-view="week"]:visible').first();
+    await weekRail.click();
+    await page.waitForFunction(()=>!document.querySelector('#weekView')?.classList.contains('hidden'));
+    await page.waitForTimeout(250);
+    week=await measure(page,'#weekView:not(.hidden)');
+    assertLayout(`${c.name} dashboard native week`,week);
+  }else{
+    await page.locator('.timetable-mode-button:visible').first().click();
+    await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active')&&!document.querySelector('#inlineWeekTimetable')?.classList.contains('hidden'));
+    await page.waitForTimeout(250);
+    week=await measure(page,'#inlineWeekTimetable:not(.hidden)');
+    assertLayout(`${c.name} dashboard inline week`,week);
+  }
   await shot(page,`${c.name}-week-full.png`,true);
 
   await page.locator('[data-view="schedule"]:visible').first().click();

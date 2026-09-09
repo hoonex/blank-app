@@ -11,7 +11,10 @@ const BASE_STYLE_HREFS=['./school-v5.css','./school-hotfix.css','./school-polish
 if(!document.querySelector('#flow-school-landing-hit-area')){
   const style=document.createElement('style');
   style.id='flow-school-landing-hit-area';
-  style.textContent=`html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}`;
+  style.textContent=`
+html body #landing #schoolSearch{box-sizing:border-box!important;min-height:44px!important;height:44px!important;padding-block:0!important}
+@media(min-width:901px){html body #landing .school-search-panel{transform:none!important}}
+`;
   document.head.append(style);
 }
 
@@ -87,6 +90,30 @@ html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:no
 html[data-flow-transit-surface="dormant"][data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:3!important}
 html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])){--flow-tab-count:5!important;grid-template-columns:repeat(5,minmax(0,1fr))!important}
 html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-nav:not(:has(> [data-view="week"])):has(> #mobileSettingsBtn.active){--flow-tab-index:4!important}
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] #weekView:not(.hidden) .week-cell:not(.week-head){
+    min-height:clamp(64px,calc((100vh - 250px)/7),104px)!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack{
+    grid-template-rows:max-content max-content!important;
+    align-content:start!important;
+    align-items:start!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack>:is(.meal-card,.upcoming-card){
+    height:auto!important;
+    align-self:start!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .upcoming-card[data-flow-exam-feed="v3"]{
+    min-height:0!important;
+    height:max-content!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #flowExamFeedV3{
+    min-height:0!important;
+    height:max-content!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important
+  }
+}
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .desktop-sidebar{display:none!important}
   html[data-flow-school-ui="v2"] #dashboard:not(.hidden) .mobile-bottom-nav{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
@@ -136,6 +163,12 @@ async function bootCriticalSchoolSurface(){
   await import('./school-today-review-polish.js');
   await import('./school-toolbar-grouping.js');
   await import('./school-desktop-tablet-redesign.js');
+
+  /* The responsive content contract intentionally owns the final cascade. Tablet
+     chrome remains tablet-specific, while content uses only mobile/desktop ratios. */
+  const contentRatioStyle=document.getElementById('flow-school-layout-contract-style');
+  if(contentRatioStyle)document.head.append(contentRatioStyle);
+  root.dataset.flowSchoolContentRatio='ready';
 
   normalizeSchoolSettingsTab();
   root.dataset.flowSchoolSurface='ready';

@@ -23,12 +23,12 @@ async function fixture(page){
 }
 async function state(page){return page.evaluate(()=>{
   const root=document.documentElement,visible=node=>{if(!node)return false;const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.05&&r.width>0&&r.height>0},box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}},pick=s=>document.querySelector(s);
-  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav');
+  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav'),main=pick('#dashboard>.product-main'),toggle=pick('#todayView .timetable-mode-toggle');
   const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null;
-  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},timetable:box(timetable),meal:box(meal),statusCount:status.length};
+  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),main:box(main),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},toggleVisible:visible(toggle),timetable:box(timetable),meal:box(meal),statusCount:status.length};
 })}
 function assertTwoColumn(name,s){
-  if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: wide viewport wastes horizontal space instead of using the two-column Today layout ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+  if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: non-mobile viewport did not use the shared desktop content proportion ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
 }
 function assertState(c,s){
   if(s.ui!=='v2'||s.layout!==c.expect)throw new Error(`${c.name}: layout marker mismatch ${JSON.stringify({ui:s.ui,layout:s.layout})}`);
@@ -38,16 +38,17 @@ function assertState(c,s){
     if(!s.top.visible||!s.dock.visible||s.dock.days!==5)throw new Error(`${c.name}: tablet app bar/date rail incomplete ${JSON.stringify({top:s.top,dock:s.dock})}`);
     if(!s.nav.visible||s.nav.position!=='fixed'||s.nav.radius<24)throw new Error(`${c.name}: tablet floating pill nav missing ${JSON.stringify(s.nav)}`);
     if(s.hero.visible)throw new Error(`${c.name}: legacy Today hero visible on tablet ${JSON.stringify(s.hero)}`);
-    if(c.name!=='tablet-portrait')assertTwoColumn(c.name,s);
+    assertTwoColumn(c.name,s);
   }else{
-    if(!s.sidebar.visible||!s.sideNav.visible)throw new Error(`${c.name}: desktop command bar missing ${JSON.stringify({sidebar:s.sidebar,sideNav:s.sideNav})}`);
-    if((s.sidebar.box?.height||999)>92||(s.sidebar.box?.width||0)<900)throw new Error(`${c.name}: desktop sidebar was not redesigned horizontally ${JSON.stringify(s.sidebar)}`);
-    if((s.sideNav.box?.width||0)<360||(s.sideNav.box?.height||999)>58)throw new Error(`${c.name}: desktop nav is not a horizontal control group ${JSON.stringify(s.sideNav)}`);
-    if(s.top.visible||s.nav.visible)throw new Error(`${c.name}: mobile chrome leaked into desktop ${JSON.stringify({top:s.top,nav:s.nav})}`);
+    if(!s.sidebar.visible||!s.sideNav.visible||!s.main)throw new Error(`${c.name}: desktop workspace rail missing ${JSON.stringify({sidebar:s.sidebar,sideNav:s.sideNav,main:s.main})}`);
+    if((s.sidebar.box?.width||0)<200||(s.sidebar.box?.width||999)>235||(s.sidebar.box?.height||0)<c.height-64)throw new Error(`${c.name}: persistent desktop rail geometry regressed ${JSON.stringify(s.sidebar)}`);
+    if((s.sideNav.box?.width||0)<170||(s.sideNav.box?.height||0)<180)throw new Error(`${c.name}: desktop destinations are not a vertical rail ${JSON.stringify(s.sideNav)}`);
+    if(Math.abs((s.sidebar.box?.top||0)-(s.main?.top||0))>4||s.main.left<(s.sidebar.box?.right||0)+12)throw new Error(`${c.name}: main workspace no longer starts beside the rail ${JSON.stringify({sidebar:s.sidebar.box,main:s.main})}`);
+    if(s.top.visible||s.nav.visible||s.toggleVisible)throw new Error(`${c.name}: duplicate mobile/Today-Week chrome leaked into desktop ${JSON.stringify({top:s.top,nav:s.nav,toggleVisible:s.toggleVisible})}`);
     if(!s.hero.visible||s.hero.imageVisible||s.hero.shadeVisible||(s.hero.box?.height||999)>110)throw new Error(`${c.name}: desktop neutral Today header contract failed ${JSON.stringify(s.hero)}`);
     assertTwoColumn(c.name,s);
-    const used=(s.meal?.right||0)-(s.timetable?.left||0);
-    if(used<1260)throw new Error(`${c.name}: desktop Today workspace is artificially capped and under-uses the shell ${JSON.stringify({used,shell:s.shell,timetable:s.timetable,meal:s.meal})}`);
+    const used=(s.meal?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
+    if(used<Math.min(1050,available*.84))throw new Error(`${c.name}: desktop Today workspace under-uses the main column ${JSON.stringify({used,available,shell:s.shell,main:s.main,timetable:s.timetable,meal:s.meal})}`);
   }
 }
 
