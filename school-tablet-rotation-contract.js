@@ -66,6 +66,20 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView .school-info-grid:has(>.info-tile:nth-child(4n+3):last-child)>.info-tile:nth-last-child(-n+3){
   grid-column:span 4!important;
 }
+/* The canonical 13-field high-school profile is semantically different from a
+   generic 4n+1 remainder: region/address/phone/fax/track belong together. Keep
+   those final five fields on one row, giving the address the extra width. */
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(5){
+  grid-column:auto/span 2!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(4){
+  grid-column:auto/span 4!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(3),
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(2),
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:last-child{
+  grid-column:auto/span 2!important;
+}
 @media (min-width:821px){
   html body #landing .school-search-panel{
     transform:translateY(-30px)!important;

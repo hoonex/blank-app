@@ -77,6 +77,7 @@ jobs:
             'school.js'
             'school-ia.js'
             'school-metrics.js'
+            'school-polish.css'
             'school-timetable-polish.js'
             'school-surface-cleanup.js'
             'school-uiux-v2.js'

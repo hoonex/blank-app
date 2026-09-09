@@ -5,7 +5,7 @@ const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173/';
 const OUT=process.env.FLOW_TEST_OUT||'browser-audit-artifacts';
 await fs.mkdir(OUT,{recursive:true});
 
-const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청'},grade:2,className:'6'};
+const profile={school:{officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',officeName:'대구광역시교육청',jurisdiction:'대구광역시동부교육지원청',type:'사립',highSchoolType:'일반고',coed:'남녀공학',dayNight:'주간',founded:'19830301',anniversary:'19830301',location:'대구광역시',address:'대구광역시 동구 반야월북로 199',addressDetail:'',phone:'053-000-0000',fax:'053-000-0001',highSchoolTrack:'일반계'},grade:2,className:'6'};
 const cases=[
   {name:'mobile-portrait',viewport:{width:390,height:844},isMobile:true,hasTouch:true},
   {name:'mobile-landscape',viewport:{width:844,height:390},isMobile:true,hasTouch:true},
@@ -46,6 +46,23 @@ function assertLayout(label,state){
   if(state.scrollWidth>state.clientWidth+2)throw new Error(`${label} horizontal overflow: ${JSON.stringify(state)}`);
   if(!state.target)throw new Error(`${label} target missing`);
   if(state.target.left<-2||state.target.right>state.clientWidth+2)throw new Error(`${label} target escapes viewport width: ${JSON.stringify(state)}`);
+}
+
+async function schoolProfileGeometry(page,label){
+  const geometry=await page.evaluate(()=>{
+    const grid=document.querySelector('#schoolInfoGrid');
+    const tiles=[...grid?.querySelectorAll(':scope > .info-tile')||[]];
+    const rects=tiles.map(tile=>{const r=tile.getBoundingClientRect();return{top:r.top,left:r.left,right:r.right,width:r.width,label:tile.querySelector('span')?.textContent?.trim()||''}});
+    const columns=getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
+    return{columns,count:tiles.length,rects};
+  });
+  if(geometry.count!==13)throw new Error(`${label} expected 13 School profile tiles, got ${geometry.count}`);
+  if(geometry.columns!==12)throw new Error(`${label} expected 12 desktop profile tracks, got ${geometry.columns}`);
+  const lastFive=geometry.rects.slice(-5);
+  const rowSpread=Math.max(...lastFive.map(r=>r.top))-Math.min(...lastFive.map(r=>r.top));
+  if(rowSpread>2)throw new Error(`${label} final five School profile tiles are not on one row: ${JSON.stringify(lastFive)}`);
+  if(lastFive.at(-1)?.label!=='계열')throw new Error(`${label} final School profile tile is not 계열: ${JSON.stringify(lastFive)}`);
+  return geometry;
 }
 
 async function shot(page,path,fullPage){
@@ -120,10 +137,35 @@ for(const c of cases){
   assertLayout(`${c.name} dashboard schedule`,schedule);
   await shot(page,`${c.name}-schedule-full.png`,true);
 
+  let schoolInfo=null;
+  if(desktop){
+    const schoolRail=page.locator('.desktop-sidebar [data-view="school"]:visible').first();
+    await schoolRail.click();
+    await page.waitForFunction(()=>!document.querySelector('#schoolView')?.classList.contains('hidden'));
+    await page.locator('#schoolInfoGrid .info-tile').nth(12).waitFor({state:'visible',timeout:5000});
+    await page.waitForTimeout(250);
+    schoolInfo=await schoolProfileGeometry(page,`${c.name} School profile`);
+    await shot(page,`${c.name}-school-info-fold.png`,false);
+    await shot(page,`${c.name}-school-info-full.png`,true);
+  }
+
+  let transit=null;
+  if(desktop){
+    const transitRail=page.locator('.desktop-sidebar [data-view="transit"]:visible').first();
+    await transitRail.waitFor({state:'visible',timeout:5000});
+    await transitRail.click();
+    await page.waitForFunction(()=>!document.querySelector('#transitView')?.classList.contains('hidden'));
+    await page.waitForTimeout(250);
+    transit=await measure(page,'#transitView:not(.hidden)');
+    assertLayout(`${c.name} dashboard transit`,transit);
+    await shot(page,`${c.name}-transit-fold.png`,false);
+    await shot(page,`${c.name}-transit-full.png`,true);
+  }
+
   if(dashboardErrors.pageErrors.length||dashboardErrors.consoleErrors.length){
     throw new Error(`${c.name} dashboard browser errors: ${JSON.stringify(dashboardErrors)}`);
   }
-  caseReport.dashboard={today,week,schedule};
+  caseReport.dashboard={today,week,schedule,schoolInfo,transit};
   caseReport.errors={landing:landingErrors,dashboard:dashboardErrors};
   report.cases.push(caseReport);
   await dashboardContext.close();
