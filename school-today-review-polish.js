@@ -18,6 +18,29 @@ style.textContent=`
   }
 }
 
+/* Wide non-mobile Today is content-height, not viewport-height. The unified
+   workspace surface should end with the taller content column instead of painting
+   an empty white slab below both columns. Keep phone and compact tablet geometry
+   untouched; this applies only to normal desktop-height wide layouts. */
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    height:max-content!important;
+    min-height:0!important;
+    align-self:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    height:max-content!important;
+    min-height:0!important;
+    grid-template-rows:max-content max-content!important;
+    align-content:start!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    height:auto!important;
+    align-self:start!important;
+  }
+}
+
 /* Today used light-oriented ambient/specular mixes after the rest of School had
    already switched to the dark material tokens. Normalize only Today surfaces;
    other destinations keep their established dark-mode treatment. */
