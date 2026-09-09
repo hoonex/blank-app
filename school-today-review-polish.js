@@ -18,10 +18,11 @@ style.textContent=`
   }
 }
 
-/* Wide non-mobile Today is content-height, not viewport-height. The unified
-   workspace surface should end with the taller content column instead of painting
-   an empty white slab below both columns. Keep phone and compact tablet geometry
-   untouched; this applies only to normal desktop-height wide layouts. */
+/* Wide Today now uses a vertical utility column. The responsive Today stylesheet
+   still carries height:100% from the older horizontal meal/exam utility row; once
+   the IA changed right-stack to one column, that percentage sizing inflated the
+   second track to ~420px. Flex the final wide utility column to intrinsic card
+   heights and explicitly retire the legacy equal-height/min-height contract. */
 @media(min-width:1181px) and (min-height:681px){
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
     height:max-content!important;
@@ -29,15 +30,21 @@ style.textContent=`
     align-self:start!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:flex!important;
+    flex-direction:column!important;
     height:max-content!important;
     min-height:0!important;
-    grid-template-rows:max-content max-content!important;
-    align-content:start!important;
-    align-items:start!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    align-content:normal!important;
+    align-items:stretch!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    flex:0 0 auto!important;
+    width:100%!important;
     height:auto!important;
-    align-self:start!important;
+    min-height:0!important;
+    align-self:stretch!important;
   }
 }
 
