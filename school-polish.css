@@ -210,6 +210,17 @@ html[data-theme="light"],html[data-theme="light"] body{background:#f5f7fa!import
 .school-info-grid:has(>.info-tile:nth-child(4n+2):last-child)>.info-tile:last-child{grid-column:7/span 4!important}
 .school-info-grid:has(>.info-tile:nth-child(4n+3):last-child)>.info-tile:nth-last-child(-n+3){grid-column:span 4!important}
 
+/* The canonical 13-field School profile ends with region, address, phone, fax,
+   and track. On a desktop workspace, keep those five related fields together
+   instead of pushing the final track tile into a centered orphan row. */
+@media(min-width:1181px){
+  #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(5){grid-column:auto/span 2!important}
+  #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(4){grid-column:auto/span 4!important}
+  #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(3),
+  #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:nth-last-child(2),
+  #schoolInfoGrid:has(>.info-tile:nth-child(13):last-child)>.info-tile:last-child{grid-column:auto/span 2!important}
+}
+
 @media(max-width:1120px){
   .school-info-grid>.info-tile{grid-column:span 4!important}
   .school-info-grid>.info-tile-empty{grid-column:1/-1!important}
