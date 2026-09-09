@@ -55,7 +55,7 @@ async function inspectVisibleHierarchy(page){
       const r=node.getBoundingClientRect(),s=getComputedStyle(node);
       return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;
     }).map(node=>node.textContent.trim()).filter(Boolean);
-    return{visibleKickers,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
+    return{activeViews:active.map(view=>view.id),visibleKickers,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
   });
 }
 async function inspectSchedule(page){
@@ -103,6 +103,8 @@ for(const testCase of cases){
   for(const view of ['today','schedule','school']){
     await openView(page,view);
     const hierarchy=await inspectVisibleHierarchy(page);
+    const expectedView=`${view}View`;
+    if(hierarchy.activeViews.length!==1||hierarchy.activeViews[0]!==expectedView)throw new Error(`${testCase.name}/${view}: destination leaked another School view ${JSON.stringify(hierarchy.activeViews)}`);
     if(hierarchy.visibleKickers.length)throw new Error(`${testCase.name}/${view}: redundant product kicker visible ${JSON.stringify(hierarchy.visibleKickers)}`);
     if(hierarchy.scrollWidth>hierarchy.clientWidth+1)throw new Error(`${testCase.name}/${view}: horizontal overflow ${JSON.stringify(hierarchy)}`);
     views[view]=hierarchy;
