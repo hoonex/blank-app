@@ -120,10 +120,23 @@ for(const c of cases){
   assertLayout(`${c.name} dashboard schedule`,schedule);
   await shot(page,`${c.name}-schedule-full.png`,true);
 
+  let transit=null;
+  if(desktop){
+    const transitRail=page.locator('.desktop-sidebar [data-view="transit"]:visible').first();
+    await transitRail.waitFor({state:'visible',timeout:5000});
+    await transitRail.click();
+    await page.waitForFunction(()=>!document.querySelector('#transitView')?.classList.contains('hidden'));
+    await page.waitForTimeout(250);
+    transit=await measure(page,'#transitView:not(.hidden)');
+    assertLayout(`${c.name} dashboard transit`,transit);
+    await shot(page,`${c.name}-transit-fold.png`,false);
+    await shot(page,`${c.name}-transit-full.png`,true);
+  }
+
   if(dashboardErrors.pageErrors.length||dashboardErrors.consoleErrors.length){
     throw new Error(`${c.name} dashboard browser errors: ${JSON.stringify(dashboardErrors)}`);
   }
-  caseReport.dashboard={today,week,schedule};
+  caseReport.dashboard={today,week,schedule,transit};
   caseReport.errors={landing:landingErrors,dashboard:dashboardErrors};
   report.cases.push(caseReport);
   await dashboardContext.close();
