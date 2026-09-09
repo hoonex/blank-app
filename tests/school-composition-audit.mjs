@@ -82,7 +82,8 @@ async function inspectInfo(page){
   return page.evaluate(()=>{
     const grid=document.querySelector('#schoolInfoGrid'),tiles=[...grid.children],last=tiles.at(-1);
     const r=node=>{const x=node.getBoundingClientRect();return{left:x.left,right:x.right,top:x.top,bottom:x.bottom,width:x.width,height:x.height,cx:x.left+x.width/2}};
-    return{grid:r(grid),last:r(last),count:tiles.length,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
+    const tileRects=tiles.map(node=>({...r(node),label:node.querySelector('span')?.textContent?.trim()||''}));
+    return{grid:r(grid),last:r(last),tiles:tileRects,count:tiles.length,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
   });
 }
 
@@ -133,6 +134,13 @@ for(const testCase of cases){
   const centerDelta=Math.abs(info.last.cx-info.grid.cx);
   if(testCase.viewport.width<=520){
     if(info.last.width<info.grid.width*.94)throw new Error(`${testCase.name}/school: final tile should own the single-column row ${JSON.stringify(info)}`);
+  }else if(testCase.viewport.width>=1181&&!testCase.hasTouch){
+    const lastFive=info.tiles.slice(-5);
+    const rowSpread=Math.max(...lastFive.map(tile=>tile.top))-Math.min(...lastFive.map(tile=>tile.top));
+    const rowCoverage=(Math.max(...lastFive.map(tile=>tile.right))-Math.min(...lastFive.map(tile=>tile.left)))/info.grid.width;
+    if(rowSpread>2||rowCoverage<.98||lastFive.at(-1)?.label!=='계열'){
+      throw new Error(`${testCase.name}/school: canonical desktop profile row is not balanced ${JSON.stringify({rowSpread,rowCoverage,lastFive,info})}`);
+    }
   }else if(centerDelta>4){
     throw new Error(`${testCase.name}/school: incomplete final row is visually stranded ${JSON.stringify({centerDelta,info})}`);
   }
