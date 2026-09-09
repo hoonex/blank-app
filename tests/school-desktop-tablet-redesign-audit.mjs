@@ -23,12 +23,20 @@ async function fixture(page){
 }
 async function state(page){return page.evaluate(()=>{
   const root=document.documentElement,visible=node=>{if(!node)return false;const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.05&&r.width>0&&r.height>0},box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}},pick=s=>document.querySelector(s);
-  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav'),main=pick('#dashboard>.product-main'),toggle=pick('#todayView .timetable-mode-toggle');
-  const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null;
-  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),main:box(main),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},toggleVisible:visible(toggle),timetable:box(timetable),meal:box(meal),statusCount:status.length};
+  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),todayGrid=pick('#todayView>.today-grid'),rightStack=pick('#todayView>.today-grid>.right-stack'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),upcoming=pick('#todayView .upcoming-card'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav'),main=pick('#dashboard>.product-main'),toggle=pick('#todayView .timetable-mode-toggle');
+  const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null,gs=todayGrid?getComputedStyle(todayGrid):null,rs=rightStack?getComputedStyle(rightStack):null;
+  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),main:box(main),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},toggleVisible:visible(toggle),todayGrid:{box:box(todayGrid),height:gs?.height||'',minHeight:gs?.minHeight||'',background:gs?.backgroundColor||''},rightStack:{box:box(rightStack),height:rs?.height||'',minHeight:rs?.minHeight||'',rows:rs?.gridTemplateRows||''},timetable:box(timetable),meal:box(meal),upcoming:box(upcoming),statusCount:status.length};
 })}
 function assertTwoColumn(name,s){
   if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: non-mobile viewport did not use the shared desktop content proportion ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+}
+function assertWideTodayDensity(c,s){
+  if(c.width<1181||c.height<681)return;
+  const grid=s.todayGrid?.box;
+  const contentBottom=Math.max(s.timetable?.bottom||0,s.meal?.bottom||0,s.upcoming?.bottom||0);
+  if(!grid||!contentBottom)throw new Error(`${c.name}: Today density geometry missing ${JSON.stringify({todayGrid:s.todayGrid,timetable:s.timetable,meal:s.meal,upcoming:s.upcoming})}`);
+  const trailing=Math.max(0,grid.bottom-contentBottom);
+  if(trailing>48)throw new Error(`${c.name}: Today workspace paints excessive empty surface below real content ${JSON.stringify({trailing,todayGrid:s.todayGrid,rightStack:s.rightStack,timetable:s.timetable,meal:s.meal,upcoming:s.upcoming})}`);
 }
 function assertState(c,s){
   if(s.ui!=='v2'||s.layout!==c.expect)throw new Error(`${c.name}: layout marker mismatch ${JSON.stringify({ui:s.ui,layout:s.layout})}`);
@@ -50,6 +58,7 @@ function assertState(c,s){
     const used=(s.meal?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
     if(used<Math.min(1050,available*.84))throw new Error(`${c.name}: desktop Today workspace under-uses the main column ${JSON.stringify({used,available,shell:s.shell,main:s.main,timetable:s.timetable,meal:s.meal})}`);
   }
+  assertWideTodayDensity(c,s);
 }
 
 await mkdir(OUT,{recursive:true});
