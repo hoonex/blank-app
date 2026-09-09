@@ -27,26 +27,26 @@
    after the user explicitly asks for a route. This avoids a phone-like card
    floating above a giant blank canvas without fabricating map or realtime data. */
 @media(min-width:1181px) and (min-height:681px){
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route])){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route])){
     display:grid!important;
     grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr)!important;
     grid-template-areas:"header header" "search preview"!important;
     align-items:stretch!important;
     gap:14px 16px!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-header{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-header{
     grid-area:header!important;
     margin-bottom:0!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-search{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-search{
     grid-area:search!important;
     align-self:stretch!important;
     margin:0!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-summary{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-summary{
     display:none!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty{
     grid-area:preview!important;
     position:relative!important;
     display:grid!important;
@@ -62,7 +62,7 @@
       linear-gradient(145deg,color-mix(in srgb,var(--surface) 96%,var(--accent) 4%),var(--surface))!important;
     box-shadow:0 12px 34px rgba(38,50,72,.055)!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::before{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::before{
     content:"경로 미리보기\A\A경로 찾기를 누르면 추천 경로, 예상 시간, 환승 정보를 이 영역에 정리합니다.";
     position:relative!important;
     z-index:2!important;
@@ -75,13 +75,13 @@
     font-size:.69rem!important;
     line-height:1.65!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::first-line{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::first-line{
     color:var(--text)!important;
     font-size:1rem!important;
     font-weight:850!important;
     letter-spacing:-.025em!important;
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::after{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-routes:empty::after{
     content:"";
     position:absolute!important;
     z-index:1!important;
