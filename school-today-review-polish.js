@@ -22,7 +22,9 @@ style.textContent=`
    still carries height:100% from the older horizontal meal/exam utility row; once
    the IA changed right-stack to one column, that percentage sizing inflated the
    second track to ~420px. Flex the final wide utility column to intrinsic card
-   heights and explicitly retire the legacy equal-height/min-height contract. */
+   heights and explicitly retire the legacy equal-height/min-height contract.
+   Exam feed v3 owns this card after hiding #eventList, so keep the populated feed
+   in layout even if a later generic content rule attempts to hide it. */
 @media(min-width:1181px) and (min-height:681px){
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
     height:max-content!important;
@@ -45,6 +47,18 @@ style.textContent=`
     height:auto!important;
     min-height:0!important;
     align-self:stretch!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"]{
+    height:max-content!important;
+    min-height:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3{
+    display:grid!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
   }
 }
 
