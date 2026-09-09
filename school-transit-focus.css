@@ -31,7 +31,7 @@
     display:grid!important;
     grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr)!important;
     grid-template-areas:"header header" "search preview"!important;
-    align-items:stretch!important;
+    align-items:start!important;
     gap:14px 16px!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-header{
@@ -40,7 +40,7 @@
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-search{
     grid-area:search!important;
-    align-self:stretch!important;
+    align-self:start!important;
     margin:0!important;
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #transitView.flow-transit-focused:not(.hidden):not(.has-results):not(:has([data-transit-route]))>.flow-transit-summary{
@@ -51,7 +51,7 @@
     position:relative!important;
     display:grid!important;
     place-items:center!important;
-    min-height:288px!important;
+    min-height:clamp(360px,calc(100vh - 250px),680px)!important;
     padding:28px!important;
     overflow:hidden!important;
     border:1px solid color-mix(in srgb,var(--text) 7%,transparent)!important;
