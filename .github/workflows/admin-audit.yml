@@ -22,6 +22,7 @@ jobs:
           node --check admin/admin.js
           node --check tests/admin-audit.mjs
           node --check tests/admin-console-visual-audit.mjs
+          node --check tests/admin-wireframe-routing-audit.mjs
           grep -q "Flow 전체 구조도" admin/index.html
           grep -q "architecture-map" admin/admin.css
           grep -q "flow_admins" supabase/migrations/20260820_flow_admin_observability.sql
@@ -32,6 +33,8 @@ jobs:
           grep -q "authentication required" supabase/functions/flow-admin/index.ts
           grep -q "url.pathname==='/admin'" sw.js
           ! grep -R -E 'sb_secret_[A-Za-z0-9_-]{10,}' admin supabase ADMIN.md
+      - name: Verify UI map route geometry
+        run: node tests/admin-wireframe-routing-audit.mjs
       - name: Verify deployed admin auth boundary
         run: |
           set -euo pipefail
