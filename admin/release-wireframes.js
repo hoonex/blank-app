@@ -1,6 +1,6 @@
 (()=>{
   const releases=window.FLOW_ADMIN_RELEASES||[];
-  const map=window.FLOW_ADMIN_UI_MAP||{nodes:[],edges:[],width:2400,height:1400};
+  const map=window.FLOW_ADMIN_UI_MAP||{nodes:[],edges:[],groups:[],width:2400,height:1400};
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const esc=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -35,7 +35,7 @@
     const wireframeSection=document.createElement('section');
     wireframeSection.className='panel wireframe-console';wireframeSection.id='wireframes';
     wireframeSection.innerHTML=`
-      <div class="panel-head"><div><span class="eyebrow">UI / UX MAP</span><h2>와이어프레임 구조도</h2><p>화면 간 이동, 반응형 관계, 운영 계층을 한 캔버스에서 확대·축소하고 드래그해서 확인합니다.</p></div><span class="panel-meta">${map.nodes.length} nodes</span></div>
+      <div class="panel-head"><div><span class="eyebrow">UI / UX MAP</span><h2>와이어프레임 구조도</h2><p>기능 영역을 구역별로 나누고, 이동선은 전용 lane으로 분리해 시작점과 도착점을 한눈에 추적할 수 있습니다.</p></div><span class="panel-meta">${map.nodes.length} nodes</span></div>
       <div class="wireframe-toolbar">
         <select id="wireframeVersion" aria-label="강조할 버전"><option value="all">모든 버전</option>${releases.map(r=>`<option value="${esc(r.version)}">${esc(r.version)}</option>`).join('')}</select>
         <select id="wireframePlatform" aria-label="플랫폼 필터"><option value="all">모든 플랫폼</option><option value="desktop">Desktop</option><option value="tablet">Tablet</option><option value="mobile">Mobile</option><option value="system">System</option></select>
@@ -47,7 +47,7 @@
       <div class="wireframe-layout">
         <div class="wireframe-viewport" id="wireframeViewport" tabindex="0" aria-label="Flow UI/UX 와이어프레임 캔버스">
           <div class="wireframe-world" id="wireframeWorld"><svg class="wireframe-edges" id="wireframeEdges" viewBox="0 0 ${map.width} ${map.height}" aria-hidden="true"></svg><div id="wireframeNodes"></div></div>
-          <div class="wireframe-legend"><span><i></i>기본 화면</span><span class="changed"><i></i>선택 버전 변경 화면</span></div>
+          <div class="wireframe-legend"><span class="nav"><i></i>화면 이동</span><span class="responsive"><i></i>반응형 전환</span><span class="data"><i></i>데이터 흐름</span><span class="runtime"><i></i>런타임/배포</span></div>
           <div class="wireframe-minimap" id="wireframeMinimap" aria-hidden="true"></div>
         </div>
         <aside class="wireframe-inspector" id="wireframeInspector"><div class="inspector-empty">노드를 선택하면 화면 역할과 연결된 릴리즈를 표시합니다.</div></aside>
@@ -76,15 +76,82 @@
   function nodeById(id){return map.nodes.find(n=>n.id===id)}
   function isPlatformVisible(node){return state.platform==='all'||node.platform.includes(state.platform)}
   function isVersionChanged(node){return state.mapVersion==='all'||node.releases.includes(state.mapVersion)}
-  function edgePath(source,target){
+  function inferredSide(source,target,sourcePort=true){
     const sx=source.x+source.w/2,sy=source.y+source.h/2,tx=target.x+target.w/2,ty=target.y+target.h/2,dx=tx-sx,dy=ty-sy;
-    if(Math.abs(dx)>=Math.abs(dy)){const dir=dx>=0?1:-1;const a={x:sx+dir*source.w/2,y:sy},b={x:tx-dir*target.w/2,y:ty},bend=Math.max(90,Math.abs(b.x-a.x)*.42);return{d:`M ${a.x} ${a.y} C ${a.x+dir*bend} ${a.y}, ${b.x-dir*bend} ${b.y}, ${b.x} ${b.y}`,lx:(a.x+b.x)/2,ly:(a.y+b.y)/2-8}}
-    const dir=dy>=0?1:-1,a={x:sx,y:sy+dir*source.h/2},b={x:tx,y:ty-dir*target.h/2},bend=Math.max(70,Math.abs(b.y-a.y)*.42);return{d:`M ${a.x} ${a.y} C ${a.x} ${a.y+dir*bend}, ${b.x} ${b.y-dir*bend}, ${b.x} ${b.y}`,lx:(a.x+b.x)/2+8,ly:(a.y+b.y)/2}
+    if(Math.abs(dx)>=Math.abs(dy))return sourcePort?(dx>=0?'right':'left'):(dx>=0?'left':'right');
+    return sourcePort?(dy>=0?'bottom':'top'):(dy>=0?'top':'bottom')
+  }
+  function nodePort(node,side,offset=0){
+    if(side==='left')return{x:node.x,y:node.y+node.h/2+offset};
+    if(side==='right')return{x:node.x+node.w,y:node.y+node.h/2+offset};
+    if(side==='top')return{x:node.x+node.w/2+offset,y:node.y};
+    return{x:node.x+node.w/2+offset,y:node.y+node.h}
+  }
+  function routePoints(edge,source,target){
+    const sourceSide=edge.sourceSide||inferredSide(source,target,true),targetSide=edge.targetSide||inferredSide(source,target,false);
+    const a=nodePort(source,sourceSide,Number(edge.sourceOffset)||0),b=nodePort(target,targetSide,Number(edge.targetOffset)||0);
+    const via=(edge.via||[]).map(point=>({x:Number(point[0]),y:Number(point[1])}));
+    if(via.length)return[a,...via,b];
+    if(Math.abs(a.x-b.x)<1||Math.abs(a.y-b.y)<1)return[a,b];
+    if(sourceSide==='left'||sourceSide==='right'){
+      const midX=(a.x+b.x)/2;
+      return[a,{x:midX,y:a.y},{x:midX,y:b.y},b]
+    }
+    const midY=(a.y+b.y)/2;
+    return[a,{x:a.x,y:midY},{x:b.x,y:midY},b]
+  }
+  function dist(a,b){return Math.hypot(b.x-a.x,b.y-a.y)}
+  function toward(from,to,distance){
+    const length=dist(from,to)||1;
+    return{x:from.x+(to.x-from.x)*distance/length,y:from.y+(to.y-from.y)*distance/length}
+  }
+  function roundedPath(points,radius=18){
+    if(points.length<2)return'';
+    if(points.length===2)return`M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+    let d=`M ${points[0].x} ${points[0].y}`;
+    for(let i=1;i<points.length-1;i++){
+      const prev=points[i-1],current=points[i],next=points[i+1];
+      const cross=(current.x-prev.x)*(next.y-current.y)-(current.y-prev.y)*(next.x-current.x);
+      if(Math.abs(cross)<.01){d+=` L ${current.x} ${current.y}`;continue}
+      const r=Math.min(radius,dist(prev,current)/2,dist(current,next)/2);
+      const before=toward(current,prev,r),after=toward(current,next,r);
+      d+=` L ${before.x} ${before.y} Q ${current.x} ${current.y} ${after.x} ${after.y}`
+    }
+    const last=points[points.length-1];return`${d} L ${last.x} ${last.y}`
+  }
+  function labelPosition(edge,points){
+    if(Array.isArray(edge.labelAt))return{x:Number(edge.labelAt[0]),y:Number(edge.labelAt[1])};
+    let best=null;
+    for(let i=0;i<points.length-1;i++){
+      const a=points[i],b=points[i+1],length=dist(a,b);
+      if(!best||length>best.length)best={a,b,length}
+    }
+    if(!best)return{x:0,y:0};
+    const horizontal=Math.abs(best.a.y-best.b.y)<1;
+    return{x:(best.a.x+best.b.x)/2+(horizontal?0:18),y:(best.a.y+best.b.y)/2+(horizontal?-16:0)}
+  }
+  function markerFor(kind){return`url(#wireframe-arrow-${['nav','responsive','data','runtime'].includes(kind)?kind:'nav'})`}
+  function edgePath(edge,source,target){
+    const points=routePoints(edge,source,target),label=labelPosition(edge,points);
+    return{d:roundedPath(points),lx:label.x,ly:label.y,points}
   }
   function renderMap(){
     const nodes=$('#wireframeNodes'),edges=$('#wireframeEdges');if(!nodes||!edges)return;
-    nodes.innerHTML=map.nodes.map(node=>{const visible=isPlatformVisible(node),changed=isVersionChanged(node);return`<button class="wireframe-node${node.id===state.selectedNode?' is-selected':''}${state.mapVersion!=='all'&&changed?' is-changed':''}${!visible||state.mapVersion!=='all'&&!changed?' is-dimmed':''}" type="button" data-node="${esc(node.id)}" style="left:${node.x}px;top:${node.y}px;width:${node.w}px;height:${node.h}px" aria-label="${esc(node.title)}"><span class="node-group">${esc(node.group)}</span><div><h3>${esc(node.title)}</h3><p>${esc(node.subtitle)}</p></div><div class="node-platforms">${node.platform.map(p=>`<span>${esc(p)}</span>`).join('')}</div></button>`}).join('');
-    edges.innerHTML=map.edges.map(edge=>{const source=nodeById(edge.source),target=nodeById(edge.target);if(!source||!target)return'';const path=edgePath(source,target),active=(state.mapVersion==='all'||source.releases.includes(state.mapVersion)||target.releases.includes(state.mapVersion))&&isPlatformVisible(source)&&isPlatformVisible(target);return`<path class="wireframe-edge${active?' is-active':''}" d="${path.d}"/><text class="wireframe-edge-label" x="${path.lx}" y="${path.ly}">${esc(edge.label)}</text>`}).join('');
+    nodes.innerHTML=map.nodes.map(node=>{const visible=isPlatformVisible(node),changed=isVersionChanged(node);return`<button class="wireframe-node${node.id===state.selectedNode?' is-selected':''}${state.mapVersion!=='all'&&changed?' is-changed':''}${!visible||state.mapVersion!=='all'&&!changed?' is-dimmed':''}" type="button" data-node="${esc(node.id)}" data-group="${esc(node.group.toLowerCase())}" style="left:${node.x}px;top:${node.y}px;width:${node.w}px;height:${node.h}px" aria-label="${esc(node.title)}"><span class="node-group">${esc(node.group)}</span><div><h3>${esc(node.title)}</h3><p>${esc(node.subtitle)}</p></div><div class="node-platforms">${node.platform.map(p=>`<span>${esc(p)}</span>`).join('')}</div></button>`}).join('');
+    const defs=`<defs>
+      <marker id="wireframe-arrow-nav" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+      <marker id="wireframe-arrow-responsive" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+      <marker id="wireframe-arrow-data" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+      <marker id="wireframe-arrow-runtime" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker>
+    </defs>`;
+    const zones=(map.groups||[]).map(zone=>`<g class="wireframe-zone tone-${esc(zone.tone||zone.id)}"><rect x="${zone.x}" y="${zone.y}" width="${zone.w}" height="${zone.h}" rx="30"/><text class="wireframe-zone-title" x="${zone.x+34}" y="${zone.y+48}">${esc(zone.title)}</text><text class="wireframe-zone-subtitle" x="${zone.x+34}" y="${zone.y+76}">${esc(zone.subtitle||'')}</text></g>`).join('');
+    const routes=map.edges.map(edge=>{
+      const source=nodeById(edge.source),target=nodeById(edge.target);if(!source||!target)return'';
+      const path=edgePath(edge,source,target),active=(state.mapVersion==='all'||source.releases.includes(state.mapVersion)||target.releases.includes(state.mapVersion))&&isPlatformVisible(source)&&isPlatformVisible(target),kind=edge.kind||'nav';
+      const labelWidth=clamp(Array.from(edge.label||'').length*11.5+24,54,190);
+      return`<path class="wireframe-edge kind-${esc(kind)}${active?' is-active':''}" data-kind="${esc(kind)}" data-source="${esc(edge.source)}" data-target="${esc(edge.target)}" d="${path.d}" marker-end="${markerFor(kind)}"/><g class="wireframe-edge-label${active?' is-active':''}" transform="translate(${path.lx} ${path.ly})"><rect x="${-labelWidth/2}" y="-14" width="${labelWidth}" height="28" rx="14"/><text x="0" y="1">${esc(edge.label)}</text></g>`
+    }).join('');
+    edges.innerHTML=defs+zones+routes;
     renderInspector();renderMinimap();
   }
   function renderInspector(){
@@ -109,7 +176,8 @@
   function resetMap(){state.scale=.62;state.x=24;state.y=24;queueTransform()}
   function renderMinimap(){
     if(!minimap||!viewport)return;const vx=(-state.x)/state.scale,vy=(-state.y)/state.scale,vw=viewport.clientWidth/state.scale,vh=viewport.clientHeight/state.scale;
-    minimap.innerHTML=`<svg viewBox="0 0 ${map.width} ${map.height}" preserveAspectRatio="none">${map.nodes.map(n=>`<rect class="minimap-node${state.mapVersion!=='all'&&n.releases.includes(state.mapVersion)?' is-changed':''}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="22"/>`).join('')}<rect class="minimap-viewport" x="${vx}" y="${vy}" width="${vw}" height="${vh}" rx="18"/></svg>`
+    const zones=(map.groups||[]).map(zone=>`<rect class="minimap-zone" x="${zone.x}" y="${zone.y}" width="${zone.w}" height="${zone.h}" rx="26"/>`).join('');
+    minimap.innerHTML=`<svg viewBox="0 0 ${map.width} ${map.height}" preserveAspectRatio="none">${zones}${map.nodes.map(n=>`<rect class="minimap-node${state.mapVersion!=='all'&&n.releases.includes(state.mapVersion)?' is-changed':''}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="18"/>`).join('')}<rect class="minimap-viewport" x="${vx}" y="${vy}" width="${vw}" height="${vh}" rx="18"/></svg>`
   }
 
   function openReleaseOnMap(version){state.mapVersion=version;const select=$('#wireframeVersion');if(select)select.value=version;renderMap();location.hash='wireframes';setTimeout(fitMap,80)}
