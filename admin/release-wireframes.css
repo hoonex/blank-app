@@ -43,17 +43,39 @@
 .wireframe-layout{display:grid;grid-template-columns:minmax(0,1fr) 286px;border-top:1px solid #20262e;min-height:680px}
 .wireframe-viewport{position:relative;min-width:0;min-height:680px;overflow:hidden;touch-action:none;cursor:grab;background-color:#090c10;background-image:linear-gradient(rgba(61,72,88,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(61,72,88,.13) 1px,transparent 1px),linear-gradient(rgba(73,88,110,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(73,88,110,.07) 1px,transparent 1px);background-size:80px 80px,80px 80px,20px 20px,20px 20px;background-position:-1px -1px}
 .wireframe-viewport[data-panning="true"]{cursor:grabbing}
-.wireframe-world{position:absolute;left:0;top:0;width:2460px;height:1500px;transform-origin:0 0;will-change:transform}
-.wireframe-edges{position:absolute;inset:0;width:2460px;height:1500px;overflow:visible;pointer-events:none}
-.wireframe-edge{fill:none;stroke:#344153;stroke-width:2}
-.wireframe-edge.is-active{stroke:#7d9be0;stroke-width:3}
-.wireframe-edge-label{fill:#7f8b9a;font-size:15px;font-weight:700;paint-order:stroke;stroke:#090c10;stroke-width:5px;stroke-linejoin:round}
-.wireframe-node{position:absolute;display:grid;grid-template-rows:auto 1fr auto;width:300px;height:176px;padding:15px;border:1px solid #28313d;border-radius:16px;background:linear-gradient(145deg,#111720,#0b0f14);box-shadow:0 16px 38px rgba(0,0,0,.2);color:var(--text);cursor:pointer;user-select:none;overflow:hidden}
-.wireframe-node::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#415370;opacity:.65}
+.wireframe-world{position:absolute;left:0;top:0;width:2520px;height:1520px;transform-origin:0 0;will-change:transform}
+.wireframe-edges{position:absolute;inset:0;width:2520px;height:1520px;overflow:visible;pointer-events:none}
+.wireframe-zone rect{fill:#0d1218;stroke:#27313d;stroke-width:2}
+.wireframe-zone.tone-school rect{fill:rgba(70,107,170,.055);stroke:rgba(104,145,215,.24)}
+.wireframe-zone.tone-university rect{fill:rgba(79,146,125,.05);stroke:rgba(95,171,147,.22)}
+.wireframe-zone.tone-admin rect{fill:rgba(139,101,185,.05);stroke:rgba(164,127,212,.22)}
+.wireframe-zone.tone-platform rect{fill:rgba(184,130,66,.045);stroke:rgba(201,151,93,.2)}
+.wireframe-zone-title{fill:#d9e2ef;font-size:24px;font-weight:850;letter-spacing:-.025em}
+.wireframe-zone-subtitle{fill:#6f7d8f;font-size:14px;font-weight:650}
+.wireframe-edge{fill:none;stroke:#455366;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;opacity:.24;transition:opacity .15s ease,stroke-width .15s ease}
+.wireframe-edge.is-active{stroke-width:3;opacity:.92}
+.wireframe-edge.kind-nav{stroke:#6fa8ff}
+.wireframe-edge.kind-responsive{stroke:#69d2ba}
+.wireframe-edge.kind-data{stroke:#f0b35c}
+.wireframe-edge.kind-runtime{stroke:#b390ef}
+#wireframe-arrow-nav path{fill:#6fa8ff}
+#wireframe-arrow-responsive path{fill:#69d2ba}
+#wireframe-arrow-data path{fill:#f0b35c}
+#wireframe-arrow-runtime path{fill:#b390ef}
+.wireframe-edge-label{opacity:.28;transition:opacity .15s ease}
+.wireframe-edge-label.is-active{opacity:1}
+.wireframe-edge-label rect{fill:rgba(9,12,16,.96);stroke:#2b3543;stroke-width:1.5}
+.wireframe-edge-label text{fill:#aeb9c8;font-size:14px;font-weight:780;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#090c10;stroke-width:2px;stroke-linejoin:round}
+.wireframe-node{position:absolute;display:grid;grid-template-rows:auto 1fr auto;padding:15px;border:1px solid #28313d;border-radius:16px;background:linear-gradient(145deg,#111720,#0b0f14);box-shadow:0 16px 38px rgba(0,0,0,.2);color:var(--text);cursor:pointer;user-select:none;overflow:hidden}
+.wireframe-node::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#415370;opacity:.72}
+.wireframe-node[data-group="school"]::before{background:#6fa8ff}
+.wireframe-node[data-group="university"]::before{background:#69d2ba}
+.wireframe-node[data-group="admin"]::before{background:#b390ef}
+.wireframe-node[data-group="platform"]::before{background:#f0b35c}
 .wireframe-node:hover,.wireframe-node:focus-visible{border-color:#51637c;outline:none}
 .wireframe-node.is-selected{border-color:#7997dc;box-shadow:0 18px 44px rgba(24,43,82,.34),inset 0 0 0 1px rgba(121,151,220,.25)}
 .wireframe-node.is-changed{background:linear-gradient(145deg,rgba(44,65,105,.72),#0c1118)}
-.wireframe-node.is-dimmed{opacity:.22;filter:saturate(.5)}
+.wireframe-node.is-dimmed{opacity:.2;filter:saturate(.45)}
 .node-group{font-size:.58rem;font-weight:850;letter-spacing:.13em;text-transform:uppercase;color:#7892c6}
 .wireframe-node h3{margin:8px 0 5px;font-size:1rem;letter-spacing:-.035em}
 .wireframe-node p{margin:0;color:#8e99a7;font-size:.67rem;line-height:1.45}
@@ -71,13 +93,16 @@
 .inspector-link small{color:#748195}
 .wireframe-minimap{position:absolute;right:14px;bottom:14px;width:190px;height:122px;border:1px solid #303a47;border-radius:12px;background:rgba(9,12,16,.9);box-shadow:0 12px 34px rgba(0,0,0,.28);overflow:hidden;pointer-events:none}
 .wireframe-minimap svg{display:block;width:100%;height:100%}
+.minimap-zone{fill:rgba(93,108,130,.08);stroke:#3a4554;stroke-width:5}
 .minimap-node{fill:#3b4656}
 .minimap-node.is-changed{fill:#708fd4}
 .minimap-viewport{fill:rgba(118,149,216,.08);stroke:#88a3df;stroke-width:10}
-.wireframe-legend{position:absolute;left:14px;bottom:14px;display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid #29323d;border-radius:10px;background:rgba(9,12,16,.88);font-size:.59rem;color:#8591a0;pointer-events:none}
+.wireframe-legend{position:absolute;left:14px;bottom:14px;display:flex;gap:9px;align-items:center;padding:8px 10px;border:1px solid #29323d;border-radius:10px;background:rgba(9,12,16,.9);font-size:.59rem;color:#8591a0;pointer-events:none}
 .wireframe-legend span{display:inline-flex;align-items:center;gap:5px}
-.wireframe-legend i{width:8px;height:8px;border-radius:50%;background:#3e4c60}
-.wireframe-legend .changed i{background:#7898df}
+.wireframe-legend i{width:14px;height:3px;border-radius:999px;background:#6fa8ff}
+.wireframe-legend .responsive i{background:#69d2ba}
+.wireframe-legend .data i{background:#f0b35c}
+.wireframe-legend .runtime i{background:#b390ef}
 .wireframe-console:fullscreen{background:var(--bg);padding:18px!important}
 .wireframe-console:fullscreen .wireframe-layout{min-height:calc(100vh - 150px)}
 .wireframe-console:fullscreen .wireframe-viewport{min-height:calc(100vh - 150px)}
