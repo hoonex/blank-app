@@ -1,7 +1,7 @@
 window.FLOW_ADMIN_RELEASES=[
   {
-    version:'2026.09.10.next',status:'candidate',date:'2026-09-10',title:'Admin release history + interactive UI map',summary:'관리자 화면에서 버전별 패치노트와 Flow 전체 UI/UX 구조를 한눈에 보고 확대·축소·이동·필터링할 수 있는 후보 릴리즈입니다.',
-    pullRequest:238,commit:null,tags:['Admin','Release notes','Wireframe','UI/UX','Candidate'],
+    version:'2026.09.10.3',status:'production',date:'2026-09-10',title:'Admin release history + interactive UI map',summary:'관리자 화면에서 버전별 패치노트와 Flow 전체 UI/UX 구조를 한눈에 보고 확대·축소·이동·필터링할 수 있는 production 릴리즈입니다.',
+    pullRequest:238,commit:'f67ba0373eba91513a5987182e6e7f61c10cdda2',tags:['Admin','Release notes','Wireframe','UI/UX','Production'],
     changes:[
       {type:'improve',area:'Admin',title:'Versioned patch notes',detail:'Production/Candidate 상태, 검색, 필터, 버전별 변경사항과 관련 화면을 한 화면에서 확인할 수 있습니다.'},
       {type:'improve',area:'Wireframes',title:'Zoomable UI/UX map',detail:'School, University, Admin, Platform 노드를 휠 줌, +/- 줌, 드래그 pan, Fit, Reset, fullscreen, minimap으로 탐색합니다.'},
@@ -61,8 +61,8 @@ window.FLOW_ADMIN_UI_MAP={
     {id:'university-campus',group:'University',platform:['desktop','tablet','mobile'],title:'University · Campus',subtitle:'campus map · route editor',x:1360,y:330,w:300,h:176,releases:[]},
 
     {id:'admin-overview',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Overview',subtitle:'operations · health · integrations',x:400,y:580,w:300,h:176,releases:[]},
-    {id:'admin-releases',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Releases',subtitle:'version history · filters · linked screens',x:720,y:580,w:300,h:176,releases:['2026.09.10.next']},
-    {id:'admin-wireframes',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Wireframes',subtitle:'zoom · pan · fit · minimap · inspector',x:1040,y:580,w:300,h:176,releases:['2026.09.10.next']},
+    {id:'admin-releases',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Releases',subtitle:'version history · filters · linked screens',x:720,y:580,w:300,h:176,releases:['2026.09.10.3']},
+    {id:'admin-wireframes',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Wireframes',subtitle:'zoom · pan · fit · minimap · inspector',x:1040,y:580,w:300,h:176,releases:['2026.09.10.3']},
 
     {id:'flow-edge',group:'Platform',platform:['system'],title:'Flow Edge',subtitle:'school-data · university-data · flow-admin',x:400,y:830,w:300,h:176,releases:[]},
     {id:'supabase',group:'Platform',platform:['system'],title:'Supabase',subtitle:'Auth · Postgres · Edge Functions',x:720,y:830,w:300,h:176,releases:[]},
