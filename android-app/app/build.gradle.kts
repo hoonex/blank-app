@@ -11,12 +11,12 @@ val releaseKeyStore = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
     namespace = "io.github.hoonex.flow"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.hoonex.flow"
         minSdk = 28
-        targetSdk = 37
+        targetSdk = 36
         versionCode = flowVersionCode
         versionName = flowVersionName
         buildConfigField("String", "UPDATE_SIGNER_SHA256", "\"$expectedSigner\"")
