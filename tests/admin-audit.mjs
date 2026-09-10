@@ -112,10 +112,31 @@ if(beforePan===afterPan)throw new Error('Wireframe drag pan did not change the c
 await page.locator('#wireframeFit').click();await page.waitForTimeout(80);
 const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
 if(desktopOverflow>1)throw new Error(`Admin desktop layout overflowed by ${desktopOverflow}px`);
+
+/* Final visual proof must show the whole map, not a release-filtered fragment. */
+await page.locator('#wireframeVersion').selectOption('all');
+await page.locator('#wireframePlatform').selectOption('all');
+await page.locator('#wireframeFit').click();await page.waitForTimeout(120);
+const routeVisual=await page.evaluate(()=>{
+  const edges=[...document.querySelectorAll('.wireframe-edge')];
+  return{
+    zones:document.querySelectorAll('.wireframe-zone').length,
+    edges:edges.length,
+    labels:document.querySelectorAll('.wireframe-edge-label').length,
+    missingMarkers:edges.filter(edge=>!edge.getAttribute('marker-end')).length,
+    kinds:[...new Set(edges.map(edge=>edge.dataset.kind))].sort(),
+    zoom:(document.querySelector('#wireframeZoomReadout')?.textContent||'').trim()
+  };
+});
+if(routeVisual.zones!==4)throw new Error(`Expected four visible UI map zones, got ${routeVisual.zones}`);
+if(routeVisual.edges<12||routeVisual.labels!==routeVisual.edges)throw new Error(`Wireframe route labels are incomplete: ${JSON.stringify(routeVisual)}`);
+if(routeVisual.missingMarkers)throw new Error(`Wireframe routes missing arrowheads: ${routeVisual.missingMarkers}`);
+if(routeVisual.kinds.join(',')!=='data,nav,responsive,runtime')throw new Error(`Wireframe route type legend is incomplete: ${JSON.stringify(routeVisual.kinds)}`);
+await page.locator('#wireframes').screenshot({path:`${OUT}/admin-wireframe-all.png`});
 await page.screenshot({path:`${OUT}/admin-desktop-release-wireframes.png`,fullPage:true});
 await page.setViewportSize({width:390,height:844});
 
 await page.screenshot({path:`${OUT}/admin-mobile.png`,fullPage:true});
-await fs.writeFile(`${OUT}/report.json`,JSON.stringify({adminCalls,probeCalls,passwordCalls,refreshCalls,overflow,desktopOverflow,changedNodes,consoleErrors:errors,storedAfterRefresh},null,2));
+await fs.writeFile(`${OUT}/report.json`,JSON.stringify({adminCalls,probeCalls,passwordCalls,refreshCalls,overflow,desktopOverflow,changedNodes,routeVisual,consoleErrors:errors,storedAfterRefresh},null,2));
 if(errors.length)throw new Error(`Admin browser errors: ${JSON.stringify(errors)}`);
 await browser.close();
