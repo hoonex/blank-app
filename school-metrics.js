@@ -102,32 +102,34 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr)!important;
-    grid-template-rows:max-content max-content!important;
-    grid-auto-rows:max-content!important;
+    display:flex!important;
+    flex-direction:column!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:auto!important;
     align-self:start!important;
-    align-content:start!important;
-    align-items:start!important;
+    align-content:normal!important;
+    align-items:stretch!important;
     height:auto!important;
     min-height:0!important
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card),
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
-    height:max-content!important;
+    flex:0 0 auto!important;
+    height:auto!important;
     min-height:0!important;
-    align-self:start!important
+    align-self:stretch!important
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"],
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"]{
     min-height:0!important;
-    height:max-content!important
+    height:auto!important
   }
   html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3,
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3{
     display:grid!important;
     min-height:0!important;
-    height:max-content!important;
+    height:auto!important;
     grid-auto-rows:max-content!important;
     align-content:start!important
   }
