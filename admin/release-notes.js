@@ -36,26 +36,26 @@ window.FLOW_ADMIN_RELEASES=[
 window.FLOW_ADMIN_UI_MAP={
   width:2460,height:1500,
   nodes:[
-    {id:'school-today-desktop',group:'School',platform:['desktop'],title:'School · Today',subtitle:'persistent rail · timetable · meal · exams',x:120,y:130,w:300,h:176,releases:['2026.09.09.2','2026.09.10.next']},
-    {id:'school-week-desktop',group:'School',platform:['desktop'],title:'School · Week',subtitle:'full weekly timetable workspace',x:500,y:130,w:300,h:176,releases:['2026.09.09.2']},
-    {id:'school-schedule-desktop',group:'School',platform:['desktop','tablet'],title:'School · Schedule',subtitle:'calendar + selected-day events',x:880,y:130,w:300,h:176,releases:['2026.09.09.2']},
-    {id:'school-transit-desktop',group:'School',platform:['desktop'],title:'School · Transit',subtitle:'route input + preview workspace',x:1260,y:130,w:300,h:176,releases:['2026.09.10.1']},
-    {id:'school-info-desktop',group:'School',platform:['desktop','tablet'],title:'School · Information',subtitle:'hero + 13-field profile grid',x:1640,y:130,w:300,h:176,releases:['2026.09.10.1']},
-    {id:'school-settings-desktop',group:'School',platform:['desktop','tablet','mobile'],title:'School · Settings',subtitle:'theme · bell · meal · install',x:2020,y:130,w:300,h:176,releases:['2026.09.09.2']},
+    {id:'school-today-desktop',group:'School',platform:['desktop'],title:'School · Today',subtitle:'persistent rail · timetable · meal · exams',x:80,y:90,w:300,h:176,releases:['2026.09.09.2','2026.09.10.next']},
+    {id:'school-week-desktop',group:'School',platform:['desktop'],title:'School · Week',subtitle:'full weekly timetable workspace',x:400,y:90,w:300,h:176,releases:['2026.09.09.2']},
+    {id:'school-schedule-desktop',group:'School',platform:['desktop','tablet'],title:'School · Schedule',subtitle:'calendar + selected-day events',x:720,y:90,w:300,h:176,releases:['2026.09.09.2']},
+    {id:'school-transit-desktop',group:'School',platform:['desktop'],title:'School · Transit',subtitle:'route input + preview workspace',x:1040,y:90,w:300,h:176,releases:['2026.09.10.1']},
+    {id:'school-info-desktop',group:'School',platform:['desktop','tablet'],title:'School · Information',subtitle:'hero + 13-field profile grid',x:1360,y:90,w:300,h:176,releases:['2026.09.10.1']},
+    {id:'school-settings-desktop',group:'School',platform:['desktop','tablet','mobile'],title:'School · Settings',subtitle:'theme · bell · meal · install',x:1680,y:90,w:300,h:176,releases:['2026.09.09.2']},
 
-    {id:'school-today-mobile',group:'School',platform:['mobile'],title:'School · Today Mobile',subtitle:'date rail · bottom nav · touch controls',x:120,y:430,w:300,h:176,releases:[]},
-    {id:'school-today-tablet',group:'School',platform:['tablet'],title:'School · Today Tablet',subtitle:'touch-first shell · wide layout exception',x:500,y:430,w:300,h:176,releases:['2026.09.10.next']},
-    {id:'university-home',group:'University',platform:['desktop','tablet','mobile'],title:'University · Home',subtitle:'landing · search · saved university',x:880,y:430,w:300,h:176,releases:[]},
-    {id:'university-dashboard',group:'University',platform:['desktop','tablet','mobile'],title:'University · Dashboard',subtitle:'today · timetable · widgets',x:1260,y:430,w:300,h:176,releases:[]},
-    {id:'university-campus',group:'University',platform:['desktop','tablet','mobile'],title:'University · Campus',subtitle:'campus map · route editor',x:1640,y:430,w:300,h:176,releases:[]},
+    {id:'school-today-mobile',group:'School',platform:['mobile'],title:'School · Today Mobile',subtitle:'date rail · bottom nav · touch controls',x:80,y:330,w:300,h:176,releases:[]},
+    {id:'school-today-tablet',group:'School',platform:['tablet'],title:'School · Today Tablet',subtitle:'touch-first shell · wide layout exception',x:400,y:330,w:300,h:176,releases:['2026.09.10.next']},
+    {id:'university-home',group:'University',platform:['desktop','tablet','mobile'],title:'University · Home',subtitle:'landing · search · saved university',x:720,y:330,w:300,h:176,releases:[]},
+    {id:'university-dashboard',group:'University',platform:['desktop','tablet','mobile'],title:'University · Dashboard',subtitle:'today · timetable · widgets',x:1040,y:330,w:300,h:176,releases:[]},
+    {id:'university-campus',group:'University',platform:['desktop','tablet','mobile'],title:'University · Campus',subtitle:'campus map · route editor',x:1360,y:330,w:300,h:176,releases:[]},
 
-    {id:'admin-overview',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Overview',subtitle:'operations · health · integrations',x:500,y:820,w:300,h:176,releases:[]},
-    {id:'admin-releases',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Releases',subtitle:'version history · filters · linked screens',x:1000,y:820,w:300,h:176,releases:['2026.09.10.next']},
-    {id:'admin-wireframes',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Wireframes',subtitle:'zoom · pan · fit · minimap · inspector',x:1500,y:820,w:300,h:176,releases:['2026.09.10.next']},
+    {id:'admin-overview',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Overview',subtitle:'operations · health · integrations',x:400,y:580,w:300,h:176,releases:[]},
+    {id:'admin-releases',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Releases',subtitle:'version history · filters · linked screens',x:720,y:580,w:300,h:176,releases:['2026.09.10.next']},
+    {id:'admin-wireframes',group:'Admin',platform:['desktop','tablet','mobile'],title:'Admin · Wireframes',subtitle:'zoom · pan · fit · minimap · inspector',x:1040,y:580,w:300,h:176,releases:['2026.09.10.next']},
 
-    {id:'flow-edge',group:'Platform',platform:['system'],title:'Flow Edge',subtitle:'school-data · university-data · flow-admin',x:650,y:1180,w:300,h:176,releases:[]},
-    {id:'supabase',group:'Platform',platform:['system'],title:'Supabase',subtitle:'Auth · Postgres · Edge Functions',x:1080,y:1180,w:300,h:176,releases:[]},
-    {id:'cloudflare',group:'Platform',platform:['system'],title:'Cloudflare',subtitle:'static routes · worker · production probes',x:1510,y:1180,w:300,h:176,releases:[]}
+    {id:'flow-edge',group:'Platform',platform:['system'],title:'Flow Edge',subtitle:'school-data · university-data · flow-admin',x:400,y:830,w:300,h:176,releases:[]},
+    {id:'supabase',group:'Platform',platform:['system'],title:'Supabase',subtitle:'Auth · Postgres · Edge Functions',x:720,y:830,w:300,h:176,releases:[]},
+    {id:'cloudflare',group:'Platform',platform:['system'],title:'Cloudflare',subtitle:'static routes · worker · production probes',x:1040,y:830,w:300,h:176,releases:[]}
   ],
   edges:[
     {source:'school-today-desktop',target:'school-week-desktop',label:'Week'},
