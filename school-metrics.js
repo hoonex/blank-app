@@ -94,22 +94,42 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] #weekView:not(.hidden) .week-cell:not(.week-head){
     min-height:clamp(64px,calc((100vh - 250px)/7),104px)!important
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack{
-    grid-template-rows:max-content max-content!important;
-    align-content:start!important;
-    align-items:start!important
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack>:is(.meal-card,.upcoming-card){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
     height:auto!important;
-    align-self:start!important
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .upcoming-card[data-flow-exam-feed="v3"]{
     min-height:0!important;
-    height:max-content!important
+    align-content:start!important
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #flowExamFeedV3{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:auto!important;
+    align-self:start!important;
+    align-content:normal!important;
+    align-items:stretch!important;
+    height:auto!important;
+    min-height:0!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card),
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    flex:0 0 auto!important;
+    height:auto!important;
     min-height:0!important;
-    height:max-content!important;
+    align-self:stretch!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"],
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"]{
+    min-height:0!important;
+    height:auto!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3{
+    display:grid!important;
+    min-height:0!important;
+    height:auto!important;
     grid-auto-rows:max-content!important;
     align-content:start!important
   }
@@ -164,10 +184,13 @@ async function bootCriticalSchoolSurface(){
   await import('./school-toolbar-grouping.js');
   await import('./school-desktop-tablet-redesign.js');
 
-  /* The responsive content contract intentionally owns the final cascade. Tablet
-     chrome remains tablet-specific, while content uses only mobile/desktop ratios. */
+  /* The responsive content contract intentionally owns the final content ratios.
+     Re-append the navigation contract after the desktop/tablet compositor so its
+     wide Today intrinsic row sizing cannot be overwritten by the shell layer. */
   const contentRatioStyle=document.getElementById('flow-school-layout-contract-style');
   if(contentRatioStyle)document.head.append(contentRatioStyle);
+  const navigationContractStyle=document.getElementById('flow-school-navigation-contract-v6');
+  if(navigationContractStyle)document.head.append(navigationContractStyle);
   root.dataset.flowSchoolContentRatio='ready';
 
   normalizeSchoolSettingsTab();

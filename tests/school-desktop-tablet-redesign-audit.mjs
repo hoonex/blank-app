@@ -11,8 +11,10 @@ const CASES=[
   {name:'large-desktop',width:1920,height:1080,touch:false,expect:'desktop'},
 ];
 const SCHOOL={officeCode:'D10',officeName:'대구광역시교육청',schoolCode:'7240101',name:'정동고등학교',englishName:'Jeongdong High School',kind:'고등학교',location:'대구광역시',type:'사립',address:'대구광역시 동구 반야월북로 199',phone:'053-000-0000',homepage:'https://jungdong.dge.hs.kr',highSchoolType:'일반고',highSchoolTrack:'일반계',coed:'남녀공학',dayNight:'주간'};
-const pad=n=>String(n).padStart(2,'0');
-const ymd=(d=new Date())=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+const ymd=(d=new Date())=>{
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+  return`${parts.year}${parts.month}${parts.day}`;
+};
 const json=(route,body,status=200)=>route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)});
 function dashboard(){const selected=ymd();return{school:SCHOOL,selected,from:selected,to:selected,timetable:Array.from({length:7},(_,i)=>({date:selected,period:i+1,subject:['자율·자치활동','선택과목','음악 감상과 비평','사진의 이해','선택과목','선택과목','영어Ⅱ'][i],grade:'2',className:'6'})),meals:[{date:selected,type:'중식',dishes:['찰현미밥','한우설렁탕','골뱅이야채무침','서문시장삼각만두','깍두기'],calories:'873.1 Kcal',nutrition:'',origin:''}],events:[{date:selected,name:'2학기 전국 영어듣기능력평가',content:'',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}}}
 async function fixture(page){
@@ -23,12 +25,25 @@ async function fixture(page){
 }
 async function state(page){return page.evaluate(()=>{
   const root=document.documentElement,visible=node=>{if(!node)return false;const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.05&&r.width>0&&r.height>0},box=node=>{if(!node)return null;const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}},pick=s=>document.querySelector(s);
-  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav'),main=pick('#dashboard>.product-main'),toggle=pick('#todayView .timetable-mode-toggle');
-  const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null;
-  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),main:box(main),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},toggleVisible:visible(toggle),timetable:box(timetable),meal:box(meal),statusCount:status.length};
+  const shell=pick('#dashboard'),sidebar=pick('#desktopSidebar'),top=pick('.mobile-topbar'),dock=pick('#flowTodayDateDock'),nav=pick('#bottomNav'),hero=pick('#schoolHero'),heroImage=hero?.querySelector('.school-hero-image'),heroShade=hero?.querySelector('.school-hero-shade'),todayGrid=pick('#todayView>.today-grid'),rightStack=pick('#todayView>.today-grid>.right-stack'),timetable=pick('#todayView .timetable-card'),meal=pick('#todayView .meal-card'),upcoming=pick('#todayView .upcoming-card'),upcomingHeading=pick('#todayView .upcoming-card .card-heading'),examFeed=pick('#flowExamFeedV3'),status=[...document.querySelectorAll('#todayView .status-card')].filter(visible),sideNav=pick('#desktopSidebar .side-nav'),main=pick('#dashboard>.product-main'),toggle=pick('#todayView .timetable-mode-toggle');
+  const hs=hero?getComputedStyle(hero):null,ns=nav?getComputedStyle(nav):null,gs=todayGrid?getComputedStyle(todayGrid):null,rs=rightStack?getComputedStyle(rightStack):null,us=upcoming?getComputedStyle(upcoming):null,fs=examFeed?getComputedStyle(examFeed):null;
+  const feedChildren=[...(examFeed?.children||[])].map(node=>{const s=getComputedStyle(node),r=box(node);return{className:node.className,box:r,display:s.display,visibility:s.visibility,opacity:s.opacity,laidOut:Boolean(r&&r.width>0&&r.height>0)}});
+  return{layout:root.dataset.flowSchoolLayout||'',ui:root.dataset.flowSchoolDesktopTabletUi||'',viewport:{width:innerWidth,height:innerHeight,clientWidth:root.clientWidth,scrollWidth:root.scrollWidth},shell:box(shell),main:box(main),sidebar:{visible:visible(sidebar),box:box(sidebar)},top:{visible:visible(top),box:box(top)},dock:{visible:visible(dock),box:box(dock),days:[...(dock?.querySelectorAll('.flow-date-day')||[])].filter(visible).length},nav:{visible:visible(nav),box:box(nav),position:ns?.position||'',radius:parseFloat(ns?.borderRadius)||0},hero:{visible:visible(hero),box:box(hero),background:hs?.backgroundColor||'',imageVisible:visible(heroImage),shadeVisible:visible(heroShade)},sideNav:{visible:visible(sideNav),box:box(sideNav)},toggleVisible:visible(toggle),todayGrid:{box:box(todayGrid),height:gs?.height||'',minHeight:gs?.minHeight||'',background:gs?.backgroundColor||''},rightStack:{box:box(rightStack),height:rs?.height||'',minHeight:rs?.minHeight||'',rows:rs?.gridTemplateRows||'',display:rs?.display||'',direction:rs?.flexDirection||''},timetable:box(timetable),meal:box(meal),upcoming:{box:box(upcoming),height:us?.height||'',minHeight:us?.minHeight||'',paddingTop:us?.paddingTop||'',paddingBottom:us?.paddingBottom||'',alignSelf:us?.alignSelf||'',flex:us?.flex||''},upcomingHeading:box(upcomingHeading),examFeed:{visible:visible(examFeed),box:box(examFeed),height:fs?.height||'',minHeight:fs?.minHeight||'',rows:fs?.gridTemplateRows||'',display:fs?.display||'',visibility:fs?.visibility||'',opacity:fs?.opacity||'',visibleCount:examFeed?.dataset?.flowExamVisible||'',total:examFeed?.dataset?.flowExamTotal||'',children:feedChildren},statusCount:status.length};
 })}
 function assertTwoColumn(name,s){
   if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: non-mobile viewport did not use the shared desktop content proportion ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+}
+function assertWideTodayDensity(c,s){
+  if(c.width<1181||c.height<681)return;
+  const grid=s.todayGrid?.box,card=s.upcoming?.box,heading=s.upcomingHeading;
+  const contentChildren=(s.examFeed?.children||[]).filter(child=>child.laidOut&&child.display!=='none'&&child.visibility!=='hidden'&&Number(child.opacity||1)>.05);
+  if(!grid||!card||!heading||!contentChildren.length)throw new Error(`${c.name}: Today density geometry missing ${JSON.stringify({todayGrid:s.todayGrid,upcoming:s.upcoming,upcomingHeading:s.upcomingHeading,examFeed:s.examFeed})}`);
+  const paddingBottom=parseFloat(s.upcoming?.paddingBottom||'0')||0;
+  const realUpcomingBottom=Math.max(heading.bottom||0,...contentChildren.map(child=>child.box?.bottom||0));
+  const innerTrailing=Math.max(0,card.bottom-paddingBottom-realUpcomingBottom);
+  const outerContentBottom=Math.max(s.timetable?.bottom||0,s.meal?.bottom||0,realUpcomingBottom+paddingBottom);
+  const outerTrailing=Math.max(0,grid.bottom-outerContentBottom);
+  if(innerTrailing>48||outerTrailing>48)throw new Error(`${c.name}: Today workspace contains excessive vertical dead space ${JSON.stringify({innerTrailing,outerTrailing,paddingBottom,todayGrid:s.todayGrid,rightStack:s.rightStack,timetable:s.timetable,meal:s.meal,upcoming:s.upcoming,upcomingHeading:s.upcomingHeading,examFeed:s.examFeed})}`);
 }
 function assertState(c,s){
   if(s.ui!=='v2'||s.layout!==c.expect)throw new Error(`${c.name}: layout marker mismatch ${JSON.stringify({ui:s.ui,layout:s.layout})}`);
@@ -50,6 +65,7 @@ function assertState(c,s){
     const used=(s.meal?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
     if(used<Math.min(1050,available*.84))throw new Error(`${c.name}: desktop Today workspace under-uses the main column ${JSON.stringify({used,available,shell:s.shell,main:s.main,timetable:s.timetable,meal:s.meal})}`);
   }
+  assertWideTodayDensity(c,s);
 }
 
 await mkdir(OUT,{recursive:true});
@@ -59,6 +75,7 @@ for(const c of CASES){
   const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:false,hasTouch:c.touch,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(15000);
   try{
     await fixture(page);await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolDesktopTabletUi==='v2'&&document.documentElement.dataset.flowSchoolSurface==='ready');await page.waitForTimeout(260);
+    if(c.width>=1181&&c.height>=681){await page.waitForFunction(()=>{const feed=document.querySelector('#flowExamFeedV3');return Boolean(feed&&Number(feed.dataset.flowExamVisible||0)>=1&&feed.children.length>=1)});await page.waitForTimeout(80)}
     const s=await state(page);assertState(c,s);await page.screenshot({path:`${OUT}/${c.name}.png`,fullPage:false,animations:'disabled'});await page.screenshot({path:`${OUT}/${c.name}-full.png`,fullPage:true,animations:'disabled'});report.cases.push({name:c.name,state:s,pass:true});console.log(`${c.name}: PASS`);
   }catch(error){const message=String(error?.stack||error);report.failures.push({name:c.name,message});report.cases.push({name:c.name,pass:false,message});console.error(`${c.name}: FAIL\n${message}`);try{await page.screenshot({path:`${OUT}/${c.name}-failure.png`,fullPage:false,animations:'disabled'})}catch{}}
   await context.close();
