@@ -94,20 +94,38 @@ html:not([data-flow-transit-surface="dormant"])[data-theme] body .mobile-bottom-
   html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] #weekView:not(.hidden) .week-cell:not(.week-head){
     min-height:clamp(64px,calc((100vh - 250px)/7),104px)!important
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack{
-    grid-template-rows:max-content max-content!important;
-    align-content:start!important;
-    align-items:start!important
-  }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .right-stack>:is(.meal-card,.upcoming-card){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
     height:auto!important;
+    min-height:0!important;
+    align-content:start!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:max-content max-content!important;
+    grid-auto-rows:max-content!important;
+    align-self:start!important;
+    align-content:start!important;
+    align-items:start!important;
+    height:auto!important;
+    min-height:0!important
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card),
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    height:max-content!important;
+    min-height:0!important;
     align-self:start!important
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .upcoming-card[data-flow-exam-feed="v3"]{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"],
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"]{
     min-height:0!important;
     height:max-content!important
   }
-  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #flowExamFeedV3{
+  html[data-flow-school-ui="v2"][data-flow-school-layout="tablet"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3{
+    display:grid!important;
     min-height:0!important;
     height:max-content!important;
     grid-auto-rows:max-content!important;
