@@ -11,8 +11,10 @@ const CASES=[
   {name:'large-desktop',width:1920,height:1080,touch:false,expect:'desktop'},
 ];
 const SCHOOL={officeCode:'D10',officeName:'대구광역시교육청',schoolCode:'7240101',name:'정동고등학교',englishName:'Jeongdong High School',kind:'고등학교',location:'대구광역시',type:'사립',address:'대구광역시 동구 반야월북로 199',phone:'053-000-0000',homepage:'https://jungdong.dge.hs.kr',highSchoolType:'일반고',highSchoolTrack:'일반계',coed:'남녀공학',dayNight:'주간'};
-const pad=n=>String(n).padStart(2,'0');
-const ymd=(d=new Date())=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+const ymd=(d=new Date())=>{
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+  return`${parts.year}${parts.month}${parts.day}`;
+};
 const json=(route,body,status=200)=>route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)});
 function dashboard(){const selected=ymd();return{school:SCHOOL,selected,from:selected,to:selected,timetable:Array.from({length:7},(_,i)=>({date:selected,period:i+1,subject:['자율·자치활동','선택과목','음악 감상과 비평','사진의 이해','선택과목','선택과목','영어Ⅱ'][i],grade:'2',className:'6'})),meals:[{date:selected,type:'중식',dishes:['찰현미밥','한우설렁탕','골뱅이야채무침','서문시장삼각만두','깍두기'],calories:'873.1 Kcal',nutrition:'',origin:''}],events:[{date:selected,name:'2학기 전국 영어듣기능력평가',content:'',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}}}
 async function fixture(page){
