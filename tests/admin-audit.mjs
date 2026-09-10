@@ -88,7 +88,34 @@ if(overflow>1)throw new Error(`Admin mobile layout overflowed by ${overflow}px`)
 await page.locator('#probeBtn').click();await page.waitForFunction(()=>document.querySelector('#healthScore')?.textContent?.trim()==='2/3');
 if(probeCalls!==1)throw new Error(`Manual API probe should call exactly once, got ${probeCalls}`);
 if(adminCalls<5||adminCalls>6)throw new Error(`Unexpected admin request count: ${adminCalls}`);
+
+/* Release history + wireframe interaction coverage. The feature is part of the
+   authenticated Admin dashboard, but remains client-only and must not create new
+   backend calls. */
+await page.waitForSelector('#releases');await page.waitForSelector('#wireframes');
+if(await page.locator('.section-nav a[href="#releases"]').count()!==1||await page.locator('.section-nav a[href="#wireframes"]').count()!==1)throw new Error('Admin release/wireframe nav links are missing');
+if(await page.locator('.release-card').count()<3)throw new Error('Admin release history should expose at least three version states');
+if(await page.locator('.wireframe-node').count()<12)throw new Error('Admin wireframe map is missing expected screen nodes');
+await page.setViewportSize({width:1440,height:900});
+await page.locator('#wireframeVersion').selectOption('2026.09.10.1');
+await page.waitForFunction(()=>document.querySelectorAll('.wireframe-node.is-changed').length>=2);
+const changedNodes=await page.locator('.wireframe-node.is-changed').count();
+await page.locator('[data-node="school-transit-desktop"]').click();
+if(!((await page.locator('#wireframeInspector').textContent())||'').includes('School · Transit'))throw new Error('Wireframe node inspector did not render selected screen');
+const world=page.locator('#wireframeWorld');const beforeZoom=await world.getAttribute('style');
+await page.locator('#wireframeZoomIn').click();await page.waitForTimeout(80);const afterZoom=await world.getAttribute('style');
+if(beforeZoom===afterZoom)throw new Error('Wireframe zoom control did not change the canvas transform');
+const box=await page.locator('#wireframeViewport').boundingBox();
+if(!box)throw new Error('Wireframe viewport has no layout box');
+const beforePan=await world.getAttribute('style');await page.mouse.move(box.x+80,box.y+80);await page.mouse.down();await page.mouse.move(box.x+155,box.y+125,{steps:5});await page.mouse.up();await page.waitForTimeout(80);const afterPan=await world.getAttribute('style');
+if(beforePan===afterPan)throw new Error('Wireframe drag pan did not change the canvas transform');
+await page.locator('#wireframeFit').click();await page.waitForTimeout(80);
+const desktopOverflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+if(desktopOverflow>1)throw new Error(`Admin desktop layout overflowed by ${desktopOverflow}px`);
+await page.screenshot({path:`${OUT}/admin-desktop-release-wireframes.png`,fullPage:true});
+await page.setViewportSize({width:390,height:844});
+
 await page.screenshot({path:`${OUT}/admin-mobile.png`,fullPage:true});
-await fs.writeFile(`${OUT}/report.json`,JSON.stringify({adminCalls,probeCalls,passwordCalls,refreshCalls,overflow,consoleErrors:errors,storedAfterRefresh},null,2));
+await fs.writeFile(`${OUT}/report.json`,JSON.stringify({adminCalls,probeCalls,passwordCalls,refreshCalls,overflow,desktopOverflow,changedNodes,consoleErrors:errors,storedAfterRefresh},null,2));
 if(errors.length)throw new Error(`Admin browser errors: ${JSON.stringify(errors)}`);
 await browser.close();
