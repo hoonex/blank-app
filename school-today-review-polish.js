@@ -111,4 +111,50 @@ html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:has(#todayView
 }
 `;
 document.head.append(style);
-document.documentElement.dataset.flowSchoolTodayReviewPolish='v1';
+
+/* school-mobile-v5.js is loaded on every viewport because its date rail/settings
+   helpers are shared. Its scroll-driven exam deck, however, is a touch/mobile
+   representation. Keep that deck alive for <=1180px, but make the v3 exam feed
+   authoritative on the desktop content ratio so the same exam is never rendered
+   twice and cannot inflate the utility column. Keep the deck node mounted while
+   wide so the mobile module's MutationObserver does not recreate it. */
+const examDeckTouchQuery=matchMedia('(max-width:1180px)');
+let examSurfaceFrame=0;
+function syncExamSurfaceForViewport(){
+  examSurfaceFrame=0;
+  const card=document.querySelector('#todayView .upcoming-card');
+  if(!card)return;
+  const deck=document.querySelector('#flowExamDeckV5');
+  const feed=document.querySelector('#flowExamFeedV3');
+  if(examDeckTouchQuery.matches){
+    if(deck){
+      deck.hidden=false;
+      deck.style.removeProperty('display');
+      card.dataset.flowExamDeck='v5';
+    }
+    return;
+  }
+  if(card.dataset.flowExamDeck==='v5')delete card.dataset.flowExamDeck;
+  if(deck){
+    deck.hidden=true;
+    deck.style.setProperty('display','none','important');
+  }
+  if(feed){
+    feed.hidden=false;
+    feed.style.removeProperty('display');
+  }
+}
+function queueExamSurfaceSync(){
+  if(examSurfaceFrame)return;
+  examSurfaceFrame=requestAnimationFrame(syncExamSurfaceForViewport);
+}
+examDeckTouchQuery.addEventListener?.('change',queueExamSurfaceSync);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queueExamSurfaceSync,{once:true});
+else queueExamSurfaceSync();
+[80,240,700,1400].forEach(delay=>setTimeout(queueExamSurfaceSync,delay));
+const todayView=document.querySelector('#todayView');
+if(todayView)new MutationObserver(records=>{
+  if(records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1&&(node.matches?.('#flowExamDeckV5,#flowExamFeedV3')||node.querySelector?.('#flowExamDeckV5,#flowExamFeedV3')))))queueExamSurfaceSync();
+}).observe(todayView,{subtree:true,childList:true});
+
+document.documentElement.dataset.flowSchoolTodayReviewPolish='v2';
