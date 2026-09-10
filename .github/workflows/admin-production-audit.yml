@@ -1,0 +1,91 @@
+name: Admin production audit
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate Admin production sources
+        run: |
+          node --check admin/admin.js
+          node --check admin/release-notes.js
+          node --check admin/release-wireframes.js
+          node --check admin/release-wireframes-visible-fit.js
+          grep -q 'release-notes.js' admin/index.html
+          grep -q 'release-wireframes.js' admin/index.html
+          grep -q 'release-wireframes-visible-fit.js' admin/index.html
+          grep -q "version:'2026.09.10.3',status:'production'" admin/release-notes.js
+          grep -q "commit:'f67ba0373eba91513a5987182e6e7f61c10cdda2'" admin/release-notes.js
+
+      - name: Verify deployed Admin route and exact assets
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://blank-app.agfvrd.workers.dev'
+          assets=(
+            'admin/admin.js'
+            'admin/admin.css'
+            'admin/release-notes.js'
+            'admin/release-wireframes.js'
+            'admin/release-wireframes.css'
+            'admin/release-wireframes-visible-fit.js'
+          )
+
+          for attempt in $(seq 1 20); do
+            ok=1
+            echo "Admin production probe attempt $attempt/20"
+            body='/tmp/flow-admin.html'
+            code=$(curl --silent --show-error --location \
+              --header 'cache-control: no-cache' \
+              --connect-timeout 10 --max-time 20 \
+              --output "$body" --write-out '%{http_code}' \
+              "$base/admin?flow_deploy=$GITHUB_SHA" || true)
+            if [[ "$code" != '200' ]] || ! grep -q 'Flow Admin' "$body"; then
+              echo "WAIT /admin -> HTTP $code / expected Flow Admin"
+              ok=0
+            else
+              echo 'OK /admin -> 200 Flow Admin'
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              for asset in "${assets[@]}"; do
+                deployed="/tmp/flow-live-${asset//\//_}"
+                code=$(curl --silent --show-error --location \
+                  --header 'cache-control: no-cache' \
+                  --connect-timeout 10 --max-time 20 \
+                  --output "$deployed" --write-out '%{http_code}' \
+                  "$base/$asset?flow_deploy=$GITHUB_SHA" || true)
+                if [[ "$code" != '200' ]] || ! cmp -s "$asset" "$deployed"; then
+                  echo "WAIT /$asset -> HTTP $code / deployed bytes do not match main"
+                  ok=0
+                  break
+                fi
+                echo "OK /$asset -> 200 exact repository bytes"
+              done
+            fi
+
+            if [[ "$ok" == '1' ]]; then
+              echo 'Admin production route and assets: GREEN'
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo 'Admin production deployment did not converge after 5 minutes.' >&2
+          exit 1
