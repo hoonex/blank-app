@@ -164,10 +164,13 @@ async function bootCriticalSchoolSurface(){
   await import('./school-toolbar-grouping.js');
   await import('./school-desktop-tablet-redesign.js');
 
-  /* The responsive content contract intentionally owns the final cascade. Tablet
-     chrome remains tablet-specific, while content uses only mobile/desktop ratios. */
+  /* The responsive content contract intentionally owns the final content ratios.
+     Re-append the navigation contract after the desktop/tablet compositor so its
+     wide Today intrinsic row sizing cannot be overwritten by the shell layer. */
   const contentRatioStyle=document.getElementById('flow-school-layout-contract-style');
   if(contentRatioStyle)document.head.append(contentRatioStyle);
+  const navigationContractStyle=document.getElementById('flow-school-navigation-contract-v6');
+  if(navigationContractStyle)document.head.append(navigationContractStyle);
   root.dataset.flowSchoolContentRatio='ready';
 
   normalizeSchoolSettingsTab();
