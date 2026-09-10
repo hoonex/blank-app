@@ -18,6 +18,50 @@ style.textContent=`
   }
 }
 
+/* Wide Today now uses a vertical utility column. The responsive Today stylesheet
+   still carries height:100% from the older horizontal meal/exam utility row; once
+   the IA changed right-stack to one column, that percentage sizing inflated the
+   second track to ~420px. Flex the final wide utility column to intrinsic card
+   heights and explicitly retire the legacy equal-height/min-height contract.
+   Exam feed v3 owns this card after hiding #eventList, so keep the populated feed
+   in layout even if a later generic content rule attempts to hide it. */
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    height:max-content!important;
+    min-height:0!important;
+    align-self:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    height:max-content!important;
+    min-height:0!important;
+    grid-template-columns:none!important;
+    grid-template-rows:none!important;
+    align-content:normal!important;
+    align-items:stretch!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    flex:0 0 auto!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    align-self:stretch!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>.upcoming-card[data-flow-exam-feed="v3"]{
+    height:max-content!important;
+    min-height:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden) #flowExamFeedV3{
+    display:grid!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+  }
+}
+
 /* Today used light-oriented ambient/specular mixes after the rest of School had
    already switched to the dark material tokens. Normalize only Today surfaces;
    other destinations keep their established dark-mode treatment. */
@@ -67,4 +111,50 @@ html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:has(#todayView
 }
 `;
 document.head.append(style);
-document.documentElement.dataset.flowSchoolTodayReviewPolish='v1';
+
+/* school-mobile-v5.js is loaded on every viewport because its date rail/settings
+   helpers are shared. Its scroll-driven exam deck, however, is a touch/mobile
+   representation. Keep that deck alive for <=1180px, but make the v3 exam feed
+   authoritative on the desktop content ratio so the same exam is never rendered
+   twice and cannot inflate the utility column. Keep the deck node mounted while
+   wide so the mobile module's MutationObserver does not recreate it. */
+const examDeckTouchQuery=matchMedia('(max-width:1180px)');
+let examSurfaceFrame=0;
+function syncExamSurfaceForViewport(){
+  examSurfaceFrame=0;
+  const card=document.querySelector('#todayView .upcoming-card');
+  if(!card)return;
+  const deck=document.querySelector('#flowExamDeckV5');
+  const feed=document.querySelector('#flowExamFeedV3');
+  if(examDeckTouchQuery.matches){
+    if(deck){
+      deck.hidden=false;
+      deck.style.removeProperty('display');
+      card.dataset.flowExamDeck='v5';
+    }
+    return;
+  }
+  if(card.dataset.flowExamDeck==='v5')delete card.dataset.flowExamDeck;
+  if(deck){
+    deck.hidden=true;
+    deck.style.setProperty('display','none','important');
+  }
+  if(feed){
+    feed.hidden=false;
+    feed.style.removeProperty('display');
+  }
+}
+function queueExamSurfaceSync(){
+  if(examSurfaceFrame)return;
+  examSurfaceFrame=requestAnimationFrame(syncExamSurfaceForViewport);
+}
+examDeckTouchQuery.addEventListener?.('change',queueExamSurfaceSync);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queueExamSurfaceSync,{once:true});
+else queueExamSurfaceSync();
+[80,240,700,1400].forEach(delay=>setTimeout(queueExamSurfaceSync,delay));
+const todayView=document.querySelector('#todayView');
+if(todayView)new MutationObserver(records=>{
+  if(records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1&&(node.matches?.('#flowExamDeckV5,#flowExamFeedV3')||node.querySelector?.('#flowExamDeckV5,#flowExamFeedV3')))))queueExamSurfaceSync();
+}).observe(todayView,{subtree:true,childList:true});
+
+document.documentElement.dataset.flowSchoolTodayReviewPolish='v2';
