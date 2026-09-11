@@ -1,6 +1,7 @@
 package io.github.hoonex.flow
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -14,6 +15,7 @@ import io.github.hoonex.flow.data.Timetable
 import io.github.hoonex.flow.data.University
 import io.github.hoonex.flow.data.UniversityStore
 import org.junit.After
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -80,7 +82,13 @@ class FlowVisualAuditTest {
         val captures = screenshotDir.listFiles { file -> file.extension == "png" }.orEmpty()
         assertTrue("expected six visual-audit screenshots, found ${captures.size}", captures.size == 6)
         captures.forEach { file ->
-            assertTrue("screenshot is unexpectedly small: ${file.name}", file.length() > 10_000L)
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+            assertNotNull("could not decode screenshot: ${file.name}", bitmap)
+            assertTrue(
+                "screenshot dimensions are invalid: ${file.name} ${bitmap.width}x${bitmap.height}",
+                bitmap.width >= 300 && bitmap.height >= 300
+            )
+            bitmap.recycle()
         }
     }
 
