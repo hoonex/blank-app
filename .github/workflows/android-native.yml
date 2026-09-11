@@ -46,6 +46,32 @@ jobs:
       - name: Compile, test and lint native app
         working-directory: android-app
         run: gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
+      - name: Enable KVM group permissions
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Capture native UI screenshots
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          arch: x86_64
+          working-directory: android-app
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon
+            mkdir -p build/visual-audit
+            adb pull /sdcard/Android/data/io.github.hoonex.flow/files/visual-audit build/visual-audit
+            test "$(find build/visual-audit -type f -name '*.png' | wc -l | tr -d ' ')" -eq 6
+      - name: Upload native UI visual evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-android-visual-audit
+          path: android-app/build/visual-audit/**/*.png
+          if-no-files-found: error
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
