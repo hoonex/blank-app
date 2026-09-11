@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -89,7 +91,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             FlowTheme {
                 FlowRoot(
@@ -229,7 +234,13 @@ private fun UniversitySetupScreen(onSelected: (University) -> Unit) {
         item {
             Text("FLOW", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
-            Text("대학 생활을\n잠금화면까지.", fontSize = 38.sp, lineHeight = 42.sp, fontWeight = FontWeight.Black)
+            Text(
+                "대학 생활을\n잠금화면까지.",
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 38.sp,
+                lineHeight = 42.sp,
+                fontWeight = FontWeight.Black
+            )
             Spacer(Modifier.height(10.dp))
             Text("웹 화면을 옮긴 앱이 아니라, 오늘 일정과 다음 행동을 가장 가까운 화면에 두는 Flow University입니다.", color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 21.sp)
         }
@@ -427,7 +438,10 @@ private fun SettingsAction(title: String, description: String, action: () -> Uni
 @Composable
 private fun FlowBottomBar(tab: Tab, onTab: (Tab) -> Unit) {
     Surface(color = Color(0xF20E1114)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Tab.entries.forEach { item ->
                 val selected = item == tab
                 Box(
