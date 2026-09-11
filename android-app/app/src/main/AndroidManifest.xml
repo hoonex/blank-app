@@ -60,6 +60,18 @@
         </receiver>
 
         <receiver
+            android:name=".widget.UniversityMiniWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_mini_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/university_mini_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".surface.UniversitySurfaceRefreshReceiver"
             android:exported="false">
             <intent-filter>
