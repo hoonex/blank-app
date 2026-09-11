@@ -190,31 +190,37 @@ class FlowVisualAuditTest {
     private fun clickText(label: String) {
         val textNode = device.wait(Until.findObject(By.text(label)), 5_000)
             ?: error("Could not find text: $label")
-        var target = textNode
-        while (!target.isClickable) {
-            target = target.parent ?: error("Could not resolve clickable parent for: $label")
-        }
-        target.click()
+        val bounds = textNode.visibleBounds
+        assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
+        device.click(bounds.centerX(), bounds.centerY())
         device.waitForIdle()
     }
 
     private fun scrollUntilText(text: String) {
         val selector = By.textContains(text)
-        if (device.hasObject(selector)) return
-
         val x = device.displayWidth / 2
         val startY = minOf(
             (device.displayHeight * 0.68f).toInt(),
             device.displayHeight - 180
         )
         val endY = maxOf((device.displayHeight * 0.22f).toInt(), 100)
+        val safeTextBottom = (device.displayHeight * 0.72f).toInt()
 
         repeat(12) {
+            val node = device.findObject(selector)
+            if (node != null && node.visibleBounds.centerY() in 1 until safeTextBottom) {
+                device.waitForIdle()
+                return
+            }
             device.swipe(x, startY, x, endY, 28)
             device.waitForIdle()
-            if (device.wait(Until.hasObject(selector), 750)) return
         }
-        assertTrue("Timed out scrolling for text containing: $text", device.hasObject(selector))
+
+        val node = device.findObject(selector)
+        assertTrue(
+            "Timed out positioning text above bottom navigation: $text",
+            node != null && node.visibleBounds.centerY() in 1 until safeTextBottom
+        )
     }
 
     private fun waitForText(text: String) {
