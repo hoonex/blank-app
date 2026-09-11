@@ -32,7 +32,6 @@ import io.github.hoonex.flow.data.todayIndex
 import io.github.hoonex.flow.data.totalCredits
 import io.github.hoonex.flow.data.weeklyMinutes
 import io.github.hoonex.flow.surface.UniversitySurfaceScheduler
-import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -92,10 +91,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     Text("Flow University", style = TextStyle(color = WidgetMuted, fontSize = 11.sp))
                 } else {
                     classes.take(3).forEach { item ->
-                        Text(
-                            "${item.time.start}  ${item.subject.name}",
-                            style = TextStyle(color = WidgetMuted, fontSize = 11.sp)
-                        )
+                        Text("${item.time.start}  ${item.subject.name}", style = TextStyle(color = WidgetMuted, fontSize = 11.sp))
                         Spacer(GlanceModifier.height(3.dp))
                     }
                 }
@@ -128,6 +124,29 @@ class UniversityWeekWidget : GlanceAppWidget() {
     }
 }
 
+class UniversityMiniWidget : GlanceAppWidget() {
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val moment = UniversityStore(context).loadTimetable()?.classMoment()
+        val item = moment?.current ?: moment?.next
+        val prefix = if (moment?.current != null) "NOW" else if (moment?.next != null) "NEXT" else "FLOW"
+        val title = item?.subject?.name ?: "수업 없음"
+        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start } ?: "University"
+        provideContent {
+            Column(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(WidgetBackground)
+                    .padding(11.dp)
+                    .clickable(actionStartActivity<MainActivity>())
+            ) {
+                Text("$prefix · $time", style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                Spacer(GlanceModifier.height(4.dp))
+                Text(title, style = TextStyle(color = WidgetText, fontSize = 14.sp, fontWeight = FontWeight.Bold))
+            }
+        }
+    }
+}
+
 @androidx.compose.runtime.Composable
 private fun WidgetShell(content: @androidx.compose.runtime.Composable () -> Unit) {
     Column(
@@ -146,6 +165,7 @@ object UniversityWidgets {
         UniversityWidget().updateAll(context)
         UniversityTodayWidget().updateAll(context)
         UniversityWeekWidget().updateAll(context)
+        UniversityMiniWidget().updateAll(context)
     }
 
     fun hasAny(context: Context): Boolean {
@@ -153,7 +173,8 @@ object UniversityWidgets {
         return listOf(
             UniversityWidgetReceiver::class.java,
             UniversityTodayWidgetReceiver::class.java,
-            UniversityWeekWidgetReceiver::class.java
+            UniversityWeekWidgetReceiver::class.java,
+            UniversityMiniWidgetReceiver::class.java
         ).any { receiver -> manager.getAppWidgetIds(ComponentName(context, receiver)).isNotEmpty() }
     }
 }
@@ -174,6 +195,12 @@ class UniversityTodayWidgetReceiver : GlanceAppWidgetReceiver() {
 
 class UniversityWeekWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = UniversityWeekWidget()
+    override fun onEnabled(context: Context) { super.onEnabled(context); UniversitySurfaceScheduler.scheduleNext(context) }
+    override fun onDisabled(context: Context) { super.onDisabled(context); UniversitySurfaceScheduler.scheduleNext(context) }
+}
+
+class UniversityMiniWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = UniversityMiniWidget()
     override fun onEnabled(context: Context) { super.onEnabled(context); UniversitySurfaceScheduler.scheduleNext(context) }
     override fun onDisabled(context: Context) { super.onDisabled(context); UniversitySurfaceScheduler.scheduleNext(context) }
 }
