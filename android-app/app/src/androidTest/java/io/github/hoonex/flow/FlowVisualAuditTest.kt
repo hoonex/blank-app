@@ -149,31 +149,11 @@ class FlowVisualAuditTest {
     }
 
     private fun clickTab(label: String, index: Int) {
-        val textNode = device.wait(Until.findObject(By.text(label)), 1_500)
-        if (textNode != null) {
-            textNode.click()
-            device.waitForIdle()
-            return
-        }
-
         val width = device.displayWidth
         val height = device.displayHeight
-        val bottomClickables = device.findObjects(By.clickable(true))
-            .filter { node ->
-                val bounds = node.visibleBounds
-                bounds.centerY() > height * 0.72 && bounds.width() > width * 0.16
-            }
-            .sortedBy { it.visibleBounds.centerX() }
-
-        val node = bottomClickables.getOrNull(index)
-            ?: error(
-                "Could not resolve bottom tab $label at index $index; " +
-                    "display=${width}x$height bottomClickables=" +
-                    bottomClickables.joinToString { candidate ->
-                        "${candidate.text ?: candidate.contentDescription ?: "<unnamed>"}@${candidate.visibleBounds}"
-                    }
-            )
-        node.click()
+        val x = (((index + 0.5) * width) / 3.0).toInt()
+        val y = height - maxOf(28, height / 12)
+        assertTrue("Could not tap bottom tab $label at ($x,$y) on ${width}x$height", device.click(x, y))
         device.waitForIdle()
     }
 
