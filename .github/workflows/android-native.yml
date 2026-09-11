@@ -61,7 +61,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
             gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon
             mkdir -p build/visual-audit
             adb pull /sdcard/Android/data/io.github.hoonex.flow/files/visual-audit build/visual-audit
