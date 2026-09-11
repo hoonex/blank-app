@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,7 +48,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,7 +84,7 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) UniversityNotification.refresh(this)
+        if (granted) UniversityNotification.enable(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,6 +104,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        UniversityNotification.refresh(this)
         GitHubUpdateManager.resumeStagedInstall(this)
     }
 
@@ -113,7 +112,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            UniversityNotification.refresh(this)
+            UniversityNotification.enable(this)
         }
     }
 }
@@ -190,6 +189,7 @@ private fun FlowRoot(
                     disablePinnedNotification = disablePinnedNotification,
                     checkUpdate = checkUpdate,
                     changeUniversity = {
+                        UniversityNotification.disable(context)
                         store.clear()
                         university = null
                         timetable = null
