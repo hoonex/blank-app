@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Flow</string>
-    <string name="university_widget_description">오늘 수업과 다음 강의를 잠금화면과 홈 화면에서 확인합니다.</string>
+    <string name="app_name">Flow University</string>
+    <string name="widget_next_name">Flow · 다음 수업</string>
+    <string name="widget_today_name">Flow · 오늘 흐름</string>
+    <string name="widget_week_name">Flow · 주간 밀도</string>
+    <string name="university_widget_description">현재 또는 다음 수업의 시간과 강의실을 확인합니다.</string>
+    <string name="university_today_widget_description">오늘 수업을 최대 세 개까지 한눈에 확인합니다.</string>
+    <string name="university_week_widget_description">요일별 수업 개수와 이번 주 수업량을 확인합니다.</string>
 </resources>
