@@ -10,7 +10,7 @@ val releaseKeyStore = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
     namespace = "io.github.hoonex.flow"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.github.hoonex.flow"
