@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -649,8 +648,8 @@ private fun SettingsScreen(
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                    Text("홈 위젯 3종", color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                    Text("다음 수업 · 오늘 흐름 · 주간 밀도를 런처의 위젯 선택기에서 각각 추가할 수 있습니다.", color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+                    Text("홈 위젯 4종", color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                    Text("다음 수업 · 오늘 흐름 · 주간 밀도 · 미니를 런처의 위젯 선택기에서 각각 추가할 수 있습니다.", color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
