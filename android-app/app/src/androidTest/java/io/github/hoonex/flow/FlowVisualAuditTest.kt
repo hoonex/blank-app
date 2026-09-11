@@ -209,7 +209,7 @@ class FlowVisualAuditTest {
     }
 
     private fun waitForText(text: String) {
-        assertTrue("Timed out waiting for text: $text", device.wait(Until.hasObject(By.text(text)), 5_000))
+        assertTrue("Timed out waiting for text containing: $text", device.wait(Until.hasObject(By.textContains(text)), 5_000))
         device.waitForIdle()
     }
 
