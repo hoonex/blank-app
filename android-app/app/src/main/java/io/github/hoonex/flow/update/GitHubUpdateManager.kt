@@ -61,6 +61,7 @@ object GitHubUpdateManager {
         }
     }
 
+    @Suppress("DEPRECATION")
     fun resumeStagedInstall(activity: Activity) {
         val prefs = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE)
         val path = prefs.getString(STAGED, null) ?: return
@@ -69,7 +70,28 @@ object GitHubUpdateManager {
             prefs.edit().remove(STAGED).apply()
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) return
+
+        val pm = activity.packageManager
+        val info = if (Build.VERSION.SDK_INT >= 33) {
+            pm.getPackageArchiveInfo(apk.absolutePath, PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+        } else {
+            pm.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_SIGNING_CERTIFICATES)
+        }
+        val cert = info?.signingInfo?.apkContentsSigners?.firstOrNull()
+        val signer = cert?.let {
+            MessageDigest.getInstance("SHA-256").digest(it.toByteArray()).joinToString("") { byte -> "%02X".format(byte) }
+        }
+        val validNewer = info != null &&
+            info.packageName == BuildConfig.APPLICATION_ID &&
+            info.longVersionCode > BuildConfig.VERSION_CODE.toLong() &&
+            signer?.normalizeHex() == BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()
+
+        if (!validNewer) {
+            prefs.edit().remove(STAGED).apply()
+            apk.delete()
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !pm.canRequestPackageInstalls()) return
         requestInstall(activity, apk)
     }
 
