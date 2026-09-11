@@ -20,8 +20,25 @@ import java.time.ZoneId
 object UniversityNotification {
     private const val CHANNEL = "flow_university_live"
     private const val ID = 2101
+    private const val PREFS = "flow_university_notification"
+    private const val KEY_ENABLED = "enabled"
+
+    fun isEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
+
+    fun enable(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_ENABLED, true)
+            .apply()
+        refresh(context)
+    }
 
     fun refresh(context: Context) {
+        if (!isEnabled(context)) {
+            NotificationManagerCompat.from(context).cancel(ID)
+            return
+        }
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         createChannel(context)
         val store = UniversityStore(context)
@@ -90,6 +107,10 @@ object UniversityNotification {
     }
 
     fun disable(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_ENABLED, false)
+            .apply()
         NotificationManagerCompat.from(context).cancel(ID)
     }
 
