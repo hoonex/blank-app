@@ -59,22 +59,22 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             capture("02-today-portrait")
 
-            clickTab("시간표", 1)
+            clickTab("시간표")
             waitForText("2026년 2학기")
             capture("03-week-portrait")
 
-            clickTab("설정", 2)
+            clickTab("설정")
             waitForText("고정 알림 켜기")
             capture("04-settings-portrait")
 
-            clickTab("오늘", 0)
+            clickTab("오늘")
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
             device.waitForIdle()
             capture("05-today-landscape")
 
-            clickTab("시간표", 1)
+            clickTab("시간표")
             waitForText("2026년 2학기")
             capture("06-week-landscape")
         }
@@ -148,12 +148,15 @@ class FlowVisualAuditTest {
         )
     }
 
-    private fun clickTab(label: String, index: Int) {
-        val width = device.displayWidth
-        val height = device.displayHeight
-        val x = (((index + 0.5) * width) / 3.0).toInt()
-        val y = height - maxOf(28, height / 12)
-        assertTrue("Could not tap bottom tab $label at ($x,$y) on ${width}x$height", device.click(x, y))
+    private fun clickTab(label: String) {
+        val textNode = device.wait(Until.findObject(By.text(label)), 5_000)
+            ?: error("Could not find bottom tab label: $label")
+        var target = textNode
+        while (!target.isClickable) {
+            target = target.parent
+                ?: error("Could not resolve clickable parent for bottom tab: $label")
+        }
+        target.click()
         device.waitForIdle()
     }
 
