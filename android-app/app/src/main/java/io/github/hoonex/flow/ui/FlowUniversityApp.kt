@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -74,6 +76,7 @@ import io.github.hoonex.flow.data.weeklyMinutes
 import io.github.hoonex.flow.notification.UniversityNotification
 import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -150,11 +153,6 @@ fun FlowUniversityRoot(
                         onProfile = {
                             profile = it
                             store.saveProfile(it)
-                        },
-                        onMajor = {
-                            major = it
-                            store.saveMajor(it)
-                            majorOpen = false
                         },
                         onChooseMajor = { majorOpen = true },
                         onCampus = { openUrl(context, "https://blank-app.agfvrd.workers.dev/university/campus") }
@@ -499,7 +497,6 @@ private fun SchoolScreen(
     initialProfile: UniversityProfile?,
     major: UniversityMajor?,
     onProfile: (UniversityProfile) -> Unit,
-    onMajor: (UniversityMajor) -> Unit,
     onChooseMajor: () -> Unit,
     onCampus: () -> Unit
 ) {
@@ -649,7 +646,14 @@ private fun SettingsScreen(
         item { FlowSectionTitle("SURFACES", "화면 밖의 Flow") }
         item { SettingsAction("고정 알림 켜기", "현재/다음 수업과 시간 경계를 잠금화면 알림에도 표시합니다.", enablePinnedNotification) }
         item { SettingsAction("고정 알림 끄기", "Flow University 일정 알림을 제거합니다.", disablePinnedNotification) }
-        item { SettingsAction("홈 위젯", "위젯 선택기에서 다음 수업 · 오늘 흐름 · 주간 밀도를 추가할 수 있습니다.", {}) }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                    Text("홈 위젯 3종", color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                    Text("다음 수업 · 오늘 흐름 · 주간 밀도를 런처의 위젯 선택기에서 각각 추가할 수 있습니다.", color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+        }
         item { FlowSectionTitle("DATA", "연결과 업데이트") }
         item { SettingsAction("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport) }
         item { SettingsAction("업데이트 확인", "GitHub Release의 SHA-256과 서명을 검증한 뒤 설치합니다.", checkUpdate) }
@@ -810,7 +814,7 @@ private fun MajorSheet(
 }
 
 @Composable
-private fun FlowSheet(dismiss: () -> Unit, tall: Boolean = false, content: @Composable Column.() -> Unit) {
+private fun FlowSheet(dismiss: () -> Unit, tall: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
             Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(onClick = dismiss),
@@ -852,8 +856,12 @@ private fun openUrl(context: android.content.Context, value: String) {
 }
 
 private fun trimNumber(value: Double): String = if (value % 1.0 == 0.0) value.roundToInt().toString() else "%.1f".format(Locale.US, value)
-private fun semesterLabel(value: String): String = if (value.endsWith("학기")) value else "${value}학기"
+private fun semesterLabel(value: String): String = when {
+    value.isBlank() -> "학기 미상"
+    value.endsWith("학기") -> value
+    else -> "${value}학기"
+}
 private fun minuteText(value: Int): String = "%02d:%02d".format(Locale.US, value / 60, value % 60)
 private fun formatDuration(minutes: Int): String = if (minutes < 60) "${minutes}분" else "${minutes / 60}h ${minutes % 60}m"
-private fun metricMoney(metric: UniversityMetric?): String = metric?.takeIf { it.value > 0 }?.let { "${it.value.roundToInt().toLocaleString(Locale.KOREA)}원" } ?: "—"
+private fun metricMoney(metric: UniversityMetric?): String = metric?.takeIf { it.value > 0 }?.let { NumberFormat.getNumberInstance(Locale.KOREA).format(it.value.roundToInt()) + "원" } ?: "—"
 private fun metricPercent(metric: UniversityMetric?): String = metric?.takeIf { it.value > 0 }?.let { "${"%.1f".format(Locale.US, it.value)}%" } ?: "—"
