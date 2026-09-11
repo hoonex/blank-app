@@ -130,7 +130,7 @@ jobs:
           export FLOW_VERSION_CODE="$((100000 + GITHUB_RUN_NUMBER))"
           export FLOW_VERSION_NAME="0.1.${GITHUB_RUN_NUMBER}"
           cd android-app
-          gradle :app:assembleRelease :app:testReleaseUnitTest --stacktrace --no-daemon
+          gradle :app:assembleRelease :app:testDebugUnitTest --stacktrace --no-daemon
           cd ..
           APK='android-app/app/build/outputs/apk/release/app-release.apk'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK" > "$RUNNER_TEMP/apksigner.txt"
