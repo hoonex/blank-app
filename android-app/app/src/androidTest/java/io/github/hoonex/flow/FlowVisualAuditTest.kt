@@ -3,7 +3,6 @@ package io.github.hoonex.flow
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.test.core.app.ActivityScenario
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -30,8 +29,9 @@ class FlowVisualAuditTest {
 
     @Before
     fun prepare() {
-        context = ApplicationProvider.getApplicationContext()
-        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        context = instrumentation.targetContext
+        device = UiDevice.getInstance(instrumentation)
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply {
             deleteRecursively()
             mkdirs()
@@ -59,22 +59,22 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             capture("02-today-portrait")
 
-            clickText("시간표")
+            clickTab("시간표", 1)
             waitForText("2026년 2학기")
             capture("03-week-portrait")
 
-            clickText("설정")
+            clickTab("설정", 2)
             waitForText("고정 알림 켜기")
             capture("04-settings-portrait")
 
-            clickText("오늘")
+            clickTab("오늘", 0)
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
             device.waitForIdle()
             capture("05-today-landscape")
 
-            clickText("시간표")
+            clickTab("시간표", 1)
             waitForText("2026년 2학기")
             capture("06-week-landscape")
         }
@@ -148,9 +148,31 @@ class FlowVisualAuditTest {
         )
     }
 
-    private fun clickText(text: String) {
-        val node = device.wait(Until.findObject(By.text(text)), 5_000)
-            ?: error("Could not find text to click: $text")
+    private fun clickTab(label: String, index: Int) {
+        val textNode = device.wait(Until.findObject(By.text(label)), 1_500)
+        if (textNode != null) {
+            textNode.click()
+            device.waitForIdle()
+            return
+        }
+
+        val width = device.displayWidth
+        val height = device.displayHeight
+        val bottomClickables = device.findObjects(By.clickable(true))
+            .filter { node ->
+                val bounds = node.visibleBounds
+                bounds.centerY() > height * 0.72 && bounds.width() > width * 0.16
+            }
+            .sortedBy { it.visibleBounds.centerX() }
+
+        val node = bottomClickables.getOrNull(index)
+            ?: error(
+                "Could not resolve bottom tab $label at index $index; " +
+                    "display=${width}x$height bottomClickables=" +
+                    bottomClickables.joinToString { candidate ->
+                        "${candidate.text ?: candidate.contentDescription ?: "<unnamed>"}@${candidate.visibleBounds}"
+                    }
+            )
         node.click()
         device.waitForIdle()
     }
