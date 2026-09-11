@@ -60,22 +60,13 @@ jobs:
           working-directory: android-app
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -eu
-            status=0
-            gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon || status=$?
-            mkdir -p build/visual-audit
-            adb pull /sdcard/Android/data/io.github.hoonex.flow/files/visual-audit build/visual-audit || true
-            if [ "$status" -ne 0 ]; then
-              exit "$status"
-            fi
-            test "$(find build/visual-audit -type f -name '*.png' | wc -l | tr -d ' ')" -eq 6
+          script: bash scripts/run-visual-audit.sh
       - name: Upload native UI visual evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: flow-android-visual-audit
-          path: android-app/build/visual-audit/**/*.png
+          path: android-app/build/visual-audit/screenshots/**/*.png
           if-no-files-found: warn
       - name: Upload Android test diagnostics
         if: always()
@@ -83,6 +74,7 @@ jobs:
         with:
           name: flow-android-test-diagnostics
           path: |
+            android-app/build/visual-audit/instrumentation.txt
             android-app/app/build/outputs/androidTest-results/**
             android-app/app/build/reports/androidTests/**
           if-no-files-found: warn
