@@ -7,8 +7,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiScrollable
-import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import io.github.hoonex.flow.data.CourseTime
 import io.github.hoonex.flow.data.Subject
@@ -204,29 +202,17 @@ class FlowVisualAuditTest {
         val selector = By.textContains(text)
         if (device.hasObject(selector)) return
 
-        val scrolledIntoView = runCatching {
-            UiScrollable(UiSelector().scrollable(true)).apply {
-                setAsVerticalList()
-                setMaxSearchSwipes(20)
-            }.scrollIntoView(UiSelector().textContains(text))
-        }.getOrDefault(false)
+        val x = device.displayWidth / 2
+        val startY = minOf(
+            (device.displayHeight * 0.68f).toInt(),
+            device.displayHeight - 180
+        )
+        val endY = maxOf((device.displayHeight * 0.22f).toInt(), 100)
 
-        if (scrolledIntoView && device.wait(Until.hasObject(selector), 2_000)) {
+        repeat(12) {
+            device.swipe(x, startY, x, endY, 28)
             device.waitForIdle()
-            return
-        }
-
-        repeat(16) {
-            if (device.hasObject(selector)) return
-            val x = device.displayWidth / 2
-            device.swipe(
-                x,
-                (device.displayHeight * 0.82f).toInt(),
-                x,
-                (device.displayHeight * 0.24f).toInt(),
-                24
-            )
-            device.waitForIdle()
+            if (device.wait(Until.hasObject(selector), 750)) return
         }
         assertTrue("Timed out scrolling for text containing: $text", device.hasObject(selector))
     }
