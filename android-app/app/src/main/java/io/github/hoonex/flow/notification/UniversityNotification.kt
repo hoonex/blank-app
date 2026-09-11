@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import io.github.hoonex.flow.MainActivity
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
+import io.github.hoonex.flow.surface.UniversitySurfaceScheduler
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -35,6 +36,7 @@ object UniversityNotification {
     }
 
     fun refresh(context: Context) {
+        UniversitySurfaceScheduler.scheduleNext(context)
         if (!isEnabled(context)) {
             NotificationManagerCompat.from(context).cancel(ID)
             return
@@ -112,6 +114,7 @@ object UniversityNotification {
             .putBoolean(KEY_ENABLED, false)
             .apply()
         NotificationManagerCompat.from(context).cancel(ID)
+        UniversitySurfaceScheduler.scheduleNext(context)
     }
 
     private fun createChannel(context: Context) {

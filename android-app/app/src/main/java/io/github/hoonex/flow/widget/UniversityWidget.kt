@@ -24,6 +24,7 @@ import androidx.glance.unit.ColorProvider
 import io.github.hoonex.flow.MainActivity
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
+import io.github.hoonex.flow.surface.UniversitySurfaceScheduler
 
 class UniversityWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -66,4 +67,14 @@ class UniversityWidget : GlanceAppWidget() {
 
 class UniversityWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = UniversityWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        UniversitySurfaceScheduler.scheduleNext(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        UniversitySurfaceScheduler.scheduleNext(context)
+    }
 }

@@ -66,6 +66,22 @@ fun Timetable.classMoment(now: LocalDateTime = LocalDateTime.now()): ClassMoment
     return ClassMoment(current, next)
 }
 
+fun Timetable.nextBoundary(now: LocalDateTime = LocalDateTime.now()): LocalDateTime? {
+    val today = now.toLocalDate()
+    return (0L..7L)
+        .asSequence()
+        .flatMap { dayOffset ->
+            val date = today.plusDays(dayOffset)
+            classesForDay(date.dayOfWeek.value - 1).asSequence().flatMap { item ->
+                sequenceOf(item.time.startMinutes, item.time.endMinutes).map { minute ->
+                    date.atStartOfDay().plusMinutes(minute.toLong())
+                }
+            }
+        }
+        .filter { it.isAfter(now) }
+        .minOrNull()
+}
+
 class UniversityStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-university-native-v1", Context.MODE_PRIVATE)
 

@@ -26,4 +26,22 @@ class UniversityScheduleTest {
         assertNull(moment.current)
         assertEquals("자료구조", moment.next?.subject?.name)
     }
+
+    @Test fun resolvesNextSurfaceBoundary() {
+        assertEquals(
+            LocalDateTime.of(2026, 9, 7, 9, 0),
+            timetable.nextBoundary(LocalDateTime.of(2026, 9, 7, 8, 30))
+        )
+        assertEquals(
+            LocalDateTime.of(2026, 9, 7, 10, 0),
+            timetable.nextBoundary(LocalDateTime.of(2026, 9, 7, 9, 0))
+        )
+    }
+
+    @Test fun wrapsBoundaryToNextWeek() {
+        assertEquals(
+            LocalDateTime.of(2026, 9, 14, 9, 0),
+            timetable.nextBoundary(LocalDateTime.of(2026, 9, 7, 12, 0))
+        )
+    }
 }
