@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! sdkmanager --channel=3 'platforms;android-37'; then
+          if ! sdkmanager --channel=3 'platforms;android-37.2'; then
             echo '::error::Android 17 platform was not visible to sdkmanager'
             sdkmanager --list --channel=3 | grep -E 'platforms;.*(37|Cinnamon)' || true
             exit 1
