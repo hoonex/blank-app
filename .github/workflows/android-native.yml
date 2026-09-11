@@ -62,17 +62,32 @@ jobs:
           disable-animations: true
           script: |
             set -eu
-            gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon
+            status=0
+            gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon || status=$?
             mkdir -p build/visual-audit
-            adb pull /sdcard/Android/data/io.github.hoonex.flow/files/visual-audit build/visual-audit
+            adb pull /sdcard/Android/data/io.github.hoonex.flow/files/visual-audit build/visual-audit || true
+            if [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
             test "$(find build/visual-audit -type f -name '*.png' | wc -l | tr -d ' ')" -eq 6
       - name: Upload native UI visual evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: flow-android-visual-audit
           path: android-app/build/visual-audit/**/*.png
-          if-no-files-found: error
+          if-no-files-found: warn
+      - name: Upload Android test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-android-test-diagnostics
+          path: |
+            android-app/app/build/outputs/androidTest-results/**
+            android-app/app/build/reports/androidTests/**
+          if-no-files-found: warn
       - name: Upload debug APK
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: flow-android-debug
