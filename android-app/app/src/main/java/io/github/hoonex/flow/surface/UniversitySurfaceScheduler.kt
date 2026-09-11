@@ -2,17 +2,13 @@ package io.github.hoonex.flow.surface
 
 import android.app.AlarmManager
 import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import androidx.glance.appwidget.updateAll
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.nextBoundary
 import io.github.hoonex.flow.notification.UniversityNotification
-import io.github.hoonex.flow.widget.UniversityWidget
-import io.github.hoonex.flow.widget.UniversityWidgetReceiver
+import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,10 +23,7 @@ object UniversitySurfaceScheduler {
         val appContext = context.applicationContext
         val alarmManager = appContext.getSystemService(AlarmManager::class.java)
         val pendingIntent = refreshIntent(appContext)
-        val hasWidget = AppWidgetManager.getInstance(appContext)
-            .getAppWidgetIds(ComponentName(appContext, UniversityWidgetReceiver::class.java))
-            .isNotEmpty()
-        if (!hasWidget && !UniversityNotification.isEnabled(appContext)) {
+        if (!UniversityWidgets.hasAny(appContext) && !UniversityNotification.isEnabled(appContext)) {
             alarmManager.cancel(pendingIntent)
             return
         }
@@ -58,7 +51,7 @@ class UniversitySurfaceRefreshReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             try {
-                UniversityWidget().updateAll(appContext)
+                UniversityWidgets.updateAll(appContext)
                 UniversityNotification.refresh(appContext)
                 UniversitySurfaceScheduler.scheduleNext(appContext)
             } finally {
