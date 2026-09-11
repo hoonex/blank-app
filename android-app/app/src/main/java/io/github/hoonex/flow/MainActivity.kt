@@ -381,7 +381,7 @@ private fun WeekScreen(timetable: Timetable?, onImport: () -> Unit) {
             days.forEachIndexed { index, name ->
                 val classes = timetable.classesForDay(index)
                 if (classes.isNotEmpty()) {
-                    item { Text("$name요일", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+                    item { Text("${name}요일", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
                     items(classes) { ClassRow(it) }
                 }
             }
