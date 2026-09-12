@@ -51,7 +51,7 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
 
     when (mode) {
         FlowMode.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { choose(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
-        FlowMode.UNIVERSITY -> FlowUniversityRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
+        FlowMode.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
         null -> FlowHub(chooseSchool = { choose(FlowMode.SCHOOL) }, chooseUniversity = { choose(FlowMode.UNIVERSITY) })
     }
 }
@@ -67,14 +67,14 @@ private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit) {
             FlowBrand()
             Spacer(Modifier.height(30.dp))
             Text("학교도, 대학도\n하나의 Flow.", color = FlowPalette.Text, fontSize = 38.sp, lineHeight = 42.sp, fontWeight = FontWeight.Black)
-            Text("웹페이지를 띄우는 앱이 아니라 시간표·급식·일정·공시 데이터를 받아 네이티브 화면, 오프라인 캐시, 위젯으로 씁니다.", color = FlowPalette.Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 12.dp))
+            Text("시간표·급식·일정·공시·교통·캠퍼스 데이터를 받아 앱이 직접 화면·캐시·위젯으로 씁니다.", color = FlowPalette.Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 12.dp))
         }
         item {
             FlowCard(modifier = Modifier.fillMaxWidth(), accent = true, onClick = chooseSchool) {
                 Column(Modifier.padding(20.dp)) {
                     Text("SCHOOL", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     Text("학교 찾기 · Flow School", color = FlowPalette.Text, fontSize = 24.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp))
-                    Text("오늘 시간표 · 급식 · 학사일정 · 주간 시간표 · 오프라인 캐시", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 7.dp))
+                    Text("오늘 시간표 · 급식 · 학사일정 · 주간 시간표 · 네이티브 교통", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 7.dp))
                 }
             }
         }
@@ -83,7 +83,7 @@ private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit) {
                 Column(Modifier.padding(20.dp)) {
                     Text("UNIVERSITY", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
                     Text("대학 찾기 · Flow University", color = FlowPalette.Text, fontSize = 24.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 8.dp))
-                    Text("에브리타임 시간표 · 공시정보 · 홈 위젯 · 고정 알림", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 7.dp))
+                    Text("에브리타임 · 공시 · 학과 · 네이티브 캠퍼스 · 위젯 · 알림", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 7.dp))
                 }
             }
         }
