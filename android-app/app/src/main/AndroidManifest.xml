@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -14,6 +16,16 @@
         android:supportsRtl="true">
 
         <activity
+            android:name=".ui.FlowCampusActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Flow" />
+
+        <activity
+            android:name=".widget.FlowWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Flow" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop">
@@ -23,57 +35,24 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".widget.UniversityWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_next_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/university_widget_info" />
+        <receiver android:name=".widget.UniversityWidgetReceiver" android:exported="true" android:label="@string/widget_next_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/university_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.UniversityTodayWidgetReceiver" android:exported="true" android:label="@string/widget_today_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/university_today_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.UniversityWeekWidgetReceiver" android:exported="true" android:label="@string/widget_week_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/university_week_widget_info" />
+        </receiver>
+        <receiver android:name=".widget.UniversityMiniWidgetReceiver" android:exported="true" android:label="@string/widget_mini_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/university_mini_widget_info" />
         </receiver>
 
-        <receiver
-            android:name=".widget.UniversityTodayWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_today_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/university_today_widget_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.UniversityWeekWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_week_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/university_week_widget_info" />
-        </receiver>
-
-        <receiver
-            android:name=".widget.UniversityMiniWidgetReceiver"
-            android:exported="true"
-            android:label="@string/widget_mini_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/university_mini_widget_info" />
-        </receiver>
-
-        <receiver
-            android:name=".surface.UniversitySurfaceRefreshReceiver"
-            android:exported="false">
+        <receiver android:name=".surface.UniversitySurfaceRefreshReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
@@ -87,9 +66,7 @@
             android:authorities="${applicationId}.files"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/update_file_paths" />
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_file_paths" />
         </provider>
     </application>
 </manifest>
