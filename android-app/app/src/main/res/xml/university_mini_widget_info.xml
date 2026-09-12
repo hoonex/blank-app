@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/university_mini_widget_description"
+    android:configure="io.github.hoonex.flow.widget.FlowWidgetConfigActivity"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:initialKeyguardLayout="@layout/glance_default_loading_layout"
     android:minWidth="110dp"
@@ -9,4 +10,5 @@
     android:minResizeHeight="44dp"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
-    android:widgetCategory="home_screen|keyguard" />
+    android:widgetCategory="home_screen|keyguard"
+    android:widgetFeatures="reconfigurable|configuration_optional" />
