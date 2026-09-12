@@ -35,4 +35,4 @@ if [ "$instrument_status" -ne 0 ] || \
 fi
 
 count="$(find "$OUT/screenshots" -type f -name '*.png' | wc -l | tr -d ' ')"
-test "$count" -eq 8
+test "$count" -eq 15
