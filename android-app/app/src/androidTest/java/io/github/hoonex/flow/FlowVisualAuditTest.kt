@@ -133,7 +133,8 @@ class FlowVisualAuditTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
-            clickTextAndWaitForText("학교", "네이티브 캠퍼스 열기")
+            clickTextAndWaitForText("학교", "공시 지표")
+            scrollUntilText("네이티브 캠퍼스 열기")
             capture("15-native-campus-entry")
         }
 
