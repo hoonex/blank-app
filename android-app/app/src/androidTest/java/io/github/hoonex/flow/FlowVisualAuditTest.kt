@@ -63,21 +63,17 @@ class FlowVisualAuditTest {
             capture("02-home-dashboard")
 
             scrollUntilText("시간표 다시 동기화")
-            clickText("시간표 다시 동기화")
-            waitForText("시간표 연결")
+            clickTextAndWaitForText("시간표 다시 동기화", "시간표 연결")
             capture("03-everytime-sheet")
-            clickText("닫기")
+            clickTextUntilGone("닫기")
 
-            clickTab("시간표")
-            waitForText("2026년 2학기")
+            clickTextAndWaitForText("시간표", "2026년 2학기")
             capture("04-schedule-portrait")
 
-            clickTab("학교")
-            waitForText("공시 지표")
+            clickTextAndWaitForText("학교", "공시 지표")
             capture("05-school-profile")
 
-            clickTab("설정")
-            waitForText("고정 알림 켜기")
+            clickTextAndWaitForText("설정", "고정 알림 켜기")
             capture("06-settings-portrait")
 
             clickTab("홈")
@@ -87,8 +83,7 @@ class FlowVisualAuditTest {
             device.waitForIdle()
             capture("07-home-landscape")
 
-            clickTab("시간표")
-            waitForText("2026년 2학기")
+            clickTextAndWaitForText("시간표", "2026년 2학기")
             capture("08-schedule-landscape")
         }
 
@@ -192,8 +187,56 @@ class FlowVisualAuditTest {
             ?: error("Could not find text: $label")
         val bounds = textNode.visibleBounds
         assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
-        device.click(bounds.centerX(), bounds.centerY())
         device.waitForIdle()
+        Thread.sleep(200)
+        assertTrue("UiDevice rejected click for: $label", device.click(bounds.centerX(), bounds.centerY()))
+        device.waitForIdle()
+    }
+
+    private fun clickTextAndWaitForText(label: String, expected: String, attempts: Int = 3) {
+        repeat(attempts) {
+            val textNode = device.wait(Until.findObject(By.text(label)), 5_000)
+                ?: error("Could not find text: $label")
+            val bounds = textNode.visibleBounds
+            assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
+
+            device.waitForIdle()
+            Thread.sleep(250)
+            device.click(bounds.centerX(), bounds.centerY())
+
+            if (device.wait(Until.hasObject(By.textContains(expected)), 2_000)) {
+                device.waitForIdle()
+                return
+            }
+
+            device.waitForIdle()
+            Thread.sleep(250)
+        }
+
+        assertTrue(
+            "Timed out after $attempts click attempts: $label -> $expected",
+            device.hasObject(By.textContains(expected))
+        )
+    }
+
+    private fun clickTextUntilGone(label: String, attempts: Int = 3) {
+        repeat(attempts) {
+            val textNode = device.wait(Until.findObject(By.text(label)), 5_000)
+                ?: return
+            val bounds = textNode.visibleBounds
+            assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
+
+            device.waitForIdle()
+            Thread.sleep(200)
+            device.click(bounds.centerX(), bounds.centerY())
+
+            if (device.wait(Until.gone(By.text(label)), 2_000)) {
+                device.waitForIdle()
+                return
+            }
+        }
+
+        assertTrue("Text did not disappear after $attempts click attempts: $label", !device.hasObject(By.text(label)))
     }
 
     private fun scrollUntilText(text: String) {
