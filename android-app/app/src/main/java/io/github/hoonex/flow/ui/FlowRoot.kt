@@ -28,7 +28,7 @@ import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.widget.FlowWidgetGalleryActivity
 
-enum class FlowMode { SCHOOL, UNIVERSITY }
+enum class FlowMode { SCHOOL, UNIVERSITY, PLANNER }
 
 class FlowModeStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE)
@@ -54,16 +54,23 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
     when (mode) {
         FlowMode.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { choose(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
         FlowMode.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
+        FlowMode.PLANNER -> FlowPlannerRoot()
         null -> FlowHub(
             chooseSchool = { choose(FlowMode.SCHOOL) },
             chooseUniversity = { choose(FlowMode.UNIVERSITY) },
+            choosePlanner = { choose(FlowMode.PLANNER) },
             openWidgets = { context.startActivity(Intent(context, FlowWidgetGalleryActivity::class.java)) }
         )
     }
 }
 
 @Composable
-private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit, openWidgets: () -> Unit) {
+private fun FlowHub(
+    chooseSchool: () -> Unit,
+    chooseUniversity: () -> Unit,
+    choosePlanner: () -> Unit,
+    openWidgets: () -> Unit
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(FlowPalette.Background),
         contentPadding = PaddingValues(22.dp, 48.dp, 22.dp, 42.dp),
@@ -94,14 +101,23 @@ private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit, open
             }
         }
         item {
-            FlowCard(modifier = Modifier.fillMaxWidth(), onClick = openWidgets) {
+            FlowCard(modifier = Modifier.fillMaxWidth(), accent = true, onClick = choosePlanner) {
                 Column(Modifier.padding(20.dp)) {
-                    Text("SURFACES", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Text("Flow 위젯 갤러리", color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
-                    Text("다음 흐름 · 오늘 · 주간 · 미니를 앱에서 바로 홈 화면에 추가하고 위젯별로 School/University를 설정합니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                    Text("PLANNER", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Text("과제 · 시험 · 할 일", color = FlowPalette.Text, fontSize = 23.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+                    Text("School과 University를 오가도 같은 일정 목록을 쓰고, 모든 데이터는 앱 안에 저장합니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
                 }
             }
         }
-        item { Text("앱 아이콘을 길게 눌러 School / University / Widgets로 바로 들어갈 수도 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, lineHeight = 17.sp) }
+        item {
+            FlowCard(modifier = Modifier.fillMaxWidth(), onClick = openWidgets) {
+                Column(Modifier.padding(20.dp)) {
+                    Text("SURFACES", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Text("Flow 위젯 관리", color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+                    Text("설치된 위젯을 확인하고 다음 흐름 · 오늘 · 주간 · 미니를 추가하거나 위젯별 School/University 설정을 바꿉니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                }
+            }
+        }
+        item { Text("뒤로가기로 Flow 허브에 돌아와 School / University / Planner를 전환할 수 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, lineHeight = 17.sp) }
     }
 }
