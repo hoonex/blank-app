@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.data
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -20,7 +21,10 @@ data class CampusPlace(
     val x: String,
     val y: String,
     val distance: Int
-)
+) {
+    val longitude: Double? get() = x.toDoubleOrNull()
+    val latitude: Double? get() = y.toDoubleOrNull()
+}
 
 data class CampusLecturePlace(
     val raw: String,
@@ -42,12 +46,34 @@ data class CampusSnapshot(
     val nearby: CampusNearby
 )
 
+data class CampusRoutePoint(val latitude: Double, val longitude: Double)
+
 data class CampusWalkRoute(
     val status: String,
     val distance: Int,
     val timeSeconds: Int,
-    val landingUrl: String
+    val landingUrl: String,
+    val points: List<CampusRoutePoint> = emptyList()
 )
+
+class CampusStore(context: Context) {
+    private val prefs = context.getSharedPreferences("flow-campus-native-v1", Context.MODE_PRIVATE)
+
+    fun load(universityId: String): CampusSnapshot? {
+        if (universityId.isBlank()) return null
+        val raw = prefs.getString("snapshot:$universityId", null) ?: return null
+        return runCatching { parseSnapshot(JSONObject(raw)) }.getOrNull()
+    }
+
+    fun save(universityId: String, snapshot: CampusSnapshot) {
+        if (universityId.isBlank()) return
+        prefs.edit().putString("snapshot:$universityId", snapshotJson(snapshot).toString()).apply()
+    }
+
+    fun clear(universityId: String) {
+        prefs.edit().remove("snapshot:$universityId").apply()
+    }
+}
 
 object UniversityCampusApi {
     suspend fun load(university: University, timetable: Timetable?): CampusSnapshot = withContext(Dispatchers.IO) {
@@ -78,7 +104,8 @@ object UniversityCampusApi {
             status = route.optString("status"),
             distance = route.optInt("distance"),
             timeSeconds = route.optInt("time"),
-            landingUrl = route.optString("landingUrl")
+            landingUrl = route.optString("landingUrl"),
+            points = route.optJSONArray("points").toRoutePoints()
         )
     }
 
@@ -90,7 +117,7 @@ object UniversityCampusApi {
             doOutput = true
             setRequestProperty("Accept", "application/json")
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            setRequestProperty("User-Agent", "Flow-Android/0.4")
+            setRequestProperty("User-Agent", "Flow-Android/0.5")
         }
         try {
             connection.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
@@ -157,3 +184,61 @@ private fun JSONArray?.toLecturePlaces(): List<CampusLecturePlace> {
         }
     }
 }
+
+private fun JSONArray?.toRoutePoints(): List<CampusRoutePoint> {
+    if (this == null) return emptyList()
+    return buildList {
+        for (i in 0 until length()) {
+            when (val raw = opt(i)) {
+                is JSONObject -> routePoint(
+                    longitude = raw.optDoubleOrNull("x") ?: raw.optDoubleOrNull("lng") ?: raw.optDoubleOrNull("longitude"),
+                    latitude = raw.optDoubleOrNull("y") ?: raw.optDoubleOrNull("lat") ?: raw.optDoubleOrNull("latitude")
+                )?.let(::add)
+                is JSONArray -> routePoint(raw.optDoubleOrNull(0), raw.optDoubleOrNull(1))?.let(::add)
+                is String -> {
+                    val split = raw.split(',').map(String::trim)
+                    if (split.size >= 2) routePoint(split[0].toDoubleOrNull(), split[1].toDoubleOrNull())?.let(::add)
+                }
+            }
+        }
+    }
+}
+
+private fun routePoint(longitude: Double?, latitude: Double?): CampusRoutePoint? {
+    if (longitude == null || latitude == null) return null
+    if (longitude !in -180.0..180.0 || latitude !in -90.0..90.0) return null
+    return CampusRoutePoint(latitude, longitude)
+}
+
+private fun JSONObject.optDoubleOrNull(key: String): Double? = if (!has(key) || isNull(key)) null else optString(key).toDoubleOrNull()
+private fun JSONArray.optDoubleOrNull(index: Int): Double? = if (index !in 0 until length() || isNull(index)) null else optString(index).toDoubleOrNull()
+
+private fun snapshotJson(snapshot: CampusSnapshot) = JSONObject()
+    .put("center", placeJson(snapshot.center))
+    .put("places", JSONArray().apply {
+        snapshot.places.forEach { item ->
+            put(JSONObject()
+                .put("raw", item.raw)
+                .put("resolved", item.resolved)
+                .put("confidence", item.confidence)
+                .put("place", item.place?.let(::placeJson)))
+        }
+    })
+    .put("nearby", JSONObject()
+        .put("stores", placesJson(snapshot.nearby.stores))
+        .put("cafes", placesJson(snapshot.nearby.cafes))
+        .put("food", placesJson(snapshot.nearby.food))
+        .put("dining", placesJson(snapshot.nearby.dining)))
+
+private fun placesJson(items: List<CampusPlace>) = JSONArray().apply { items.forEach { put(placeJson(it)) } }
+
+private fun placeJson(place: CampusPlace) = JSONObject()
+    .put("id", place.id)
+    .put("name", place.name)
+    .put("address", place.address)
+    .put("roadAddress", place.roadAddress)
+    .put("category", place.category)
+    .put("phone", place.phone)
+    .put("x", place.x)
+    .put("y", place.y)
+    .put("distance", place.distance)

@@ -23,16 +23,22 @@ adb shell am instrument -w -r \
   -e class io.github.hoonex.flow.FlowVisualAuditTest \
   io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
   | tee "$OUT/instrumentation.txt"
-instrument_status=${PIPESTATUS[0]}
+core_status=${PIPESTATUS[0]}
+
+adb shell am instrument -w -r \
+  -e class io.github.hoonex.flow.FlowCampusMapVisualTest \
+  io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
+  | tee -a "$OUT/instrumentation.txt"
+map_status=${PIPESTATUS[0]}
 set -e
 
 adb pull "$REMOTE" "$OUT/screenshots" || true
 
-if [ "$instrument_status" -ne 0 ] || \
-   ! grep -Eq 'OK \([0-9]+ test(s)?\)' "$OUT/instrumentation.txt" || \
+if [ "$core_status" -ne 0 ] || [ "$map_status" -ne 0 ] || \
+   [ "$(grep -Ec 'OK \([0-9]+ test(s)?\)' "$OUT/instrumentation.txt")" -lt 2 ] || \
    grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|INSTRUMENTATION_ABORTED|Process crashed|shortMsg=' "$OUT/instrumentation.txt"; then
   exit 1
 fi
 
 count="$(find "$OUT/screenshots" -type f -name '*.png' | wc -l | tr -d ' ')"
-test "$count" -eq 15
+test "$count" -eq 16
