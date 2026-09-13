@@ -71,6 +71,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.glance:glance-appwidget:1.2.0")
+    implementation("org.maplibre.gl:android-sdk-opengl:13.6.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     androidTestImplementation("androidx.test:core-ktx:1.7.0")
