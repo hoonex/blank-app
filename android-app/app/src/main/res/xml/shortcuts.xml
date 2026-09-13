@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="flow_school"
+        android:enabled="true"
+        android:icon="@drawable/ic_flow_mark"
+        android:shortcutShortLabel="@string/shortcut_school"
+        android:shortcutLongLabel="@string/shortcut_school_long">
+        <intent
+            android:action="io.github.hoonex.flow.OPEN_SCHOOL"
+            android:targetPackage="io.github.hoonex.flow"
+            android:targetClass="io.github.hoonex.flow.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="flow_university"
+        android:enabled="true"
+        android:icon="@drawable/ic_flow_mark"
+        android:shortcutShortLabel="@string/shortcut_university"
+        android:shortcutLongLabel="@string/shortcut_university_long">
+        <intent
+            android:action="io.github.hoonex.flow.OPEN_UNIVERSITY"
+            android:targetPackage="io.github.hoonex.flow"
+            android:targetClass="io.github.hoonex.flow.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="flow_widgets"
+        android:enabled="true"
+        android:icon="@drawable/ic_flow_mark"
+        android:shortcutShortLabel="@string/shortcut_widgets"
+        android:shortcutLongLabel="@string/shortcut_widgets_long">
+        <intent
+            android:action="io.github.hoonex.flow.OPEN_WIDGETS"
+            android:targetPackage="io.github.hoonex.flow"
+            android:targetClass="io.github.hoonex.flow.MainActivity" />
+    </shortcut>
+</shortcuts>

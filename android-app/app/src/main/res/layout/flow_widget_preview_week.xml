@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical" android:background="@drawable/flow_widget_preview_background" android:padding="16dp">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WEEK LOAD" android:textColor="#7BE7D6" android:textStyle="bold" android:textSize="10sp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="18학점 · 12h 30m" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="18sp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="월 3 · 화 2 · 수 4 · 목 2 · 금 1" android:textColor="#A8B3B8" android:textSize="11sp" />
+</LinearLayout>
