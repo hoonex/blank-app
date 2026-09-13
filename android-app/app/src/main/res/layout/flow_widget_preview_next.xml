@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:background="@drawable/flow_widget_preview_background"
+    android:padding="16dp">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="NEXT" android:textColor="#7BE7D6" android:textStyle="bold" android:textSize="10sp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="자료구조" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="19sp" />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="11:00 시작 · IT관 204" android:textColor="#A8B3B8" android:textSize="11sp" />
+</LinearLayout>

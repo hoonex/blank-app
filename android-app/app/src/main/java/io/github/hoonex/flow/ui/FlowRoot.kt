@@ -1,6 +1,7 @@
 package io.github.hoonex.flow.ui
 
 import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
+import io.github.hoonex.flow.widget.FlowWidgetGalleryActivity
 
 enum class FlowMode { SCHOOL, UNIVERSITY }
 
@@ -52,12 +54,16 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
     when (mode) {
         FlowMode.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { choose(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
         FlowMode.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
-        null -> FlowHub(chooseSchool = { choose(FlowMode.SCHOOL) }, chooseUniversity = { choose(FlowMode.UNIVERSITY) })
+        null -> FlowHub(
+            chooseSchool = { choose(FlowMode.SCHOOL) },
+            chooseUniversity = { choose(FlowMode.UNIVERSITY) },
+            openWidgets = { context.startActivity(Intent(context, FlowWidgetGalleryActivity::class.java)) }
+        )
     }
 }
 
 @Composable
-private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit) {
+private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit, openWidgets: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(FlowPalette.Background),
         contentPadding = PaddingValues(22.dp, 48.dp, 22.dp, 42.dp),
@@ -87,6 +93,15 @@ private fun FlowHub(chooseSchool: () -> Unit, chooseUniversity: () -> Unit) {
                 }
             }
         }
-        item { Text("모드 안에서 뒤로 가기를 누르면 이 허브로 돌아옵니다. 마지막 선택은 다음 실행 때 바로 열립니다.", color = FlowPalette.Dim, fontSize = 11.sp, lineHeight = 17.sp) }
+        item {
+            FlowCard(modifier = Modifier.fillMaxWidth(), onClick = openWidgets) {
+                Column(Modifier.padding(20.dp)) {
+                    Text("SURFACES", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    Text("Flow 위젯 갤러리", color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+                    Text("다음 흐름 · 오늘 · 주간 · 미니를 앱에서 바로 홈 화면에 추가하고 위젯별로 School/University를 설정합니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                }
+            }
+        }
+        item { Text("앱 아이콘을 길게 눌러 School / University / Widgets로 바로 들어갈 수도 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, lineHeight = 17.sp) }
     }
 }
