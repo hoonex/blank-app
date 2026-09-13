@@ -2,6 +2,7 @@ package io.github.hoonex.flow.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import io.github.hoonex.flow.ui.FlowCard
 import io.github.hoonex.flow.ui.FlowPalette
 import io.github.hoonex.flow.ui.FlowPrimaryButton
+import io.github.hoonex.flow.ui.FlowSecondaryButton
 import io.github.hoonex.flow.ui.FlowSectionTitle
 import io.github.hoonex.flow.ui.FlowTheme
 
@@ -39,7 +43,15 @@ private data class WidgetChoice(
     val receiver: Class<*>
 )
 
+private data class InstalledFlowWidget(
+    val appWidgetId: Int,
+    val title: String,
+    val config: FlowWidgetConfig
+)
+
 class FlowWidgetGalleryActivity : ComponentActivity() {
+    private val installedWidgets = mutableStateOf<List<InstalledFlowWidget>>(emptyList())
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
@@ -47,8 +59,19 @@ class FlowWidgetGalleryActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
         setContent {
-            FlowTheme { WidgetGallery(onPin = ::requestPin) }
+            FlowTheme {
+                WidgetGallery(
+                    installed = installedWidgets,
+                    onPin = ::requestPin,
+                    onConfigure = ::openConfig
+                )
+            }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        installedWidgets.value = loadInstalledWidgets()
     }
 
     private fun requestPin(choice: WidgetChoice) {
@@ -64,16 +87,43 @@ class FlowWidgetGalleryActivity : ComponentActivity() {
             Toast.LENGTH_SHORT
         ).show()
     }
+
+    private fun openConfig(widget: InstalledFlowWidget) {
+        startActivity(
+            Intent(this, FlowWidgetConfigActivity::class.java)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widget.appWidgetId)
+        )
+    }
+
+    private fun loadInstalledWidgets(): List<InstalledFlowWidget> {
+        val manager = AppWidgetManager.getInstance(this)
+        val providers = listOf(
+            Triple(UniversityWidgetReceiver::class.java, "다음 흐름", UniversityWidgetReceiver::class.java.name),
+            Triple(UniversityTodayWidgetReceiver::class.java, "오늘 흐름", UniversityTodayWidgetReceiver::class.java.name),
+            Triple(UniversityWeekWidgetReceiver::class.java, "주간 흐름", UniversityWeekWidgetReceiver::class.java.name),
+            Triple(UniversityMiniWidgetReceiver::class.java, "Flow 미니", UniversityMiniWidgetReceiver::class.java.name)
+        )
+        return providers.flatMap { (receiver, title, _) ->
+            manager.getAppWidgetIds(ComponentName(this, receiver)).map { id ->
+                InstalledFlowWidget(id, title, FlowWidgetPreferences.load(this, id))
+            }
+        }.sortedBy { it.appWidgetId }
+    }
 }
 
 @Composable
-private fun WidgetGallery(onPin: (WidgetChoice) -> Unit) {
+private fun WidgetGallery(
+    installed: State<List<InstalledFlowWidget>>,
+    onPin: (WidgetChoice) -> Unit,
+    onConfigure: (InstalledFlowWidget) -> Unit
+) {
     val choices = listOf(
         WidgetChoice("다음 흐름", "현재/다음 수업을 가장 빠르게 확인", "2×2 · 크기 조절", UniversityWidgetReceiver::class.java),
         WidgetChoice("오늘 흐름", "오늘 수업을 여러 줄로 확인", "4×3 · 크기 조절", UniversityTodayWidgetReceiver::class.java),
         WidgetChoice("주간 흐름", "요일별 일정 밀도와 주간 부하", "4×2 · 크기 조절", UniversityWeekWidgetReceiver::class.java),
         WidgetChoice("Flow 미니", "한 줄 핵심 정보만 표시", "2×1 · 소형", UniversityMiniWidgetReceiver::class.java)
     )
+    val active = installed.value
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(FlowPalette.Background).statusBarsPadding().navigationBarsPadding(),
@@ -81,15 +131,55 @@ private fun WidgetGallery(onPin: (WidgetChoice) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            FlowSectionTitle("WIDGETS", "홈 화면에 Flow 추가", "4종")
+            FlowSectionTitle("WIDGETS", "Flow 위젯", "4종")
             Text(
-                "추가한 뒤 위젯을 길게 눌러 설정에서 Auto / School / University와 세부정보 표시를 위젯마다 따로 바꿀 수 있습니다.",
+                "홈 화면에 추가한 뒤에도 이 화면에서 설치된 위젯마다 Auto / School / University와 세부정보 표시를 따로 바꿀 수 있습니다.",
                 color = FlowPalette.Muted,
                 fontSize = 13.sp,
                 lineHeight = 19.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
+
+        if (active.isNotEmpty()) {
+            item { FlowSectionTitle("INSTALLED", "설치된 위젯", "${active.size}개") }
+            active.forEach { widget ->
+                item(key = "installed-${widget.appWidgetId}") {
+                    FlowCard(Modifier.fillMaxWidth(), accent = true) {
+                        Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(widget.title, color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                                    Text(
+                                        "#${widget.appWidgetId} · ${sourceLabel(widget.config.source)} · 세부정보 ${if (widget.config.showContext) "ON" else "OFF"}",
+                                        color = FlowPalette.Muted,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                                Text("ACTIVE", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                            }
+                            FlowPrimaryButton(
+                                "이 위젯 설정",
+                                { onConfigure(widget) },
+                                Modifier.fillMaxWidth().padding(top = 13.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp)) {
+                        Text("설치된 Flow 위젯 없음", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                        Text("아래에서 위젯을 추가하면 여기에서 각 위젯의 데이터 소스와 세부정보를 바로 관리할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 5.dp))
+                    }
+                }
+            }
+        }
+
+        item { FlowSectionTitle("ADD", "새 위젯 추가", "홈 화면") }
         choices.forEach { choice ->
             item {
                 FlowCard(Modifier.fillMaxWidth()) {
@@ -101,7 +191,7 @@ private fun WidgetGallery(onPin: (WidgetChoice) -> Unit) {
                             }
                             Text(choice.size, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-                        FlowPrimaryButton("홈 화면에 추가", { onPin(choice) }, Modifier.fillMaxWidth().padding(top = 14.dp))
+                        FlowSecondaryButton("홈 화면에 추가", { onPin(choice) }, Modifier.fillMaxWidth().padding(top = 14.dp))
                     }
                 }
             }
@@ -109,9 +199,9 @@ private fun WidgetGallery(onPin: (WidgetChoice) -> Unit) {
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true) {
                 Column(Modifier.padding(18.dp)) {
-                    Text("잠금화면은 별도입니다", color = FlowPalette.Text, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    Text("Galaxy 잠금화면 / AOD", color = FlowPalette.Text, fontWeight = FontWeight.Black, fontSize = 16.sp)
                     Text(
-                        "현행 Android 표준 AppWidget은 홈 화면용입니다. Galaxy에서 잠금화면/AOD에 서드파티 위젯을 쓰려면 지원되는 One UI에서 Good Lock → LockStar 경로를 사용하세요.",
+                        "Galaxy의 기본 잠금화면 위젯 목록은 일반 서드파티 AppWidget을 그대로 노출하지 않을 수 있습니다. 지원되는 One UI에서는 Good Lock → LockStar에서 Flow 위젯을 배치하세요. 앱이 잠금화면 호스트를 강제로 등록할 수는 없습니다.",
                         color = FlowPalette.Muted,
                         fontSize = 12.sp,
                         lineHeight = 18.sp,
@@ -121,4 +211,10 @@ private fun WidgetGallery(onPin: (WidgetChoice) -> Unit) {
             }
         }
     }
+}
+
+private fun sourceLabel(source: FlowWidgetSource): String = when (source) {
+    FlowWidgetSource.AUTO -> "AUTO"
+    FlowWidgetSource.SCHOOL -> "SCHOOL"
+    FlowWidgetSource.UNIVERSITY -> "UNIVERSITY"
 }

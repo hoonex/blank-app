@@ -102,7 +102,7 @@ fun FlowBrand(modifier: Modifier = Modifier, compact: Boolean = false) {
         if (!compact) {
             Column {
                 Text("Flow", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                Text("UNIVERSITY", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                Text("SCHOOL · UNIVERSITY", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
             }
         }
     }
