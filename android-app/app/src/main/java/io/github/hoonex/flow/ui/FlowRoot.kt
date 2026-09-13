@@ -28,7 +28,9 @@ import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.widget.FlowWidgetGalleryActivity
 
-enum class FlowMode { SCHOOL, UNIVERSITY, PLANNER }
+enum class FlowMode { SCHOOL, UNIVERSITY }
+
+private enum class FlowDestination { SCHOOL, UNIVERSITY, PLANNER }
 
 class FlowModeStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE)
@@ -40,25 +42,37 @@ class FlowModeStore(context: Context) {
 fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: () -> Unit, checkUpdate: () -> Unit) {
     val context = LocalContext.current
     val store = remember { FlowModeStore(context) }
-    val initialMode = remember {
-        store.load() ?: when {
-            SchoolStore(context).loadSelection() != null -> FlowMode.SCHOOL
-            UniversityStore(context).loadUniversity() != null -> FlowMode.UNIVERSITY
-            else -> null
+    val initialDestination = remember {
+        when (store.load()) {
+            FlowMode.SCHOOL -> FlowDestination.SCHOOL
+            FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
+            null -> when {
+                SchoolStore(context).loadSelection() != null -> FlowDestination.SCHOOL
+                UniversityStore(context).loadUniversity() != null -> FlowDestination.UNIVERSITY
+                else -> null
+            }
         }
     }
-    var mode by remember { mutableStateOf(initialMode) }
-    fun choose(next: FlowMode) { store.save(next); mode = next }
-    BackHandler(enabled = mode != null) { mode = null }
+    var destination by remember { mutableStateOf(initialDestination) }
 
-    when (mode) {
-        FlowMode.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { choose(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
-        FlowMode.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
-        FlowMode.PLANNER -> FlowPlannerRoot()
+    fun chooseAcademic(next: FlowMode) {
+        store.save(next)
+        destination = when (next) {
+            FlowMode.SCHOOL -> FlowDestination.SCHOOL
+            FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
+        }
+    }
+
+    BackHandler(enabled = destination != null) { destination = null }
+
+    when (destination) {
+        FlowDestination.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { chooseAcademic(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
+        FlowDestination.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
+        FlowDestination.PLANNER -> FlowPlannerRoot()
         null -> FlowHub(
-            chooseSchool = { choose(FlowMode.SCHOOL) },
-            chooseUniversity = { choose(FlowMode.UNIVERSITY) },
-            choosePlanner = { choose(FlowMode.PLANNER) },
+            chooseSchool = { chooseAcademic(FlowMode.SCHOOL) },
+            chooseUniversity = { chooseAcademic(FlowMode.UNIVERSITY) },
+            choosePlanner = { destination = FlowDestination.PLANNER },
             openWidgets = { context.startActivity(Intent(context, FlowWidgetGalleryActivity::class.java)) }
         )
     }
