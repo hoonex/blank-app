@@ -106,7 +106,7 @@ class UniversityWidget : GlanceAppWidget() {
                     }
                     if (runtime.showContext && roomy(size.height) && meals.isNotEmpty()) {
                         Spacer(GlanceModifier.height(5.dp))
-                        Text("급식 · ${meals.first().menu.take(2).joinToString(" · ")}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = 10.sp))
+                        Text("급식 · ${meals.first().dishes.take(2).joinToString(" · ")}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = 10.sp))
                     }
                 }
             }
