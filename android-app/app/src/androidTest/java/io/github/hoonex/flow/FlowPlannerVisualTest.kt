@@ -12,8 +12,6 @@ import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
-import io.github.hoonex.flow.ui.FlowMode
-import io.github.hoonex.flow.ui.FlowModeStore
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -38,7 +36,7 @@ class FlowPlannerVisualTest {
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         store = FlowPlannerStore(context)
         store.clear()
-        FlowModeStore(context).save(FlowMode.PLANNER)
+        context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
         val now = LocalDateTime.now()
         store.save(
             listOf(
@@ -73,6 +71,8 @@ class FlowPlannerVisualTest {
     @Test
     fun capturePlannerAndAddSheet() {
         ActivityScenario.launch(MainActivity::class.java).use {
+            assertTrue("Flow hub missing", device.wait(Until.hasObject(By.text("과제 · 시험 · 할 일")), 5_000))
+            clickText("과제 · 시험 · 할 일")
             assertTrue("planner title missing", device.wait(Until.hasObject(By.text("Planner")), 5_000))
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
