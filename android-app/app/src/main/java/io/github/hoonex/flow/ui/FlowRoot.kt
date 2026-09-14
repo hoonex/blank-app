@@ -138,21 +138,22 @@ private fun FlowHub(
                         FlowPill(if (FlowAppearance.isLight) "LIGHT" else "DARK", FlowPalette.Mint)
                     }
                 }
-                Spacer(Modifier.height(17.dp))
-                Text("두 개의 생활, 하나의 Flow.", color = FlowPalette.Text, fontSize = 29.sp, lineHeight = 33.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.75).sp)
+                Spacer(Modifier.height(15.dp))
+                Text("학교도, 대학도", color = FlowPalette.Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("두 개의 생활, 하나의 Flow.", color = FlowPalette.Text, fontSize = 28.sp, lineHeight = 32.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, modifier = Modifier.padding(top = 2.dp))
                 Text(
-                    "School은 학교 생활을, University는 대학 생활을 맡습니다. 일정 관리가 아니라 각 교육 생활 자체가 중심입니다.",
+                    "School은 학교 생활을, University는 대학 생활을 맡습니다. 일정은 각 서비스 안에서 필요한 만큼만 다룹니다.",
                     color = FlowPalette.Muted,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
-                    modifier = Modifier.padding(top = 7.dp, bottom = 3.dp)
+                    fontSize = 10.5.sp,
+                    lineHeight = 15.sp,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
                 )
             }
 
             item {
                 ServiceCard(
-                    eyebrow = "FLOW SCHOOL",
-                    title = "학교 생활",
+                    eyebrow = "SCHOOL",
+                    title = "Flow School",
                     status = schoolStatus,
                     description = schoolMeta,
                     footer = if (school == null) "학교 설정" else "오늘 학교 열기",
@@ -163,8 +164,8 @@ private fun FlowHub(
             }
             item {
                 ServiceCard(
-                    eyebrow = "FLOW UNIVERSITY",
-                    title = "대학 생활",
+                    eyebrow = "UNIVERSITY",
+                    title = "Flow University",
                     status = universityStatus,
                     description = universityMeta,
                     footer = if (university == null) "대학 설정" else "대학 Flow 열기",
@@ -217,17 +218,17 @@ private fun ServiceCard(
         onClick = onClick,
         accentColor = accent
     ) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).padding(end = 10.dp)) {
                 Text(eyebrow, color = accent, fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.25.sp)
-                Text(title, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.35).sp, modifier = Modifier.padding(top = 4.dp))
-                Text(status, color = FlowPalette.Text, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
-                Text(description, color = FlowPalette.Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp))
-                Text("$footer  →", color = accent, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 10.dp))
+                Text(title, color = FlowPalette.Text, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.35).sp, modifier = Modifier.padding(top = 3.dp))
+                Text(status, color = FlowPalette.Text, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                Text(description, color = FlowPalette.Muted, fontSize = 9.5.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 3.dp))
+                Text("$footer  →", color = accent, fontSize = 8.5.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
             }
             Box(
                 Modifier
-                    .size(39.dp)
+                    .size(38.dp)
                     .clip(RoundedCornerShape(13.dp))
                     .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.2f), accent.copy(alpha = 0.07f)))),
                 contentAlignment = Alignment.Center
@@ -248,20 +249,20 @@ private fun CompactService(
     onClick: () -> Unit
 ) {
     FlowCard(modifier = modifier, onClick = onClick, accentColor = accent) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .size(29.dp)
+                    .size(28.dp)
                     .clip(RoundedCornerShape(9.dp))
                     .background(accent.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(mark, color = accent, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(7.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, color = FlowPalette.Text, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                Text(subtitle, color = FlowPalette.Muted, fontSize = 8.sp, lineHeight = 11.sp, modifier = Modifier.padding(top = 2.dp))
+                Text(title, color = FlowPalette.Text, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold)
+                Text(subtitle, color = FlowPalette.Muted, fontSize = 7.5.sp, lineHeight = 10.sp, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }
