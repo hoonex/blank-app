@@ -209,7 +209,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                    .background(Color(0xFF0C1114))
+                    .background(FlowPalette.SurfaceSoft)
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 22.dp)
             ) {
@@ -269,7 +269,14 @@ private fun PlannerChip(label: String, selected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 11.dp, vertical = 9.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = if (selected) Color(0xFF181329) else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+        Text(
+            label,
+            color = if (selected) {
+                if (FlowAppearance.isLight) Color.White else Color(0xFF181329)
+            } else FlowPalette.Muted,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }
 
