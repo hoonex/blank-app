@@ -71,14 +71,12 @@ class FlowPlannerVisualTest {
     @Test
     fun capturePlannerAndAddSheet() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            assertTrue("Flow hub missing", device.wait(Until.hasObject(By.text("과제 · 시험 · 할 일")), 5_000))
-            clickText("과제 · 시험 · 할 일")
-            assertTrue("planner title missing", device.wait(Until.hasObject(By.text("Planner")), 5_000))
+            scrollUntilText("과제 · 시험 · 할 일")
+            clickTextAndWaitForText("과제 · 시험 · 할 일", "Planner")
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
-            clickText("새 일정 추가")
-            assertTrue("planner add sheet missing", device.wait(Until.hasObject(By.text("일정 추가")), 5_000))
+            clickTextAndWaitForText("새 일정 추가", "일정 추가")
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
             capture("19-planner-add")
         }
@@ -91,12 +89,41 @@ class FlowPlannerVisualTest {
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
-    private fun clickText(text: String) {
-        val node = device.wait(Until.findObject(By.text(text)), 5_000) ?: error("Could not find text: $text")
-        val bounds = node.visibleBounds
-        assertTrue("text not visible: $text", bounds.width() > 0 && bounds.height() > 0)
-        assertTrue("click rejected: $text", device.click(bounds.centerX(), bounds.centerY()))
-        device.waitForIdle()
+    private fun clickTextAndWaitForText(label: String, expected: String, attempts: Int = 3) {
+        repeat(attempts) {
+            val node = device.wait(Until.findObject(By.text(label)), 5_000) ?: error("Could not find text: $label")
+            val bounds = node.visibleBounds
+            assertTrue("text not visible: $label", bounds.width() > 0 && bounds.height() > 0)
+            device.waitForIdle()
+            Thread.sleep(250)
+            device.click(bounds.centerX(), bounds.centerY())
+            if (device.wait(Until.hasObject(By.textContains(expected)), 2_000)) {
+                device.waitForIdle()
+                return
+            }
+            device.waitForIdle()
+            Thread.sleep(250)
+        }
+        assertTrue("Timed out after $attempts click attempts: $label -> $expected", device.hasObject(By.textContains(expected)))
+    }
+
+    private fun scrollUntilText(text: String) {
+        val selector = By.textContains(text)
+        val x = device.displayWidth / 2
+        val startY = minOf((device.displayHeight * 0.72f).toInt(), device.displayHeight - 120)
+        val endY = maxOf((device.displayHeight * 0.24f).toInt(), 100)
+        val safeBottom = (device.displayHeight * 0.84f).toInt()
+        repeat(10) {
+            val node = device.findObject(selector)
+            if (node != null && node.visibleBounds.centerY() in 1 until safeBottom) {
+                device.waitForIdle()
+                return
+            }
+            device.swipe(x, startY, x, endY, 24)
+            device.waitForIdle()
+        }
+        val node = device.findObject(selector)
+        assertTrue("Timed out scrolling to text: $text", node != null && node.visibleBounds.centerY() in 1 until safeBottom)
     }
 
     private fun capture(name: String) {
