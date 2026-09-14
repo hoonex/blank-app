@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -114,7 +115,7 @@ object FlowPalette {
 @Composable
 fun FlowTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    remember(context) { FlowAppearance.initialize(context); Unit }
+    LaunchedEffect(context) { FlowAppearance.initialize(context) }
     val light = FlowAppearance.isLight
     val scheme = if (light) {
         lightColorScheme(
