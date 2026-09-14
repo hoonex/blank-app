@@ -12,6 +12,8 @@ import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.SchoolStore
+import io.github.hoonex.flow.data.UniversityStore
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -35,8 +37,7 @@ class FlowPlannerVisualTest {
         device = UiDevice.getInstance(instrumentation)
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         store = FlowPlannerStore(context)
-        store.clear()
-        context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
+        resetHubState()
         val now = LocalDateTime.now()
         store.save(
             listOf(
@@ -63,8 +64,7 @@ class FlowPlannerVisualTest {
 
     @After
     fun restore() {
-        store.clear()
-        context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
+        resetHubState()
         runCatching { device.setOrientationNatural() }
     }
 
@@ -82,6 +82,13 @@ class FlowPlannerVisualTest {
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
             capture("19-planner-add")
         }
+    }
+
+    private fun resetHubState() {
+        store.clear()
+        SchoolStore(context).clear()
+        UniversityStore(context).clear()
+        context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
     private fun clickText(text: String) {
