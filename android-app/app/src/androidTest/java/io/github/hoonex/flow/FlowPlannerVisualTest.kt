@@ -70,10 +70,8 @@ class FlowPlannerVisualTest {
 
     @Test
     fun capturePlannerAndAddSheet() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            waitForText("Flow School")
-            positionTextIfNeeded("공통 할 일")
-            clickTextAndWaitForText("공통 할 일", "Planner")
+        ActivityScenario.launch(PlannerVisualHostActivity::class.java).use {
+            waitForText("Planner")
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
@@ -111,28 +109,6 @@ class FlowPlannerVisualTest {
             Thread.sleep(250)
         }
         assertTrue("Timed out after $attempts click attempts: $label -> $expected", device.hasObject(By.textContains(expected)))
-    }
-
-    private fun positionTextIfNeeded(text: String) {
-        val selector = By.textContains(text)
-        val safeBottom = (device.displayHeight * 0.72f).toInt()
-        fun isSafelyVisible(): Boolean {
-            val node = device.findObject(selector) ?: return false
-            val bounds = node.visibleBounds
-            return bounds.width() > 0 && bounds.height() > 0 && bounds.centerY() in 1 until safeBottom
-        }
-
-        if (isSafelyVisible()) return
-
-        val x = device.displayWidth / 2
-        val startY = minOf((device.displayHeight * 0.68f).toInt(), device.displayHeight - 180)
-        val endY = maxOf((device.displayHeight * 0.22f).toInt(), 100)
-        repeat(12) {
-            device.swipe(x, startY, x, endY, 28)
-            device.waitForIdle()
-            if (isSafelyVisible()) return
-        }
-        assertTrue("Timed out positioning text: $text", isSafelyVisible())
     }
 
     private fun capture(name: String) {
