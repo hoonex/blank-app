@@ -40,7 +40,7 @@ class FlowWidgetGalleryVisualTest {
             )
             assertTrue(
                 "installed-widget empty state not visible",
-                device.wait(Until.hasObject(By.textContains("설치된 Flow 위젯 없음")), 5_000)
+                device.wait(Until.hasObject(By.textContains("아직 설치된 위젯이 없어요")), 5_000)
             )
             device.waitForIdle()
             val file = File(screenshotDir, "17-widget-manager.png")

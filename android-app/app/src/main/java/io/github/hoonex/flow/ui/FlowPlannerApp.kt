@@ -69,66 +69,80 @@ fun FlowPlannerRoot() {
         store.save(sorted)
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().background(FlowPalette.Background).statusBarsPadding(),
-        contentPadding = PaddingValues(20.dp, 28.dp, 20.dp, 38.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            FlowBrand(compact = true)
-            Text("Planner", color = FlowPalette.Text, fontSize = 34.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 18.dp))
-            Text("School과 University에서 같이 쓰는 과제 · 시험 · 할 일", color = FlowPalette.Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp))
-        }
-
-        item {
-            FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                    Text("FLOW PLAN", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                    Text(
-                        when {
-                            stats.overdue > 0 -> "밀린 일정 ${stats.overdue}개"
-                            stats.today > 0 -> "오늘 ${stats.today}개 마감"
-                            openTasks.isEmpty() -> "남은 일정 없음"
-                            else -> "7일 안에 ${stats.nextSevenDays}개"
-                        },
-                        color = FlowPalette.Text,
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(top = 7.dp)
-                    )
-                    Text("완료 ${stats.completed}개 · 열린 일정 ${openTasks.size}개", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
-                }
-            }
-        }
-
-        item { FlowPrimaryButton("새 일정 추가", { addOpen = true }, Modifier.fillMaxWidth()) }
-
-        val todayTasks = openTasks.filter { it.isDueOn(today) }
-        if (todayTasks.isNotEmpty()) {
-            item { FlowSectionTitle("TODAY", "오늘 마감", "${todayTasks.size}개") }
-            items(todayTasks, key = { "today-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
-            }
-        }
-
-        val upcoming = openTasks.filterNot { it.isDueOn(today) }
-        item { FlowSectionTitle("UPCOMING", "다가오는 일정", "${upcoming.size}개") }
-        if (upcoming.isEmpty()) {
+    FlowBackdrop(accent = FlowPalette.Planner) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            contentPadding = PaddingValues(20.dp, 28.dp, 20.dp, 38.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
             item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Text("추가된 일정이 없습니다. 과제나 시험을 Flow에 넣어두면 School과 University를 오가도 한곳에서 볼 수 있습니다.", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(18.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    FlowBrand(compact = true)
+                    Spacer(Modifier.weight(1f))
+                    FlowPill("PLANNER", FlowPalette.Planner)
+                }
+                Text("Planner", color = FlowPalette.Text, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.8).sp, modifier = Modifier.padding(top = 18.dp))
+                Text("School과 University를 오가도 일정은 한곳에 남습니다.", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 5.dp))
+            }
+
+            item {
+                FlowCard(Modifier.fillMaxWidth(), accent = true, accentColor = FlowPalette.Planner) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                        Text("THIS WEEK", color = FlowPalette.Planner, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.35.sp)
+                        Text(
+                            when {
+                                stats.overdue > 0 -> "밀린 일정 ${stats.overdue}개"
+                                stats.today > 0 -> "오늘 ${stats.today}개 마감"
+                                openTasks.isEmpty() -> "남은 일정 없음"
+                                else -> "7일 안에 ${stats.nextSevenDays}개"
+                            },
+                            color = FlowPalette.Text,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.35).sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        Row(Modifier.fillMaxWidth().padding(top = 9.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            FlowPill("OPEN ${openTasks.size}", FlowPalette.Planner)
+                            FlowPill("DONE ${stats.completed}", FlowPalette.Mint)
+                            if (stats.overdue > 0) FlowPill("LATE ${stats.overdue}", FlowPalette.Danger)
+                        }
+                    }
                 }
             }
-        } else {
-            items(upcoming, key = { "upcoming-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
-            }
-        }
 
-        if (completed.isNotEmpty()) {
-            item { FlowSectionTitle("DONE", "완료", "${completed.size}개") }
-            items(completed.take(8), key = { "done-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
+            item { FlowPrimaryButton("새 일정 추가", { addOpen = true }, Modifier.fillMaxWidth()) }
+
+            val todayTasks = openTasks.filter { it.isDueOn(today) }
+            if (todayTasks.isNotEmpty()) {
+                item { FlowSectionTitle("TODAY", "오늘 마감", "${todayTasks.size}개") }
+                items(todayTasks, key = { "today-${it.id}" }) { task ->
+                    PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
+                }
+            }
+
+            val upcoming = openTasks.filterNot { it.isDueOn(today) }
+            item { FlowSectionTitle("UPCOMING", "다가오는 일정", "${upcoming.size}개") }
+            if (upcoming.isEmpty()) {
+                item {
+                    FlowCard(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(18.dp)) {
+                            Text("일정이 비어 있어요", color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("과제나 시험을 넣어두면 School과 University 어디서든 같은 Planner를 볼 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 5.dp))
+                        }
+                    }
+                }
+            } else {
+                items(upcoming, key = { "upcoming-${it.id}" }) { task ->
+                    PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
+                }
+            }
+
+            if (completed.isNotEmpty()) {
+                item { FlowSectionTitle("DONE", "완료", "${completed.size}개") }
+                items(completed.take(8), key = { "done-${it.id}" }) { task ->
+                    PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
+                }
             }
         }
     }
@@ -148,25 +162,26 @@ fun FlowPlannerRoot() {
 private fun PlannerTaskCard(task: FlowTask, now: LocalDateTime, onToggle: () -> Unit, onDelete: () -> Unit) {
     val due = task.dueDateTime()
     val overdue = !task.done && due?.isBefore(now) == true
-    FlowCard(Modifier.fillMaxWidth(), accent = overdue, onClick = onToggle) {
+    val accent = if (overdue) FlowPalette.Danger else FlowPalette.Planner
+    FlowCard(Modifier.fillMaxWidth(), accent = overdue, onClick = onToggle, accentColor = accent) {
         Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(if (task.done) FlowPalette.Mint else FlowPalette.SurfaceSoft),
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (task.done) FlowPalette.Mint else FlowPalette.Planner.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (task.done) "✓" else kindGlyph(task.kind), color = if (task.done) Color(0xFF05211C) else FlowPalette.Mint, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text(if (task.done) "✓" else kindGlyph(task.kind), color = if (task.done) Color(0xFF05211C) else FlowPalette.Planner, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
             }
             Column(Modifier.padding(start = 13.dp).fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth(0.78f))
+                    Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.fillMaxWidth(0.78f))
                     Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(6.dp))
                 }
                 Text(
                     listOf(task.kind.label, task.scope.label, dueLabel(due, overdue)).filter(String::isNotBlank).joinToString(" · "),
-                    color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
+                    color = if (overdue) FlowPalette.Danger else FlowPalette.Planner,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 4.dp)
@@ -189,18 +204,22 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
     val times = listOf(LocalTime.of(8, 0), LocalTime.of(13, 0), LocalTime.of(18, 0), LocalTime.of(23, 59))
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Color(0xB8000000)), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.fillMaxSize().background(Color(0xC0000000)), contentAlignment = Alignment.BottomCenter) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                    .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                     .background(FlowPalette.SurfaceSoft)
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 22.dp)
             ) {
-                Text("NEW PLAN", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                Text("일정 추가", color = FlowPalette.Text, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
-                Text("시스템 기본 폼 대신 Flow 입력 UI로 저장합니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    FlowPill("NEW PLAN", FlowPalette.Planner)
+                    Spacer(Modifier.weight(1f))
+                    Text("FLOW", color = FlowPalette.Dim, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                }
+                Text("일정 추가", color = FlowPalette.Text, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.4).sp, modifier = Modifier.padding(top = 10.dp))
+                Text("과제, 시험, 할 일을 한 곳에 정리하세요.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
 
                 FlowTextField(title, { title = it }, "과제 · 시험 · 할 일 제목", Modifier.fillMaxWidth().padding(top = 16.dp), leading = "+")
                 FlowTextField(note, { note = it }, "메모 (선택)", Modifier.fillMaxWidth().padding(top = 9.dp), singleLine = false)
@@ -217,9 +236,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
 
                 Text("마감 날짜", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    items(dates, key = { it.toString() }) { item ->
-                        PlannerChip(shortDate(item), item == date) { date = item }
-                    }
+                    items(dates, key = { it.toString() }) { item -> PlannerChip(shortDate(item), item == date) { date = item } }
                 }
 
                 Text("마감 시간", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
@@ -246,13 +263,20 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
 private fun PlannerChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) FlowPalette.Mint else FlowPalette.SurfaceRaised)
+            .clip(RoundedCornerShape(13.dp))
+            .background(if (selected) FlowPalette.Planner else FlowPalette.SurfaceRaised)
             .clickable(onClick = onClick)
             .padding(horizontal = 11.dp, vertical = 9.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = if (selected) Color(0xFF05211C) else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
+        Text(
+            label,
+            color = if (selected) {
+                if (FlowAppearance.isLight) Color.White else Color(0xFF181329)
+            } else FlowPalette.Muted,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
     }
 }
 

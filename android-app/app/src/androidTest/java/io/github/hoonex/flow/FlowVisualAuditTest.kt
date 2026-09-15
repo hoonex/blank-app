@@ -68,7 +68,7 @@ class FlowVisualAuditTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("학교도, 대학도")
             capture("01-flow-hub")
-            clickTextAndWaitForText("대학 찾기 · Flow University", "대학 찾기")
+            clickTextAndWaitForText("Flow University", "대학 찾기")
             capture("02-university-setup")
         }
 

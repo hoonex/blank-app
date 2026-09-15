@@ -70,9 +70,8 @@ class FlowPlannerVisualTest {
 
     @Test
     fun capturePlannerAndAddSheet() {
-        ActivityScenario.launch(MainActivity::class.java).use {
-            scrollUntilText("과제 · 시험 · 할 일")
-            clickTextAndWaitForText("과제 · 시험 · 할 일", "Planner")
+        ActivityScenario.launch(PlannerVisualHostActivity::class.java).use {
+            waitForText("Planner")
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
@@ -87,6 +86,11 @@ class FlowPlannerVisualTest {
         SchoolStore(context).clear()
         UniversityStore(context).clear()
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
+    }
+
+    private fun waitForText(text: String) {
+        assertTrue("Timed out waiting for text: $text", device.wait(Until.hasObject(By.textContains(text)), 5_000))
+        device.waitForIdle()
     }
 
     private fun clickTextAndWaitForText(label: String, expected: String, attempts: Int = 3) {
@@ -105,25 +109,6 @@ class FlowPlannerVisualTest {
             Thread.sleep(250)
         }
         assertTrue("Timed out after $attempts click attempts: $label -> $expected", device.hasObject(By.textContains(expected)))
-    }
-
-    private fun scrollUntilText(text: String) {
-        val selector = By.textContains(text)
-        val x = device.displayWidth / 2
-        val startY = minOf((device.displayHeight * 0.72f).toInt(), device.displayHeight - 120)
-        val endY = maxOf((device.displayHeight * 0.24f).toInt(), 100)
-        val safeBottom = (device.displayHeight * 0.84f).toInt()
-        repeat(10) {
-            val node = device.findObject(selector)
-            if (node != null && node.visibleBounds.centerY() in 1 until safeBottom) {
-                device.waitForIdle()
-                return
-            }
-            device.swipe(x, startY, x, endY, 24)
-            device.waitForIdle()
-        }
-        val node = device.findObject(selector)
-        assertTrue("Timed out scrolling to text: $text", node != null && node.visibleBounds.centerY() in 1 until safeBottom)
     }
 
     private fun capture(name: String) {
