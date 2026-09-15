@@ -3,6 +3,8 @@ package io.github.hoonex.flow
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -35,10 +37,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyEntryIntent(intent)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-        )
+        applyEdgeToEdgeAppearance()
         setContent {
             FlowTheme {
                 FlowRoot(
@@ -61,6 +60,23 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         UniversityNotification.refresh(this)
         GitHubUpdateManager.resumeStagedInstall(this)
+    }
+
+    private fun applyEdgeToEdgeAppearance() {
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val transparent = Color.TRANSPARENT
+        enableEdgeToEdge(
+            statusBarStyle = if (isDark) {
+                SystemBarStyle.dark(transparent)
+            } else {
+                SystemBarStyle.light(transparent, transparent)
+            },
+            navigationBarStyle = if (isDark) {
+                SystemBarStyle.dark(transparent)
+            } else {
+                SystemBarStyle.light(transparent, transparent)
+            }
+        )
     }
 
     private fun applyEntryIntent(intent: Intent?): Boolean {
