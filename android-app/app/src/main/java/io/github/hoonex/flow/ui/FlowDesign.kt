@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,46 +37,129 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.isSystemInDarkTheme
 import io.github.hoonex.flow.R
 
+private data class FlowColorTokens(
+    val background: Color,
+    val surface: Color,
+    val surfaceRaised: Color,
+    val surfaceSoft: Color,
+    val accent: Color,
+    val accentBright: Color,
+    val text: Color,
+    val muted: Color,
+    val dim: Color,
+    val stroke: Color,
+    val strokeStrong: Color,
+    val danger: Color,
+    val warm: Color
+)
+
+private val LightFlowColors = FlowColorTokens(
+    background = Color(0xFFEEF2F6),
+    surface = Color(0xFFFFFFFF),
+    surfaceRaised = Color(0xFFF0F3F7),
+    surfaceSoft = Color(0xFFF5F7FA),
+    accent = Color(0xFF5577E9),
+    accentBright = Color(0xFF7693F3),
+    text = Color(0xFF18212D),
+    muted = Color(0xFF697586),
+    dim = Color(0xFF9AA4B2),
+    stroke = Color(0x172B394E),
+    strokeStrong = Color(0x242B394E),
+    danger = Color(0xFFD65367),
+    warm = Color(0xFFD89546)
+)
+
+private val DarkFlowColors = FlowColorTokens(
+    background = Color(0xFF151B22),
+    surface = Color(0xFF222B36),
+    surfaceRaised = Color(0xFF27313D),
+    surfaceSoft = Color(0xFF1E2631),
+    accent = Color(0xFF8BA7FF),
+    accentBright = Color(0xFFA6BAFF),
+    text = Color(0xFFF4F6F9),
+    muted = Color(0xFFAAB4C0),
+    dim = Color(0xFF7E8997),
+    stroke = Color(0x14FFFFFF),
+    strokeStrong = Color(0x21FFFFFF),
+    danger = Color(0xFFFF8999),
+    warm = Color(0xFFEFB36D)
+)
+
+/**
+ * Flow's native color facade intentionally mirrors the web product tokens.
+ * Existing screens can keep using FlowPalette while the active token set follows
+ * the system appearance through FlowTheme.
+ */
 object FlowPalette {
-    val Background = Color(0xFF080B0D)
-    val Surface = Color(0xFF111619)
-    val SurfaceRaised = Color(0xFF171E22)
-    val SurfaceSoft = Color(0xFF0E1316)
-    val Mint = Color(0xFF7BE7D6)
-    val MintBright = Color(0xFFD9FFF8)
-    val Text = Color(0xFFF4F7F7)
-    val Muted = Color(0xFFA8B3B8)
-    val Dim = Color(0xFF748087)
-    val Stroke = Color(0xFF263136)
-    val StrokeStrong = Color(0xFF3A4A50)
-    val Danger = Color(0xFFFFA7A7)
-    val Warm = Color(0xFFFFD49A)
+    private var active = DarkFlowColors
+
+    internal fun useDarkMode(dark: Boolean) {
+        active = if (dark) DarkFlowColors else LightFlowColors
+    }
+
+    val Background get() = active.background
+    val Surface get() = active.surface
+    val SurfaceRaised get() = active.surfaceRaised
+    val SurfaceSoft get() = active.surfaceSoft
+    val Accent get() = active.accent
+    val AccentBright get() = active.accentBright
+
+    // Compatibility aliases while older native surfaces are migrated from the first mint pass.
+    val Mint get() = active.accent
+    val MintBright get() = active.accentBright
+
+    val Text get() = active.text
+    val Muted get() = active.muted
+    val Dim get() = active.dim
+    val Stroke get() = active.stroke
+    val StrokeStrong get() = active.strokeStrong
+    val Danger get() = active.danger
+    val Warm get() = active.warm
 }
 
-private val FlowColorScheme = darkColorScheme(
-    primary = FlowPalette.Mint,
-    onPrimary = Color(0xFF00201B),
-    background = FlowPalette.Background,
-    onBackground = FlowPalette.Text,
-    surface = FlowPalette.Surface,
-    onSurface = FlowPalette.Text,
-    surfaceVariant = FlowPalette.SurfaceRaised,
-    onSurfaceVariant = FlowPalette.Muted,
-    outline = FlowPalette.StrokeStrong,
-    error = FlowPalette.Danger
-)
+private fun flowColorScheme(dark: Boolean) = if (dark) {
+    darkColorScheme(
+        primary = DarkFlowColors.accent,
+        onPrimary = Color.White,
+        background = DarkFlowColors.background,
+        onBackground = DarkFlowColors.text,
+        surface = DarkFlowColors.surface,
+        onSurface = DarkFlowColors.text,
+        surfaceVariant = DarkFlowColors.surfaceRaised,
+        onSurfaceVariant = DarkFlowColors.muted,
+        outline = DarkFlowColors.strokeStrong,
+        error = DarkFlowColors.danger
+    )
+} else {
+    lightColorScheme(
+        primary = LightFlowColors.accent,
+        onPrimary = Color.White,
+        background = LightFlowColors.background,
+        onBackground = LightFlowColors.text,
+        surface = LightFlowColors.surface,
+        onSurface = LightFlowColors.text,
+        surfaceVariant = LightFlowColors.surfaceRaised,
+        onSurfaceVariant = LightFlowColors.muted,
+        outline = LightFlowColors.strokeStrong,
+        error = LightFlowColors.danger
+    )
+}
 
 @Composable
 fun FlowTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = FlowColorScheme, content = content)
+    val dark = if (LocalInspectionMode.current) false else isSystemInDarkTheme()
+    FlowPalette.useDarkMode(dark)
+    MaterialTheme(colorScheme = remember(dark) { flowColorScheme(dark) }, content = content)
 }
 
 @Composable
@@ -84,25 +168,24 @@ fun FlowBrand(modifier: Modifier = Modifier, compact: Boolean = false) {
         Box(
             Modifier
                 .size(if (compact) 32.dp else 40.dp)
-                .clip(RoundedCornerShape(if (compact) 11.dp else 14.dp))
+                .clip(RoundedCornerShape(if (compact) 10.dp else 13.dp))
                 .background(
                     Brush.linearGradient(
-                        listOf(Color(0xFF122923), Color(0xFF0C1715))
+                        listOf(Color(0xFF6790F4), Color(0xFF3868E8))
                     )
-                )
-                .border(1.dp, Color(0x337BE7D6), RoundedCornerShape(if (compact) 11.dp else 14.dp)),
+                ),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(R.drawable.ic_flow_mark),
                 contentDescription = null,
-                modifier = Modifier.size(if (compact) 25.dp else 31.dp)
+                modifier = Modifier.size(if (compact) 24.dp else 30.dp)
             )
         }
         if (!compact) {
-            Column {
-                Text("Flow", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                Text("SCHOOL · UNIVERSITY", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Flow", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.55).sp)
+                Text("School · University", color = FlowPalette.Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 2.dp))
             }
         }
     }
@@ -122,19 +205,19 @@ fun FlowTextField(
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val borderColor by animateColorAsState(
-        if (focused) FlowPalette.Mint.copy(alpha = 0.72f) else FlowPalette.Stroke,
+        if (focused) FlowPalette.Accent.copy(alpha = 0.68f) else FlowPalette.Stroke,
         tween(150),
         label = "flow-input-border"
     )
     val glow by animateFloatAsState(if (focused) 1f else 0f, tween(150), label = "flow-input-glow")
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(17.dp)
 
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier,
         textStyle = TextStyle(color = FlowPalette.Text, fontSize = 16.sp, lineHeight = 21.sp),
-        cursorBrush = SolidColor(FlowPalette.Mint),
+        cursorBrush = SolidColor(FlowPalette.Accent),
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
         visualTransformation = visualTransformation,
@@ -144,19 +227,19 @@ fun FlowTextField(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 58.dp)
-                    .graphicsLayer { shadowElevation = 12f * glow }
+                    .graphicsLayer { shadowElevation = 7f * glow }
                     .clip(shape)
                     .background(FlowPalette.SurfaceRaised)
                     .border(1.dp, borderColor, shape)
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 15.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (leading != null) {
-                    Text(leading, color = if (focused) FlowPalette.Mint else FlowPalette.Dim, fontSize = 17.sp)
+                    Text(leading, color = if (focused) FlowPalette.Accent else FlowPalette.Dim, fontSize = 16.sp)
                 }
                 Box(Modifier.weight(1f)) {
-                    if (value.isEmpty()) Text(placeholder, color = FlowPalette.Dim, fontSize = 16.sp)
+                    if (value.isEmpty()) Text(placeholder, color = FlowPalette.Dim, fontSize = 15.sp)
                     inner()
                 }
             }
@@ -173,14 +256,14 @@ fun FlowPrimaryButton(
 ) {
     Box(
         modifier
-            .heightIn(min = 54.dp)
-            .clip(RoundedCornerShape(19.dp))
-            .background(if (enabled) FlowPalette.Mint else FlowPalette.Stroke)
+            .heightIn(min = 52.dp)
+            .clip(RoundedCornerShape(15.dp))
+            .background(if (enabled) FlowPalette.Accent else FlowPalette.StrokeStrong)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 15.dp),
+            .padding(horizontal = 18.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = if (enabled) Color(0xFF05211C) else FlowPalette.Dim, fontWeight = FontWeight.Black, fontSize = 15.sp)
+        Text(text, color = if (enabled) Color.White else FlowPalette.Dim, fontWeight = FontWeight.Black, fontSize = 15.sp)
     }
 }
 
@@ -192,14 +275,15 @@ fun FlowSecondaryButton(
     danger: Boolean = false
 ) {
     val tint = if (danger) FlowPalette.Danger else FlowPalette.Text
+    val shape = RoundedCornerShape(15.dp)
     Box(
         modifier
-            .heightIn(min = 50.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .heightIn(min = 48.dp)
+            .clip(shape)
             .background(FlowPalette.SurfaceRaised)
-            .border(1.dp, FlowPalette.Stroke, RoundedCornerShape(18.dp))
+            .border(1.dp, FlowPalette.Stroke, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(text, color = tint, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -213,14 +297,11 @@ fun FlowCard(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    val shape = RoundedCornerShape(26.dp)
+    val shape = RoundedCornerShape(22.dp)
     val base = modifier
         .clip(shape)
-        .background(
-            if (accent) Brush.linearGradient(listOf(Color(0xFF18302B), Color(0xFF111B1A)))
-            else Brush.linearGradient(listOf(FlowPalette.SurfaceRaised, FlowPalette.Surface))
-        )
-        .border(1.dp, if (accent) Color(0x407BE7D6) else FlowPalette.Stroke.copy(alpha = 0.85f), shape)
+        .background(if (accent) FlowPalette.Accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.085f) else FlowPalette.Surface)
+        .border(1.dp, if (accent) FlowPalette.Accent.copy(alpha = 0.20f) else FlowPalette.Stroke, shape)
     Box(if (onClick != null) base.clickable(onClick = onClick) else base) { content() }
 }
 
@@ -228,7 +309,7 @@ fun FlowCard(
 fun FlowSectionTitle(kicker: String, title: String, trailing: String? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
         Column {
-            Text(kicker.uppercase(), color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
+            Text(kicker.uppercase(), color = FlowPalette.Accent, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
             Spacer(Modifier.height(4.dp))
             Text(title, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Black)
         }
