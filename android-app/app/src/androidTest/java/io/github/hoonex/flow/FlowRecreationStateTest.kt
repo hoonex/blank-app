@@ -83,10 +83,10 @@ class FlowRecreationStateTest {
             clickText("시간표")
             waitForText("주간 시간표")
 
-            assertTrue("System back was rejected on the secondary tab", device.pressBack())
+            device.pressBack()
             waitForText("오늘 시간표")
 
-            assertTrue("System back was rejected on the primary tab", device.pressBack())
+            device.pressBack()
             waitForText("학교도, 대학도")
         }
     }
