@@ -386,6 +386,31 @@ private fun SchoolSettingsScreen(
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { FlowSectionTitle("SETTINGS", "Flow School", "${selection.grade}학년 ${selection.className}반") }
+        item { FlowSectionTitle("MANAGE", "데이터와 모드") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    SchoolSettingsActionRow(
+                        title = if (refreshing) "학교 데이터 새로고침 중…" else "학교 데이터 새로고침",
+                        detail = if (refreshing) "NEIS 데이터를 다시 불러오는 중입니다." else "시간표 · 급식 · 학사일정을 다시 동기화합니다.",
+                        action = onRefresh,
+                        enabled = !refreshing
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "University로 전환",
+                        detail = "저장된 School 데이터는 유지한 채 University 모드로 이동합니다.",
+                        action = onSwitchUniversity
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "앱 업데이트 확인",
+                        detail = "새 Flow Android 릴리스가 있는지 확인합니다.",
+                        action = checkUpdate
+                    )
+                }
+            }
+        }
         item { FlowSectionTitle("ABOUT", "앱과 데이터") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
@@ -418,31 +443,6 @@ private fun SchoolSettingsScreen(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                }
-            }
-        }
-        item { FlowSectionTitle("MANAGE", "데이터와 모드") }
-        item {
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth()) {
-                    SchoolSettingsActionRow(
-                        title = if (refreshing) "학교 데이터 새로고침 중…" else "학교 데이터 새로고침",
-                        detail = if (refreshing) "NEIS 데이터를 다시 불러오는 중입니다." else "시간표 · 급식 · 학사일정을 다시 동기화합니다.",
-                        action = onRefresh,
-                        enabled = !refreshing
-                    )
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
-                    SchoolSettingsActionRow(
-                        title = "University로 전환",
-                        detail = "저장된 School 데이터는 유지한 채 University 모드로 이동합니다.",
-                        action = onSwitchUniversity
-                    )
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
-                    SchoolSettingsActionRow(
-                        title = "앱 업데이트 확인",
-                        detail = "새 Flow Android 릴리스가 있는지 확인합니다.",
-                        action = checkUpdate
-                    )
                 }
             }
         }
