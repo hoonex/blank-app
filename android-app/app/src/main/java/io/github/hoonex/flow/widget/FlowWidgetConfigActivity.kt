@@ -10,6 +10,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +18,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,45 +100,49 @@ class FlowWidgetConfigActivity : ComponentActivity() {
                         FlowSectionTitle("WIDGET", "위젯 설정", "위젯별 저장")
                         Text("각 위젯이 School / University 중 어떤 데이터를 보여줄지 독립적으로 선택합니다.", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
                     }
-                    FlowWidgetSource.entries.forEach { option ->
-                        item {
-                            val selected = source == option
-                            FlowCard(Modifier.fillMaxWidth(), accent = selected, onClick = { source = option }) {
-                                Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(sourceTitle(option), color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black)
-                                        Text(sourceDescription(option), color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 5.dp))
-                                    }
-                                    Box(
-                                        Modifier.clip(RoundedCornerShape(12.dp)).background(if (selected) FlowPalette.Mint else FlowPalette.SurfaceRaised).padding(horizontal = 10.dp, vertical = 6.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(if (selected) "선택" else "", color = if (selected) FlowPalette.Background else FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    item {
-                        FlowCard(Modifier.fillMaxWidth(), onClick = { showContext = !showContext }) {
-                            Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("세부 정보 표시", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                                    Text("학교/대학 이름, 강의실 같은 보조 정보", color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
-                                }
-                                Box(
-                                    Modifier.clip(RoundedCornerShape(14.dp)).background(if (showContext) FlowPalette.Mint else FlowPalette.SurfaceRaised).padding(horizontal = 12.dp, vertical = 7.dp)
-                                ) {
-                                    Text(if (showContext) "ON" else "OFF", color = if (showContext) FlowPalette.Background else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                                }
-                            }
-                        }
-                    }
+                    item { FlowSectionTitle("SOURCE", "데이터 소스", "하나 선택") }
                     item {
                         FlowCard(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(17.dp)) {
-                                Text("Galaxy S25 잠금화면", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                                Text("삼성 기본 Brief 위젯 목록에 일반 서드파티 AppWidget이 안 뜨는 경우가 있습니다. Good Lock → LockStar에서 Flow 위젯을 잠금화면/AOD에 추가하세요.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                            Column(Modifier.fillMaxWidth()) {
+                                FlowWidgetSource.entries.forEachIndexed { index, option ->
+                                    WidgetSourceRow(
+                                        option = option,
+                                        selected = source == option,
+                                        onClick = { source = option }
+                                    )
+                                    if (index != FlowWidgetSource.entries.lastIndex) {
+                                        Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item { FlowSectionTitle("DETAIL", "표시 정보") }
+                    item {
+                        FlowCard(Modifier.fillMaxWidth()) {
+                            Column(Modifier.fillMaxWidth()) {
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showContext = !showContext }
+                                        .padding(horizontal = 17.dp, vertical = 15.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("세부 정보 표시", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                                        Text("학교/대학 이름, 강의실 같은 보조 정보를 함께 표시합니다.", color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+                                    }
+                                    Box(
+                                        Modifier.clip(RoundedCornerShape(14.dp)).background(if (showContext) FlowPalette.Mint else FlowPalette.SurfaceRaised).padding(horizontal = 12.dp, vertical = 7.dp)
+                                    ) {
+                                        Text(if (showContext) "ON" else "OFF", color = if (showContext) FlowPalette.Background else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                    }
+                                }
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                                Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
+                                    Text("Galaxy S25 잠금화면", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                                    Text("삼성 기본 Brief 위젯 목록에 일반 서드파티 AppWidget이 안 뜨는 경우가 있습니다. Good Lock → LockStar에서 Flow 위젯을 잠금화면/AOD에 추가하세요.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                                }
                             }
                         }
                     }
@@ -161,6 +168,31 @@ class FlowWidgetConfigActivity : ComponentActivity() {
             }
             setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
             finish()
+        }
+    }
+}
+
+@Composable
+private fun WidgetSourceRow(option: FlowWidgetSource, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(sourceTitle(option), color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            Text(sourceDescription(option), color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (selected) FlowPalette.Mint else FlowPalette.SurfaceRaised)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(if (selected) "선택" else "", color = if (selected) FlowPalette.Background else FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Black)
         }
     }
 }
