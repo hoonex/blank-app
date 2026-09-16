@@ -1,0 +1,118 @@
+package io.github.hoonex.flow
+
+import android.content.Context
+import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import io.github.hoonex.flow.data.FlowSchool
+import io.github.hoonex.flow.data.SchoolDashboard
+import io.github.hoonex.flow.data.SchoolSelection
+import io.github.hoonex.flow.data.SchoolStore
+import io.github.hoonex.flow.data.schoolDate8
+import io.github.hoonex.flow.ui.FlowMode
+import io.github.hoonex.flow.ui.FlowModeStore
+import org.junit.After
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class FlowRecreationStateTest {
+    private lateinit var context: Context
+    private lateinit var device: UiDevice
+
+    @Before
+    fun prepare() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        context = instrumentation.targetContext
+        device = UiDevice.getInstance(instrumentation)
+        clearState()
+    }
+
+    @After
+    fun restore() {
+        clearState()
+    }
+
+    @Test
+    fun plannerDestinationSurvivesActivityRecreation() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            waitForText("학교도, 대학도")
+            clickText("과제 · 시험")
+            waitForText("Planner")
+
+            scenario.recreate()
+
+            waitForText("Planner")
+            assertTrue("Planner destination fell back to the hub", !device.hasObject(By.textContains("학교도, 대학도")))
+        }
+    }
+
+    @Test
+    fun schoolTabSurvivesActivityRecreation() {
+        seedSchool()
+        FlowModeStore(context).save(FlowMode.SCHOOL)
+
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            waitForText("정동고등학교")
+            clickText("시간표")
+            waitForText("주간 시간표")
+
+            scenario.recreate()
+
+            waitForText("주간 시간표")
+        }
+    }
+
+    private fun seedSchool() {
+        val today = schoolDate8()
+        val school = FlowSchool(
+            officeCode = "D10",
+            officeName = "대구광역시교육청",
+            schoolCode = "7240000",
+            name = "정동고등학교",
+            englishName = "Jeongdong High School",
+            kind = "고등학교",
+            location = "대구광역시",
+            type = "사립",
+            address = "대구광역시 동구 정동로 1",
+            phone = "053-000-0000",
+            coed = "남녀공학",
+            highSchoolType = "일반고"
+        )
+        val selection = SchoolSelection(school, "2", "6")
+        val dashboard = SchoolDashboard(
+            school = school,
+            selected = today,
+            from = today,
+            to = today,
+            timetable = emptyList(),
+            meals = emptyList(),
+            events = emptyList()
+        )
+        SchoolStore(context).saveSelection(selection)
+        SchoolStore(context).saveDashboard(dashboard)
+    }
+
+    private fun clearState() {
+        SchoolStore(context).clear()
+        context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
+    }
+
+    private fun clickText(label: String) {
+        val node = device.wait(Until.findObject(By.text(label)), 5_000) ?: error("Could not find text: $label")
+        val bounds = node.visibleBounds
+        assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
+        assertTrue("UiDevice rejected click for: $label", device.click(bounds.centerX(), bounds.centerY()))
+        device.waitForIdle()
+    }
+
+    private fun waitForText(text: String) {
+        assertTrue("Timed out waiting for text containing: $text", device.wait(Until.hasObject(By.textContains(text)), 5_000))
+        device.waitForIdle()
+    }
+}
