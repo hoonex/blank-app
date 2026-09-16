@@ -69,6 +69,14 @@ fun FlowPlannerRoot() {
         store.save(sorted)
     }
 
+    fun toggle(task: FlowTask) {
+        persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it })
+    }
+
+    fun delete(task: FlowTask) {
+        persist(tasks.filterNot { it.id == task.id })
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(FlowPalette.Background).statusBarsPadding(),
         contentPadding = PaddingValues(20.dp, 28.dp, 20.dp, 38.dp),
@@ -106,9 +114,7 @@ fun FlowPlannerRoot() {
         val todayTasks = openTasks.filter { it.isDueOn(today) }
         if (todayTasks.isNotEmpty()) {
             item { FlowSectionTitle("TODAY", "오늘 마감", "${todayTasks.size}개") }
-            items(todayTasks, key = { "today-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
-            }
+            item { PlannerTaskSurface(todayTasks, now, onToggle = ::toggle, onDelete = ::delete) }
         }
 
         val upcoming = openTasks.filterNot { it.isDueOn(today) }
@@ -120,16 +126,12 @@ fun FlowPlannerRoot() {
                 }
             }
         } else {
-            items(upcoming, key = { "upcoming-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
-            }
+            item { PlannerTaskSurface(upcoming, now, onToggle = ::toggle, onDelete = ::delete) }
         }
 
         if (completed.isNotEmpty()) {
             item { FlowSectionTitle("DONE", "완료", "${completed.size}개") }
-            items(completed.take(8), key = { "done-${it.id}" }) { task ->
-                PlannerTaskCard(task, now, onToggle = { persist(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }, onDelete = { persist(tasks.filterNot { it.id == task.id }) })
-            }
+            item { PlannerTaskSurface(completed.take(8), now, onToggle = ::toggle, onDelete = ::delete) }
         }
     }
 
@@ -145,34 +147,73 @@ fun FlowPlannerRoot() {
 }
 
 @Composable
-private fun PlannerTaskCard(task: FlowTask, now: LocalDateTime, onToggle: () -> Unit, onDelete: () -> Unit) {
+private fun PlannerTaskSurface(
+    tasks: List<FlowTask>,
+    now: LocalDateTime,
+    onToggle: (FlowTask) -> Unit,
+    onDelete: (FlowTask) -> Unit
+) {
+    FlowCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            tasks.forEachIndexed { index, task ->
+                PlannerTaskRow(task, now, onToggle = { onToggle(task) }, onDelete = { onDelete(task) })
+                if (index != tasks.lastIndex) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> Unit, onDelete: () -> Unit) {
     val due = task.dueDateTime()
     val overdue = !task.done && due?.isBefore(now) == true
-    FlowCard(Modifier.fillMaxWidth(), accent = overdue, onClick = onToggle) {
-        Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(if (task.done) FlowPalette.Mint else FlowPalette.SurfaceSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(if (task.done) "✓" else kindGlyph(task.kind), color = if (task.done) Color(0xFF05211C) else FlowPalette.Mint, fontWeight = FontWeight.Black, fontSize = 14.sp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(if (overdue) FlowPalette.Danger.copy(alpha = 0.045f) else Color.Transparent)
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(
+                    when {
+                        task.done -> FlowPalette.Mint
+                        overdue -> FlowPalette.Danger.copy(alpha = 0.12f)
+                        else -> FlowPalette.SurfaceSoft
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                if (task.done) "✓" else kindGlyph(task.kind),
+                color = when {
+                    task.done -> Color(0xFF05211C)
+                    overdue -> FlowPalette.Danger
+                    else -> FlowPalette.Mint
+                },
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp
+            )
+        }
+        Column(Modifier.padding(start = 13.dp).weight(1f)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(start = 10.dp, top = 7.dp, bottom = 7.dp))
             }
-            Column(Modifier.padding(start = 13.dp).fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth(0.78f))
-                    Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(6.dp))
-                }
-                Text(
-                    listOf(task.kind.label, task.scope.label, dueLabel(due, overdue)).filter(String::isNotBlank).joinToString(" · "),
-                    color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-                if (task.note.isNotBlank()) Text(task.note, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 5.dp))
-            }
+            Text(
+                listOf(task.kind.label, task.scope.label, dueLabel(due, overdue)).filter(String::isNotBlank).joinToString(" · "),
+                color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            if (task.note.isNotBlank()) Text(task.note, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 5.dp))
         }
     }
 }

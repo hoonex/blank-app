@@ -23,9 +23,11 @@ const monthEvents={
   '202701':[{date:'20270122',name:'겨울방학 평가',content:'방학 중 평가',grade2:'Y'}],
   '202702':[{date:'20270205',name:'학년말 평가',content:'2학년 학년말 평가',grade2:'Y'}],
 };
+function offsetYmd(value,delta){const raw=String(value).replace(/\D/g,'').slice(0,8),year=Number(raw.slice(0,4)),month=Number(raw.slice(4,6)),day=Number(raw.slice(6,8)),date=new Date(Date.UTC(year,month-1,day+delta));return`${date.getUTCFullYear()}${pad(date.getUTCMonth()+1)}${pad(date.getUTCDate())}`}
+function rollingExamEvents(key){return[0,1,7,14,21].map((delta,index)=>({date:offsetYmd(key,delta),name:`회귀 시험 ${index+1}`,content:'시험 카드 스택 회귀 검증',grade2:'Y'}))}
 function assert(value,message){if(!value)throw new Error(message)}
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-function dashboard(date=selected){const key=String(date).replace(/\D/g,'').slice(0,8)||selected,month=key.slice(0,6);return{school:profile.school,selected:key,from:key,to:key,timetable:Array.from({length:7},(_,i)=>({date:key,period:i+1,subject:['문학','수학Ⅱ','영어Ⅱ','물리학','정보','체육','자율'][i]})),meals:[{date:key,type:'중식',dishes:['현미밥','된장국','제육볶음'],calories:'812 Kcal'}],events:monthEvents[month]||[],scheduleMeta:{mode:'fixture',count:(monthEvents[month]||[]).length}}}
+function dashboard(date=selected){const key=String(date).replace(/\D/g,'').slice(0,8)||selected,month=key.slice(0,6),events=[...(monthEvents[month]||[]),...rollingExamEvents(key)];return{school:profile.school,selected:key,from:key,to:key,timetable:Array.from({length:7},(_,i)=>({date:key,period:i+1,subject:['문학','수학Ⅱ','영어Ⅱ','물리학','정보','체육','자율'][i]})),meals:[{date:key,type:'중식',dishes:['현미밥','된장국','제육볶음'],calories:'812 Kcal'}],events,scheduleMeta:{mode:'fixture',count:events.length}}}
 async function fixture(page,{delaySurface=0}={}){
   const errors=[];page.on('pageerror',error=>errors.push(String(error)));page.on('console',message=>{if(message.type()==='error')errors.push(message.text())});
   if(delaySurface)await page.route('**/school-uiux-v2.js*',async route=>{await new Promise(resolve=>setTimeout(resolve,delaySurface));await route.continue()});

@@ -11,13 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,13 +57,15 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
     var error by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(SchoolTab.TODAY) }
+    val now = rememberFlowMinuteNow()
+    val today = schoolDate8(now.toLocalDate())
 
     suspend fun refresh(force: Boolean = false) {
         val selected = selection ?: return
-        if (!force && dashboard?.selected == schoolDate8()) return
+        if (!force && dashboard?.selected == today) return
         loading = true
         error = ""
-        runCatching { SchoolApi.dashboard(selected) }
+        runCatching { SchoolApi.dashboard(selected, now.toLocalDate()) }
             .onSuccess {
                 dashboard = it
                 store.saveDashboard(it)
@@ -75,7 +75,7 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
         loading = false
     }
 
-    LaunchedEffect(selection) { if (selection != null) refresh() }
+    LaunchedEffect(selection, today) { if (selection != null) refresh() }
 
     if (selection == null) {
         SchoolSetupScreen { chosen ->
@@ -91,33 +91,17 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
         containerColor = FlowPalette.Background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(FlowPalette.Surface)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 5.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                SchoolTab.entries.forEach { item ->
-                    val active = item == tab
-                    Text(
-                        item.label,
-                        color = if (active) FlowPalette.Mint else FlowPalette.Muted,
-                        fontSize = 11.sp,
-                        fontWeight = if (active) FontWeight.Black else FontWeight.SemiBold,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { tab = item }
-                            .padding(horizontal = 11.dp, vertical = 10.dp)
-                    )
-                }
-            }
+            val tabs = SchoolTab.entries
+            FlowBottomNavigation(
+                labels = tabs.map { it.label },
+                selectedIndex = tabs.indexOf(tab),
+                onSelected = { index -> tab = tabs[index] }
+            )
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) {
             when (tab) {
-                SchoolTab.TODAY -> SchoolTodayScreen(selection!!, dashboard, loading, error) { scope.launch { refresh(true) } }
+                SchoolTab.TODAY -> SchoolTodayScreen(selection!!, dashboard, loading, error, today) { scope.launch { refresh(true) } }
                 SchoolTab.WEEK -> SchoolWeekScreen(selection!!, dashboard)
                 SchoolTab.TRANSIT -> FlowSchoolTransitScreen(selection!!)
                 SchoolTab.INFO -> SchoolInfoScreen(selection!!.school)
@@ -230,8 +214,7 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
 }
 
 @Composable
-private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashboard?, loading: Boolean, error: String, refresh: () -> Unit) {
-    val today = schoolDate8()
+private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashboard?, loading: Boolean, error: String, today: String, refresh: () -> Unit) {
     val classes = dashboard?.classesOn(today).orEmpty()
     val meals = dashboard?.mealsOn(today).orEmpty()
     val events = dashboard?.eventsOn(today).orEmpty()
@@ -265,14 +248,27 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
             }
         }
         item { FlowSectionTitle("TIMETABLE", "오늘 시간표", "${classes.size}개") }
-        if (classes.isEmpty()) item { Text("등록된 수업이 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
-        items(classes) { period ->
-            FlowCard(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${period.period}", color = FlowPalette.Mint, fontSize = 20.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(36.dp))
-                    Column {
-                        Text(period.subject.ifBlank { "과목 정보 없음" }, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("${period.period}교시", color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
+        if (classes.isEmpty()) {
+            item { Text("등록된 수업이 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
+        } else {
+            item {
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth()) {
+                        classes.forEachIndexed { index, period ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("${period.period}", color = FlowPalette.Mint, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(34.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(period.subject.ifBlank { "과목 정보 없음" }, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text("${period.period}교시", color = FlowPalette.Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+                                }
+                            }
+                            if (index != classes.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
                     }
                 }
             }
@@ -289,11 +285,18 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
         }
         if (events.isNotEmpty()) {
             item { FlowSectionTitle("EVENT", "오늘 일정", "${events.size}개") }
-            items(events) { event ->
+            item {
                 FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(17.dp)) {
-                        Text(event.name, color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                        if (event.content.isNotBlank()) Text(event.content, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                    Column(Modifier.fillMaxWidth()) {
+                        events.forEachIndexed { index, event ->
+                            Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 14.dp)) {
+                                Text(event.name, color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                                if (event.content.isNotBlank()) Text(event.content, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                            }
+                            if (index != events.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
                     }
                 }
             }
@@ -348,11 +351,24 @@ private fun SchoolInfoScreen(school: FlowSchool) {
             FlowSectionTitle("SCHOOL", school.name, school.type)
             if (school.englishName.isNotBlank()) Text(school.englishName, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         }
-        items(rows) { (label, value) ->
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(label, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Text(value, color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+        if (rows.isNotEmpty()) {
+            item {
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth()) {
+                        rows.forEachIndexed { index, (label, value) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(label, color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(70.dp))
+                                Text(value, color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            }
+                            if (index != rows.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -371,27 +387,117 @@ private fun SchoolSettingsScreen(
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { FlowSectionTitle("SETTINGS", "Flow School", "${selection.grade}학년 ${selection.className}반") }
+        item { FlowSectionTitle("MANAGE", "데이터와 모드") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(17.dp)) {
-                    Text("네이티브 데이터", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                    Text("웹페이지를 렌더링하지 않습니다. NEIS와 교통 JSON만 받아 앱이 직접 저장·표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열립니다." else ""}", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                Column(Modifier.fillMaxWidth()) {
+                    SchoolSettingsActionRow(
+                        title = if (refreshing) "학교 데이터 새로고침 중…" else "학교 데이터 새로고침",
+                        detail = if (refreshing) "NEIS 데이터를 다시 불러오는 중입니다." else "시간표 · 급식 · 학사일정을 다시 동기화합니다.",
+                        action = onRefresh,
+                        enabled = !refreshing
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "University로 전환",
+                        detail = "저장된 School 데이터는 유지한 채 University 모드로 이동합니다.",
+                        action = onSwitchUniversity
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "앱 업데이트 확인",
+                        detail = "새 Flow Android 릴리스가 있는지 확인합니다.",
+                        action = checkUpdate
+                    )
                 }
             }
         }
+        item { FlowSectionTitle("ABOUT", "앱과 데이터") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(17.dp)) {
-                    Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                    Text("홈 화면에서 Flow 위젯을 길게 누른 뒤 설정을 누르면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
-                    Text("Galaxy S25 기본 잠금화면 위젯 목록에 일반 앱 위젯이 안 뜨면 Good Lock → LockStar에서 Flow 위젯을 배치해야 합니다.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
+                Column(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
+                        Text("네이티브 데이터", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                        Text(
+                            "웹페이지를 렌더링하지 않습니다. NEIS와 교통 JSON만 받아 앱이 직접 저장·표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열립니다." else ""}",
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
+                        Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                        Text(
+                            "홈 화면에서 Flow 위젯을 길게 누른 뒤 설정을 누르면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.",
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                        Text(
+                            "Galaxy S25 기본 잠금화면 위젯 목록에 일반 앱 위젯이 안 뜨면 Good Lock → LockStar에서 Flow 위젯을 배치해야 합니다.",
+                            color = FlowPalette.Mint,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
             }
         }
-        item { FlowSecondaryButton(if (refreshing) "새로고침 중…" else "학교 데이터 새로고침", onRefresh, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("University로 전환", onSwitchUniversity, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("앱 업데이트 확인", checkUpdate, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("학교/학년/반 다시 선택", onChangeSchool, Modifier.fillMaxWidth(), danger = true) }
+        item { FlowSectionTitle("RESET", "학교 선택 초기화") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                SchoolSettingsActionRow(
+                    title = "학교/학년/반 다시 선택",
+                    detail = "현재 학교 선택과 캐시된 학교 데이터를 초기화합니다.",
+                    action = onChangeSchool,
+                    danger = true
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SchoolSettingsActionRow(
+    title: String,
+    detail: String,
+    action: () -> Unit,
+    danger: Boolean = false,
+    enabled: Boolean = true
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = action)
+            .padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                title,
+                color = when {
+                    !enabled -> FlowPalette.Dim
+                    danger -> FlowPalette.Danger
+                    else -> FlowPalette.Text
+                },
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        Text(
+            "›",
+            color = when {
+                !enabled -> FlowPalette.Dim
+                danger -> FlowPalette.Danger
+                else -> FlowPalette.Mint
+            },
+            fontSize = 22.sp
+        )
     }
 }
 

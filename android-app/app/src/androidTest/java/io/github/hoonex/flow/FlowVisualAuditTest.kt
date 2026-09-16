@@ -118,7 +118,7 @@ class FlowVisualAuditTest {
             clickTextAndWaitForText("학교", "SCHOOL")
             capture("12-school-info")
 
-            clickTextAndWaitForText("설정", "위젯별 설정")
+            clickTextAndWaitForText("설정", "데이터와 모드")
             capture("13-school-settings")
         }
 
@@ -334,6 +334,8 @@ class FlowVisualAuditTest {
     }
 
     private fun capture(name: String) {
+        device.waitForIdle()
+        Thread.sleep(350)
         device.waitForIdle()
         val file = File(screenshotDir, "$name.png")
         assertTrue("UiDevice failed to capture ${file.name}", device.takeScreenshot(file))
