@@ -1,6 +1,7 @@
 package io.github.hoonex.flow.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -385,27 +386,117 @@ private fun SchoolSettingsScreen(
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { FlowSectionTitle("SETTINGS", "Flow School", "${selection.grade}학년 ${selection.className}반") }
+        item { FlowSectionTitle("ABOUT", "앱과 데이터") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(17.dp)) {
-                    Text("네이티브 데이터", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                    Text("웹페이지를 렌더링하지 않습니다. NEIS와 교통 JSON만 받아 앱이 직접 저장·표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열립니다." else ""}", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                Column(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
+                        Text("네이티브 데이터", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                        Text(
+                            "웹페이지를 렌더링하지 않습니다. NEIS와 교통 JSON만 받아 앱이 직접 저장·표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열립니다." else ""}",
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
+                        Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                        Text(
+                            "홈 화면에서 Flow 위젯을 길게 누른 뒤 설정을 누르면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.",
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                        Text(
+                            "Galaxy S25 기본 잠금화면 위젯 목록에 일반 앱 위젯이 안 뜨면 Good Lock → LockStar에서 Flow 위젯을 배치해야 합니다.",
+                            color = FlowPalette.Mint,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
             }
         }
+        item { FlowSectionTitle("MANAGE", "데이터와 모드") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(17.dp)) {
-                    Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                    Text("홈 화면에서 Flow 위젯을 길게 누른 뒤 설정을 누르면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
-                    Text("Galaxy S25 기본 잠금화면 위젯 목록에 일반 앱 위젯이 안 뜨면 Good Lock → LockStar에서 Flow 위젯을 배치해야 합니다.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
+                Column(Modifier.fillMaxWidth()) {
+                    SchoolSettingsActionRow(
+                        title = if (refreshing) "학교 데이터 새로고침 중…" else "학교 데이터 새로고침",
+                        detail = if (refreshing) "NEIS 데이터를 다시 불러오는 중입니다." else "시간표 · 급식 · 학사일정을 다시 동기화합니다.",
+                        action = onRefresh,
+                        enabled = !refreshing
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "University로 전환",
+                        detail = "저장된 School 데이터는 유지한 채 University 모드로 이동합니다.",
+                        action = onSwitchUniversity
+                    )
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    SchoolSettingsActionRow(
+                        title = "앱 업데이트 확인",
+                        detail = "새 Flow Android 릴리스가 있는지 확인합니다.",
+                        action = checkUpdate
+                    )
                 }
             }
         }
-        item { FlowSecondaryButton(if (refreshing) "새로고침 중…" else "학교 데이터 새로고침", onRefresh, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("University로 전환", onSwitchUniversity, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("앱 업데이트 확인", checkUpdate, Modifier.fillMaxWidth()) }
-        item { FlowSecondaryButton("학교/학년/반 다시 선택", onChangeSchool, Modifier.fillMaxWidth(), danger = true) }
+        item { FlowSectionTitle("RESET", "학교 선택 초기화") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                SchoolSettingsActionRow(
+                    title = "학교/학년/반 다시 선택",
+                    detail = "현재 학교 선택과 캐시된 학교 데이터를 초기화합니다.",
+                    action = onChangeSchool,
+                    danger = true
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SchoolSettingsActionRow(
+    title: String,
+    detail: String,
+    action: () -> Unit,
+    danger: Boolean = false,
+    enabled: Boolean = true
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = action)
+            .padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                title,
+                color = when {
+                    !enabled -> FlowPalette.Dim
+                    danger -> FlowPalette.Danger
+                    else -> FlowPalette.Text
+                },
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        Text(
+            "›",
+            color = when {
+                !enabled -> FlowPalette.Dim
+                danger -> FlowPalette.Danger
+                else -> FlowPalette.Mint
+            },
+            fontSize = 22.sp
+        )
     }
 }
 
