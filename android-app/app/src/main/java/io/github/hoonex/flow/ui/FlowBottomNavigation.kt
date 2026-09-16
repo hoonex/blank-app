@@ -19,8 +19,12 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -39,6 +43,16 @@ fun FlowBottomNavigation(
     onSelected: (Int) -> Unit
 ) {
     val view = LocalView.current
+    val safeSelectedIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
+    var savedSelectedIndex by rememberSaveable(labels.joinToString("|")) {
+        mutableIntStateOf(safeSelectedIndex)
+    }
+
+    LaunchedEffect(labels, selectedIndex, savedSelectedIndex) {
+        if (labels.isNotEmpty() && savedSelectedIndex in labels.indices && savedSelectedIndex != selectedIndex) {
+            onSelected(savedSelectedIndex)
+        }
+    }
 
     Box(
         Modifier
@@ -101,6 +115,7 @@ fun FlowBottomNavigation(
                             indication = null,
                             onClick = {
                                 if (!active) {
+                                    savedSelectedIndex = index
                                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                                     onSelected(index)
                                 }
