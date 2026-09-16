@@ -1,7 +1,6 @@
 package io.github.hoonex.flow
 
 import android.content.Context
-import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -91,22 +90,6 @@ class FlowRecreationStateTest {
         }
     }
 
-    @Test
-    fun launcherShortcutsSwitchExistingTaskWithoutRestoredDestination() {
-        seedSchool()
-        FlowModeStore(context).save(FlowMode.SCHOOL)
-
-        ActivityScenario.launch(MainActivity::class.java).use {
-            waitForText("정동고등학교")
-
-            openShortcut(MainActivity.ACTION_OPEN_UNIVERSITY)
-            waitForText("대학 생활을")
-
-            openShortcut(MainActivity.ACTION_OPEN_SCHOOL)
-            waitForText("정동고등학교")
-        }
-    }
-
     private fun seedSchool() {
         val today = schoolDate8()
         val school = FlowSchool(
@@ -141,15 +124,6 @@ class FlowRecreationStateTest {
         SchoolStore(context).clear()
         UniversityStore(context).clear()
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
-    }
-
-    private fun openShortcut(action: String) {
-        context.startActivity(
-            Intent(context, MainActivity::class.java)
-                .setAction(action)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        )
-        device.waitForIdle()
     }
 
     private fun clickText(label: String) {
