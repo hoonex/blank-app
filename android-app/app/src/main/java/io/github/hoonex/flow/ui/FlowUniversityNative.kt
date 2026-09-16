@@ -276,7 +276,7 @@ private fun NativeUniversityHome(
         }
         if (today.isNotEmpty()) {
             item { FlowSectionTitle("DAY FLOW", "이어지는 일정", "시간표 기준") }
-            items(today.take(4)) { NativeClassRow(it) }
+            item { NativeClassSurface(today.take(4)) }
         }
         item { FlowSectionTitle("CONNECT", "Flow 허브") }
         item {
@@ -338,7 +338,9 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item {
             FlowSectionTitle("SCHEDULE", "시간표", timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" })
-            Text(timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" } ?: "에브리타임 시간표를 연결하세요.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            if (timetable == null) {
+                Text("에브리타임 공개 공유 링크로 시간표를 연결할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            }
         }
         item { FlowSecondaryButton(if (timetable == null) "에브리타임에서 가져오기" else "시간표 다시 가져오기", onImport, Modifier.fillMaxWidth()) }
         if (timetable == null) {
@@ -348,7 +350,7 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
                 val classes = timetable.classesForDay(index)
                 if (classes.isNotEmpty()) {
                     item { FlowSectionTitle("DAY ${index + 1}", "${label}요일", "${classes.size}개") }
-                    items(classes) { NativeClassRow(it) }
+                    item { NativeClassSurface(classes) }
                 }
             }
         }
@@ -356,18 +358,30 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
 }
 
 @Composable
-private fun NativeClassRow(item: ScheduledClass) {
+private fun NativeClassSurface(classes: List<ScheduledClass>) {
     FlowCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.width(64.dp)) {
-                Text(item.time.start, color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                Text(item.time.end, color = FlowPalette.Dim, fontSize = 10.sp)
+        Column(Modifier.fillMaxWidth()) {
+            classes.forEachIndexed { index, item ->
+                NativeClassRowContent(item)
+                if (index != classes.lastIndex) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 15.dp).height(1.dp).background(FlowPalette.Stroke))
+                }
             }
-            Column(Modifier.weight(1f)) {
-                Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                val detail = listOf(item.time.place.ifBlank { item.subject.place }, item.subject.professor).filter(String::isNotBlank).joinToString(" · ")
-                if (detail.isNotBlank()) Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
-            }
+        }
+    }
+}
+
+@Composable
+private fun NativeClassRowContent(item: ScheduledClass) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.width(64.dp)) {
+            Text(item.time.start, color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+            Text(item.time.end, color = FlowPalette.Dim, fontSize = 10.sp)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            val detail = listOf(item.time.place.ifBlank { item.subject.place }, item.subject.professor).filter(String::isNotBlank).joinToString(" · ")
+            if (detail.isNotBlank()) Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
         }
     }
 }
@@ -479,8 +493,19 @@ private fun NativeUniversitySettings(
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item { FlowSectionTitle("SETTINGS", "Flow University", university.name) }
-        item { NativeSettingsAction("고정 알림 켜기", "현재/다음 수업을 시스템 알림으로 유지합니다.", enablePinnedNotification) }
-        item { NativeSettingsAction("고정 알림 끄기", "Flow 일정 알림을 제거합니다.", disablePinnedNotification) }
+
+        item { FlowSectionTitle("NOTIFICATIONS", "알림") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    NativeSettingsRow("고정 알림 켜기", "현재/다음 수업을 시스템 알림으로 유지합니다.", enablePinnedNotification)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("고정 알림 끄기", "Flow 일정 알림을 제거합니다.", disablePinnedNotification)
+                }
+            }
+        }
+
+        item { FlowSectionTitle("WIDGETS", "위젯") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(17.dp)) {
@@ -490,23 +515,34 @@ private fun NativeUniversitySettings(
                 }
             }
         }
-        item { NativeSettingsAction("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport) }
-        item { NativeSettingsAction("업데이트 확인", "서명·SHA-256을 검증한 릴리스를 설치합니다.", checkUpdate) }
-        item { NativeSettingsAction("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true) }
+
+        item { FlowSectionTitle("DATA", "연결 · 앱") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    NativeSettingsRow("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("업데이트 확인", "서명·SHA-256을 검증한 릴리스를 설치합니다.", checkUpdate)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true)
+                }
+            }
+        }
         item { Text("Flow Android ${BuildConfig.VERSION_NAME} · School + University unified native app", color = FlowPalette.Dim, fontSize = 10.sp) }
     }
 }
 
 @Composable
-private fun NativeSettingsAction(title: String, detail: String, action: () -> Unit, danger: Boolean = false) {
-    FlowCard(Modifier.fillMaxWidth(), onClick = action) {
-        Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
-            }
-            Text("›", color = if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
+private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = action).padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
         }
+        Text("›", color = if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
     }
 }
 
