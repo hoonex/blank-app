@@ -43,13 +43,27 @@ fun FlowBottomNavigation(
     onSelected: (Int) -> Unit
 ) {
     val view = LocalView.current
+    val labelsKey = labels.joinToString("|")
     val safeSelectedIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
-    var savedSelectedIndex by rememberSaveable(labels.joinToString("|")) {
+    var savedSelectedIndex by rememberSaveable(labelsKey) {
+        mutableIntStateOf(safeSelectedIndex)
+    }
+    var lastObservedSelectedIndex by remember(labelsKey) {
         mutableIntStateOf(safeSelectedIndex)
     }
 
-    LaunchedEffect(labels, selectedIndex, savedSelectedIndex) {
-        if (labels.isNotEmpty() && savedSelectedIndex in labels.indices && savedSelectedIndex != selectedIndex) {
+    LaunchedEffect(labelsKey, safeSelectedIndex, savedSelectedIndex) {
+        if (labels.isEmpty()) return@LaunchedEffect
+
+        if (safeSelectedIndex != lastObservedSelectedIndex) {
+            // The parent intentionally navigated (for example, a Home card opened Schedule).
+            // Treat the parent as authoritative and keep the saved tab in sync.
+            savedSelectedIndex = safeSelectedIndex
+            lastObservedSelectedIndex = safeSelectedIndex
+        } else if (savedSelectedIndex in labels.indices && savedSelectedIndex != safeSelectedIndex) {
+            // The composable was recreated while its parent fell back to its default tab.
+            // Restore the saved tab once, then let the parent own navigation again.
+            lastObservedSelectedIndex = savedSelectedIndex
             onSelected(savedSelectedIndex)
         }
     }
@@ -74,7 +88,7 @@ fun FlowBottomNavigation(
             verticalAlignment = Alignment.CenterVertically
         ) {
             labels.forEachIndexed { index, label ->
-                val active = index == selectedIndex
+                val active = index == safeSelectedIndex
                 val interaction = remember(label) { MutableInteractionSource() }
                 val itemShape = RoundedCornerShape(16.dp)
                 val background by animateColorAsState(
