@@ -32,17 +32,20 @@ class FlowRecreationStateTest {
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
         clearState()
+        device.setOrientationNatural()
     }
 
     @After
     fun restore() {
         clearState()
+        runCatching { device.setOrientationNatural() }
     }
 
     @Test
     fun plannerDestinationSurvivesActivityRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             waitForText("학교도, 대학도")
+            scrollUntilText("과제 · 시험")
             clickText("과제 · 시험")
             waitForText("Planner")
 
@@ -129,6 +132,25 @@ class FlowRecreationStateTest {
         assertTrue("Text is not visibly clickable: $label", bounds.width() > 0 && bounds.height() > 0)
         assertTrue("UiDevice rejected click for: $label", device.click(bounds.centerX(), bounds.centerY()))
         device.waitForIdle()
+    }
+
+    private fun scrollUntilText(text: String) {
+        val selector = By.textContains(text)
+        val x = device.displayWidth / 2
+        val startY = minOf((device.displayHeight * 0.72f).toInt(), device.displayHeight - 120)
+        val endY = maxOf((device.displayHeight * 0.24f).toInt(), 100)
+        val safeBottom = (device.displayHeight * 0.84f).toInt()
+        repeat(10) {
+            val node = device.findObject(selector)
+            if (node != null && node.visibleBounds.centerY() in 1 until safeBottom) {
+                device.waitForIdle()
+                return
+            }
+            device.swipe(x, startY, x, endY, 24)
+            device.waitForIdle()
+        }
+        val node = device.findObject(selector)
+        assertTrue("Timed out scrolling to text: $text", node != null && node.visibleBounds.centerY() in 1 until safeBottom)
     }
 
     private fun waitForText(text: String) {
