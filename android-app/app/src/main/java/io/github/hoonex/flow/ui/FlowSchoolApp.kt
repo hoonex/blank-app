@@ -57,13 +57,15 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
     var error by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var tab by remember { mutableStateOf(SchoolTab.TODAY) }
+    val now = rememberFlowMinuteNow()
+    val today = schoolDate8(now.toLocalDate())
 
     suspend fun refresh(force: Boolean = false) {
         val selected = selection ?: return
-        if (!force && dashboard?.selected == schoolDate8()) return
+        if (!force && dashboard?.selected == today) return
         loading = true
         error = ""
-        runCatching { SchoolApi.dashboard(selected) }
+        runCatching { SchoolApi.dashboard(selected, now.toLocalDate()) }
             .onSuccess {
                 dashboard = it
                 store.saveDashboard(it)
@@ -73,7 +75,7 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
         loading = false
     }
 
-    LaunchedEffect(selection) { if (selection != null) refresh() }
+    LaunchedEffect(selection, today) { if (selection != null) refresh() }
 
     if (selection == null) {
         SchoolSetupScreen { chosen ->
@@ -99,7 +101,7 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) {
             when (tab) {
-                SchoolTab.TODAY -> SchoolTodayScreen(selection!!, dashboard, loading, error) { scope.launch { refresh(true) } }
+                SchoolTab.TODAY -> SchoolTodayScreen(selection!!, dashboard, loading, error, today) { scope.launch { refresh(true) } }
                 SchoolTab.WEEK -> SchoolWeekScreen(selection!!, dashboard)
                 SchoolTab.TRANSIT -> FlowSchoolTransitScreen(selection!!)
                 SchoolTab.INFO -> SchoolInfoScreen(selection!!.school)
@@ -212,8 +214,7 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
 }
 
 @Composable
-private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashboard?, loading: Boolean, error: String, refresh: () -> Unit) {
-    val today = schoolDate8()
+private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashboard?, loading: Boolean, error: String, today: String, refresh: () -> Unit) {
     val classes = dashboard?.classesOn(today).orEmpty()
     val meals = dashboard?.mealsOn(today).orEmpty()
     val events = dashboard?.eventsOn(today).orEmpty()
