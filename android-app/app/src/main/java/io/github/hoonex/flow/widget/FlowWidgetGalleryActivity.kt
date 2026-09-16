@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -238,6 +239,7 @@ private fun WidgetChoiceRow(choice: WidgetChoice, onPin: (WidgetChoice) -> Unit)
 private fun WidgetCompactAction(label: String, onClick: () -> Unit) {
     Box(
         Modifier
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(13.dp))
             .background(FlowPalette.SurfaceRaised)
             .clickable(onClick = onClick)
