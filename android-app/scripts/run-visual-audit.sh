@@ -48,12 +48,18 @@ adb shell am instrument -w -r \
   io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
   | tee -a "$OUT/instrumentation.txt"
 theme_status=${PIPESTATUS[0]}
+
+adb shell am instrument -w -r \
+  -e class io.github.hoonex.flow.FlowRecreationStateTest \
+  io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
+  | tee -a "$OUT/instrumentation.txt"
+recreation_status=${PIPESTATUS[0]}
 set -e
 
 adb pull "$REMOTE" "$OUT/screenshots" || true
 
-if [ "$core_status" -ne 0 ] || [ "$map_status" -ne 0 ] || [ "$widget_status" -ne 0 ] || [ "$planner_status" -ne 0 ] || [ "$theme_status" -ne 0 ] || \
-   [ "$(grep -Ec 'OK \([0-9]+ test(s)?\)' "$OUT/instrumentation.txt")" -lt 5 ] || \
+if [ "$core_status" -ne 0 ] || [ "$map_status" -ne 0 ] || [ "$widget_status" -ne 0 ] || [ "$planner_status" -ne 0 ] || [ "$theme_status" -ne 0 ] || [ "$recreation_status" -ne 0 ] || \
+   [ "$(grep -Ec 'OK \([0-9]+ test(s)?\)' "$OUT/instrumentation.txt")" -lt 6 ] || \
    grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|INSTRUMENTATION_ABORTED|Process crashed|shortMsg=' "$OUT/instrumentation.txt"; then
   exit 1
 fi
