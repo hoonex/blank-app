@@ -1,7 +1,6 @@
 package io.github.hoonex.flow.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,13 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +27,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,28 +88,12 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
         containerColor = FlowPalette.Background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(FlowPalette.Surface)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 5.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                SchoolTab.entries.forEach { item ->
-                    val active = item == tab
-                    Text(
-                        item.label,
-                        color = if (active) FlowPalette.Mint else FlowPalette.Muted,
-                        fontSize = 11.sp,
-                        fontWeight = if (active) FontWeight.Black else FontWeight.SemiBold,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { tab = item }
-                            .padding(horizontal = 11.dp, vertical = 10.dp)
-                    )
-                }
-            }
+            val tabs = SchoolTab.entries
+            FlowBottomNavigation(
+                labels = tabs.map { it.label },
+                selectedIndex = tabs.indexOf(tab),
+                onSelected = { index -> tab = tabs[index] }
+            )
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) {
@@ -265,14 +246,27 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
             }
         }
         item { FlowSectionTitle("TIMETABLE", "오늘 시간표", "${classes.size}개") }
-        if (classes.isEmpty()) item { Text("등록된 수업이 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
-        items(classes) { period ->
-            FlowCard(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${period.period}", color = FlowPalette.Mint, fontSize = 20.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(36.dp))
-                    Column {
-                        Text(period.subject.ifBlank { "과목 정보 없음" }, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("${period.period}교시", color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
+        if (classes.isEmpty()) {
+            item { Text("등록된 수업이 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
+        } else {
+            item {
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth()) {
+                        classes.forEachIndexed { index, period ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("${period.period}", color = FlowPalette.Mint, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(34.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(period.subject.ifBlank { "과목 정보 없음" }, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                    Text("${period.period}교시", color = FlowPalette.Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+                                }
+                            }
+                            if (index != classes.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
                     }
                 }
             }
@@ -289,11 +283,18 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
         }
         if (events.isNotEmpty()) {
             item { FlowSectionTitle("EVENT", "오늘 일정", "${events.size}개") }
-            items(events) { event ->
+            item {
                 FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(17.dp)) {
-                        Text(event.name, color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                        if (event.content.isNotBlank()) Text(event.content, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                    Column(Modifier.fillMaxWidth()) {
+                        events.forEachIndexed { index, event ->
+                            Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 14.dp)) {
+                                Text(event.name, color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                                if (event.content.isNotBlank()) Text(event.content, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                            }
+                            if (index != events.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
                     }
                 }
             }
@@ -348,11 +349,24 @@ private fun SchoolInfoScreen(school: FlowSchool) {
             FlowSectionTitle("SCHOOL", school.name, school.type)
             if (school.englishName.isNotBlank()) Text(school.englishName, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         }
-        items(rows) { (label, value) ->
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(label, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Text(value, color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+        if (rows.isNotEmpty()) {
+            item {
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth()) {
+                        rows.forEachIndexed { index, (label, value) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(label, color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(70.dp))
+                                Text(value, color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            }
+                            if (index != rows.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
+                    }
                 }
             }
         }
