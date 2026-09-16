@@ -118,7 +118,7 @@ class FlowVisualAuditTest {
             clickTextAndWaitForText("학교", "SCHOOL")
             capture("12-school-info")
 
-            clickTextAndWaitForText("설정", "위젯별 설정")
+            clickTextAndWaitForText("설정", "데이터와 모드")
             capture("13-school-settings")
         }
 
