@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,17 +63,26 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
             }
         }
     }
-    var destination by remember { mutableStateOf(initialDestination) }
+    var destinationName by rememberSaveable { mutableStateOf(initialDestination?.name) }
+    val destination = destinationName?.let { saved ->
+        runCatching { FlowDestination.valueOf(saved) }.getOrNull()
+    }
+
+    fun setDestination(next: FlowDestination?) {
+        destinationName = next?.name
+    }
 
     fun chooseAcademic(next: FlowMode) {
         store.save(next)
-        destination = when (next) {
-            FlowMode.SCHOOL -> FlowDestination.SCHOOL
-            FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
-        }
+        setDestination(
+            when (next) {
+                FlowMode.SCHOOL -> FlowDestination.SCHOOL
+                FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
+            }
+        )
     }
 
-    BackHandler(enabled = destination != null) { destination = null }
+    BackHandler(enabled = destination != null) { setDestination(null) }
 
     when (destination) {
         FlowDestination.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { chooseAcademic(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
@@ -81,7 +91,7 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
         null -> FlowHub(
             chooseSchool = { chooseAcademic(FlowMode.SCHOOL) },
             chooseUniversity = { chooseAcademic(FlowMode.UNIVERSITY) },
-            choosePlanner = { destination = FlowDestination.PLANNER },
+            choosePlanner = { setDestination(FlowDestination.PLANNER) },
             openWidgets = { context.startActivity(Intent(context, FlowWidgetGalleryActivity::class.java)) }
         )
     }
