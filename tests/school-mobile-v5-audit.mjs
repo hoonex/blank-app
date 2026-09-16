@@ -17,7 +17,10 @@ const monthEvents={
     {date:'20260917',name:'2학기 중간고사 3일차',content:'사회·정보',grade2:'Y'},
     {date:'20260923',name:'교과 수행평가',content:'수행평가 주간',grade2:'Y'},
   ],
-  '202610':[{date:'20261020',name:'10월 전국연합학력평가',content:'경기도교육청 주관',grade2:'Y'}],
+  '202610':[
+    {date:'20261013',name:'교과 프로젝트 평가',content:'프로젝트 평가 주간',grade2:'Y'},
+    {date:'20261020',name:'10월 전국연합학력평가',content:'경기도교육청 주관',grade2:'Y'},
+  ],
   '202611':[{date:'20261124',name:'2학기 기말고사',content:'2학년 기말고사',grade2:'Y'}],
   '202612':[{date:'20261215',name:'학업성취도평가',content:'2학년 학업성취도평가',grade2:'Y'}],
   '202701':[{date:'20270122',name:'겨울방학 평가',content:'방학 중 평가',grade2:'Y'}],
