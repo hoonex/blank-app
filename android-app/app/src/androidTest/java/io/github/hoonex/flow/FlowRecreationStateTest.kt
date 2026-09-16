@@ -11,6 +11,7 @@ import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
+import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.ui.FlowMode
 import io.github.hoonex.flow.ui.FlowModeStore
@@ -100,6 +101,7 @@ class FlowRecreationStateTest {
 
     private fun clearState() {
         SchoolStore(context).clear()
+        UniversityStore(context).clear()
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
