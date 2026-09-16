@@ -62,8 +62,6 @@ import io.github.hoonex.flow.data.weeklyMinutes
 import io.github.hoonex.flow.notification.UniversityNotification
 import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -240,11 +238,13 @@ private fun NativeUniversityHome(
     onSchool: () -> Unit,
     onCampus: () -> Unit
 ) {
-    val now = remember { LocalDateTime.now() }
+    val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val gap = timetable?.nextGap(now)
-    val date = remember { LocalDate.now().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN)) }
+    val date = remember(now.toLocalDate()) {
+        now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
+    }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item {
