@@ -1,6 +1,7 @@
 package io.github.hoonex.flow.ui
 
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -66,6 +67,12 @@ fun FlowBottomNavigation(
             lastObservedSelectedIndex = savedSelectedIndex
             onSelected(savedSelectedIndex)
         }
+    }
+
+    BackHandler(enabled = labels.isNotEmpty() && safeSelectedIndex != 0) {
+        savedSelectedIndex = 0
+        lastObservedSelectedIndex = 0
+        onSelected(0)
     }
 
     Box(
