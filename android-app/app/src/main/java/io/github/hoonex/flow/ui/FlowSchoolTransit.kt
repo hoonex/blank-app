@@ -105,25 +105,38 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
         }
     }
 
+    val defaultDestination = selected == null && query.isBlank()
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp, 28.dp, 20.dp, 34.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(20.dp, 22.dp, 20.dp, 40.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             FlowSectionTitle("TRANSIT", "교통", "대구 버스 · 지하철")
-            Text("웹페이지 없이 현재 위치와 서버의 실시간 대중교통 JSON을 앱에서 직접 비교합니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+            Text("현재 위치에서 학교까지 바로 찾거나, 다른 목적지를 검색할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
         }
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                Column(Modifier.fillMaxWidth().padding(18.dp)) {
+                Column(Modifier.fillMaxWidth().padding(17.dp)) {
                     Text("출발", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(if (source == null) "현재 위치" else "현재 위치 확인됨", color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 3.dp))
-                    Text("도착", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
+                    Text("도착", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
                     Text(selected?.name ?: if (query.isBlank()) selection.school.name else query, color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 3.dp))
                     Text(selected?.address ?: if (query.isBlank()) schoolAddress else "장소 검색 후 실제 위치를 선택할 수 있습니다.", color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 3.dp))
                 }
             }
+        }
+        if (defaultDestination) {
+            item {
+                FlowPrimaryButton(
+                    text = if (loading) "경로 계산 중…" else "학교까지 경로 찾기",
+                    onClick = ::routeNow,
+                    enabled = !loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item { FlowSectionTitle("DESTINATION", "다른 목적지", "선택") }
         }
         item {
             FlowTextField(
@@ -133,7 +146,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
                     selected = null
                     suggestions = emptyList()
                 },
-                placeholder = "다른 목적지 검색 (예: 동대구역)",
+                placeholder = "목적지 검색 (예: 동대구역)",
                 modifier = Modifier.fillMaxWidth(),
                 leading = "⌕"
             )
@@ -188,13 +201,15 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
                 }
             }
         }
-        item {
-            FlowPrimaryButton(
-                text = if (loading) "경로 계산 중…" else if (selected == null && query.isBlank()) "학교까지 경로 찾기" else "이 목적지까지 경로 찾기",
-                onClick = ::routeNow,
-                enabled = !loading,
-                modifier = Modifier.fillMaxWidth()
-            )
+        if (!defaultDestination) {
+            item {
+                FlowPrimaryButton(
+                    text = if (loading) "경로 계산 중…" else "이 목적지까지 경로 찾기",
+                    onClick = ::routeNow,
+                    enabled = !loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
         if (error.isNotBlank()) {
             item {

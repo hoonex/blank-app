@@ -260,20 +260,23 @@ private fun NativeUniversityHome(
         item { NativeNextClass(moment, timetable != null, onImport) }
         item { FlowSectionTitle("DASHBOARD", "오늘 흐름", if (timetable == null) "연결 필요" else "${today.size}개 일정") }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                NativeMetric("TODAY", if (timetable == null) "—" else "${today.size}개", Modifier.weight(1f))
-                NativeMetric("CREDITS", timetable?.let { number(it.totalCredits()) } ?: "—", Modifier.weight(1f))
-            }
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                NativeMetric("GAP", gap?.let { "${it.durationMinutes}분" } ?: "—", Modifier.weight(1f))
-                NativeMetric("WEEK", timetable?.let { "${it.weeklyMinutes() / 60}h ${it.weeklyMinutes() % 60}m" } ?: "—", Modifier.weight(1f))
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NativeMetric("TODAY", if (timetable == null) "—" else "${today.size}개", Modifier.weight(1f))
+                        NativeMetric("CREDITS", timetable?.let { number(it.totalCredits()) } ?: "—", Modifier.weight(1f))
+                    }
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NativeMetric("GAP", gap?.let { "${it.durationMinutes}분" } ?: "—", Modifier.weight(1f))
+                        NativeMetric("WEEK", timetable?.let { "${it.weeklyMinutes() / 60}h ${it.weeklyMinutes() % 60}m" } ?: "—", Modifier.weight(1f))
+                    }
+                }
             }
         }
         if (today.isNotEmpty()) {
             item { FlowSectionTitle("DAY FLOW", "이어지는 일정", "시간표 기준") }
-            items(today.take(4)) { NativeClassRow(it) }
+            item { NativeClassSurface(today.take(4)) }
         }
         item { FlowSectionTitle("CONNECT", "Flow 허브") }
         item {
@@ -312,11 +315,9 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
 
 @Composable
 private fun NativeMetric(label: String, value: String, modifier: Modifier) {
-    FlowCard(modifier) {
-        Column(Modifier.fillMaxWidth().padding(15.dp)) {
-            Text(label, color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
-            Text(value, color = FlowPalette.Text, fontSize = 20.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
-        }
+    Column(modifier) {
+        Text(label, color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        Text(value, color = FlowPalette.Text, fontSize = 19.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
     }
 }
 
@@ -337,7 +338,9 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item {
             FlowSectionTitle("SCHEDULE", "시간표", timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" })
-            Text(timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" } ?: "에브리타임 시간표를 연결하세요.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            if (timetable == null) {
+                Text("에브리타임 공개 공유 링크로 시간표를 연결할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            }
         }
         item { FlowSecondaryButton(if (timetable == null) "에브리타임에서 가져오기" else "시간표 다시 가져오기", onImport, Modifier.fillMaxWidth()) }
         if (timetable == null) {
@@ -347,7 +350,7 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
                 val classes = timetable.classesForDay(index)
                 if (classes.isNotEmpty()) {
                     item { FlowSectionTitle("DAY ${index + 1}", "${label}요일", "${classes.size}개") }
-                    items(classes) { NativeClassRow(it) }
+                    item { NativeClassSurface(classes) }
                 }
             }
         }
@@ -355,18 +358,30 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
 }
 
 @Composable
-private fun NativeClassRow(item: ScheduledClass) {
+private fun NativeClassSurface(classes: List<ScheduledClass>) {
     FlowCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.width(64.dp)) {
-                Text(item.time.start, color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                Text(item.time.end, color = FlowPalette.Dim, fontSize = 10.sp)
+        Column(Modifier.fillMaxWidth()) {
+            classes.forEachIndexed { index, item ->
+                NativeClassRowContent(item)
+                if (index != classes.lastIndex) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 15.dp).height(1.dp).background(FlowPalette.Stroke))
+                }
             }
-            Column(Modifier.weight(1f)) {
-                Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                val detail = listOf(item.time.place.ifBlank { item.subject.place }, item.subject.professor).filter(String::isNotBlank).joinToString(" · ")
-                if (detail.isNotBlank()) Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
-            }
+        }
+    }
+}
+
+@Composable
+private fun NativeClassRowContent(item: ScheduledClass) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.width(64.dp)) {
+            Text(item.time.start, color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+            Text(item.time.end, color = FlowPalette.Dim, fontSize = 10.sp)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            val detail = listOf(item.time.place.ifBlank { item.subject.place }, item.subject.professor).filter(String::isNotBlank).joinToString(" · ")
+            if (detail.isNotBlank()) Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
         }
     }
 }
@@ -407,15 +422,18 @@ private fun NativeUniversitySchool(
         profile?.let { p ->
             item { FlowSectionTitle("PUBLIC DATA", "공시 지표", if (p.partial) "일부 제한" else "최근 공시") }
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    NativeInfoMetric("등록금", p.tuition?.value?.takeIf { it > 0 }?.roundToInt()?.let { "${it / 10_000}만원" } ?: "—", Modifier.weight(1f))
-                    NativeInfoMetric("장학금", p.scholarship?.value?.takeIf { it > 0 }?.roundToInt()?.let { "${it / 10_000}만원" } ?: "—", Modifier.weight(1f))
-                }
-            }
-            item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                    NativeInfoMetric("기숙사", p.dormitory?.value?.takeIf { it > 0 }?.let { "${"%.1f".format(Locale.US, it)}%" } ?: "—", Modifier.weight(1f))
-                    NativeInfoMetric("도서관", p.library?.value?.takeIf { it > 0 }?.let { "${"%.1f".format(Locale.US, it)}" } ?: "—", Modifier.weight(1f))
+                FlowCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.fillMaxWidth()) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            NativeInfoMetric("등록금", p.tuition?.value?.takeIf { it > 0 }?.roundToInt()?.let { "${it / 10_000}만원" } ?: "—", Modifier.weight(1f))
+                            NativeInfoMetric("장학금", p.scholarship?.value?.takeIf { it > 0 }?.roundToInt()?.let { "${it / 10_000}만원" } ?: "—", Modifier.weight(1f))
+                        }
+                        Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            NativeInfoMetric("기숙사", p.dormitory?.value?.takeIf { it > 0 }?.let { "${"%.1f".format(Locale.US, it)}%" } ?: "—", Modifier.weight(1f))
+                            NativeInfoMetric("도서관", p.library?.value?.takeIf { it > 0 }?.let { "${"%.1f".format(Locale.US, it)}" } ?: "—", Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -433,11 +451,22 @@ private fun NativeUniversitySchool(
         val rows = listOf("설립" to school.foundation, "구분" to school.division.ifBlank { school.kind }, "주소" to school.address, "전화" to school.phone).filter { it.second.isNotBlank() }
         if (rows.isNotEmpty()) {
             item { FlowSectionTitle("PROFILE", "기본 정보") }
-            items(rows) { (label, value) ->
+            item {
                 FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(15.dp)) {
-                        Text(label, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                        Text(value, color = FlowPalette.Text, fontSize = 13.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
+                    Column(Modifier.fillMaxWidth()) {
+                        rows.forEachIndexed { index, (label, value) ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(label, color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(64.dp))
+                                Text(value, color = FlowPalette.Text, fontSize = 13.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            }
+                            if (index != rows.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
+                            }
+                        }
                     }
                 }
             }
@@ -447,11 +476,9 @@ private fun NativeUniversitySchool(
 
 @Composable
 private fun NativeInfoMetric(label: String, value: String, modifier: Modifier) {
-    FlowCard(modifier) {
-        Column(Modifier.fillMaxWidth().padding(15.dp)) {
-            Text(label, color = FlowPalette.Muted, fontSize = 10.sp)
-            Text(value, color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
-        }
+    Column(modifier) {
+        Text(label, color = FlowPalette.Muted, fontSize = 10.sp)
+        Text(value, color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
     }
 }
 
@@ -466,8 +493,19 @@ private fun NativeUniversitySettings(
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item { FlowSectionTitle("SETTINGS", "Flow University", university.name) }
-        item { NativeSettingsAction("고정 알림 켜기", "현재/다음 수업을 시스템 알림으로 유지합니다.", enablePinnedNotification) }
-        item { NativeSettingsAction("고정 알림 끄기", "Flow 일정 알림을 제거합니다.", disablePinnedNotification) }
+
+        item { FlowSectionTitle("NOTIFICATIONS", "알림") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    NativeSettingsRow("고정 알림 켜기", "현재/다음 수업을 시스템 알림으로 유지합니다.", enablePinnedNotification)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("고정 알림 끄기", "Flow 일정 알림을 제거합니다.", disablePinnedNotification)
+                }
+            }
+        }
+
+        item { FlowSectionTitle("WIDGETS", "위젯") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(17.dp)) {
@@ -477,43 +515,45 @@ private fun NativeUniversitySettings(
                 }
             }
         }
-        item { NativeSettingsAction("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport) }
-        item { NativeSettingsAction("업데이트 확인", "서명·SHA-256을 검증한 릴리스를 설치합니다.", checkUpdate) }
-        item { NativeSettingsAction("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true) }
+
+        item { FlowSectionTitle("DATA", "연결 · 앱") }
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    NativeSettingsRow("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("업데이트 확인", "서명·SHA-256을 검증한 릴리스를 설치합니다.", checkUpdate)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                    NativeSettingsRow("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true)
+                }
+            }
+        }
         item { Text("Flow Android ${BuildConfig.VERSION_NAME} · School + University unified native app", color = FlowPalette.Dim, fontSize = 10.sp) }
     }
 }
 
 @Composable
-private fun NativeSettingsAction(title: String, detail: String, action: () -> Unit, danger: Boolean = false) {
-    FlowCard(Modifier.fillMaxWidth(), onClick = action) {
-        Row(Modifier.fillMaxWidth().padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, color = if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
-            }
-            Text("›", color = if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
+private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = action).padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
         }
+        Text("›", color = if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
     }
 }
 
 @Composable
 private fun NativeUniversityBottomBar(tab: NativeUniversityTab, onTab: (NativeUniversityTab) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(FlowPalette.Surface).navigationBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        NativeUniversityTab.entries.forEach { item ->
-            val active = item == tab
-            Text(
-                item.label,
-                color = if (active) FlowPalette.Mint else FlowPalette.Muted,
-                fontSize = 12.sp,
-                fontWeight = if (active) FontWeight.Black else FontWeight.SemiBold,
-                modifier = Modifier.clip(RoundedCornerShape(15.dp)).clickable { onTab(item) }.padding(horizontal = 17.dp, vertical = 10.dp)
-            )
-        }
-    }
+    val tabs = NativeUniversityTab.entries
+    FlowBottomNavigation(
+        labels = tabs.map { it.label },
+        selectedIndex = tabs.indexOf(tab),
+        onSelected = { index -> onTab(tabs[index]) }
+    )
 }
 
 @Composable

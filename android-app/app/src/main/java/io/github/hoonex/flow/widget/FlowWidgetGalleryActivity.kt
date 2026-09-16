@@ -10,29 +10,33 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.hoonex.flow.ui.FlowCard
 import io.github.hoonex.flow.ui.FlowPalette
-import io.github.hoonex.flow.ui.FlowPrimaryButton
-import io.github.hoonex.flow.ui.FlowSecondaryButton
 import io.github.hoonex.flow.ui.FlowSectionTitle
 import io.github.hoonex.flow.ui.FlowTheme
 
@@ -143,27 +147,14 @@ private fun WidgetGallery(
 
         if (active.isNotEmpty()) {
             item { FlowSectionTitle("INSTALLED", "설치된 위젯", "${active.size}개") }
-            active.forEach { widget ->
-                item(key = "installed-${widget.appWidgetId}") {
-                    FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(widget.title, color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                                    Text(
-                                        "#${widget.appWidgetId} · ${sourceLabel(widget.config.source)} · 세부정보 ${if (widget.config.showContext) "ON" else "OFF"}",
-                                        color = FlowPalette.Muted,
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                }
-                                Text("ACTIVE", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            item {
+                FlowCard(Modifier.fillMaxWidth(), accent = true) {
+                    Column(Modifier.fillMaxWidth()) {
+                        active.forEachIndexed { index, widget ->
+                            InstalledWidgetRow(widget, onConfigure)
+                            if (index != active.lastIndex) {
+                                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                             }
-                            FlowPrimaryButton(
-                                "이 위젯 설정",
-                                { onConfigure(widget) },
-                                Modifier.fillMaxWidth().padding(top = 13.dp)
-                            )
                         }
                     }
                 }
@@ -180,18 +171,14 @@ private fun WidgetGallery(
         }
 
         item { FlowSectionTitle("ADD", "새 위젯 추가", "홈 화면") }
-        choices.forEach { choice ->
-            item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(choice.title, color = FlowPalette.Text, fontSize = 19.sp, fontWeight = FontWeight.Black)
-                                Text(choice.subtitle, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
-                            }
-                            Text(choice.size, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
+                    choices.forEachIndexed { index, choice ->
+                        WidgetChoiceRow(choice, onPin)
+                        if (index != choices.lastIndex) {
+                            Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                         }
-                        FlowSecondaryButton("홈 화면에 추가", { onPin(choice) }, Modifier.fillMaxWidth().padding(top = 14.dp))
                     }
                 }
             }
@@ -210,6 +197,56 @@ private fun WidgetGallery(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun InstalledWidgetRow(widget: InstalledFlowWidget, onConfigure: (InstalledFlowWidget) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(widget.title, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            Text(
+                "#${widget.appWidgetId} · ${sourceLabel(widget.config.source)} · 세부정보 ${if (widget.config.showContext) "ON" else "OFF"}",
+                color = FlowPalette.Muted,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        WidgetCompactAction("설정") { onConfigure(widget) }
+    }
+}
+
+@Composable
+private fun WidgetChoiceRow(choice: WidgetChoice, onPin: (WidgetChoice) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(choice.title, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            Text(choice.subtitle, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            Text(choice.size, color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+        }
+        WidgetCompactAction("추가") { onPin(choice) }
+    }
+}
+
+@Composable
+private fun WidgetCompactAction(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .background(FlowPalette.SurfaceRaised)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = FlowPalette.Mint, fontSize = 11.sp, fontWeight = FontWeight.Black)
     }
 }
 

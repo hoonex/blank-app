@@ -335,6 +335,8 @@ class FlowVisualAuditTest {
 
     private fun capture(name: String) {
         device.waitForIdle()
+        Thread.sleep(350)
+        device.waitForIdle()
         val file = File(screenshotDir, "$name.png")
         assertTrue("UiDevice failed to capture ${file.name}", device.takeScreenshot(file))
     }
