@@ -12,6 +12,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import io.github.hoonex.flow.notification.UniversityNotification
@@ -30,6 +32,8 @@ class MainActivity : ComponentActivity() {
         const val ACTION_OPEN_WIDGETS = "io.github.hoonex.flow.OPEN_WIDGETS"
     }
 
+    private val rootRevision = mutableIntStateOf(0)
+
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) UniversityNotification.enable(this)
     }
@@ -39,21 +43,28 @@ class MainActivity : ComponentActivity() {
         applyEntryIntent(intent)
         applyEdgeToEdgeAppearance()
         setContent {
+            val revision = rootRevision.intValue
             FlowTheme {
-                FlowRoot(
-                    enablePinnedNotification = ::enablePinnedNotification,
-                    disablePinnedNotification = { UniversityNotification.disable(this) },
-                    checkUpdate = { lifecycleScope.launch { GitHubUpdateManager.checkAndMaybeInstall(this@MainActivity, silent = false) } }
-                )
+                key(revision) {
+                    FlowRoot(
+                        enablePinnedNotification = ::enablePinnedNotification,
+                        disablePinnedNotification = { UniversityNotification.disable(this) },
+                        checkUpdate = { lifecycleScope.launch { GitHubUpdateManager.checkAndMaybeInstall(this@MainActivity, silent = false) } }
+                    )
+                }
             }
         }
-        lifecycleScope.launch { GitHubUpdateManager.checkAndMaybeInstall(this@MainActivity, silent = true) }
+        if (savedInstanceState == null) {
+            lifecycleScope.launch { GitHubUpdateManager.checkAndMaybeInstall(this@MainActivity, silent = true) }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (applyEntryIntent(intent) && intent.action != ACTION_OPEN_WIDGETS) recreate()
+        if (applyEntryIntent(intent) && intent.action != ACTION_OPEN_WIDGETS) {
+            rootRevision.intValue += 1
+        }
     }
 
     override fun onResume() {
