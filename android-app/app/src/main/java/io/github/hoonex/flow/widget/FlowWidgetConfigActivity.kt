@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -140,13 +143,13 @@ class FlowWidgetConfigActivity : ComponentActivity() {
                                     Box(
                                         Modifier.clip(RoundedCornerShape(14.dp)).background(if (showContext) FlowPalette.Mint else FlowPalette.SurfaceRaised).padding(horizontal = 12.dp, vertical = 7.dp)
                                     ) {
-                                        Text(if (showContext) "ON" else "OFF", color = if (showContext) FlowPalette.Background else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                                        Text(if (showContext) "켬" else "끔", color = if (showContext) Color.White else FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                                 Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                                 Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
-                                    Text("Galaxy S25 잠금화면", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                                    Text("삼성 기본 Brief 위젯 목록에 일반 서드파티 AppWidget이 안 뜨는 경우가 있습니다. Good Lock → LockStar에서 Flow 위젯을 잠금화면/AOD에 추가하세요.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                                    Text("Galaxy 잠금화면", color = FlowPalette.Text, fontWeight = FontWeight.SemiBold)
+                                    Text("기본 목록에 Flow가 보이지 않으면 Good Lock → LockStar에서 잠금화면이나 AOD에 추가할 수 있습니다.", color = FlowPalette.Accent, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
                                 }
                             }
                         }
@@ -196,17 +199,14 @@ private fun WidgetSourceRow(option: FlowWidgetSource, selected: Boolean, onClick
         }
         Box(
             Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (selected) FlowPalette.Mint else FlowPalette.SurfaceRaised)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(if (selected) FlowPalette.Accent else FlowPalette.SurfaceRaised),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                if (selected) "선택됨" else "선택",
-                color = if (selected) FlowPalette.Background else FlowPalette.Muted,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Black
-            )
+            if (selected) {
+                Text("✓", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

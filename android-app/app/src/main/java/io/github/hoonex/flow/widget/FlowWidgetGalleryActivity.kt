@@ -24,14 +24,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -137,7 +135,7 @@ private fun WidgetGallery(
         item {
             io.github.hoonex.flow.ui.FlowLargeTitle("위젯", "홈 화면에 필요한 Flow만 꺼내 놓으세요.", "4종")
             Text(
-                "홈 화면에 추가한 뒤에도 이 화면에서 설치된 위젯마다 Auto / School / University와 세부정보 표시를 따로 바꿀 수 있습니다.",
+                "추가한 뒤에도 위젯마다 자동 · 학교 · 대학교 데이터와 세부정보 표시를 따로 바꿀 수 있습니다.",
                 color = FlowPalette.Muted,
                 fontSize = 13.sp,
                 lineHeight = 19.sp,
@@ -188,7 +186,7 @@ private fun WidgetGallery(
                 Column(Modifier.padding(18.dp)) {
                     Text("Galaxy 잠금화면 / AOD", color = FlowPalette.Text, fontWeight = FontWeight.Black, fontSize = 16.sp)
                     Text(
-                        "Galaxy의 기본 잠금화면 위젯 목록은 일반 서드파티 AppWidget을 그대로 노출하지 않을 수 있습니다. 지원되는 One UI에서는 Good Lock → LockStar에서 Flow 위젯을 배치하세요. 앱이 잠금화면 호스트를 강제로 등록할 수는 없습니다.",
+                        "일부 Galaxy에서는 기본 잠금화면 목록에 일반 앱 위젯이 보이지 않을 수 있습니다. 이 경우 Good Lock → LockStar에서 Flow 위젯을 추가할 수 있습니다.",
                         color = FlowPalette.Muted,
                         fontSize = 12.sp,
                         lineHeight = 18.sp,
@@ -209,7 +207,7 @@ private fun InstalledWidgetRow(widget: InstalledFlowWidget, onConfigure: (Instal
         Column(Modifier.weight(1f)) {
             Text(widget.title, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
             Text(
-                "#${widget.appWidgetId} · ${sourceLabel(widget.config.source)} · 세부정보 ${if (widget.config.showContext) "ON" else "OFF"}",
+                "#${widget.appWidgetId} · ${sourceLabel(widget.config.source)} · 세부정보 ${if (widget.config.showContext) "켬" else "끔"}",
                 color = FlowPalette.Muted,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(top = 4.dp)
@@ -240,13 +238,11 @@ private fun WidgetCompactAction(label: String, onClick: () -> Unit) {
     Box(
         Modifier
             .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(FlowPalette.SurfaceRaised)
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = FlowPalette.Mint, fontSize = 11.sp, fontWeight = FontWeight.Black)
+        Text(label, color = FlowPalette.Accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

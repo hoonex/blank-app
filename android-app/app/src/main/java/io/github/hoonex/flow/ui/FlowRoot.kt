@@ -159,7 +159,7 @@ private fun FlowHub(
                 Column(Modifier.padding(horizontal = 17.dp, vertical = 15.dp)) {
                     Text("Flow", color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "Quiet glass, live content. 데이터는 그대로 두고 화면은 가장 중요한 정보부터 보여줍니다.",
+                        "중요한 정보는 선명하게, 조작 요소는 가볍게. Flow는 하루의 흐름을 방해하지 않도록 설계했습니다.",
                         color = FlowPalette.Muted,
                         fontSize = 11.5.sp,
                         lineHeight = 17.sp,

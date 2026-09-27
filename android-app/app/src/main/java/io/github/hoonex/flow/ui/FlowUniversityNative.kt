@@ -502,8 +502,8 @@ private fun NativeUniversitySettings(
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(17.dp)) {
                     Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                    Text("Flow 위젯을 길게 누르고 설정을 열면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
-                    Text("Galaxy S25 잠금화면은 기본 Brief 위젯 목록이 아니라 Good Lock → LockStar에서 일반 Flow 위젯을 배치해야 합니다.", color = FlowPalette.Mint, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
+                    Text("Flow 위젯을 길게 눌러 자동 · 학교 · 대학교 데이터와 세부정보 표시를 위젯마다 바꿀 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                    Text("Galaxy 잠금화면에서 보이지 않으면 Good Lock → LockStar에서 Flow 위젯을 추가하세요.", color = FlowPalette.Accent, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
                 }
             }
         }
@@ -520,7 +520,7 @@ private fun NativeUniversitySettings(
                 }
             }
         }
-        item { Text("Flow Android ${BuildConfig.VERSION_NAME} · School + University unified native app", color = FlowPalette.Dim, fontSize = 10.sp) }
+        item { Text("Flow ${BuildConfig.VERSION_NAME} · 네이티브 Android", color = FlowPalette.Dim, fontSize = 10.sp) }
     }
 }
 

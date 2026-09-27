@@ -418,7 +418,7 @@ private fun SchoolSettingsScreen(
                     Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
                         Text("네이티브 데이터", color = FlowPalette.Text, fontWeight = FontWeight.Black)
                         Text(
-                            "웹페이지를 렌더링하지 않습니다. NEIS와 교통 JSON만 받아 앱이 직접 저장·표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열립니다." else ""}",
+                            "학교 정보는 Flow가 직접 저장하고 표시합니다.${if (cached) " 마지막 학교 데이터는 오프라인에서도 열 수 있습니다." else ""}",
                             color = FlowPalette.Muted,
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
@@ -429,14 +429,14 @@ private fun SchoolSettingsScreen(
                     Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp)) {
                         Text("위젯별 설정", color = FlowPalette.Text, fontWeight = FontWeight.Black)
                         Text(
-                            "홈 화면에서 Flow 위젯을 길게 누른 뒤 설정을 누르면 Auto / School / University와 세부정보 표시를 위젯마다 바꿀 수 있습니다.",
+                            "Flow 위젯을 길게 눌러 자동 · 학교 · 대학교 데이터와 세부정보 표시를 위젯마다 바꿀 수 있습니다.",
                             color = FlowPalette.Muted,
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
                             modifier = Modifier.padding(top = 6.dp)
                         )
                         Text(
-                            "Galaxy S25 기본 잠금화면 위젯 목록에 일반 앱 위젯이 안 뜨면 Good Lock → LockStar에서 Flow 위젯을 배치해야 합니다.",
+                            "Galaxy 잠금화면에서 보이지 않으면 Good Lock → LockStar에서 Flow 위젯을 추가하세요.",
                             color = FlowPalette.Mint,
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
