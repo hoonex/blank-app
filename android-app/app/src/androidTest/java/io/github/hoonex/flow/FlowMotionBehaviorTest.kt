@@ -65,6 +65,57 @@ class FlowMotionBehaviorTest {
     }
 
     @Test
+    fun bottomNavigationIndicatorActuallySlidesInPixels() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            assertTrue(
+                "university home did not appear",
+                device.wait(Until.hasObject(By.textContains("Flow 모션대학교")), 6_000)
+            )
+
+            val beforeFile = File(motionDir, "nav-before.png")
+            assertTrue("failed to capture nav before frame", device.takeScreenshot(beforeFile))
+
+            val scheduleNodes = device.findObjects(By.text("시간표"))
+            val scheduleTab = scheduleNodes.maxByOrNull { it.visibleBounds.centerY() } ?: error("schedule tab missing")
+            val bounds = scheduleTab.visibleBounds
+            device.click(bounds.centerX(), bounds.centerY())
+
+            Thread.sleep(90)
+            val midFile = File(motionDir, "nav-mid.png")
+            assertTrue("failed to capture nav mid frame", device.takeScreenshot(midFile))
+
+            Thread.sleep(360)
+            val settledFile = File(motionDir, "nav-settled.png")
+            assertTrue("failed to capture nav settled frame", device.takeScreenshot(settledFile))
+
+            val before = BitmapFactory.decodeFile(beforeFile.absolutePath)
+            val mid = BitmapFactory.decodeFile(midFile.absolutePath)
+            val settled = BitmapFactory.decodeFile(settledFile.absolutePath)
+            try {
+                val beforeX = accentCentroidX(before)
+                val midX = accentCentroidX(mid)
+                val settledX = accentCentroidX(settled)
+                assertTrue(
+                    "could not locate nav accent: before=$beforeX mid=$midX settled=$settledX",
+                    beforeX >= 0 && midX >= 0 && settledX >= 0
+                )
+                assertTrue(
+                    "nav selection did not move to the next tab: before=$beforeX settled=$settledX",
+                    settledX - beforeX >= 70
+                )
+                assertTrue(
+                    "nav selection jumped instead of visibly sliding: before=$beforeX mid=$midX settled=$settledX",
+                    midX > beforeX + 8 && midX < settledX - 8
+                )
+            } finally {
+                before.recycle()
+                mid.recycle()
+                settled.recycle()
+            }
+        }
+    }
+
+    @Test
     fun everyTimeSheetActuallySlidesUpInPixels() {
         ActivityScenario.launch(MainActivity::class.java).use {
             assertTrue(
@@ -107,6 +158,27 @@ class FlowMotionBehaviorTest {
                 device.wait(Until.hasObject(By.text("닫기")), 2_000)
             )
         }
+    }
+
+    private fun accentCentroidX(bitmap: Bitmap): Int {
+        if (bitmap.width < 20 || bitmap.height < 180) return -1
+        val startY = (bitmap.height * .72f).toInt()
+        val endY = (bitmap.height - 36).coerceAtLeast(startY + 1)
+        var sumX = 0L
+        var count = 0L
+        for (y in startY until endY) {
+            for (x in 0 until bitmap.width) {
+                val pixel = bitmap.getPixel(x, y)
+                val r = Color.red(pixel)
+                val g = Color.green(pixel)
+                val b = Color.blue(pixel)
+                if (b >= 155 && b - r >= 28 && b - g >= 18) {
+                    sumX += x
+                    count++
+                }
+            }
+        }
+        return if (count >= 20) (sumX / count).toInt() else -1
     }
 
     private fun findSheetSurfaceTop(bitmap: Bitmap): Int {

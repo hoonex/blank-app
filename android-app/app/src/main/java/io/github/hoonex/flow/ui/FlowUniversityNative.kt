@@ -1,6 +1,5 @@
 package io.github.hoonex.flow.ui
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,7 +77,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 private enum class NativeUniversityTab(val label: String) {
-    HOME("홈"), SCHEDULE("시간표"), SCHOOL("학교"), SETTINGS("설정")
+    HOME("홈"), SCHEDULE("시간표"), CAMPUS("캠퍼스"), SCHOOL("학교"), SETTINGS("설정")
 }
 
 @Composable
@@ -128,9 +127,10 @@ fun FlowUniversityNativeRoot(
                         onImport = { importOpen = true },
                         onSchedule = { tab = NativeUniversityTab.SCHEDULE },
                         onSchool = { tab = NativeUniversityTab.SCHOOL },
-                        onCampus = { context.startActivity(Intent(context, FlowCampusActivity::class.java)) }
+                        onCampus = { tab = NativeUniversityTab.CAMPUS }
                     )
                     NativeUniversityTab.SCHEDULE -> NativeUniversitySchedule(timetable) { importOpen = true }
+                    NativeUniversityTab.CAMPUS -> FlowCampusTab()
                     NativeUniversityTab.SCHOOL -> NativeUniversitySchool(
                         university = university!!,
                         initialProfile = profile,
@@ -140,7 +140,7 @@ fun FlowUniversityNativeRoot(
                             store.saveProfile(it)
                         },
                         onChooseMajor = { majorOpen = true },
-                        onCampus = { context.startActivity(Intent(context, FlowCampusActivity::class.java)) }
+                        onCampus = { tab = NativeUniversityTab.CAMPUS }
                     )
                     NativeUniversityTab.SETTINGS -> NativeUniversitySettings(
                         university = university!!,

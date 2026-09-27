@@ -199,7 +199,7 @@ private tailrec fun Context.findFlowActivity(): Activity? = when (this) {
 }
 
 enum class FlowGlyph {
-    HOME, CALENDAR, TRANSIT, SCHOOL, UNIVERSITY, SETTINGS, PLANNER, WIDGETS
+    HOME, CALENDAR, TRANSIT, MAP, SCHOOL, UNIVERSITY, SETTINGS, PLANNER, WIDGETS
 }
 
 @Composable
@@ -241,6 +241,12 @@ fun FlowIcon(
                 line(.27f, .40f, .73f, .40f)
                 drawCircle(tint, w * .07f, Offset(w * .34f, h * .80f), style = style)
                 drawCircle(tint, w * .07f, Offset(w * .66f, h * .80f), style = style)
+            }
+            FlowGlyph.MAP -> {
+                drawCircle(tint, w * .21f, Offset(w * .50f, h * .40f), style = style)
+                drawCircle(tint, w * .045f, Offset(w * .50f, h * .40f))
+                line(.35f, .57f, .50f, .82f)
+                line(.50f, .82f, .65f, .57f)
             }
             FlowGlyph.SCHOOL, FlowGlyph.UNIVERSITY -> {
                 line(.18f, .38f, .50f, .18f)

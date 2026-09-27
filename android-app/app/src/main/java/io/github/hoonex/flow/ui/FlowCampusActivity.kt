@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.hoonex.flow.data.CampusPlace
 import io.github.hoonex.flow.data.CampusSnapshot
 import io.github.hoonex.flow.data.CampusStore
@@ -71,7 +75,7 @@ class FlowCampusActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
-        setContent { FlowTheme { FlowCampusScreen(mapView) } }
+        setContent { FlowTheme { FlowCampusScreen(mapView, showBack = true) } }
     }
 
     override fun onStart() { super.onStart(); mapView.onStart() }
@@ -84,7 +88,38 @@ class FlowCampusActivity : ComponentActivity() {
 }
 
 @Composable
-private fun FlowCampusScreen(mapView: MapView) {
+fun FlowCampusTab() {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val mapView = remember(context) {
+        MapView(context).apply { onCreate(null) }
+    }
+
+    DisposableEffect(lifecycleOwner, mapView) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> mapView.onStart()
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            runCatching { mapView.onPause() }
+            runCatching { mapView.onStop() }
+            runCatching { mapView.onDestroy() }
+        }
+    }
+
+    FlowCampusScreen(mapView, showBack = false)
+}
+
+@Composable
+private fun FlowCampusScreen(mapView: MapView, showBack: Boolean) {
     val context = LocalContext.current
     val activity = context as? Activity
     val store = remember { UniversityStore(context) }
@@ -131,11 +166,15 @@ private fun FlowCampusScreen(mapView: MapView) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                FlowSecondaryButton("‹", { activity?.finish() }, Modifier.padding(end = 12.dp))
-                Column(Modifier.weight(1f)) {
-                    FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
+            if (showBack) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    FlowSecondaryButton("‹", { activity?.finish() }, Modifier.padding(end = 12.dp))
+                    Column(Modifier.weight(1f)) {
+                        FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
+                    }
                 }
+            } else {
+                FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
             }
         }
 
@@ -192,7 +231,7 @@ private fun FlowCampusScreen(mapView: MapView) {
                 item {
                     FlowCard(Modifier.fillMaxWidth(), accent = true) {
                         Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                            Text("WALK ROUTE", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                            Text("도보 경로", color = FlowPalette.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                             Text("${campus.center.name} → ${place.name}", color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
                             Text(
                                 when {
@@ -253,8 +292,8 @@ private fun NativeCampusMap(
     Box(
         Modifier
             .fillMaxWidth()
-            .height(350.dp)
-            .clip(RoundedCornerShape(26.dp))
+            .height(330.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(FlowPalette.Surface)
     ) {
         AndroidView(
@@ -283,7 +322,7 @@ private fun NativeCampusMap(
             }
         }
         Text(
-            "MapLibre · OpenFreeMap",
+            "Flow 지도",
             color = Color.White,
             fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
@@ -331,7 +370,7 @@ private fun renderCampusMap(map: MapLibreMap, campus: CampusSnapshot, walkRoute:
         map.addPolyline(
             PolylineOptions()
                 .addAll(routePoints)
-                .color(AndroidColor.rgb(123, 231, 214))
+                .color(AndroidColor.rgb(73, 103, 255))
                 .width(7f)
                 .alpha(0.95f)
         )

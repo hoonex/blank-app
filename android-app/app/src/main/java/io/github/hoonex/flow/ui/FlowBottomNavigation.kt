@@ -2,11 +2,8 @@ package io.github.hoonex.flow.ui
 
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,11 +36,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 
 @Composable
 fun FlowBottomNavigation(
@@ -56,6 +55,16 @@ fun FlowBottomNavigation(
     val safeSelectedIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
     var savedSelectedIndex by rememberSaveable(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
     var lastObservedSelectedIndex by remember(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
+    val animatedIndex = remember(labelsKey) { Animatable(safeSelectedIndex.toFloat()) }
+
+    LaunchedEffect(labelsKey, safeSelectedIndex) {
+        if (abs(animatedIndex.targetValue - safeSelectedIndex.toFloat()) > 0.001f) {
+            animatedIndex.animateTo(
+                targetValue = safeSelectedIndex.toFloat(),
+                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+            )
+        }
+    }
 
     LaunchedEffect(labelsKey, safeSelectedIndex, savedSelectedIndex) {
         if (labels.isEmpty()) return@LaunchedEffect
@@ -78,7 +87,7 @@ fun FlowBottomNavigation(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 7.dp, end = 7.dp, top = 3.dp, bottom = 6.dp)
+            .padding(start = 3.dp, end = 3.dp, top = 2.dp, bottom = 3.dp)
     ) {
         FlowGlassSurface(Modifier.fillMaxWidth()) {
             BoxWithConstraints(
@@ -90,15 +99,7 @@ fun FlowBottomNavigation(
                 val gap = 2.dp
                 val count = labels.size.coerceAtLeast(1)
                 val itemWidth = (maxWidth - gap * (count - 1)) / count
-                val targetX = (itemWidth + gap) * safeSelectedIndex
-                val indicatorX by animateDpAsState(
-                    targetValue = targetX,
-                    animationSpec = spring(
-                        dampingRatio = 0.82f,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    label = "flow-tab-indicator-x"
-                )
+                val indicatorX = (itemWidth + gap) * animatedIndex.value
 
                 Box(
                     Modifier
@@ -122,19 +123,9 @@ fun FlowBottomNavigation(
                     labels.forEachIndexed { index, label ->
                         val active = index == safeSelectedIndex
                         val interaction = remember(label) { MutableInteractionSource() }
-                        val foreground by animateColorAsState(
-                            targetValue = if (active) FlowPalette.AccentBright else FlowPalette.Muted,
-                            animationSpec = tween(180),
-                            label = "flow-tab-fg"
-                        )
-                        val scale by animateFloatAsState(
-                            targetValue = if (active) 1f else .96f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            ),
-                            label = "flow-tab-scale"
-                        )
+                        val proximity = (1f - abs(animatedIndex.value - index.toFloat())).coerceIn(0f, 1f)
+                        val foreground = lerp(FlowPalette.Muted, FlowPalette.AccentBright, proximity)
+                        val scale = .96f + (.04f * proximity)
 
                         Box(
                             Modifier
@@ -175,7 +166,7 @@ fun FlowBottomNavigation(
                                     lineHeight = 11.sp,
                                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
                                     maxLines = 1,
-                                    modifier = Modifier.alpha(if (active) 1f else .80f)
+                                    modifier = Modifier.alpha(.76f + (.24f * proximity))
                                 )
                             }
                         }
@@ -190,6 +181,7 @@ private fun flowGlyphForTab(label: String): FlowGlyph = when (label) {
     "오늘", "홈" -> FlowGlyph.HOME
     "시간표" -> FlowGlyph.CALENDAR
     "교통" -> FlowGlyph.TRANSIT
+    "캠퍼스" -> FlowGlyph.MAP
     "학교" -> FlowGlyph.SCHOOL
     "설정" -> FlowGlyph.SETTINGS
     else -> FlowGlyph.HOME
