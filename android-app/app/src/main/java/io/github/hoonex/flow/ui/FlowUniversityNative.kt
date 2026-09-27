@@ -352,7 +352,7 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
         item {
             FlowLargeTitle(
                 "시간표",
-                timetable?.let { "\${it.year}년 \${semester(it.semester)} · \${number(it.totalCredits())}학점" }
+                timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" }
                     ?: "에브리타임 공개 공유 링크로 연결"
             )
         }

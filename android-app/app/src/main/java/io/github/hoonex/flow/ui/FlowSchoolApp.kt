@@ -445,8 +445,8 @@ private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashbo
         item {
             FlowLargeTitle(
                 "주간 시간표",
-                "\${selection.school.name} · \${selection.grade}학년 \${selection.className}반",
-                "\${weekStart.monthValue}/\${weekStart.dayOfMonth}–\${weekStart.plusDays(4).dayOfMonth}"
+                "${selection.school.name} · ${selection.grade}학년 ${selection.className}반",
+                "${weekStart.monthValue}/${weekStart.dayOfMonth}–${weekStart.plusDays(4).dayOfMonth}"
             )
         }
         item {

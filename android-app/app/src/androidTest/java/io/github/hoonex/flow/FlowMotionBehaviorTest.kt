@@ -1,6 +1,9 @@
 package io.github.hoonex.flow
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,17 +20,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class FlowMotionBehaviorTest {
     private lateinit var context: Context
     private lateinit var device: UiDevice
+    private lateinit var motionDir: File
 
     @Before
     fun prepare() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
+        motionDir = File(context.getExternalFilesDir(null), "motion-proof").apply {
+            deleteRecursively()
+            mkdirs()
+        }
         SchoolStore(context).clear()
         UniversityStore(context).apply {
             clear()
@@ -55,7 +65,7 @@ class FlowMotionBehaviorTest {
     }
 
     @Test
-    fun everyTimeSheetActuallySlidesUp() {
+    fun everyTimeSheetActuallySlidesUpInPixels() {
         ActivityScenario.launch(MainActivity::class.java).use {
             assertTrue(
                 "university home did not appear",
@@ -66,27 +76,31 @@ class FlowMotionBehaviorTest {
             val bounds = connect.visibleBounds
             device.click(bounds.centerX(), bounds.centerY())
 
-            val sampledTops = mutableListOf<Int>()
-            repeat(14) {
-                device.findObject(By.text("시간표 연결"))?.visibleBounds?.let { rect ->
-                    if (rect.height() > 0) sampledTops += rect.top
-                }
-                Thread.sleep(28)
-            }
+            Thread.sleep(60)
+            val earlyFile = File(motionDir, "sheet-early.png")
+            assertTrue("failed to capture early animation frame", device.takeScreenshot(earlyFile))
 
-            assertTrue(
-                "sheet title was not observable during animation: $sampledTops",
-                sampledTops.size >= 3
-            )
-            val travel = sampledTops.maxOrNull()!! - sampledTops.minOrNull()!!
-            assertTrue(
-                "sheet did not visibly travel upward; sampled tops=$sampledTops",
-                travel >= 24
-            )
-            assertTrue(
-                "sheet did not finish above its first observed position; sampled tops=$sampledTops",
-                sampledTops.first() > sampledTops.last()
-            )
+            Thread.sleep(360)
+            val settledFile = File(motionDir, "sheet-settled.png")
+            assertTrue("failed to capture settled animation frame", device.takeScreenshot(settledFile))
+
+            val early = BitmapFactory.decodeFile(earlyFile.absolutePath)
+            val settled = BitmapFactory.decodeFile(settledFile.absolutePath)
+            try {
+                val earlyTop = findSheetSurfaceTop(early)
+                val settledTop = findSheetSurfaceTop(settled)
+                assertTrue(
+                    "could not locate sheet surface in screenshots: early=$earlyTop settled=$settledTop",
+                    earlyTop >= 0 && settledTop >= 0
+                )
+                assertTrue(
+                    "sheet did not travel upward in rendered pixels: early=$earlyTop settled=$settledTop",
+                    earlyTop - settledTop >= 20
+                )
+            } finally {
+                early.recycle()
+                settled.recycle()
+            }
 
             assertTrue(
                 "sheet did not settle with close action",
@@ -94,4 +108,29 @@ class FlowMotionBehaviorTest {
             )
         }
     }
+
+    private fun findSheetSurfaceTop(bitmap: Bitmap): Int {
+        if (bitmap.width < 20 || bitmap.height < 180) return -1
+        val x = minOf(8, bitmap.width - 1)
+        val sampleY = (bitmap.height - 90).coerceAtLeast(bitmap.height / 2)
+        val target = bitmap.getPixel(x, sampleY)
+        val run = 14
+
+        for (y in 0 until bitmap.height - run) {
+            var matches = true
+            for (offset in 0 until run) {
+                if (colorDistance(bitmap.getPixel(x, y + offset), target) > 24) {
+                    matches = false
+                    break
+                }
+            }
+            if (matches) return y
+        }
+        return -1
+    }
+
+    private fun colorDistance(a: Int, b: Int): Int =
+        abs(Color.red(a) - Color.red(b)) +
+            abs(Color.green(a) - Color.green(b)) +
+            abs(Color.blue(a) - Color.blue(b))
 }
