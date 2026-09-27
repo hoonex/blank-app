@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -371,8 +372,18 @@ private fun SchoolDateSelector(
     onSelected: (LocalDate) -> Unit
 ) {
     val dates = remember(actualToday) { (-3L..10L).map(actualToday::plusDays) }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 1)
+
+    LaunchedEffect(selectedDate, dates) {
+        val selectedIndex = dates.indexOf(selectedDate)
+        if (selectedIndex >= 0) {
+            listState.animateScrollToItem((selectedIndex - 2).coerceAtLeast(0))
+        }
+    }
+
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
+        state = listState,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 1.dp)
     ) {
