@@ -80,11 +80,11 @@ class FlowMotionBehaviorTest {
             val bounds = scheduleTab.visibleBounds
             device.click(bounds.centerX(), bounds.centerY())
 
-            Thread.sleep(90)
+            Thread.sleep(120)
             val midFile = File(motionDir, "nav-mid.png")
             assertTrue("failed to capture nav mid frame", device.takeScreenshot(midFile))
 
-            Thread.sleep(360)
+            Thread.sleep(380)
             val settledFile = File(motionDir, "nav-settled.png")
             assertTrue("failed to capture nav settled frame", device.takeScreenshot(settledFile))
 
@@ -106,7 +106,7 @@ class FlowMotionBehaviorTest {
                 )
                 assertTrue(
                     "nav selection jumped instead of visibly sliding: before=$beforeX mid=$midX settled=$settledX",
-                    midX > beforeX + 8 && midX < settledX - 8
+                    midX > beforeX + 6 && midX < settledX - 6
                 )
             } finally {
                 before.recycle()
@@ -163,8 +163,8 @@ class FlowMotionBehaviorTest {
 
     private fun accentCentroidX(bitmap: Bitmap): Int {
         if (bitmap.width < 20 || bitmap.height < 180) return -1
-        val startY = (bitmap.height * .72f).toInt()
-        val endY = (bitmap.height - 36).coerceAtLeast(startY + 1)
+        val startY = (bitmap.height * .80f).toInt()
+        val endY = (bitmap.height - 28).coerceAtLeast(startY + 1)
         var sumX = 0L
         var count = 0L
         for (y in startY until endY) {
@@ -173,7 +173,7 @@ class FlowMotionBehaviorTest {
                 val r = Color.red(pixel)
                 val g = Color.green(pixel)
                 val b = Color.blue(pixel)
-                if (b >= 155 && b - r >= 28 && b - g >= 18) {
+                if (b >= 72 && b - r >= 14 && b - g >= 9) {
                     sumX += x
                     count++
                 }

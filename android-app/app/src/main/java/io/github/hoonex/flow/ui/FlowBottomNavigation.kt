@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
@@ -55,13 +57,16 @@ fun FlowBottomNavigation(
     val safeSelectedIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
     var savedSelectedIndex by rememberSaveable(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
     var lastObservedSelectedIndex by remember(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
+    var locallyRequestedIndex by remember(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
     val animatedIndex = remember(labelsKey) { Animatable(safeSelectedIndex.toFloat()) }
+    val animationScope = rememberCoroutineScope()
 
     LaunchedEffect(labelsKey, safeSelectedIndex) {
-        if (abs(animatedIndex.targetValue - safeSelectedIndex.toFloat()) > 0.001f) {
+        if (safeSelectedIndex != locallyRequestedIndex) {
+            locallyRequestedIndex = safeSelectedIndex
             animatedIndex.animateTo(
                 targetValue = safeSelectedIndex.toFloat(),
-                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
             )
         }
     }
@@ -111,7 +116,7 @@ fun FlowBottomNavigation(
                             shadowElevation = if (FlowPalette.IsDark) 7f else 3f
                         }
                         .background(
-                            FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .24f else .14f)
+                            FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .30f else .17f)
                         )
                 )
 
@@ -143,7 +148,15 @@ fun FlowBottomNavigation(
                                     onClick = {
                                         if (!active) {
                                             savedSelectedIndex = index
+                                            locallyRequestedIndex = index
                                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            animationScope.launch {
+                                                animatedIndex.stop()
+                                                animatedIndex.animateTo(
+                                                    targetValue = index.toFloat(),
+                                                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                                                )
+                                            }
                                             onSelected(index)
                                         }
                                     }
