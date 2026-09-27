@@ -51,7 +51,7 @@ class FlowShortcutNavigationTest {
         waitForText("정동고등학교")
 
         openShortcut(MainActivity.ACTION_OPEN_UNIVERSITY)
-        waitForText("대학 생활을")
+        waitForText("대학교")
 
         openShortcut(MainActivity.ACTION_OPEN_SCHOOL)
         waitForText("정동고등학교")

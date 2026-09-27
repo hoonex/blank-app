@@ -112,10 +112,10 @@ class FlowVisualAuditTest {
             clickTextAndWaitForText("시간표", "주간 시간표")
             capture("10-school-week")
 
-            clickTextAndWaitForText("교통", "대구 버스")
+            clickTextAndWaitForText("교통", "현재 위치에서 학교까지")
             capture("11-school-transit")
 
-            clickTextAndWaitForText("학교", "SCHOOL")
+            clickTextAndWaitForText("학교", "학교 구분")
             capture("12-school-info")
 
             clickTextAndWaitForText("설정", "데이터와 모드")

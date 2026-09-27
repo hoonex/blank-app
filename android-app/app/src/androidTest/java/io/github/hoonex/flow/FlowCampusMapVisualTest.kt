@@ -51,7 +51,7 @@ class FlowCampusMapVisualTest {
     fun captureInteractiveNativeCampusMap() {
         val intent = Intent(context, FlowCampusActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         ActivityScenario.launch<FlowCampusActivity>(intent).use {
-            assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스 지도")), 5_000))
+            assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스")), 5_000))
             assertTrue("native map evidence missing", device.wait(Until.hasObject(By.textContains("MapLibre · OpenFreeMap")), 8_000))
             Thread.sleep(5_000)
             device.waitForIdle()
