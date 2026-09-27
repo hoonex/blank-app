@@ -46,10 +46,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val WidgetBackground = ColorProvider(Color(0xFF0D1214))
-private val WidgetAccent = ColorProvider(Color(0xFF7BE7D6))
-private val WidgetText = ColorProvider(Color.White)
-private val WidgetMuted = ColorProvider(Color(0xFFA8B3B8))
+private val WidgetBackground = ColorProvider(Color(0xFF1C1C1E))
+private val WidgetAccent = ColorProvider(Color(0xFF8395FF))
+private val WidgetText = ColorProvider(Color(0xFFF5F5F7))
+private val WidgetMuted = ColorProvider(Color(0xFF98989D))
 
 private data class WidgetRuntime(val source: FlowWidgetSource, val showContext: Boolean)
 
@@ -84,7 +84,7 @@ class UniversityWidget : GlanceAppWidget() {
             val meals = dashboard?.mealsOn(schoolDate8()).orEmpty()
             val first = classes.firstOrNull()
             val headline = when {
-                selection == null -> "School을 설정하세요"
+                selection == null -> "학교를 설정하세요"
                 classes.isEmpty() -> "오늘 수업 없음"
                 else -> first?.subject ?: "오늘 ${classes.size}개 수업"
             }
@@ -97,7 +97,7 @@ class UniversityWidget : GlanceAppWidget() {
                 val size = LocalSize.current
                 val small = compact(size.width, size.height)
                 WidgetShell(if (small) 10.dp else 16.dp) {
-                    Text("SCHOOL", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
+                    Text("Flow · 학교", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
                     Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                     Text(headline, maxLines = if (small) 1 else 2, style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 19.sp, fontWeight = FontWeight.Bold))
                     if (runtime.showContext && (!small || size.height >= 76.dp)) {
@@ -122,14 +122,14 @@ class UniversityWidget : GlanceAppWidget() {
             else -> "오늘 수업 없음"
         }
         val kicker = when {
-            moment?.current != null -> "NOW"
-            moment?.next != null -> "NEXT"
-            else -> "UNIVERSITY"
+            moment?.current != null -> "지금 수업"
+            moment?.next != null -> "다음 수업"
+            else -> "Flow"
         }
         val detail = when {
             moment?.current != null -> "${moment.current.time.end} 종료 · ${moment.current.time.place.ifBlank { moment.current.subject.place }}"
             moment?.next != null -> "${moment.next.time.start} 시작 · ${moment.next.time.place.ifBlank { moment.next.subject.place }}"
-            else -> university?.name ?: "Flow University"
+            else -> university?.name ?: "Flow"
         }
         provideContent {
             val size = LocalSize.current
@@ -166,7 +166,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
                 }
                 val small = compact(size.width, size.height)
                 WidgetShell(if (small) 10.dp else 16.dp) {
-                    Text("TODAY · ${selection?.school?.name ?: "FLOW SCHOOL"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
+                    Text("오늘 · ${selection?.school?.name ?: "Flow"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
                     Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                     Text(
                         when {
@@ -206,7 +206,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
             }
             val small = compact(size.width, size.height)
             WidgetShell(if (small) 10.dp else 16.dp) {
-                Text("TODAY · ${university?.name ?: "FLOW"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
+                Text("오늘 · ${university?.name ?: "Flow"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
                 Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                 Text(
                     when {
@@ -225,7 +225,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     }
                 } else if (runtime.showContext && classes.isEmpty() && size.height >= 105.dp) {
                     Spacer(GlanceModifier.height(6.dp))
-                    Text("Flow University", style = TextStyle(color = WidgetMuted, fontSize = 11.sp))
+                    Text("Flow", style = TextStyle(color = WidgetMuted, fontSize = 11.sp))
                 }
             }
         }
@@ -252,7 +252,7 @@ class UniversityWeekWidget : GlanceAppWidget() {
                 val density = entries.take(days).joinToString("  ·  ") { (date, periods) -> "${weekday(date)} ${periods.size}" }.ifBlank { "주간 시간표 미등록" }
                 val small = compact(size.width, size.height)
                 WidgetShell(if (small) 10.dp else 16.dp) {
-                    Text("SCHOOL WEEK", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
+                    Text("Flow · 학교 주간", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
                     Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                     Text(if (dashboard == null) "학교 데이터를 열어주세요" else "이번 주 ${total}교시", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold))
                     if (runtime.showContext && size.height >= 82.dp) {
@@ -281,7 +281,7 @@ class UniversityWeekWidget : GlanceAppWidget() {
             } ?: "시간표 미등록"
             val small = compact(size.width, size.height)
             WidgetShell(if (small) 10.dp else 16.dp) {
-                Text("UNIVERSITY WEEK", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
+                Text("Flow · 대학 주간", style = TextStyle(color = WidgetAccent, fontSize = if (small) 9.sp else 10.sp, fontWeight = FontWeight.Bold))
                 Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                 Text(if (timetable == null) "주간 흐름 준비 중" else "${trim(credits)}학점 · ${minutes / 60}h ${minutes % 60}m", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold))
                 if (runtime.showContext && size.height >= 82.dp) {
@@ -304,7 +304,7 @@ class UniversityMiniWidget : GlanceAppWidget() {
             provideContent {
                 val size = LocalSize.current
                 MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {
-                    Text("SCHOOL · ${first?.let { "${it.period}교시" } ?: "TODAY"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                    Text("Flow · ${first?.let { "${it.period}교시" } ?: "오늘"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold))
                     Spacer(GlanceModifier.height(3.dp))
                     Text(first?.subject ?: if (classes.isEmpty()) "수업 없음" else "${classes.size}개 수업", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (size.width < 130.dp) 12.sp else 14.sp, fontWeight = FontWeight.Bold))
                 }
@@ -315,12 +315,12 @@ class UniversityMiniWidget : GlanceAppWidget() {
         val moment = UniversityStore(context).loadTimetable()?.classMoment()
         val item = moment?.current ?: moment?.next
         val prefix = when {
-            moment?.current != null -> "NOW"
-            moment?.next != null -> "NEXT"
-            else -> "FLOW"
+            moment?.current != null -> "지금"
+            moment?.next != null -> "다음"
+            else -> "Flow"
         }
         val title = item?.subject?.name ?: "수업 없음"
-        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start } ?: "University"
+        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start } ?: "대학교"
         provideContent {
             val size = LocalSize.current
             MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {

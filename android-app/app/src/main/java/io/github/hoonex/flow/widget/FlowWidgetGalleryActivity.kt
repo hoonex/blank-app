@@ -135,7 +135,7 @@ private fun WidgetGallery(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            FlowSectionTitle("WIDGETS", "Flow 위젯", "4종")
+            io.github.hoonex.flow.ui.FlowLargeTitle("위젯", "홈 화면에 필요한 Flow만 꺼내 놓으세요.", "4종")
             Text(
                 "홈 화면에 추가한 뒤에도 이 화면에서 설치된 위젯마다 Auto / School / University와 세부정보 표시를 따로 바꿀 수 있습니다.",
                 color = FlowPalette.Muted,
@@ -251,7 +251,7 @@ private fun WidgetCompactAction(label: String, onClick: () -> Unit) {
 }
 
 private fun sourceLabel(source: FlowWidgetSource): String = when (source) {
-    FlowWidgetSource.AUTO -> "AUTO"
-    FlowWidgetSource.SCHOOL -> "SCHOOL"
-    FlowWidgetSource.UNIVERSITY -> "UNIVERSITY"
+    FlowWidgetSource.AUTO -> "자동"
+    FlowWidgetSource.SCHOOL -> "학교"
+    FlowWidgetSource.UNIVERSITY -> "대학교"
 }

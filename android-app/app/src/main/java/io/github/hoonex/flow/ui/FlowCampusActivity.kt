@@ -131,23 +131,16 @@ private fun FlowCampusScreen(mapView: MapView) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "‹",
-                    color = FlowPalette.Mint,
-                    fontSize = 34.sp,
-                    modifier = Modifier.clickable { activity?.finish() }.padding(end = 12.dp)
-                )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                FlowSecondaryButton("‹", { activity?.finish() }, Modifier.padding(end = 12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("캠퍼스 지도", color = FlowPalette.Text, fontSize = 29.sp, fontWeight = FontWeight.Black)
-                    Text(university?.name ?: "Flow University", color = FlowPalette.Muted, fontSize = 12.sp)
+                    FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
                 }
-                FlowBrand(compact = true)
             }
         }
 
         if (university == null) {
-            item { NativeStateCard("대학을 먼저 선택하세요.", "Flow University에서 학교를 선택한 뒤 캠퍼스를 열 수 있습니다.") }
+            item { NativeStateCard("대학교를 먼저 선택하세요.", "Flow에서 대학교를 선택한 뒤 캠퍼스를 열 수 있습니다.") }
         } else if (loading && snapshot == null) {
             item {
                 FlowCard(Modifier.fillMaxWidth(), accent = true) {
@@ -175,8 +168,7 @@ private fun FlowCampusScreen(mapView: MapView) {
             item {
                 FlowCard(Modifier.fillMaxWidth(), accent = true) {
                     Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                        Text("LIVE MAP", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                        Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
+                        Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                         Text(
                             campus.center.roadAddress.ifBlank { campus.center.address }.ifBlank { university?.address.orEmpty() },
                             color = FlowPalette.Muted,

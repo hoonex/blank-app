@@ -99,8 +99,7 @@ class FlowWidgetConfigActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     item {
-                        FlowSectionTitle("WIDGET", "위젯 설정", "위젯별 저장")
-                        Text("각 위젯이 School / University 중 어떤 데이터를 보여줄지 독립적으로 선택합니다.", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
+                        io.github.hoonex.flow.ui.FlowLargeTitle("위젯 설정", "각 위젯의 데이터 소스와 표시 정보를 따로 정할 수 있습니다.")
                     }
                     item { FlowSectionTitle("SOURCE", "데이터 소스", "하나 선택") }
                     item {
@@ -214,12 +213,12 @@ private fun WidgetSourceRow(option: FlowWidgetSource, selected: Boolean, onClick
 
 private fun sourceTitle(source: FlowWidgetSource) = when (source) {
     FlowWidgetSource.AUTO -> "자동"
-    FlowWidgetSource.SCHOOL -> "School"
-    FlowWidgetSource.UNIVERSITY -> "University"
+    FlowWidgetSource.SCHOOL -> "학교"
+    FlowWidgetSource.UNIVERSITY -> "대학교"
 }
 
 private fun sourceDescription(source: FlowWidgetSource) = when (source) {
-    FlowWidgetSource.AUTO -> "현재 Flow 모드를 따라갑니다."
+    FlowWidgetSource.AUTO -> "현재 Flow 화면을 따라갑니다."
     FlowWidgetSource.SCHOOL -> "학교 시간표·급식·주간 데이터를 표시합니다."
     FlowWidgetSource.UNIVERSITY -> "대학 시간표와 현재·다음 수업을 표시합니다."
 }

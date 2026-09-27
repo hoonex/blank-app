@@ -111,7 +111,7 @@ class FlowGalaxyPhoneVisualTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("학교도, 대학도")
             scrollUntilText("과제 · 시험")
-            clickTextAndWaitForText("과제 · 시험", "Planner")
+            clickTextAndWaitForText("과제 · 시험", "플래너")
             waitForText("영어 수행평가 제출")
             capture("26-galaxy-s25-planner")
         }

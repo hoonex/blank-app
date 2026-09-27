@@ -84,14 +84,13 @@ fun FlowPlannerRoot() {
     ) {
         item {
             FlowBrand(compact = true)
-            Text("Planner", color = FlowPalette.Text, fontSize = 34.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 18.dp))
-            Text("School과 University에서 같이 쓰는 과제 · 시험 · 할 일", color = FlowPalette.Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp))
+            Spacer(Modifier.height(18.dp))
+            FlowLargeTitle("플래너", "과제, 시험, 할 일을 한곳에서 관리합니다.")
         }
 
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true) {
                 Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                    Text("FLOW PLAN", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
                     Text(
                         when {
                             stats.overdue > 0 -> "밀린 일정 ${stats.overdue}개"
@@ -239,9 +238,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 22.dp)
             ) {
-                Text("NEW PLAN", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                Text("일정 추가", color = FlowPalette.Text, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
-                Text("시스템 기본 폼 대신 Flow 입력 UI로 저장합니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
+                FlowLargeTitle("새 일정", "필요한 정보만 간단히 입력하세요.")
 
                 FlowTextField(title, { title = it }, "과제 · 시험 · 할 일 제목", Modifier.fillMaxWidth().padding(top = 16.dp), leading = "+")
                 FlowTextField(note, { note = it }, "메모 (선택)", Modifier.fillMaxWidth().padding(top = 9.dp), singleLine = false)

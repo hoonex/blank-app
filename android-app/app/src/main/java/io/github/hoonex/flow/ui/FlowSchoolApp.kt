@@ -140,9 +140,9 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            FlowBrand(compact = true)
-            Text("학교 생활을\n앱 안에서.", color = FlowPalette.Text, fontSize = 38.sp, lineHeight = 42.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 18.dp))
-            Text("NEIS 데이터는 JSON으로만 받아옵니다. 시간표·급식·학사일정은 앱이 직접 저장하고 그립니다.", color = FlowPalette.Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 10.dp))
+            FlowBrand()
+            Spacer(Modifier.height(26.dp))
+            FlowLargeTitle("학교", "학교를 선택하면 오늘 일정, 급식, 교통까지 한 흐름으로 이어집니다.")
         }
         if (school == null) {
             item { FlowTextField(query, { query = it }, "학교 이름", Modifier.fillMaxWidth(), leading = "⌕") }
@@ -220,15 +220,11 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
     val events = dashboard?.eventsOn(today).orEmpty()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                FlowBrand(compact = true)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(selection.school.name, color = FlowPalette.Text, fontSize = 19.sp, fontWeight = FontWeight.Black)
-                    Text("${selection.grade}학년 ${selection.className}반 · ${humanDate(today)}", color = FlowPalette.Muted, fontSize = 12.sp)
-                }
-                Text(if (dashboard != null) "CACHED" else "LIVE", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
-            }
+            FlowLargeTitle(
+                title = "오늘",
+                subtitle = "${selection.school.name} · ${selection.grade}학년 ${selection.className}반 · ${humanDate(today)}",
+                trailing = if (dashboard != null) "저장됨" else "새로고침"
+            )
         }
         if (error.isNotBlank()) item {
             FlowCard(Modifier.fillMaxWidth()) {
@@ -241,8 +237,12 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true) {
                 Column(Modifier.padding(20.dp)) {
-                    Text("TODAY", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Text(if (loading && dashboard == null) "불러오는 중…" else if (classes.isEmpty()) "오늘 수업 없음" else "${classes.size}교시 일정", color = FlowPalette.Text, fontSize = 26.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+                    Text(
+                        if (loading && dashboard == null) "불러오는 중…" else if (classes.isEmpty()) "오늘 수업 없음" else "${classes.size}교시 일정",
+                        color = FlowPalette.Text,
+                        fontSize = 27.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     Text(if (meals.isEmpty()) "급식 정보 없음" else meals.first().dishes.take(3).joinToString(" · "), color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 7.dp))
                 }
             }
@@ -310,8 +310,7 @@ private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashbo
     val days = dashboard?.timetable.orEmpty().groupBy { it.date }.toSortedMap()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            FlowSectionTitle("WEEK", "주간 시간표", "${selection.grade}학년 ${selection.className}반")
-            Text("NEIS 주간 데이터 · 앱 내부 캐시", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            FlowLargeTitle("주간 시간표", "${selection.school.name} · ${selection.grade}학년 ${selection.className}반")
         }
         if (days.isEmpty()) item { FlowCard(Modifier.fillMaxWidth()) { Text("주간 시간표가 아직 없습니다. 오늘 화면에서 새로고침하세요.", color = FlowPalette.Muted, fontSize = 13.sp, modifier = Modifier.padding(18.dp)) } }
         days.forEach { (date, periods) ->
@@ -348,7 +347,7 @@ private fun SchoolInfoScreen(school: FlowSchool) {
     ).filter { it.second.isNotBlank() }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            FlowSectionTitle("SCHOOL", school.name, school.type)
+            FlowLargeTitle(school.name, school.type.ifBlank { "학교 정보" })
             if (school.englishName.isNotBlank()) Text(school.englishName, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         }
         if (rows.isNotEmpty()) {
@@ -386,7 +385,7 @@ private fun SchoolSettingsScreen(
     checkUpdate: () -> Unit
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { FlowSectionTitle("SETTINGS", "Flow School", "${selection.grade}학년 ${selection.className}반") }
+        item { FlowLargeTitle("설정", "${selection.school.name} · ${selection.grade}학년 ${selection.className}반") }
         item { FlowSectionTitle("MANAGE", "데이터와 모드") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
@@ -399,8 +398,8 @@ private fun SchoolSettingsScreen(
                     )
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                     SchoolSettingsActionRow(
-                        title = "University로 전환",
-                        detail = "저장된 School 데이터는 유지한 채 University 모드로 이동합니다.",
+                        title = "대학교 모드로 전환",
+                        detail = "저장된 학교 데이터는 유지한 채 대학교 화면으로 이동합니다.",
                         action = onSwitchUniversity
                     )
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))

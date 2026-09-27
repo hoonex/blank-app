@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -74,7 +75,7 @@ private fun FlowShareActivity.ShareImportScreen(
                 FlowModeStore(this@ShareImportScreen).save(FlowMode.UNIVERSITY)
                 UniversityWidgets.updateAll(this@ShareImportScreen)
                 state = "success"
-                message = "시간표를 가져왔습니다. Flow University에서 바로 확인할 수 있습니다."
+                message = "시간표를 가져왔습니다. Flow의 대학교 화면에서 바로 확인할 수 있습니다."
             }
             .onFailure { error ->
                 state = "error"
@@ -87,23 +88,20 @@ private fun FlowShareActivity.ShareImportScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start
     ) {
-        Text("EVERYTIME → FLOW", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp)
-        Text(
+        FlowBrand()
+        androidx.compose.foundation.layout.Spacer(Modifier.height(26.dp))
+        FlowLargeTitle(
             when (state) {
                 "loading" -> "시간표 가져오는 중"
                 "success" -> "가져오기 완료"
                 else -> "가져올 수 없음"
-            },
-            color = FlowPalette.Text,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.padding(top = 8.dp)
+            }
         )
         Text(message, color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
         if (state == "loading") {
             CircularProgressIndicator(color = FlowPalette.Mint, strokeWidth = 2.dp, modifier = Modifier.padding(top = 22.dp))
         } else if (state == "success") {
-            FlowPrimaryButton("Flow University 열기", openUniversity, Modifier.fillMaxWidth().padding(top = 22.dp))
+            FlowPrimaryButton("대학교 화면 열기", openUniversity, Modifier.fillMaxWidth().padding(top = 22.dp))
         } else {
             FlowPrimaryButton("닫기", close, Modifier.fillMaxWidth().padding(top = 22.dp))
         }

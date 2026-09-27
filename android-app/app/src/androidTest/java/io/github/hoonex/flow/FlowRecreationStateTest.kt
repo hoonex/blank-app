@@ -47,11 +47,11 @@ class FlowRecreationStateTest {
             waitForText("학교도, 대학도")
             scrollUntilText("과제 · 시험")
             clickText("과제 · 시험")
-            waitForText("Planner")
+            waitForText("플래너")
 
             scenario.recreate()
 
-            waitForText("Planner")
+            waitForText("플래너")
             assertTrue("Planner destination fell back to the hub", !device.hasObject(By.textContains("학교도, 대학도")))
         }
     }

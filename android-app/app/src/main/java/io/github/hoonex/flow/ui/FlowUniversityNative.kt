@@ -192,8 +192,8 @@ private fun NativeUniversitySetup(onSelected: (University) -> Unit) {
     ) {
         item {
             FlowBrand()
-            Text("대학 생활을\nFlow로 엮기.", color = FlowPalette.Text, fontSize = 39.sp, lineHeight = 43.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 24.dp))
-            Text("시간표·공시·학과·캠퍼스 데이터를 네이티브 화면과 위젯으로 연결합니다.", color = FlowPalette.Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 10.dp))
+            Spacer(Modifier.height(26.dp))
+            FlowLargeTitle("대학교", "학교를 선택하면 시간표, 학과, 캠퍼스, 위젯이 연결됩니다.")
         }
         item { FlowTextField(query, { query = it }, "대학교 이름", Modifier.fillMaxWidth(), leading = "⌕") }
         item {
@@ -248,14 +248,7 @@ private fun NativeUniversityHome(
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                FlowBrand(compact = true)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(university.name, color = FlowPalette.Text, fontSize = 19.sp, fontWeight = FontWeight.Black)
-                    Text(major?.name ?: date, color = FlowPalette.Muted, fontSize = 12.sp)
-                }
-            }
+            FlowLargeTitle("홈", university.name, major?.name ?: date)
         }
         item { NativeNextClass(moment, timetable != null, onImport) }
         item { FlowSectionTitle("DASHBOARD", "오늘 흐름", if (timetable == null) "연결 필요" else "${today.size}개 일정") }
@@ -263,13 +256,13 @@ private fun NativeUniversityHome(
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NativeMetric("TODAY", if (timetable == null) "—" else "${today.size}개", Modifier.weight(1f))
-                        NativeMetric("CREDITS", timetable?.let { number(it.totalCredits()) } ?: "—", Modifier.weight(1f))
+                        NativeMetric("오늘", if (timetable == null) "—" else "${today.size}개", Modifier.weight(1f))
+                        NativeMetric("학점", timetable?.let { number(it.totalCredits()) } ?: "—", Modifier.weight(1f))
                     }
                     Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NativeMetric("GAP", gap?.let { "${it.durationMinutes}분" } ?: "—", Modifier.weight(1f))
-                        NativeMetric("WEEK", timetable?.let { "${it.weeklyMinutes() / 60}h ${it.weeklyMinutes() % 60}m" } ?: "—", Modifier.weight(1f))
+                        NativeMetric("공강", gap?.let { "${it.durationMinutes}분" } ?: "—", Modifier.weight(1f))
+                        NativeMetric("주간", timetable?.let { "${it.weeklyMinutes() / 60}h ${it.weeklyMinutes() % 60}m" } ?: "—", Modifier.weight(1f))
                     }
                 }
             }
@@ -282,8 +275,7 @@ private fun NativeUniversityHome(
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true, onClick = onImport) {
                 Column(Modifier.padding(18.dp)) {
-                    Text("EVERYTIME", color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
-                    Text(if (timetable == null) "시간표 연결" else "시간표 다시 동기화", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
+                    Text(if (timetable == null) "시간표 연결" else "시간표 다시 동기화", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Text("공개 공유 링크만 사용하며 로그인 정보는 받지 않습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
                 }
             }
@@ -303,8 +295,8 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
     val item = moment.current ?: moment.next
     FlowCard(Modifier.fillMaxWidth(), accent = true) {
         Column(Modifier.fillMaxWidth().padding(21.dp)) {
-            Text(if (moment.current != null) "NOW" else if (moment.next != null) "NEXT" else "FLOW", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-            Text(item?.subject?.name ?: if (connected) "오늘 일정 완료" else "시간표를 연결하세요", color = FlowPalette.Text, fontSize = 26.sp, lineHeight = 31.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+            Text(if (moment.current != null) "지금 수업" else if (moment.next != null) "다음 수업" else "오늘", color = FlowPalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(item?.subject?.name ?: if (connected) "오늘 일정 완료" else "시간표를 연결하세요", color = FlowPalette.Text, fontSize = 27.sp, lineHeight = 31.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             val detail = item?.let { listOf(if (moment.current != null) "${it.time.end} 종료" else "${it.time.start} 시작", it.time.place.ifBlank { it.subject.place }, it.subject.professor).filter(String::isNotBlank).joinToString(" · ") }
                 ?: if (connected) "남은 수업이 없습니다." else "Everytime 공개 링크로 한 번에 가져옵니다."
             Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
@@ -316,7 +308,7 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
 @Composable
 private fun NativeMetric(label: String, value: String, modifier: Modifier) {
     Column(modifier) {
-        Text(label, color = FlowPalette.Mint, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        Text(label, color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         Text(value, color = FlowPalette.Text, fontSize = 19.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
     }
 }
@@ -337,7 +329,7 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
     val days = listOf("월", "화", "수", "목", "금", "토", "일")
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item {
-            FlowSectionTitle("SCHEDULE", "시간표", timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" })
+            FlowLargeTitle("시간표", timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" } ?: "에브리타임 공개 공유 링크로 연결")
             if (timetable == null) {
                 Text("에브리타임 공개 공유 링크로 시간표를 연결할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
             }
@@ -411,7 +403,7 @@ private fun NativeUniversitySchool(
 
     val school = profile?.school ?: university
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { FlowSectionTitle("UNIVERSITY", school.name, listOf(school.region, school.campus).filter(String::isNotBlank).joinToString(" · ")) }
+        item { FlowLargeTitle(school.name, listOf(school.region, school.campus).filter(String::isNotBlank).joinToString(" · ")) }
         if (loading) item {
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(18.dp), color = FlowPalette.Mint, strokeWidth = 2.dp)
@@ -492,7 +484,7 @@ private fun NativeUniversitySettings(
     changeUniversity: () -> Unit
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-        item { FlowSectionTitle("SETTINGS", "Flow University", university.name) }
+        item { FlowLargeTitle("설정", university.name) }
 
         item { FlowSectionTitle("NOTIFICATIONS", "알림") }
         item {
@@ -563,8 +555,7 @@ private fun NativeEverytimeSheet(dismiss: () -> Unit, imported: (Timetable) -> U
     var error by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     NativeFlowSheet(dismiss) {
-        Text("EVERYTIME", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
-        Text("시간표 연결", color = FlowPalette.Text, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
+        FlowLargeTitle("시간표 연결", "공개 공유 링크만 사용합니다.")
         Text("공개 공유 링크만 읽고 로그인 정보는 받지 않습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
         FlowTextField(url, { url = it }, "https://everytime.kr/@…", Modifier.fillMaxWidth().padding(top = 16.dp), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Uri), leading = "↗")
         if (error.isNotBlank()) Text(error, color = FlowPalette.Danger, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
