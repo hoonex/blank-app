@@ -1,6 +1,14 @@
 package io.github.hoonex.flow.ui
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -61,6 +71,7 @@ import io.github.hoonex.flow.data.totalCredits
 import io.github.hoonex.flow.data.weeklyMinutes
 import io.github.hoonex.flow.notification.UniversityNotification
 import io.github.hoonex.flow.widget.UniversityWidgets
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -326,23 +337,161 @@ private fun NativeHubCard(title: String, subtitle: String, onClick: () -> Unit, 
 
 @Composable
 private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit) {
-    val days = listOf("월", "화", "수", "목", "금", "토", "일")
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    val now = rememberFlowMinuteNow()
+    var mode by rememberSaveable { mutableStateOf(0) }
+    val todayClasses = timetable?.classesForDay(todayIndex(now)).orEmpty()
+    val todayLabel = remember(now.toLocalDate()) {
+        now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 E요일", Locale.KOREAN))
+    }
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(13.dp)
+    ) {
         item {
-            FlowLargeTitle("시간표", timetable?.let { "${it.year}년 ${semester(it.semester)} · ${number(it.totalCredits())}학점" } ?: "에브리타임 공개 공유 링크로 연결")
-            if (timetable == null) {
-                Text("에브리타임 공개 공유 링크로 시간표를 연결할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            FlowLargeTitle(
+                "시간표",
+                timetable?.let { "\${it.year}년 \${semester(it.semester)} · \${number(it.totalCredits())}학점" }
+                    ?: "에브리타임 공개 공유 링크로 연결"
+            )
+        }
+
+        if (timetable == null) {
+            item {
+                FlowPrimaryButton("시간표 연결", onImport, Modifier.fillMaxWidth())
+            }
+            item {
+                FlowCard(Modifier.fillMaxWidth(), accent = true) {
+                    Text(
+                        "공개 공유 링크 하나면 홈 · 위젯 · 알림까지 함께 채워집니다.",
+                        color = FlowPalette.Text,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.padding(19.dp)
+                    )
+                }
+            }
+        } else {
+            item {
+                FlowSegmentedControl(
+                    options = listOf("오늘", "주간"),
+                    selectedIndex = mode,
+                    onSelected = { mode = it }
+                )
+            }
+
+            if (mode == 0) {
+                item { FlowSectionTitle("TODAY", "오늘 일정", todayLabel) }
+                if (todayClasses.isEmpty()) {
+                    item {
+                        FlowCard(Modifier.fillMaxWidth()) {
+                            Text(
+                                "오늘은 등록된 수업이 없습니다.",
+                                color = FlowPalette.Muted,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(18.dp)
+                            )
+                        }
+                    }
+                } else {
+                    item { NativeClassSurface(todayClasses) }
+                }
+            } else {
+                item { NativeUniversityWeekGrid(timetable) }
+            }
+
+            item {
+                FlowSecondaryButton("시간표 다시 가져오기", onImport, Modifier.fillMaxWidth())
             }
         }
-        item { FlowSecondaryButton(if (timetable == null) "에브리타임에서 가져오기" else "시간표 다시 가져오기", onImport, Modifier.fillMaxWidth()) }
-        if (timetable == null) {
-            item { FlowCard(Modifier.fillMaxWidth(), accent = true) { Text("공개 공유 링크 하나면 홈·위젯·알림이 같이 채워집니다.", color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.padding(19.dp)) } }
-        } else {
-            days.forEachIndexed { index, label ->
-                val classes = timetable.classesForDay(index)
-                if (classes.isNotEmpty()) {
-                    item { FlowSectionTitle("DAY ${index + 1}", "${label}요일", "${classes.size}개") }
-                    item { NativeClassSurface(classes) }
+    }
+}
+
+@Composable
+private fun NativeUniversityWeekGrid(timetable: Timetable) {
+    val dayLabels = listOf("월", "화", "수", "목", "금")
+    val week = remember(timetable) { (0..4).associateWith(timetable::classesForDay) }
+    val slots = remember(timetable) {
+        week.values
+            .flatten()
+            .map { it.time.startMinutes }
+            .distinct()
+            .sorted()
+    }
+
+    FlowCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(Modifier.width(44.dp))
+                dayLabels.forEach { day ->
+                    Text(
+                        day,
+                        color = FlowPalette.Muted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+
+            Box(Modifier.fillMaxWidth().height(1.dp).background(FlowPalette.Stroke))
+
+            slots.forEachIndexed { slotIndex, startMinute ->
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val representative = week.values.flatten().firstOrNull { it.time.startMinutes == startMinute }
+                    Box(
+                        Modifier.width(44.dp).height(64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            representative?.time?.start.orEmpty(),
+                            color = FlowPalette.Dim,
+                            fontSize = 9.sp,
+                            lineHeight = 10.sp
+                        )
+                    }
+
+                    (0..4).forEach { day ->
+                        val scheduled = week[day]?.firstOrNull { it.time.startMinutes == startMinute }
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(64.dp)
+                                .padding(2.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (scheduled != null) FlowPalette.SurfaceRaised else FlowPalette.SurfaceSoft.copy(alpha = .34f))
+                                .padding(horizontal = 4.dp, vertical = 5.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                scheduled?.subject?.name.orEmpty(),
+                                color = if (scheduled != null) FlowPalette.Text else Color.Transparent,
+                                fontSize = 9.sp,
+                                lineHeight = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                if (slotIndex != slots.lastIndex) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 52.dp, end = 8.dp)
+                            .height(1.dp)
+                            .background(FlowPalette.Stroke.copy(alpha = .55f))
+                    )
                 }
             }
         }
@@ -554,7 +703,7 @@ private fun NativeEverytimeSheet(dismiss: () -> Unit, imported: (Timetable) -> U
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-    NativeFlowSheet(dismiss) {
+    NativeFlowSheet(dismiss) { close ->
         FlowLargeTitle("시간표 연결", "공개 공유 링크만 사용합니다.")
         Text("공개 공유 링크만 읽고 로그인 정보는 받지 않습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
         FlowTextField(url, { url = it }, "https://everytime.kr/@…", Modifier.fillMaxWidth().padding(top = 16.dp), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Uri), leading = "↗")
@@ -575,7 +724,7 @@ private fun NativeEverytimeSheet(dismiss: () -> Unit, imported: (Timetable) -> U
             Modifier.fillMaxWidth().padding(top = 14.dp),
             enabled = !loading && url.isNotBlank()
         )
-        FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = 8.dp))
+        FlowSecondaryButton("닫기", close, Modifier.fillMaxWidth().padding(top = 8.dp))
     }
 }
 
@@ -594,7 +743,7 @@ private fun NativeMajorSheet(university: University, selected: UniversityMajor?,
     val filtered = remember(majors, query) {
         if (query.isBlank()) majors else majors.filter { "${it.college}${it.name}${it.category}".replace(" ", "").contains(query.replace(" ", ""), ignoreCase = true) }
     }
-    NativeFlowSheet(dismiss, tall = true) {
+    NativeFlowSheet(dismiss, tall = true) { close ->
         Text("MAJOR", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
         Text("학과 선택", color = FlowPalette.Text, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
         FlowTextField(query, { query = it }, "학과 또는 단과대학 검색", Modifier.fillMaxWidth().padding(top = 14.dp), leading = "⌕")
@@ -610,23 +759,74 @@ private fun NativeMajorSheet(university: University, selected: UniversityMajor?,
                 }
             }
         }
-        FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = 9.dp))
+        FlowSecondaryButton("닫기", close, Modifier.fillMaxWidth().padding(top = 9.dp))
     }
 }
 
 @Composable
-private fun NativeFlowSheet(dismiss: () -> Unit, tall: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
-    Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Color(0xB3000000)).clickable(onClick = dismiss), contentAlignment = Alignment.BottomCenter) {
-            Column(
-                Modifier.fillMaxWidth().then(if (tall) Modifier.fillMaxHeight(0.86f) else Modifier)
-                    .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                    .background(FlowPalette.Surface)
-                    .clickable(onClick = {})
-                    .navigationBarsPadding()
-                    .padding(20.dp),
-                content = content
-            )
+private fun NativeFlowSheet(
+    dismiss: () -> Unit,
+    tall: Boolean = false,
+    content: @Composable ColumnScope.(close: () -> Unit) -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+    var closing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val dimAlpha by animateFloatAsState(
+        targetValue = if (visible) .62f else 0f,
+        animationSpec = tween(220),
+        label = "flow-sheet-dim"
+    )
+
+    fun requestClose() {
+        if (closing) return
+        closing = true
+        visible = false
+        scope.launch {
+            delay(260)
+            dismiss()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    Dialog(
+        onDismissRequest = { requestClose() },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = dimAlpha))
+                .clickable(onClick = { requestClose() }),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            AnimatedVisibility(
+                visible = visible,
+                enter = slideInVertically(
+                    initialOffsetY = { fullHeight -> fullHeight },
+                    animationSpec = tween(360, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(180)),
+                exit = slideOutVertically(
+                    targetOffsetY = { fullHeight -> fullHeight },
+                    animationSpec = tween(240, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(160))
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .then(if (tall) Modifier.fillMaxHeight(0.86f) else Modifier)
+                        .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                        .background(FlowPalette.Surface)
+                        .clickable(onClick = {})
+                        .navigationBarsPadding()
+                        .padding(20.dp)
+                ) {
+                    content(::requestClose)
+                }
+            }
         }
     }
 }

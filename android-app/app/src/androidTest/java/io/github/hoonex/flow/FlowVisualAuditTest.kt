@@ -86,6 +86,8 @@ class FlowVisualAuditTest {
 
             clickTextAndWaitForText("시간표", "2026년 2학기")
             capture("05-university-schedule")
+            clickTextAndWaitForText("주간", "09:00")
+            capture("05b-university-week-grid")
 
             clickTextAndWaitForText("학교", "공시 지표")
             capture("06-university-profile")
@@ -108,6 +110,10 @@ class FlowVisualAuditTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동고등학교")
             capture("09-school-today")
+
+            val tomorrow = LocalDate.now().plusDays(1).dayOfMonth.toString()
+            clickTextAndWaitForText(tomorrow, "한국사")
+            capture("09b-school-date-selected")
 
             clickTextAndWaitForText("시간표", "주간 시간표")
             capture("10-school-week")
@@ -139,7 +145,7 @@ class FlowVisualAuditTest {
         }
 
         val captures = screenshotDir.listFiles { file -> file.extension == "png" }.orEmpty()
-        assertTrue("expected fifteen visual-audit screenshots, found ${captures.size}", captures.size == 15)
+        assertTrue("expected seventeen visual-audit screenshots, found ${captures.size}", captures.size == 17)
         captures.forEach { file ->
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
             assertNotNull("could not decode screenshot: ${file.name}", bitmap)
@@ -160,7 +166,10 @@ class FlowVisualAuditTest {
     private fun seedRepresentativeSchool() {
         val today = LocalDate.now()
         val todayRaw = schoolDate8(today)
-        val tomorrowRaw = schoolDate8(today.plusDays(1))
+        val tomorrow = today.plusDays(1)
+        val tomorrowRaw = schoolDate8(tomorrow)
+        val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val weekEnd = weekStart.plusDays(4)
         val school = FlowSchool(
             officeCode = "D10",
             officeName = "대구광역시교육청",
@@ -176,19 +185,33 @@ class FlowVisualAuditTest {
             highSchoolType = "일반고"
         )
         val selection = SchoolSelection(school, "2", "6")
-        val periods = listOf(
-            SchoolPeriod(todayRaw, 1, "국어", "2", "6"),
-            SchoolPeriod(todayRaw, 2, "수학", "2", "6"),
-            SchoolPeriod(todayRaw, 3, "영어", "2", "6"),
-            SchoolPeriod(todayRaw, 4, "과학", "2", "6"),
-            SchoolPeriod(tomorrowRaw, 1, "한국사", "2", "6"),
-            SchoolPeriod(tomorrowRaw, 2, "정보", "2", "6")
+        val subjects = listOf(
+            listOf("국어", "수학", "영어", "과학", "정보"),
+            listOf("영어", "문학", "수학", "체육", "한국사"),
+            listOf("수학", "음악", "정보", "영어", "사회"),
+            listOf("과학", "국어", "체육", "수학", "영어"),
+            listOf("한국사", "정보", "문학", "과학", "자율")
         )
+        val periods = (0L..4L).flatMap { dayOffset ->
+            val date = weekStart.plusDays(dayOffset)
+            val raw = schoolDate8(date)
+            subjects[dayOffset.toInt()].mapIndexed { index, subject ->
+                val displaySubject = if (date == tomorrow && index == 0) "한국사" else subject
+                SchoolPeriod(raw, index + 1, displaySubject, "2", "6")
+            }
+        }.toMutableList().apply {
+            if (none { it.date == tomorrowRaw }) {
+                add(SchoolPeriod(tomorrowRaw, 1, "한국사", "2", "6"))
+                add(SchoolPeriod(tomorrowRaw, 2, "정보", "2", "6"))
+            }
+        }
+        val from = minOf(weekStart, tomorrow)
+        val to = maxOf(weekEnd, tomorrow)
         val dashboard = SchoolDashboard(
             school = school,
             selected = todayRaw,
-            from = todayRaw,
-            to = tomorrowRaw,
+            from = schoolDate8(from),
+            to = schoolDate8(to),
             timetable = periods,
             meals = listOf(SchoolMeal(todayRaw, "중식", listOf("현미밥", "미역국", "닭갈비", "김치"), "742 kcal")),
             events = listOf(SchoolEvent(todayRaw, "동아리 활동", "창의융합 프로젝트"))

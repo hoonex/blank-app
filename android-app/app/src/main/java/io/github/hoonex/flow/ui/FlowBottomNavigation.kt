@@ -3,19 +3,26 @@ package io.github.hoonex.flow.ui
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -72,77 +78,106 @@ fun FlowBottomNavigation(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 8.dp)
+            .padding(start = 7.dp, end = 7.dp, top = 3.dp, bottom = 6.dp)
     ) {
         FlowGlassSurface(Modifier.fillMaxWidth()) {
-            Row(
+            BoxWithConstraints(
                 Modifier
                     .fillMaxWidth()
-                    .padding(5.dp)
-                    .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(4.dp)
+                    .selectableGroup()
             ) {
-                labels.forEachIndexed { index, label ->
-                    val active = index == safeSelectedIndex
-                    val interaction = remember(label) { MutableInteractionSource() }
-                    val itemShape = RoundedCornerShape(21.dp)
-                    val background by animateColorAsState(
-                        targetValue = if (active) FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .22f else .13f) else Color.Transparent,
-                        animationSpec = tween(180),
-                        label = "flow-tab-bg"
-                    )
-                    val foreground by animateColorAsState(
-                        targetValue = if (active) FlowPalette.Accent else FlowPalette.Muted,
-                        animationSpec = tween(180),
-                        label = "flow-tab-fg"
-                    )
-                    val scale by animateFloatAsState(
-                        targetValue = if (active) 1f else .96f,
-                        animationSpec = tween(180),
-                        label = "flow-tab-scale"
-                    )
+                val gap = 2.dp
+                val count = labels.size.coerceAtLeast(1)
+                val itemWidth = (maxWidth - gap * (count - 1)) / count
+                val targetX = (itemWidth + gap) * safeSelectedIndex
+                val indicatorX by animateDpAsState(
+                    targetValue = targetX,
+                    animationSpec = spring(
+                        dampingRatio = 0.82f,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "flow-tab-indicator-x"
+                )
 
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .heightIn(min = 54.dp)
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            }
-                            .clip(itemShape)
-                            .background(background)
-                            .selectable(
-                                selected = active,
-                                role = Role.Tab,
-                                interactionSource = interaction,
-                                indication = null,
-                                onClick = {
-                                    if (!active) {
-                                        savedSelectedIndex = index
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                        onSelected(index)
-                                    }
-                                }
+                Box(
+                    Modifier
+                        .offset(x = indicatorX)
+                        .width(itemWidth)
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .graphicsLayer {
+                            shadowElevation = if (FlowPalette.IsDark) 7f else 3f
+                        }
+                        .background(
+                            FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .24f else .14f)
+                        )
+                )
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(gap),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    labels.forEachIndexed { index, label ->
+                        val active = index == safeSelectedIndex
+                        val interaction = remember(label) { MutableInteractionSource() }
+                        val foreground by animateColorAsState(
+                            targetValue = if (active) FlowPalette.AccentBright else FlowPalette.Muted,
+                            animationSpec = tween(180),
+                            label = "flow-tab-fg"
+                        )
+                        val scale by animateFloatAsState(
+                            targetValue = if (active) 1f else .96f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
                             ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            FlowIcon(
-                                glyph = flowGlyphForTab(label),
-                                modifier = Modifier.size(20.dp),
-                                tint = foreground
-                            )
-                            Text(
-                                label,
-                                color = foreground,
-                                fontSize = 10.sp,
-                                lineHeight = 11.sp,
-                                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
-                                maxLines = 1,
-                                modifier = Modifier.alpha(if (active) 1f else .82f)
-                            )
+                            label = "flow-tab-scale"
+                        )
+
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .heightIn(min = 56.dp)
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
+                                .selectable(
+                                    selected = active,
+                                    role = Role.Tab,
+                                    interactionSource = interaction,
+                                    indication = null,
+                                    onClick = {
+                                        if (!active) {
+                                            savedSelectedIndex = index
+                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            onSelected(index)
+                                        }
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                FlowIcon(
+                                    glyph = flowGlyphForTab(label),
+                                    modifier = Modifier.size(20.dp),
+                                    tint = foreground
+                                )
+                                Text(
+                                    label,
+                                    color = foreground,
+                                    fontSize = 10.sp,
+                                    lineHeight = 11.sp,
+                                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    modifier = Modifier.alpha(if (active) 1f else .80f)
+                                )
+                            }
                         }
                     }
                 }

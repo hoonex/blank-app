@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,10 +26,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.hoonex.flow.data.FlowSchool
@@ -39,8 +45,10 @@ import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 private enum class SchoolTab(val label: String) {
@@ -59,13 +67,28 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
     var tab by remember { mutableStateOf(SchoolTab.TODAY) }
     val now = rememberFlowMinuteNow()
     val today = schoolDate8(now.toLocalDate())
+    val selectionKey = selection?.school?.schoolCode ?: "setup"
+    var selectedDateRaw by rememberSaveable(selectionKey) { mutableStateOf(today) }
+    var previousTodayRaw by remember { mutableStateOf(today) }
+    val selectedDate = remember(selectedDateRaw) {
+        runCatching { LocalDate.parse(selectedDateRaw, DateTimeFormatter.BASIC_ISO_DATE) }
+            .getOrDefault(now.toLocalDate())
+    }
 
-    suspend fun refresh(force: Boolean = false) {
+    LaunchedEffect(today) {
+        if (selectedDateRaw == previousTodayRaw) selectedDateRaw = today
+        previousTodayRaw = today
+    }
+
+    suspend fun refresh(force: Boolean = false, targetDate: LocalDate = selectedDate) {
         val selected = selection ?: return
-        if (!force && dashboard?.selected == today) return
+        val targetRaw = schoolDate8(targetDate)
+        val cached = dashboard
+        val coveredByCache = cached != null && targetRaw >= cached.from && targetRaw <= cached.to
+        if (!force && coveredByCache) return
         loading = true
         error = ""
-        runCatching { SchoolApi.dashboard(selected, now.toLocalDate()) }
+        runCatching { SchoolApi.dashboard(selected, targetDate) }
             .onSuccess {
                 dashboard = it
                 store.saveDashboard(it)
@@ -75,7 +98,9 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
         loading = false
     }
 
-    LaunchedEffect(selection, today) { if (selection != null) refresh() }
+    LaunchedEffect(selection, selectedDateRaw) {
+        if (selection != null) refresh(targetDate = selectedDate)
+    }
 
     if (selection == null) {
         SchoolSetupScreen { chosen ->
@@ -101,7 +126,16 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).statusBarsPadding()) {
             when (tab) {
-                SchoolTab.TODAY -> SchoolTodayScreen(selection!!, dashboard, loading, error, today) { scope.launch { refresh(true) } }
+                SchoolTab.TODAY -> SchoolTodayScreen(
+                    selection = selection!!,
+                    dashboard = dashboard,
+                    loading = loading,
+                    error = error,
+                    selectedDate = selectedDateRaw,
+                    actualToday = today,
+                    onDateSelected = { selectedDateRaw = it },
+                    refresh = { scope.launch { refresh(true) } }
+                )
                 SchoolTab.WEEK -> SchoolWeekScreen(selection!!, dashboard)
                 SchoolTab.TRANSIT -> FlowSchoolTransitScreen(selection!!)
                 SchoolTab.INFO -> SchoolInfoScreen(selection!!.school)
@@ -214,16 +248,40 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
 }
 
 @Composable
-private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashboard?, loading: Boolean, error: String, today: String, refresh: () -> Unit) {
-    val classes = dashboard?.classesOn(today).orEmpty()
-    val meals = dashboard?.mealsOn(today).orEmpty()
-    val events = dashboard?.eventsOn(today).orEmpty()
+private fun SchoolTodayScreen(
+    selection: SchoolSelection,
+    dashboard: SchoolDashboard?,
+    loading: Boolean,
+    error: String,
+    selectedDate: String,
+    actualToday: String,
+    onDateSelected: (String) -> Unit,
+    refresh: () -> Unit
+) {
+    val selectedLocalDate = remember(selectedDate) {
+        runCatching { LocalDate.parse(selectedDate, DateTimeFormatter.BASIC_ISO_DATE) }
+            .getOrDefault(LocalDate.now())
+    }
+    val actualTodayDate = remember(actualToday) {
+        runCatching { LocalDate.parse(actualToday, DateTimeFormatter.BASIC_ISO_DATE) }
+            .getOrDefault(LocalDate.now())
+    }
+    val classes = dashboard?.classesOn(selectedDate).orEmpty()
+    val meals = dashboard?.mealsOn(selectedDate).orEmpty()
+    val events = dashboard?.eventsOn(selectedDate).orEmpty()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item {
             FlowLargeTitle(
-                title = "오늘",
-                subtitle = "${selection.school.name} · ${selection.grade}학년 ${selection.className}반 · ${humanDate(today)}",
-                trailing = if (dashboard != null) "저장됨" else "새로고침"
+                title = if (selectedDate == actualToday) "오늘" else selectedLocalDate.format(DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN)),
+                subtitle = "${selection.school.name} · ${selection.grade}학년 ${selection.className}반 · ${humanDate(selectedDate)}",
+                trailing = if (dashboard?.selected == selectedDate) "저장됨" else null
+            )
+        }
+        item {
+            SchoolDateSelector(
+                selectedDate = selectedLocalDate,
+                actualToday = actualTodayDate,
+                onSelected = { onDateSelected(schoolDate8(it)) }
             )
         }
         if (error.isNotBlank()) item {
@@ -305,24 +363,175 @@ private fun SchoolTodayScreen(selection: SchoolSelection, dashboard: SchoolDashb
     }
 }
 
+
+@Composable
+private fun SchoolDateSelector(
+    selectedDate: LocalDate,
+    actualToday: LocalDate,
+    onSelected: (LocalDate) -> Unit
+) {
+    val dates = remember(actualToday) { (-3L..10L).map(actualToday::plusDays) }
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 1.dp)
+    ) {
+        items(dates, key = { it.toEpochDay() }) { date ->
+            val selected = date == selectedDate
+            val today = date == actualToday
+            Column(
+                modifier = Modifier
+                    .width(54.dp)
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(
+                        when {
+                            selected -> FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .24f else .13f)
+                            else -> FlowPalette.SurfaceSoft
+                        }
+                    )
+                    .clickable { onSelected(date) }
+                    .padding(vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    date.format(DateTimeFormatter.ofPattern("E", Locale.KOREAN)),
+                    color = if (selected) FlowPalette.AccentBright else FlowPalette.Muted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    date.dayOfMonth.toString(),
+                    color = if (selected) FlowPalette.Text else FlowPalette.Muted,
+                    fontSize = 17.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+                if (today) {
+                    Box(
+                        Modifier
+                            .padding(top = 5.dp)
+                            .width(4.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(FlowPalette.Accent)
+                    )
+                } else {
+                    Spacer(Modifier.height(9.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashboard?) {
-    val days = dashboard?.timetable.orEmpty().groupBy { it.date }.toSortedMap()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val anchor = remember(dashboard?.selected) {
+        runCatching {
+            LocalDate.parse(dashboard?.selected.orEmpty(), DateTimeFormatter.BASIC_ISO_DATE)
+        }.getOrDefault(LocalDate.now())
+    }
+    val weekStart = remember(anchor) { anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
+    val weekDates = remember(weekStart) { (0L..4L).map(weekStart::plusDays) }
+    val timetable = dashboard?.timetable.orEmpty()
+    val classesByDate = remember(timetable) { timetable.groupBy { it.date } }
+    val maxPeriod = (timetable.maxOfOrNull { it.period } ?: 7).coerceAtLeast(7)
+    val today = LocalDate.now()
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
         item {
-            FlowLargeTitle("주간 시간표", "${selection.school.name} · ${selection.grade}학년 ${selection.className}반")
+            FlowLargeTitle(
+                "주간 시간표",
+                "\${selection.school.name} · \${selection.grade}학년 \${selection.className}반",
+                "\${weekStart.monthValue}/\${weekStart.dayOfMonth}–\${weekStart.plusDays(4).dayOfMonth}"
+            )
         }
-        if (days.isEmpty()) item { FlowCard(Modifier.fillMaxWidth()) { Text("주간 시간표가 아직 없습니다. 오늘 화면에서 새로고침하세요.", color = FlowPalette.Muted, fontSize = 13.sp, modifier = Modifier.padding(18.dp)) } }
-        days.forEach { (date, periods) ->
-            item { Text(humanDate(date), color = FlowPalette.Mint, fontWeight = FontWeight.Black, fontSize = 12.sp) }
-            item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                        periods.sortedBy { it.period }.forEach { p ->
-                            Row(Modifier.fillMaxWidth()) {
-                                Text("${p.period}교시", color = FlowPalette.Dim, fontSize = 12.sp, modifier = Modifier.width(52.dp))
-                                Text(p.subject, color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        item {
+            FlowCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(Modifier.width(36.dp))
+                        weekDates.forEach { date ->
+                            Column(
+                                Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    date.format(DateTimeFormatter.ofPattern("E", Locale.KOREAN)),
+                                    color = if (date == today) FlowPalette.AccentBright else FlowPalette.Muted,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    date.dayOfMonth.toString(),
+                                    color = if (date == today) FlowPalette.Accent else FlowPalette.Text,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
                             }
+                        }
+                    }
+
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(FlowPalette.Stroke))
+
+                    (1..maxPeriod).forEach { period ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                Modifier
+                                    .width(36.dp)
+                                    .height(54.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    period.toString(),
+                                    color = FlowPalette.Dim,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            weekDates.forEach { date ->
+                                val raw = schoolDate8(date)
+                                val periodItem = classesByDate[raw]?.firstOrNull { it.period == period }
+                                Box(
+                                    Modifier
+                                        .weight(1f)
+                                        .height(54.dp)
+                                        .padding(2.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (periodItem != null) FlowPalette.SurfaceRaised else FlowPalette.SurfaceSoft.copy(alpha = .38f))
+                                        .padding(horizontal = 4.dp, vertical = 5.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        periodItem?.subject.orEmpty(),
+                                        color = if (periodItem != null) FlowPalette.Text else Color.Transparent,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                        if (period != maxPeriod) {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 44.dp, end = 8.dp)
+                                    .height(1.dp)
+                                    .background(FlowPalette.Stroke.copy(alpha = .55f))
+                            )
                         }
                     }
                 }
