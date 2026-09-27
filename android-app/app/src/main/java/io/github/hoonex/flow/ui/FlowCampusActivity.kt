@@ -92,6 +92,7 @@ fun FlowCampusTab() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val mapView = remember(context) {
+        MapLibre.getInstance(context)
         MapView(context).apply { onCreate(null) }
     }
 

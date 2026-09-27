@@ -99,9 +99,10 @@ class FlowMotionBehaviorTest {
                     "could not locate nav accent: before=$beforeX mid=$midX settled=$settledX",
                     beforeX >= 0 && midX >= 0 && settledX >= 0
                 )
+                val minimumTravel = (device.displayWidth / 6).coerceAtLeast(40)
                 assertTrue(
-                    "nav selection did not move to the next tab: before=$beforeX settled=$settledX",
-                    settledX - beforeX >= 70
+                    "nav selection did not move one tab width: before=$beforeX settled=$settledX minimum=$minimumTravel",
+                    settledX - beforeX >= minimumTravel
                 )
                 assertTrue(
                     "nav selection jumped instead of visibly sliding: before=$beforeX mid=$midX settled=$settledX",
