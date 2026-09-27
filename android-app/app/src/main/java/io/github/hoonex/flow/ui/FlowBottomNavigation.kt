@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -56,36 +58,43 @@ fun FlowBottomNavigation(
     val labelsKey = labels.joinToString("|")
     val safeSelectedIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
     var savedSelectedIndex by rememberSaveable(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
-    var lastObservedSelectedIndex by remember(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
-    var locallyRequestedIndex by remember(labelsKey) { mutableIntStateOf(safeSelectedIndex) }
+    var restoreChecked by remember(labelsKey) { mutableStateOf(false) }
     val animatedIndex = remember(labelsKey) { Animatable(safeSelectedIndex.toFloat()) }
     val animationScope = rememberCoroutineScope()
+    var animationJob by remember(labelsKey) { mutableStateOf<Job?>(null) }
 
-    LaunchedEffect(labelsKey, safeSelectedIndex) {
-        if (safeSelectedIndex != locallyRequestedIndex) {
-            locallyRequestedIndex = safeSelectedIndex
-            animatedIndex.animateTo(
-                targetValue = safeSelectedIndex.toFloat(),
-                animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-            )
-        }
+    suspend fun animateThenSelect(index: Int) {
+        animatedIndex.animateTo(
+            targetValue = index.toFloat(),
+            animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+        )
+        onSelected(index)
     }
 
-    LaunchedEffect(labelsKey, safeSelectedIndex, savedSelectedIndex) {
+    LaunchedEffect(labelsKey, safeSelectedIndex) {
         if (labels.isEmpty()) return@LaunchedEffect
-        if (safeSelectedIndex != lastObservedSelectedIndex) {
+        if (!restoreChecked) {
+            restoreChecked = true
+            if (savedSelectedIndex in labels.indices && savedSelectedIndex != safeSelectedIndex) {
+                onSelected(savedSelectedIndex)
+            }
+        } else {
             savedSelectedIndex = safeSelectedIndex
-            lastObservedSelectedIndex = safeSelectedIndex
-        } else if (savedSelectedIndex in labels.indices && savedSelectedIndex != safeSelectedIndex) {
-            lastObservedSelectedIndex = savedSelectedIndex
-            onSelected(savedSelectedIndex)
+            if (abs(animatedIndex.value - safeSelectedIndex.toFloat()) > 0.001f && animationJob?.isActive != true) {
+                animatedIndex.animateTo(
+                    targetValue = safeSelectedIndex.toFloat(),
+                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                )
+            }
         }
     }
 
     BackHandler(enabled = labels.isNotEmpty() && safeSelectedIndex != 0) {
-        savedSelectedIndex = 0
-        lastObservedSelectedIndex = 0
-        onSelected(0)
+        animationJob?.cancel()
+        animationJob = animationScope.launch {
+            animatedIndex.stop()
+            animateThenSelect(0)
+        }
     }
 
     Box(
@@ -146,18 +155,12 @@ fun FlowBottomNavigation(
                                     interactionSource = interaction,
                                     indication = null,
                                     onClick = {
-                                        if (!active) {
-                                            savedSelectedIndex = index
-                                            locallyRequestedIndex = index
+                                        if (!active && animationJob?.isActive != true) {
                                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                            animationScope.launch {
+                                            animationJob = animationScope.launch {
                                                 animatedIndex.stop()
-                                                animatedIndex.animateTo(
-                                                    targetValue = index.toFloat(),
-                                                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-                                                )
+                                                animateThenSelect(index)
                                             }
-                                            onSelected(index)
                                         }
                                     }
                                 ),
