@@ -82,13 +82,13 @@ class FlowVisualAuditTest {
             clickTextAndWaitForText("시간표", "2026년 2학기")
             capture("05-university-schedule")
 
+            clickTextAndWaitForText("주간", "09:00")
+            capture("05b-university-week-grid")
+
             scrollUntilText("시간표 다시 가져오기")
             clickTextAndWaitForText("시간표 다시 가져오기", "시간표 연결")
             capture("04-everytime-sheet")
             clickTextUntilGone("닫기")
-
-            clickTextAndWaitForText("주간", "09:00")
-            capture("05b-university-week-grid")
 
             clickTextAndWaitForText("학교", "공시 지표")
             capture("06-university-profile")
