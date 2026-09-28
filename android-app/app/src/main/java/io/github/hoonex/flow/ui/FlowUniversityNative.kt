@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +70,8 @@ import io.github.hoonex.flow.data.todayIndex
 import io.github.hoonex.flow.data.totalCredits
 import io.github.hoonex.flow.data.weeklyMinutes
 import io.github.hoonex.flow.notification.UniversityNotification
+import io.github.hoonex.flow.update.GitHubUpdateManager
+import io.github.hoonex.flow.update.UpdatePhase
 import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -655,7 +658,9 @@ private fun NativeUniversitySettings(
     checkUpdate: () -> Unit,
     reimport: () -> Unit,
     changeUniversity: () -> Unit
-) {
+ ) {
+    val updateStatus by GitHubUpdateManager.status.collectAsState()
+    val updateBusy = updateStatus.phase in setOf(UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.VERIFYING)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item { FlowLargeTitle("설정", university.name) }
 
@@ -687,7 +692,19 @@ private fun NativeUniversitySettings(
                 Column(Modifier.fillMaxWidth()) {
                     NativeSettingsRow("에브리타임 다시 가져오기", "공개 공유 링크의 최신 시간표로 교체합니다.", reimport)
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
-                    NativeSettingsRow("업데이트 확인", "서명·SHA-256을 검증한 릴리스를 설치합니다.", checkUpdate)
+                    NativeSettingsRow(
+                        title = when (updateStatus.phase) {
+                            UpdatePhase.CHECKING -> "업데이트 확인 중…"
+                            UpdatePhase.DOWNLOADING -> "업데이트 다운로드 중…"
+                            UpdatePhase.VERIFYING -> "업데이트 검증 중…"
+                            UpdatePhase.READY -> "업데이트 설치 준비 완료"
+                            UpdatePhase.UP_TO_DATE -> "Flow가 최신 버전입니다"
+                            else -> "업데이트 확인"
+                        },
+                        detail = updateStatus.message,
+                        action = checkUpdate,
+                        enabled = !updateBusy
+                    )
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                     NativeSettingsRow("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true)
                 }
@@ -698,16 +715,16 @@ private fun NativeUniversitySettings(
 }
 
 @Composable
-private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false) {
+private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false, enabled: Boolean = true) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = action).padding(horizontal = 17.dp, vertical = 15.dp),
+        Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = action).padding(horizontal = 17.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text(title, color = if (!enabled) FlowPalette.Dim else if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
         }
-        Text("›", color = if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
+        Text("›", color = if (!enabled) FlowPalette.Dim else if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
     }
 }
 
