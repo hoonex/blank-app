@@ -210,7 +210,7 @@ private fun FlowCampusScreen(mapView: MapView) {
             }
 
             if (campus.places.isNotEmpty()) {
-                item { FlowSectionTitle("CLASSES", "강의 장소", "탭하면 지도에 도보 경로") }
+                item { FlowSectionTitle("", "강의 장소", "탭하면 지도에 도보 경로") }
                 items(campus.places, key = { "${it.raw}-${it.place?.id}" }) { lecture ->
                     val place = lecture.place
                     FlowCard(
