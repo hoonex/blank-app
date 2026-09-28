@@ -58,7 +58,7 @@ import io.github.hoonex.flow.BuildConfig
 import io.github.hoonex.flow.data.ClassMoment
 import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTaskScope
-import io.github.hoonex.flow.data.isDueOn
+import io.github.hoonex.flow.data.activeForDay
 import io.github.hoonex.flow.data.ScheduledClass
 import io.github.hoonex.flow.data.Timetable
 import io.github.hoonex.flow.data.University
@@ -252,9 +252,7 @@ private fun NativeUniversityHome(
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
     val dayTasks = remember(now.toLocalDate()) {
-        FlowPlannerStore(context).load().filter {
-            !it.done && it.isDueOn(now.toLocalDate()) && it.scope in setOf(FlowTaskScope.FLOW, FlowTaskScope.UNIVERSITY)
-        }
+        FlowPlannerStore(context).load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val date = remember(now.toLocalDate()) {
