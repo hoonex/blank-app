@@ -85,6 +85,7 @@ class FlowGalaxyPhoneVisualTest {
             capture("22-galaxy-s25-hub")
         }
 
+        seedIntegratedDayTask()
         seedRepresentativeUniversity()
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -215,6 +216,22 @@ class FlowGalaxyPhoneVisualTest {
                         credit = 3.0,
                         times = (0..4).map { day -> CourseTime(day, 780, 855, "13:00", "14:15", "IT관 204") }
                     )
+                )
+            )
+        )
+    }
+
+    private fun seedIntegratedDayTask() {
+        val now = LocalDateTime.now()
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "galaxy-integrated-task",
+                    title = "오늘 제출할 과제",
+                    note = "수업과 함께 보이는 Flow 일정",
+                    dueAt = now.toLocalDate().atTime(20, 0).toString(),
+                    kind = FlowTaskKind.ASSIGNMENT,
+                    scope = FlowTaskScope.FLOW
                 )
             )
         )
