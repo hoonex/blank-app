@@ -205,7 +205,7 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
                     enabled = query.trim().length >= 2 && !loading
                 )
             }
-            if (results.isNotEmpty()) item { FlowSectionTitle("SCHOOL", "검색 결과", "${results.size}개") }
+            if (results.isNotEmpty()) item { FlowSectionTitle("", "검색 결과", "${results.size}개") }
             items(results, key = { "${it.officeCode}-${it.schoolCode}" }) { item ->
                 FlowCard(Modifier.fillMaxWidth(), onClick = { school = item; results = emptyList() }) {
                     Column(Modifier.padding(17.dp)) {
@@ -216,7 +216,7 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
                 }
             }
         } else if (grade == null) {
-            item { FlowSectionTitle("GRADE", school!!.name, "학년 선택") }
+            item { FlowSectionTitle("", school!!.name, "학년 선택") }
             val maxGrade = if (school!!.kind.contains("초등")) 6 else 3
             items((1..maxGrade).map(Int::toString)) { value ->
                 FlowCard(Modifier.fillMaxWidth(), onClick = {
@@ -238,7 +238,7 @@ private fun SchoolSetupScreen(onSelected: (SchoolSelection) -> Unit) {
             }
             item { FlowSecondaryButton("다른 학교 찾기", { school = null }, Modifier.fillMaxWidth()) }
         } else {
-            item { FlowSectionTitle("CLASS", "${school!!.name} ${grade}학년", if (loading) "불러오는 중" else "반 선택") }
+            item { FlowSectionTitle("", "${school!!.name} ${grade}학년", if (loading) "불러오는 중" else "반 선택") }
             if (!loading && classes.isEmpty() && error.isBlank()) item { Text("반 정보가 없습니다. 공개 데이터 상태를 확인하세요.", color = FlowPalette.Muted, fontSize = 13.sp) }
             items(classes) { className ->
                 FlowCard(Modifier.fillMaxWidth(), onClick = { onSelected(SchoolSelection(school!!, grade!!, className)) }) {
@@ -686,7 +686,7 @@ private fun SchoolSettingsScreen(
     val updateBusy = updateStatus.phase in setOf(UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.VERIFYING)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { FlowLargeTitle("설정", "${selection.school.name} · ${selection.grade}학년 ${selection.className}반") }
-        item { FlowSectionTitle("MANAGE", "데이터와 모드") }
+        item { FlowSectionTitle("", "데이터와 모드") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
@@ -720,7 +720,7 @@ private fun SchoolSettingsScreen(
                 }
             }
         }
-        item { FlowSectionTitle("ABOUT", "앱과 데이터") }
+        item { FlowSectionTitle("", "앱과 데이터") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
@@ -755,7 +755,7 @@ private fun SchoolSettingsScreen(
                 }
             }
         }
-        item { FlowSectionTitle("RESET", "학교 선택 초기화") }
+        item { FlowSectionTitle("", "학교 선택 초기화") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 SchoolSettingsActionRow(
