@@ -1,12 +1,6 @@
 package io.github.hoonex.flow.ui
 
-import android.app.Activity
 import android.graphics.Color as AndroidColor
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,30 +57,6 @@ import org.maplibre.android.maps.MapView
 
 private const val OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty"
 
-class FlowCampusActivity : ComponentActivity() {
-    private lateinit var mapView: MapView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        MapLibre.getInstance(this)
-        mapView = MapView(this)
-        mapView.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-        )
-        setContent { FlowTheme { FlowCampusScreen(mapView, showBack = true) } }
-    }
-
-    override fun onStart() { super.onStart(); mapView.onStart() }
-    override fun onResume() { super.onResume(); mapView.onResume() }
-    override fun onPause() { mapView.onPause(); super.onPause() }
-    override fun onStop() { mapView.onStop(); super.onStop() }
-    override fun onLowMemory() { super.onLowMemory(); mapView.onLowMemory() }
-    override fun onDestroy() { mapView.onDestroy(); super.onDestroy() }
-    override fun onSaveInstanceState(outState: Bundle) { super.onSaveInstanceState(outState); mapView.onSaveInstanceState(outState) }
-}
-
 @Composable
 fun FlowCampusTab() {
     val context = LocalContext.current
@@ -116,13 +86,12 @@ fun FlowCampusTab() {
         }
     }
 
-    FlowCampusScreen(mapView, showBack = false)
+    FlowCampusScreen(mapView)
 }
 
 @Composable
-private fun FlowCampusScreen(mapView: MapView, showBack: Boolean) {
+private fun FlowCampusScreen(mapView: MapView) {
     val context = LocalContext.current
-    val activity = context as? Activity
     val store = remember { UniversityStore(context) }
     val campusStore = remember { CampusStore(context) }
     val university = remember { store.loadUniversity() }
