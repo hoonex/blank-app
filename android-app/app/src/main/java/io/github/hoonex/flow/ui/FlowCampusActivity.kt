@@ -136,16 +136,7 @@ private fun FlowCampusScreen(mapView: MapView) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            if (showBack) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                    FlowSecondaryButton("‹", { activity?.finish() }, Modifier.padding(end = 12.dp))
-                    Column(Modifier.weight(1f)) {
-                        FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
-                    }
-                }
-            } else {
-                FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
-            }
+            FlowLargeTitle("캠퍼스", university?.name ?: "대학교를 먼저 선택하세요")
         }
 
         if (university == null) {
