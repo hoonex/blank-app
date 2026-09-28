@@ -5,6 +5,7 @@ APP_APK="app/build/outputs/apk/debug/app-debug.apk"
 TEST_APK="$(find app/build/outputs/apk/androidTest/debug -type f -name '*.apk' -print -quit)"
 OUT="build/visual-audit"
 REMOTE="/sdcard/Android/data/io.github.hoonex.flow/files/visual-audit"
+REMOTE_MOTION="/sdcard/Android/data/io.github.hoonex.flow/files/motion-proof"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -55,6 +56,7 @@ adb shell am instrument -w -r \
   | tee -a "$OUT/instrumentation.txt"
 recreation_status=${PIPESTATUS[0]}
 
+adb shell rm -rf "$REMOTE_MOTION" || true
 adb shell am instrument -w -r \
   -e class io.github.hoonex.flow.FlowMotionBehaviorTest \
   io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
@@ -91,6 +93,7 @@ shortcut_status=${PIPESTATUS[0]}
 set -e
 
 adb pull "$REMOTE" "$OUT/screenshots" || true
+adb pull "$REMOTE_MOTION" "$OUT/motion-proof" || true
 
 if [ "$core_status" -ne 0 ] || [ "$map_status" -ne 0 ] || [ "$widget_status" -ne 0 ] || [ "$planner_status" -ne 0 ] || [ "$theme_status" -ne 0 ] || [ "$recreation_status" -ne 0 ] || [ "$motion_status" -ne 0 ] || [ "$galaxy_status" -ne 0 ] || [ "$shortcut_status" -ne 0 ] || \
    [ "$(grep -Ec 'OK \([0-9]+ test(s)?\)' "$OUT/instrumentation.txt")" -lt 9 ] || \
@@ -100,3 +103,5 @@ fi
 
 count="$(find "$OUT/screenshots" -type f -name '*.png' | wc -l | tr -d ' ')"
 test "$count" -eq 28
+motion_count="$(find "$OUT/motion-proof" -type f -name '*.png' | wc -l | tr -d ' ')"
+test "$motion_count" -eq 5
