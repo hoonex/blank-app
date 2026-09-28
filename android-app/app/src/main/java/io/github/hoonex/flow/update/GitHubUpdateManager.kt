@@ -9,6 +9,9 @@ import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.github.hoonex.flow.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -17,12 +20,27 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 
+enum class UpdatePhase { IDLE, CHECKING, UP_TO_DATE, DOWNLOADING, VERIFYING, READY, PREVIEW_DISABLED, FAILED }
+
+data class UpdateStatus(
+    val phase: UpdatePhase = UpdatePhase.IDLE,
+    val progress: Int? = null,
+    val message: String = "업데이트를 확인할 수 있습니다."
+)
+
 object GitHubUpdateManager {
+    private val _status = MutableStateFlow(UpdateStatus())
+    val status: StateFlow<UpdateStatus> = _status.asStateFlow()
+
     private const val PREFS = "flow-update-v1"
     private const val STAGED = "staged_apk"
 
     suspend fun checkAndMaybeInstall(activity: Activity, silent: Boolean = true): String = withContext(Dispatchers.IO) {
-        if (BuildConfig.UPDATE_SIGNER_SHA256.isBlank()) return@withContext "preview updater disabled"
+        if (BuildConfig.UPDATE_SIGNER_SHA256.isBlank()) {
+            if (!silent) _status.value = UpdateStatus(UpdatePhase.PREVIEW_DISABLED, message = "Preview 빌드에서는 업데이트 설치가 비활성화됩니다.")
+            return@withContext "preview updater disabled"
+        }
+        if (!silent) _status.value = UpdateStatus(UpdatePhase.CHECKING, message = "새 버전을 확인하는 중…")
         runCatching {
             val releases = JSONArray(getText("https://api.github.com/repos/${BuildConfig.GITHUB_REPOSITORY}/releases?per_page=20"))
             var release: JSONObject? = null
@@ -40,7 +58,10 @@ object GitHubUpdateManager {
                 ?: return@runCatching "release manifest missing"
             val manifest = JSONObject(getText(manifestAsset.getString("browser_download_url")))
             val remoteCode = manifest.getLong("versionCode")
-            if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) return@runCatching "up to date"
+            if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) {
+                if (!silent) _status.value = UpdateStatus(UpdatePhase.UP_TO_DATE, message = "현재 최신 버전입니다.")
+                return@runCatching "up to date"
+            }
             val apkName = manifest.getString("apkName")
             val apkAsset = (0 until assets.length()).map { assets.getJSONObject(it) }
                 .firstOrNull { it.optString("name") == apkName }
@@ -50,14 +71,21 @@ object GitHubUpdateManager {
             if (expectedSigner != BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()) error("release signer lineage mismatch")
             val updateDir = File(activity.filesDir, "updates").apply { mkdirs() }
             val apk = File(updateDir, apkName)
-            download(apkAsset.getString("browser_download_url"), apk)
+            if (!silent) _status.value = UpdateStatus(UpdatePhase.DOWNLOADING, progress = 0, message = "새 버전을 다운로드하는 중…")
+            download(apkAsset.getString("browser_download_url"), apk) { progress ->
+                if (!silent) _status.value = UpdateStatus(UpdatePhase.DOWNLOADING, progress, "새 버전을 다운로드하는 중… $progress%")
+            }
+            if (!silent) _status.value = UpdateStatus(UpdatePhase.VERIFYING, message = "파일 무결성과 서명을 확인하는 중…")
             if (sha256(apk) != expectedSha) error("APK checksum mismatch")
             verifyArchive(activity, apk, remoteCode, expectedSigner)
             activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE).edit().putString(STAGED, apk.absolutePath).apply()
+            if (!silent) _status.value = UpdateStatus(UpdatePhase.READY, progress = 100, message = "검증 완료. Android 설치 화면을 엽니다.")
             activity.runOnUiThread { requestInstall(activity, apk) }
             "install requested"
         }.getOrElse {
-            if (!silent) it.message ?: "update failed" else "update check failed"
+            val message = it.message ?: "update failed"
+            if (!silent) _status.value = UpdateStatus(UpdatePhase.FAILED, message = "업데이트를 완료하지 못했습니다. $message")
+            if (!silent) message else "update check failed"
         }
     }
 
@@ -134,14 +162,34 @@ object GitHubUpdateManager {
         return c.inputStream.bufferedReader().use { it.readText() }
     }
 
-    private fun download(url: String, target: File) {
+    private fun download(url: String, target: File, onProgress: (Int) -> Unit = {}) {
         val c = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 10_000
             readTimeout = 30_000
             setRequestProperty("User-Agent", "Flow-Android-Updater")
         }
         if (c.responseCode !in 200..299) error("APK HTTP ${c.responseCode}")
-        c.inputStream.use { input -> target.outputStream().use { output -> input.copyTo(output) } }
+        val total = c.contentLengthLong
+        c.inputStream.use { input ->
+            target.outputStream().use { output ->
+                val buffer = ByteArray(64 * 1024)
+                var copied = 0L
+                var lastProgress = -1
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count <= 0) break
+                    output.write(buffer, 0, count)
+                    copied += count
+                    if (total > 0) {
+                        val progress = ((copied * 100L) / total).toInt().coerceIn(0, 100)
+                        if (progress != lastProgress) {
+                            lastProgress = progress
+                            onProgress(progress)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun sha256(file: File): String {
