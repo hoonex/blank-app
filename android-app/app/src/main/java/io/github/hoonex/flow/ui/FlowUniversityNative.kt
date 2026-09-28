@@ -664,7 +664,7 @@ private fun NativeUniversitySettings(
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         item { FlowLargeTitle("설정", university.name) }
 
-        item { FlowSectionTitle("NOTIFICATIONS", "알림") }
+        item { FlowSectionTitle("", "알림") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
@@ -675,7 +675,7 @@ private fun NativeUniversitySettings(
             }
         }
 
-        item { FlowSectionTitle("WIDGETS", "위젯") }
+        item { FlowSectionTitle("", "위젯") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(17.dp)) {
@@ -686,7 +686,7 @@ private fun NativeUniversitySettings(
             }
         }
 
-        item { FlowSectionTitle("DATA", "연결 · 앱") }
+        item { FlowSectionTitle("", "연결 · 앱") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
@@ -786,7 +786,6 @@ private fun NativeMajorSheet(university: University, selected: UniversityMajor?,
         if (query.isBlank()) majors else majors.filter { "${it.college}${it.name}${it.category}".replace(" ", "").contains(query.replace(" ", ""), ignoreCase = true) }
     }
     NativeFlowSheet(dismiss, tall = true) { close ->
-        Text("MAJOR", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Black)
         Text("학과 선택", color = FlowPalette.Text, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 7.dp))
         FlowTextField(query, { query = it }, "학과 또는 단과대학 검색", Modifier.fillMaxWidth().padding(top = 14.dp), leading = "⌕")
         if (loading) Text("학과 불러오는 중…", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
