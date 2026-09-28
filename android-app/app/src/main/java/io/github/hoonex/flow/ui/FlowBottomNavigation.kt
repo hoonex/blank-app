@@ -3,10 +3,11 @@ package io.github.hoonex.flow.ui
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -63,12 +64,20 @@ fun FlowBottomNavigation(
     val animationScope = rememberCoroutineScope()
     var animationJob by remember(labelsKey) { mutableStateOf<Job?>(null) }
 
-    suspend fun animateThenSelect(index: Int) {
-        animatedIndex.animateTo(
-            targetValue = index.toFloat(),
-            animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-        )
+    fun moveTo(index: Int) {
+        if (index !in labels.indices) return
+        savedSelectedIndex = index
         onSelected(index)
+        animationJob?.cancel()
+        animationJob = animationScope.launch {
+            animatedIndex.animateTo(
+                targetValue = index.toFloat(),
+                animationSpec = spring(
+                    dampingRatio = 0.88f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+        }
     }
 
     LaunchedEffect(labelsKey, safeSelectedIndex) {
@@ -80,21 +89,23 @@ fun FlowBottomNavigation(
             }
         } else {
             savedSelectedIndex = safeSelectedIndex
-            if (abs(animatedIndex.value - safeSelectedIndex.toFloat()) > 0.001f && animationJob?.isActive != true) {
-                animatedIndex.animateTo(
-                    targetValue = safeSelectedIndex.toFloat(),
-                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-                )
+            if (abs(animatedIndex.targetValue - safeSelectedIndex.toFloat()) > 0.001f) {
+                animationJob?.cancel()
+                animationJob = animationScope.launch {
+                    animatedIndex.animateTo(
+                        targetValue = safeSelectedIndex.toFloat(),
+                        animationSpec = spring(
+                            dampingRatio = 0.88f,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
+                }
             }
         }
     }
 
     BackHandler(enabled = labels.isNotEmpty() && safeSelectedIndex != 0) {
-        animationJob?.cancel()
-        animationJob = animationScope.launch {
-            animatedIndex.stop()
-            animateThenSelect(0)
-        }
+        moveTo(0)
     }
 
     Box(
@@ -137,9 +148,10 @@ fun FlowBottomNavigation(
                     labels.forEachIndexed { index, label ->
                         val active = index == safeSelectedIndex
                         val interaction = remember(label) { MutableInteractionSource() }
+                        val pressed by interaction.collectIsPressedAsState()
                         val proximity = (1f - abs(animatedIndex.value - index.toFloat())).coerceIn(0f, 1f)
                         val foreground = lerp(FlowPalette.Muted, FlowPalette.AccentBright, proximity)
-                        val scale = .96f + (.04f * proximity)
+                        val scale = (.96f + (.04f * proximity)) * if (pressed) .93f else 1f
 
                         Box(
                             Modifier
@@ -155,12 +167,9 @@ fun FlowBottomNavigation(
                                     interactionSource = interaction,
                                     indication = null,
                                     onClick = {
-                                        if (!active && animationJob?.isActive != true) {
+                                        if (!active) {
                                             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                            animationJob = animationScope.launch {
-                                                animatedIndex.stop()
-                                                animateThenSelect(index)
-                                            }
+                                            moveTo(index)
                                         }
                                     }
                                 ),

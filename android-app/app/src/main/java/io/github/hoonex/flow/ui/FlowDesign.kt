@@ -148,6 +148,25 @@ object FlowPalette {
     val Warm get() = active.warm
 }
 
+
+private val LightSubjectColors = listOf(
+    Color(0xFFFF6B6B), Color(0xFFFF9F43), Color(0xFFF3C94B),
+    Color(0xFF54C97A), Color(0xFF36C7B4), Color(0xFF39A7E8),
+    Color(0xFF5D7CFF), Color(0xFF8A6FF0), Color(0xFFD66DDA), Color(0xFFF45D8F)
+)
+
+private val DarkSubjectColors = listOf(
+    Color(0xFFFF7B78), Color(0xFFFFAB5A), Color(0xFFF4D35E),
+    Color(0xFF63D58A), Color(0xFF4AD6C3), Color(0xFF57B8F4),
+    Color(0xFF7891FF), Color(0xFFA188FF), Color(0xFFE27BE5), Color(0xFFFF76A2)
+)
+
+fun flowSubjectColor(label: String): Color {
+    val palette = if (FlowPalette.IsDark) DarkSubjectColors else LightSubjectColors
+    val hash = label.fold(17) { acc, char -> acc * 31 + char.code }
+    return palette[(hash and Int.MAX_VALUE) % palette.size]
+}
+
 private fun flowColorScheme(dark: Boolean) = if (dark) {
     darkColorScheme(
         primary = DarkFlowColors.accent,
