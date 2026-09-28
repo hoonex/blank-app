@@ -228,7 +228,7 @@ private fun NativeUniversitySetup(onSelected: (University) -> Unit) {
             )
         }
         if (error.isNotBlank()) item { Text(error, color = FlowPalette.Danger, fontSize = 12.sp) }
-        if (results.isNotEmpty()) item { FlowSectionTitle("SEARCH", "검색 결과", "${results.size}개") }
+        if (results.isNotEmpty()) item { FlowSectionTitle("", "검색 결과", "${results.size}개") }
         items(results, key = { "${it.id}-${it.campus}-${it.address}" }) { school ->
             FlowCard(Modifier.fillMaxWidth(), onClick = { onSelected(school) }) {
                 Column(Modifier.fillMaxWidth().padding(18.dp)) {
@@ -393,7 +393,7 @@ private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit
             }
 
             if (mode == 0) {
-                item { FlowSectionTitle("TODAY", "오늘 일정", todayLabel) }
+                item { FlowSectionTitle("", "오늘 일정", todayLabel) }
                 if (todayClasses.isEmpty()) {
                     item {
                         FlowCard(Modifier.fillMaxWidth()) {
@@ -590,7 +590,7 @@ private fun NativeUniversitySchool(
         }
         if (error.isNotBlank()) item { Text(error, color = FlowPalette.Danger, fontSize = 12.sp) }
         profile?.let { p ->
-            item { FlowSectionTitle("PUBLIC DATA", "공시 지표", if (p.partial) "일부 제한" else "최근 공시") }
+            item { FlowSectionTitle("", "공시 지표", if (p.partial) "일부 제한" else "최근 공시") }
             item {
                 FlowCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth()) {
@@ -607,7 +607,7 @@ private fun NativeUniversitySchool(
                 }
             }
         }
-        item { FlowSectionTitle("MAJOR", "내 학과", major?.college) }
+        item { FlowSectionTitle("", "내 학과", major?.college) }
         item {
             FlowCard(Modifier.fillMaxWidth(), onClick = onChooseMajor) {
                 Column(Modifier.fillMaxWidth().padding(17.dp)) {
@@ -618,7 +618,7 @@ private fun NativeUniversitySchool(
         }
         val rows = listOf("설립" to school.foundation, "구분" to school.division.ifBlank { school.kind }, "주소" to school.address, "전화" to school.phone).filter { it.second.isNotBlank() }
         if (rows.isNotEmpty()) {
-            item { FlowSectionTitle("PROFILE", "기본 정보") }
+            item { FlowSectionTitle("", "기본 정보") }
             item {
                 FlowCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.fillMaxWidth()) {
