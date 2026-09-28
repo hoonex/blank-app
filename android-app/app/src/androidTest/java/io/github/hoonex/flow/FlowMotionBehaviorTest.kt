@@ -27,11 +27,12 @@ import kotlin.math.abs
 class FlowMotionBehaviorTest {
     private lateinit var context: Context
     private lateinit var device: UiDevice
+    private lateinit var instrumentation: android.app.Instrumentation
     private lateinit var motionDir: File
 
     @Before
     fun prepare() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation = InstrumentationRegistry.getInstrumentation()
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
         motionDir = File(context.getExternalFilesDir(null), "motion-proof").apply {
@@ -80,15 +81,15 @@ class FlowMotionBehaviorTest {
             device.click(bounds.centerX(), bounds.centerY())
 
             val candidates = buildList {
-                repeat(7) { index ->
-                    Thread.sleep(45)
-                    val file = File(motionDir, "nav-candidate-$index.png")
-                    assertTrue("failed to capture nav candidate frame $index", device.takeScreenshot(file))
-                    add(file)
+                repeat(9) { index ->
+                    Thread.sleep(24)
+                    val bitmap = instrumentation.uiAutomation.takeScreenshot()
+                        ?: error("failed to capture raw nav candidate frame $index")
+                    add(bitmap)
                 }
             }
 
-            Thread.sleep(260)
+            Thread.sleep(180)
             val settledFile = File(motionDir, "nav-settled.png")
             assertTrue("failed to capture nav settled frame", device.takeScreenshot(settledFile))
 
@@ -107,25 +108,25 @@ class FlowMotionBehaviorTest {
                     settledX - beforeX >= minimumTravel
                 )
 
-                val midCandidate = candidates.firstOrNull { file ->
-                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                    try {
-                        val x = accentCentroidX(bitmap)
-                        x > beforeX + 6 && x < settledX - 6
-                    } finally {
-                        bitmap.recycle()
-                    }
+                val midCandidate = candidates.firstOrNull { bitmap ->
+                    val x = accentCentroidX(bitmap)
+                    x > beforeX + 6 && x < settledX - 6
                 }
                 assertTrue(
                     "nav selection had no rendered intermediate frame between $beforeX and $settledX",
                     midCandidate != null
                 )
                 val midFile = File(motionDir, "nav-mid.png")
-                midCandidate!!.copyTo(midFile, overwrite = true)
+                midFile.outputStream().use { stream ->
+                    assertTrue(
+                        "failed to persist nav mid frame",
+                        midCandidate!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    )
+                }
             } finally {
                 before.recycle()
                 settled.recycle()
-                candidates.forEach(File::delete)
+                candidates.forEach(Bitmap::recycle)
             }
         }
     }
