@@ -91,8 +91,9 @@ class FlowGalaxyPhoneVisualTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
             capture("23-galaxy-s25-university-home")
+            clickTextAndWaitForText("시간표", "시간표 다시 가져오기")
             scrollUntilText("시간표 다시 가져오기")
-            assertAboveBottomNavigation("시간표 다시 가져오기", "홈")
+            assertAboveBottomNavigation("시간표 다시 가져오기", "시간표")
         }
 
         seedRepresentativeSchool()
