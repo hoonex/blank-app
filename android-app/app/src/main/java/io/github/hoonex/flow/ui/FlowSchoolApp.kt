@@ -270,12 +270,17 @@ private fun SchoolTodayScreen(
     val classes = dashboard?.classesOn(selectedDate).orEmpty()
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
     val events = dashboard?.eventsOn(selectedDate).orEmpty()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         item {
             FlowLargeTitle(
                 title = if (selectedDate == actualToday) "오늘" else selectedLocalDate.format(DateTimeFormatter.ofPattern("M월 d일", Locale.KOREAN)),
-                subtitle = "${selection.school.name} · ${selection.grade}학년 ${selection.className}반 · ${humanDate(selectedDate)}",
-                trailing = if (dashboard?.selected == selectedDate) "저장됨" else null
+                subtitle = "${selection.school.name} · ${selection.grade}학년 ${selection.className}반",
+                trailing = selectedLocalDate.format(DateTimeFormatter.ofPattern("E", Locale.KOREAN))
             )
         }
         item {
@@ -285,85 +290,143 @@ private fun SchoolTodayScreen(
                 onSelected = { onDateSelected(schoolDate8(it)) }
             )
         }
-        if (error.isNotBlank()) item {
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("새 데이터를 못 가져왔습니다.", color = FlowPalette.Danger, fontWeight = FontWeight.Bold)
-                    Text("저장 데이터가 있으면 그대로 표시합니다. $error", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
-                }
+        if (error.isNotBlank()) {
+            item {
+                Text(
+                    "새 데이터 연결이 불안정해 저장된 정보를 보여주고 있습니다.",
+                    color = FlowPalette.Danger,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
             }
         }
         item {
-            FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                Column(Modifier.padding(20.dp)) {
-                    Text(
-                        if (loading && dashboard == null) "불러오는 중…" else if (classes.isEmpty()) "오늘 수업 없음" else "${classes.size}교시 일정",
-                        color = FlowPalette.Text,
-                        fontSize = 27.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(if (meals.isEmpty()) "급식 정보 없음" else meals.first().dishes.take(3).joinToString(" · "), color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 7.dp))
-                }
-            }
+            SchoolDaySurface(
+                classes = classes,
+                meals = meals,
+                events = events,
+                loading = loading && dashboard == null
+            )
         }
-        item { FlowSectionTitle("TIMETABLE", "오늘 시간표", "${classes.size}개") }
-        if (classes.isEmpty()) {
-            item { Text("등록된 수업이 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
-        } else {
-            item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth()) {
-                        classes.forEachIndexed { index, period ->
-                            Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("${period.period}", color = FlowPalette.Mint, fontSize = 18.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(34.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(period.subject.ifBlank { "과목 정보 없음" }, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                    Text("${period.period}교시", color = FlowPalette.Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
-                                }
-                            }
-                            if (index != classes.lastIndex) {
-                                Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
-                            }
-                        }
-                    }
-                }
-            }
+        item {
+            FlowSecondaryButton(
+                if (loading) "새로고침 중…" else "데이터 새로고침",
+                refresh,
+                Modifier.fillMaxWidth()
+            )
         }
-        item { FlowSectionTitle("MEAL", "급식", meals.firstOrNull()?.calories?.takeIf(String::isNotBlank)) }
-        if (meals.isEmpty()) item { Text("오늘 급식 정보가 없습니다.", color = FlowPalette.Muted, fontSize = 13.sp) }
-        items(meals) { meal ->
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(17.dp)) {
-                    Text(meal.type.ifBlank { "급식" }, color = FlowPalette.Mint, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                    Text(meal.dishes.joinToString(" · "), color = FlowPalette.Text, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 7.dp))
-                }
-            }
-        }
-        if (events.isNotEmpty()) {
-            item { FlowSectionTitle("EVENT", "오늘 일정", "${events.size}개") }
-            item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.fillMaxWidth()) {
-                        events.forEachIndexed { index, event ->
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 14.dp)) {
-                                Text(event.name, color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                                if (event.content.isNotBlank()) Text(event.content, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
-                            }
-                            if (index != events.lastIndex) {
-                                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        item { FlowSecondaryButton(if (loading) "새로고침 중…" else "데이터 새로고침", refresh, Modifier.fillMaxWidth()) }
     }
 }
 
+@Composable
+private fun SchoolDaySurface(
+    classes: List<io.github.hoonex.flow.data.SchoolPeriod>,
+    meals: List<io.github.hoonex.flow.data.SchoolMeal>,
+    events: List<io.github.hoonex.flow.data.SchoolEvent>,
+    loading: Boolean
+) {
+    FlowCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 17.dp, top = 17.dp, end = 17.dp, bottom = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    when {
+                        loading -> "불러오는 중"
+                        classes.isEmpty() -> "수업 없음"
+                        else -> "오늘 수업"
+                    },
+                    color = FlowPalette.Text,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (classes.isNotEmpty()) {
+                    Text("${classes.size}개", color = FlowPalette.Muted, fontSize = 12.sp)
+                }
+            }
+
+            if (classes.isEmpty()) {
+                Text(
+                    if (loading) "학교 데이터를 확인하고 있습니다." else "등록된 수업이 없습니다.",
+                    color = FlowPalette.Muted,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 17.dp, vertical = 14.dp)
+                )
+            } else {
+                classes.forEach { period ->
+                    val subject = period.subject.ifBlank { "과목 정보 없음" }
+                    val subjectColor = flowSubjectColor(subject)
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            Modifier
+                                .width(4.dp)
+                                .height(34.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(subjectColor)
+                        )
+                        Text(
+                            "${period.period}교시",
+                            color = FlowPalette.Muted,
+                            fontSize = 11.sp,
+                            modifier = Modifier.width(56.dp).padding(start = 10.dp)
+                        )
+                        Text(
+                            subject,
+                            color = FlowPalette.Text,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 15.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Text("급식", color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(56.dp))
+                Column(Modifier.weight(1f)) {
+                    val meal = meals.firstOrNull()
+                    Text(
+                        meal?.dishes?.joinToString(" · ") ?: "급식 정보가 없습니다.",
+                        color = if (meal == null) FlowPalette.Muted else FlowPalette.Text,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp
+                    )
+                    meal?.calories?.takeIf(String::isNotBlank)?.let {
+                        Text(it, color = FlowPalette.Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
+
+            if (events.isNotEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
+                events.forEach { event ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text("일정", color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(56.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(event.name, color = FlowPalette.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            if (event.content.isNotBlank()) {
+                                Text(event.content, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 3.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SchoolDateSelector(
@@ -392,16 +455,11 @@ private fun SchoolDateSelector(
             val today = date == actualToday
             Column(
                 modifier = Modifier
-                    .width(54.dp)
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(
-                        when {
-                            selected -> FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .24f else .13f)
-                            else -> FlowPalette.SurfaceSoft
-                        }
-                    )
+                    .width(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (selected) FlowPalette.Accent.copy(alpha = if (FlowPalette.IsDark) .26f else .14f) else Color.Transparent)
                     .clickable { onSelected(date) }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 9.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -519,7 +577,13 @@ private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashbo
                                         .height(54.dp)
                                         .padding(2.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (periodItem != null) FlowPalette.SurfaceRaised else FlowPalette.SurfaceSoft.copy(alpha = .38f))
+                                        .background(
+                                            if (periodItem != null) {
+                                                flowSubjectColor(periodItem.subject).copy(alpha = if (FlowPalette.IsDark) .24f else .18f)
+                                            } else {
+                                                Color.Transparent
+                                            }
+                                        )
                                         .padding(horizontal = 4.dp, vertical = 5.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
