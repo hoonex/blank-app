@@ -2,6 +2,7 @@ package io.github.hoonex.flow.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class FlowPlannerTaskTest {
@@ -33,4 +34,19 @@ class FlowPlannerTaskTest {
 
         assertEquals(listOf("early", "late", "done"), tasks.sortedPlannerTasks().map { it.id })
     }
+    @Test
+    fun activeForDayIncludesFlowAndMatchingAcademicScopeOnly() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "flow", title = "공통", dueAt = "2026-09-29T08:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "school", title = "학교", dueAt = "2026-09-29T09:00:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "university", title = "대학", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "done", title = "완료", dueAt = "2026-09-29T11:00:00", scope = FlowTaskScope.SCHOOL, done = true),
+            FlowTask(id = "tomorrow", title = "내일", dueAt = "2026-09-30T08:00:00", scope = FlowTaskScope.FLOW)
+        )
+
+        assertEquals(listOf("flow", "school"), tasks.activeForDay(date, FlowTaskScope.SCHOOL).map { it.id })
+        assertEquals(listOf("flow", "university"), tasks.activeForDay(date, FlowTaskScope.UNIVERSITY).map { it.id })
+    }
 }
+
