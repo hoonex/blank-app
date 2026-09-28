@@ -1,9 +1,9 @@
 ---
 name: web-design-guidance
-description: Design, build, or review user-facing web UI with adaptive ambiguity-aware discovery, multi-axis design direction, repository-aware design-system preservation, structural-integrity auditing, responsive/accessibility states, anti-AI-slop auditing, and rendered visual verification. Use for substantial web UI/UX work unless the repository or user supplies a stronger design workflow. Repository and user design rules always win.
+description: Design, build, or review user-facing web UI with product context, organic information adaptation, glanceable hierarchy, repository design-system preservation, interaction states, and observed rendered visual verification. Use for substantial web UI/UX work unless the repository or user supplies a stronger design workflow. Repository and user design rules always win.
 license: MIT
 metadata:
-  version: "0.8.0"
+  version: "0.8.1"
 ---
 
 # Web Design Guidance Companion
@@ -124,6 +124,8 @@ For sustained product work, treat every material UI change as a **delta against 
 
 Read [references/design-system-authority.md](references/design-system-authority.md) for the subtractive-first gate, component/token discipline, hierarchy budget, theme coherence, reference locking, and deviation contract. Read [references/surface-recipes.md](references/surface-recipes.md) for surface-specific defaults and anti-patterns.
 
+For an information-bearing UI or a substantial layout change, distinguish the user's goal and non-negotiable function from their suggested surface. A requested new panel may fit an existing region, but preserve explicit requirements for persistent visibility, simultaneous comparison, and discoverable actions. Use the smallest relevant context read: user job (glance, read, compare, edit, monitor, explore), page/product purpose, information dependencies and exceptions, available container space, input, current interaction state, and actual visual tools. Read [references/organic-interface-design.md](references/organic-interface-design.md) when space, density, prioritization, or state transitions could change the user's decision. Do not apply minimalist compression to tasks requiring simultaneous detail.
+
 ## Structural integrity is part of UI quality
 
 A surface that renders beautifully can still be an engineering failure. For substantial implementation or repeated AI-assisted edits, separately inspect whether the visible result is integrated into the repository's real architecture instead of being patched around it.
@@ -195,6 +197,8 @@ UI must survive real content, not just ideal mock copy.
 - test narrow mobile, intermediate/tablet, ordinary desktop, and wide desktop widths appropriate to the repository rather than one screenshot size only;
 - do not hard-code a line break solely to make one captured viewport look perfect unless the content itself owns that break.
 
+Responsive resilience includes semantic representation: available space may change which useful detail is foregrounded, summarized, or revealed on request. Preserve decision-critical facts and access to full detail. A component in a narrow desktop sidebar is narrow even if the viewport is wide. Check actual content and representation boundaries, not only named device widths; see [references/organic-interface-design.md](references/organic-interface-design.md).
+
 ## 7. Every interactive surface needs states
 
 A polished component is not only its default screenshot. Cover states relevant to the task:
@@ -254,6 +258,8 @@ Repository-specific accessibility standards take precedence when stricter.
 Code inspection, DOM geometry, unit tests, lint heuristics, and a green build do not prove that a UI looks correct or non-generic.
 
 For material UI changes, use rendered evidence when the environment provides a browser/screenshot path. Inspect at least the changed surface and the responsive/state risks relevant to the task. Compare against repository references or the established Design DNA, not against a generic aesthetic preference.
+
+Separate ability to run, capture, deliver pixels to this model, actually inspect them, interact with the UI, and re-inspect after a correction. A generated screenshot file is not an observed visual pass. Critique component, page, and relevant product context as the change warrants. Read [references/visual-observation-loop.md](references/visual-observation-loop.md) for capability routing, evidence, iteration, and scale-sensitive completion.
 
 Run a short anti-slop re-audit on the rendered result. Ask whether the important choices are:
 

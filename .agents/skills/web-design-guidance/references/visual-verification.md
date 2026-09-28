@@ -16,6 +16,8 @@ Use repository-defined visual acceptance rules when they exist. This reference s
 
 Treat the agent's own design as a candidate to critique, not a result to defend. The burden is on the rendered outcome to show coherent hierarchy, necessity, product specificity, and state/theme/responsive completeness.
 
+Before a substantial visual claim, distinguish `rendered`, `captured`, `delivered to the model`, `observed by the model`, `interacted with`, and `rechecked after a fix`. A screenshot's existence only establishes capture. Follow [visual-observation-loop.md](visual-observation-loop.md) for evidence-scoped acceptance and three-level critique; follow [organic-interface-design.md](organic-interface-design.md) when information density or state changes with space.
+
 ## Minimal rendered pass
 
 For a material UI change, inspect the changed surface at widths appropriate to the product. A useful fallback matrix is:
@@ -29,6 +31,8 @@ wide desktop: ~1600px+ when the layout meaningfully expands
 
 Do not mechanically run all widths if the repository defines a different matrix or the component is constrained inside another surface.
 
+Where representation changes, inspect both sides of the content-driven transition (including the actual container size) rather than treating a few device classes as proof of continuity. Check long content, text scaling, important exceptions and focused/expanded state when they can change the result.
+
 Check:
 
 - hierarchy: the intended primary action/content reads first;
@@ -40,6 +44,7 @@ Check:
 - media: crops/aspect ratios do not destroy important content;
 - contrast: text and controls remain readable over actual rendered backgrounds;
 - continuity: the changed surface still fits neighboring stable screens.
+- glanceability: the primary user question is answered without assembling fragments from several regions; state-changing exceptions stay visible.
 
 ## Screenshot review is not pixel worship
 

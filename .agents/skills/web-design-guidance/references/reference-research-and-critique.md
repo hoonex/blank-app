@@ -25,6 +25,8 @@ Research is useful when one or more of these are true:
 
 Do not browse merely to decorate a trivial component or imitate trends. Small reversible changes inside a strong existing system should normally stay inside that system.
 
+State the unresolved design question before browsing. Favor an example with comparable information, interaction, and space constraints over one with a familiar brand name. Look at actual screens or transitions when the question concerns visual behavior. A found link or read design article is not first-hand pixel/interaction observation.
+
 ## Reference hierarchy
 
 Prefer sources that reveal real constraints and durable systems:
@@ -55,6 +57,8 @@ interaction / motion:
 responsive behavior:
 identity cue:
 what NOT to copy:
+question this example answers:
+transferable principle to test in this product:
 ```
 
 Do not collect a moodboard of interchangeable screenshots with no conclusion. Stop when the references make the direction materially more specific or when additional sources stop changing the decision.
@@ -133,7 +137,7 @@ When rendered evidence is available:
 4. make one coherent corrective pass;
 5. re-render the affected boundaries.
 
-Do not endlessly redesign. If the result is coherent, product-specific, state-complete, and supported by evidence, stop.
+One corrective pass is a default for a specific finding, not a hard ceiling across distinct observed defects. If a new render reveals a different material issue, diagnose it under Sloar's bounded failure-cycle rule and recheck its affected boundary. Do not endlessly redesign. If the result is coherent, product-specific, state-complete, and supported by evidence, stop.
 
 ## When browsing is unavailable
 
