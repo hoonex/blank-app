@@ -68,6 +68,13 @@ fun List<FlowTask>.sortedPlannerTasks(): List<FlowTask> = sortedWith(
 
 fun FlowTask.isDueOn(date: LocalDate): Boolean = dueDateTime()?.toLocalDate() == date
 
+fun List<FlowTask>.activeForDay(date: LocalDate, scope: FlowTaskScope): List<FlowTask> =
+    sortedPlannerTasks().filter { task ->
+        !task.done &&
+            task.isDueOn(date) &&
+            (task.scope == FlowTaskScope.FLOW || task.scope == scope)
+    }
+
 class FlowPlannerStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-planner-v1", Context.MODE_PRIVATE)
 
