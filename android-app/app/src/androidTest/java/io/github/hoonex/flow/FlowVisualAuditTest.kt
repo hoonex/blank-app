@@ -79,13 +79,14 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             capture("03-university-home")
 
-            scrollUntilText("시간표 다시 동기화")
-            clickTextAndWaitForText("시간표 다시 동기화", "시간표 연결")
+            clickTextAndWaitForText("시간표", "2026년 2학기")
+            capture("05-university-schedule")
+
+            scrollUntilText("시간표 다시 가져오기")
+            clickTextAndWaitForText("시간표 다시 가져오기", "시간표 연결")
             capture("04-everytime-sheet")
             clickTextUntilGone("닫기")
 
-            clickTextAndWaitForText("시간표", "2026년 2학기")
-            capture("05-university-schedule")
             clickTextAndWaitForText("주간", "09:00")
             capture("05b-university-week-grid")
 
@@ -139,9 +140,9 @@ class FlowVisualAuditTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
-            clickTextAndWaitForText("학교", "공시 지표")
-            scrollUntilText("네이티브 캠퍼스 열기")
-            capture("15-native-campus-entry")
+            clickTab("캠퍼스")
+            waitForText("Flow 지도")
+            capture("15-native-campus-tab")
         }
 
         val captures = screenshotDir.listFiles { file -> file.extension == "png" }.orEmpty()

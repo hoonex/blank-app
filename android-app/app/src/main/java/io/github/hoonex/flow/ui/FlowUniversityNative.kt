@@ -124,10 +124,7 @@ fun FlowUniversityNativeRoot(
                         university = university!!,
                         timetable = timetable,
                         major = major,
-                        onImport = { importOpen = true },
-                        onSchedule = { tab = NativeUniversityTab.SCHEDULE },
-                        onSchool = { tab = NativeUniversityTab.SCHOOL },
-                        onCampus = { tab = NativeUniversityTab.CAMPUS }
+                        onImport = { importOpen = true }
                     )
                     NativeUniversityTab.SCHEDULE -> NativeUniversitySchedule(timetable) { importOpen = true }
                     NativeUniversityTab.CAMPUS -> FlowCampusTab()
@@ -244,74 +241,86 @@ private fun NativeUniversityHome(
     university: University,
     timetable: Timetable?,
     major: UniversityMajor?,
-    onImport: () -> Unit,
-    onSchedule: () -> Unit,
-    onSchool: () -> Unit,
-    onCampus: () -> Unit
+    onImport: () -> Unit
 ) {
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
-    val gap = timetable?.nextGap(now)
     val date = remember(now.toLocalDate()) {
         now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
     }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         item {
-            FlowLargeTitle("홈", university.name, major?.name ?: date)
+            FlowLargeTitle(
+                title = "오늘",
+                subtitle = university.name,
+                trailing = major?.name ?: date
+            )
         }
         item { NativeNextClass(moment, timetable != null, onImport) }
-        item { FlowSectionTitle("DASHBOARD", "오늘 흐름", if (timetable == null) "연결 필요" else "${today.size}개 일정") }
-        item {
-            FlowCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth()) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NativeMetric("오늘", if (timetable == null) "—" else "${today.size}개", Modifier.weight(1f))
-                        NativeMetric("학점", timetable?.let { number(it.totalCredits()) } ?: "—", Modifier.weight(1f))
-                    }
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(FlowPalette.Stroke))
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NativeMetric("공강", gap?.let { "${it.durationMinutes}분" } ?: "—", Modifier.weight(1f))
-                        NativeMetric("주간", timetable?.let { "${it.weeklyMinutes() / 60}h ${it.weeklyMinutes() % 60}m" } ?: "—", Modifier.weight(1f))
-                    }
+
+        if (timetable != null) {
+            item { FlowSectionTitle("", "오늘 일정", "${today.size}개") }
+            if (today.isEmpty()) {
+                item {
+                    Text(
+                        "오늘은 등록된 수업이 없습니다.",
+                        color = FlowPalette.Muted,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(horizontal = 2.dp, vertical = 10.dp)
+                    )
                 }
+            } else {
+                item { NativeClassSurface(today) }
             }
         }
-        if (today.isNotEmpty()) {
-            item { FlowSectionTitle("DAY FLOW", "이어지는 일정", "시간표 기준") }
-            item { NativeClassSurface(today.take(4)) }
-        }
-        item { FlowSectionTitle("CONNECT", "Flow 허브") }
-        item {
-            FlowCard(Modifier.fillMaxWidth(), accent = true, onClick = onImport) {
-                Column(Modifier.padding(18.dp)) {
-                    Text(if (timetable == null) "시간표 연결" else "시간표 다시 동기화", color = FlowPalette.Text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Text("공개 공유 링크만 사용하며 로그인 정보는 받지 않습니다.", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
-                }
-            }
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                NativeHubCard("시간표", "주간 수업", onSchedule, Modifier.weight(1f))
-                NativeHubCard("학교 정보", "공시 · 학과", onSchool, Modifier.weight(1f))
-            }
-        }
-        item { NativeHubCard("캠퍼스", "강의실 · 학식 · 카페 · 도보 경로", onCampus, Modifier.fillMaxWidth()) }
     }
 }
 
 @Composable
 private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: () -> Unit) {
     val item = moment.current ?: moment.next
-    FlowCard(Modifier.fillMaxWidth(), accent = true) {
-        Column(Modifier.fillMaxWidth().padding(21.dp)) {
-            Text(if (moment.current != null) "지금 수업" else if (moment.next != null) "다음 수업" else "오늘", color = FlowPalette.Accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(item?.subject?.name ?: if (connected) "오늘 일정 완료" else "시간표를 연결하세요", color = FlowPalette.Text, fontSize = 27.sp, lineHeight = 31.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
-            val detail = item?.let { listOf(if (moment.current != null) "${it.time.end} 종료" else "${it.time.start} 시작", it.time.place.ifBlank { it.subject.place }, it.subject.professor).filter(String::isNotBlank).joinToString(" · ") }
-                ?: if (connected) "남은 수업이 없습니다." else "Everytime 공개 링크로 한 번에 가져옵니다."
-            Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
-            if (!connected) FlowPrimaryButton("에브리타임 연결", onImport, Modifier.fillMaxWidth().padding(top = 16.dp))
+    val subjectColor = item?.subject?.name?.let(::flowSubjectColor) ?: FlowPalette.Accent
+    FlowCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth()) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .background(subjectColor)
+            )
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
+                Text(
+                    if (moment.current != null) "지금 수업" else if (moment.next != null) "다음 수업" else "오늘",
+                    color = subjectColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    item?.subject?.name ?: if (connected) "오늘 일정 완료" else "시간표를 연결하세요",
+                    color = FlowPalette.Text,
+                    fontSize = 29.sp,
+                    lineHeight = 33.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 5.dp)
+                )
+                val detail = item?.let {
+                    listOf(
+                        if (moment.current != null) "${it.time.end} 종료" else "${it.time.start} 시작",
+                        it.time.place.ifBlank { it.subject.place },
+                        it.subject.professor
+                    ).filter(String::isNotBlank).joinToString(" · ")
+                } ?: if (connected) "남은 수업이 없습니다." else "공개 공유 링크로 시간표를 가져올 수 있습니다."
+                Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                if (!connected) {
+                    FlowPrimaryButton("시간표 연결", onImport, Modifier.fillMaxWidth().padding(top = 16.dp))
+                }
+            }
         }
     }
 }
@@ -467,7 +476,13 @@ private fun NativeUniversityWeekGrid(timetable: Timetable) {
                                 .height(64.dp)
                                 .padding(2.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (scheduled != null) FlowPalette.SurfaceRaised else FlowPalette.SurfaceSoft.copy(alpha = .34f))
+                                .background(
+                                    if (scheduled != null) {
+                                        flowSubjectColor(scheduled.subject.name).copy(alpha = if (FlowPalette.IsDark) .24f else .18f)
+                                    } else {
+                                        Color.Transparent
+                                    }
+                                )
                                 .padding(horizontal = 4.dp, vertical = 5.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -514,15 +529,28 @@ private fun NativeClassSurface(classes: List<ScheduledClass>) {
 
 @Composable
 private fun NativeClassRowContent(item: ScheduledClass) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.width(64.dp)) {
-            Text(item.time.start, color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+    val subjectColor = flowSubjectColor(item.subject.name)
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .height(38.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(subjectColor)
+        )
+        Column(Modifier.width(70.dp).padding(start = 10.dp)) {
+            Text(item.time.start, color = FlowPalette.Text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text(item.time.end, color = FlowPalette.Dim, fontSize = 10.sp)
         }
         Column(Modifier.weight(1f)) {
-            Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text(item.subject.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             val detail = listOf(item.time.place.ifBlank { item.subject.place }, item.subject.professor).filter(String::isNotBlank).joinToString(" · ")
-            if (detail.isNotBlank()) Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
+            if (detail.isNotBlank()) {
+                Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 3.dp))
+            }
         }
     }
 }
