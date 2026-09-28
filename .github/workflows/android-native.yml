@@ -67,7 +67,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: flow-android-visual-audit
-          path: android-app/build/visual-audit/screenshots/**/*.png
+          path: |
+            android-app/build/visual-audit/screenshots/**/*.png
+            android-app/build/visual-audit/motion-proof/**/*.png
           if-no-files-found: warn
       - name: Upload Android test diagnostics
         if: always()
