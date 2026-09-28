@@ -3,8 +3,9 @@ package io.github.hoonex.flow.ui
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -70,9 +71,15 @@ fun FlowBottomNavigation(
         onSelected(index)
         animationJob?.cancel()
         animationJob = animationScope.launch {
+            // Let the newly-selected content commit first, then begin a deliberately
+            // visible iOS-like glide on the next rendered frame.
+            withFrameNanos { }
             animatedIndex.animateTo(
                 targetValue = index.toFloat(),
-                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                animationSpec = tween(
+                    durationMillis = 340,
+                    easing = CubicBezierEasing(.22f, 1f, .36f, 1f)
+                )
             )
         }
     }
@@ -91,7 +98,7 @@ fun FlowBottomNavigation(
                 animationJob = animationScope.launch {
                     animatedIndex.animateTo(
                         targetValue = safeSelectedIndex.toFloat(),
-                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                        animationSpec = tween(durationMillis = 340, easing = CubicBezierEasing(.22f, 1f, .36f, 1f))
                     )
                 }
             }
