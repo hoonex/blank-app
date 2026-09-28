@@ -110,12 +110,12 @@ fun FlowPlannerRoot() {
 
         val todayTasks = openTasks.filter { it.isDueOn(today) }
         if (todayTasks.isNotEmpty()) {
-            item { FlowSectionTitle("TODAY", "오늘 마감", "${todayTasks.size}개") }
+            item { FlowSectionTitle("", "오늘 마감", "${todayTasks.size}개") }
             item { PlannerTaskSurface(todayTasks, now, onToggle = ::toggle, onDelete = ::delete) }
         }
 
         val upcoming = openTasks.filterNot { it.isDueOn(today) }
-        item { FlowSectionTitle("UPCOMING", "다가오는 일정", "${upcoming.size}개") }
+        item { FlowSectionTitle("", "다가오는 일정", "${upcoming.size}개") }
         if (upcoming.isEmpty()) {
             item {
                 FlowCard(Modifier.fillMaxWidth()) {
@@ -127,7 +127,7 @@ fun FlowPlannerRoot() {
         }
 
         if (completed.isNotEmpty()) {
-            item { FlowSectionTitle("DONE", "완료", "${completed.size}개") }
+            item { FlowSectionTitle("", "완료", "${completed.size}개") }
             item { PlannerTaskSurface(completed.take(8), now, onToggle = ::toggle, onDelete = ::delete) }
         }
     }
