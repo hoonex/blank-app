@@ -78,13 +78,11 @@ fun FlowPlannerRoot() {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(FlowPalette.Background).statusBarsPadding(),
+        modifier = Modifier.fillMaxSize().background(FlowPalette.Background).statusBarsPadding().navigationBarsPadding(),
         contentPadding = PaddingValues(20.dp, 28.dp, 20.dp, 38.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            FlowBrand(compact = true)
-            Spacer(Modifier.height(18.dp))
             FlowLargeTitle("플래너", "과제, 시험, 할 일을 한곳에서 관리합니다.")
         }
 
