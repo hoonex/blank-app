@@ -3,8 +3,8 @@ package io.github.hoonex.flow.ui
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -72,10 +72,7 @@ fun FlowBottomNavigation(
         animationJob = animationScope.launch {
             animatedIndex.animateTo(
                 targetValue = index.toFloat(),
-                animationSpec = spring(
-                    dampingRatio = 0.88f,
-                    stiffness = Spring.StiffnessMediumLow
-                )
+                animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
             )
         }
     }
@@ -94,10 +91,7 @@ fun FlowBottomNavigation(
                 animationJob = animationScope.launch {
                     animatedIndex.animateTo(
                         targetValue = safeSelectedIndex.toFloat(),
-                        animationSpec = spring(
-                            dampingRatio = 0.88f,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
                     )
                 }
             }
