@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.ui
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -812,6 +815,7 @@ private fun NativeFlowSheet(
 ) {
     var visible by remember { mutableStateOf(false) }
     var closing by remember { mutableStateOf(false) }
+    var handleDrag by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val dimAlpha by animateFloatAsState(
         targetValue = if (visible) .62f else 0f,
@@ -863,8 +867,30 @@ private fun NativeFlowSheet(
                         .background(FlowPalette.Surface)
                         .clickable(onClick = {})
                         .navigationBarsPadding()
-                        .padding(20.dp)
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(bottom = 12.dp)
+                            .width(38.dp)
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(FlowPalette.Dim.copy(alpha = .72f))
+                            .pointerInput(Unit) {
+                                detectVerticalDragGestures(
+                                    onDragStart = { handleDrag = 0f },
+                                    onVerticalDrag = { _, dragAmount ->
+                                        handleDrag = (handleDrag + dragAmount).coerceAtLeast(0f)
+                                    },
+                                    onDragEnd = {
+                                        if (handleDrag >= 72f) requestClose()
+                                        handleDrag = 0f
+                                    },
+                                    onDragCancel = { handleDrag = 0f }
+                                )
+                            }
+                    )
                     content(::requestClose)
                 }
             }
