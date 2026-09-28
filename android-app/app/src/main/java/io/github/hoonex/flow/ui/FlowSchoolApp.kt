@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,8 @@ import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.schoolDate8
+import io.github.hoonex.flow.update.GitHubUpdateManager
+import io.github.hoonex.flow.update.UpdatePhase
 import io.github.hoonex.flow.widget.UniversityWidgets
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -667,7 +670,9 @@ private fun SchoolSettingsScreen(
     onChangeSchool: () -> Unit,
     onSwitchUniversity: () -> Unit,
     checkUpdate: () -> Unit
-) {
+ ) {
+    val updateStatus by GitHubUpdateManager.status.collectAsState()
+    val updateBusy = updateStatus.phase in setOf(UpdatePhase.CHECKING, UpdatePhase.DOWNLOADING, UpdatePhase.VERIFYING)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 34.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { FlowLargeTitle("설정", "${selection.school.name} · ${selection.grade}학년 ${selection.className}반") }
         item { FlowSectionTitle("MANAGE", "데이터와 모드") }
@@ -688,9 +693,17 @@ private fun SchoolSettingsScreen(
                     )
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                     SchoolSettingsActionRow(
-                        title = "앱 업데이트 확인",
-                        detail = "새 Flow Android 릴리스가 있는지 확인합니다.",
-                        action = checkUpdate
+                        title = when (updateStatus.phase) {
+                            UpdatePhase.CHECKING -> "업데이트 확인 중…"
+                            UpdatePhase.DOWNLOADING -> "업데이트 다운로드 중…"
+                            UpdatePhase.VERIFYING -> "업데이트 검증 중…"
+                            UpdatePhase.READY -> "업데이트 설치 준비 완료"
+                            UpdatePhase.UP_TO_DATE -> "Flow가 최신 버전입니다"
+                            else -> "앱 업데이트 확인"
+                        },
+                        detail = updateStatus.message,
+                        action = checkUpdate,
+                        enabled = !updateBusy
                     )
                 }
             }
