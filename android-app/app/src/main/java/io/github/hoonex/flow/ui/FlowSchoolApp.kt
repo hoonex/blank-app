@@ -39,11 +39,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolApi
 import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
+import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.isDueOn
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.update.GitHubUpdateManager
 import io.github.hoonex.flow.update.UpdatePhase
@@ -262,6 +265,7 @@ private fun SchoolTodayScreen(
     onDateSelected: (String) -> Unit,
     refresh: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val selectedLocalDate = remember(selectedDate) {
         runCatching { LocalDate.parse(selectedDate, DateTimeFormatter.BASIC_ISO_DATE) }
             .getOrDefault(LocalDate.now())
@@ -273,6 +277,11 @@ private fun SchoolTodayScreen(
     val classes = dashboard?.classesOn(selectedDate).orEmpty()
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
     val events = dashboard?.eventsOn(selectedDate).orEmpty()
+    val dayTasks = remember(selectedLocalDate) {
+        FlowPlannerStore(context).load().filter {
+            !it.done && it.isDueOn(selectedLocalDate) && it.scope in setOf(FlowTaskScope.FLOW, FlowTaskScope.SCHOOL)
+        }
+    }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -310,6 +319,10 @@ private fun SchoolTodayScreen(
                 events = events,
                 loading = loading && dashboard == null
             )
+        }
+        if (dayTasks.isNotEmpty()) {
+            item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
+            item { FlowDayTaskSummary(dayTasks) }
         }
         item {
             FlowSecondaryButton(
