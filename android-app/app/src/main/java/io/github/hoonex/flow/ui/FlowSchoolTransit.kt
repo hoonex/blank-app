@@ -135,7 +135,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            item { FlowSectionTitle("DESTINATION", "다른 목적지", "선택") }
+            item { FlowSectionTitle("", "다른 목적지", "선택") }
         }
         item {
             FlowTextField(
@@ -180,7 +180,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
             }
         }
         if (suggestions.isNotEmpty()) {
-            item { FlowSectionTitle("PLACES", "실제 장소", "${suggestions.size}개") }
+            item { FlowSectionTitle("", "실제 장소", "${suggestions.size}개") }
             items(suggestions, key = { it.id }) { place ->
                 FlowCard(
                     modifier = Modifier.fillMaxWidth(),
