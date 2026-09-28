@@ -20,7 +20,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 
-enum class UpdatePhase { IDLE, CHECKING, UP_TO_DATE, DOWNLOADING, VERIFYING, READY, PREVIEW_DISABLED, FAILED }
+enum class UpdatePhase { IDLE, CHECKING, UP_TO_DATE, AVAILABLE, DOWNLOADING, VERIFYING, READY, PREVIEW_DISABLED, FAILED }
 
 data class UpdateStatus(
     val phase: UpdatePhase = UpdatePhase.IDLE,
@@ -61,6 +61,11 @@ object GitHubUpdateManager {
             if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) {
                 if (!silent) _status.value = UpdateStatus(UpdatePhase.UP_TO_DATE, message = "현재 최신 버전입니다.")
                 return@runCatching "up to date"
+            }
+            val remoteName = manifest.optString("versionName").ifBlank { remoteCode.toString() }
+            if (silent) {
+                _status.value = UpdateStatus(UpdatePhase.AVAILABLE, message = "Flow $remoteName 업데이트를 사용할 수 있습니다.")
+                return@runCatching "update available"
             }
             val apkName = manifest.getString("apkName")
             val apkAsset = (0 until assets.length()).map { assets.getJSONObject(it) }
