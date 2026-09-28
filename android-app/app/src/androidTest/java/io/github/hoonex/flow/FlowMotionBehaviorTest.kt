@@ -79,38 +79,53 @@ class FlowMotionBehaviorTest {
             val bounds = scheduleTab.visibleBounds
             device.click(bounds.centerX(), bounds.centerY())
 
-            Thread.sleep(120)
-            val midFile = File(motionDir, "nav-mid.png")
-            assertTrue("failed to capture nav mid frame", device.takeScreenshot(midFile))
+            val candidates = buildList {
+                repeat(7) { index ->
+                    Thread.sleep(45)
+                    val file = File(motionDir, "nav-candidate-$index.png")
+                    assertTrue("failed to capture nav candidate frame $index", device.takeScreenshot(file))
+                    add(file)
+                }
+            }
 
-            Thread.sleep(380)
+            Thread.sleep(260)
             val settledFile = File(motionDir, "nav-settled.png")
             assertTrue("failed to capture nav settled frame", device.takeScreenshot(settledFile))
 
             val before = BitmapFactory.decodeFile(beforeFile.absolutePath)
-            val mid = BitmapFactory.decodeFile(midFile.absolutePath)
             val settled = BitmapFactory.decodeFile(settledFile.absolutePath)
             try {
                 val beforeX = accentCentroidX(before)
-                val midX = accentCentroidX(mid)
                 val settledX = accentCentroidX(settled)
                 assertTrue(
-                    "could not locate nav accent: before=$beforeX mid=$midX settled=$settledX",
-                    beforeX >= 0 && midX >= 0 && settledX >= 0
+                    "could not locate nav accent: before=$beforeX settled=$settledX",
+                    beforeX >= 0 && settledX >= 0
                 )
                 val minimumTravel = (device.displayWidth / 6).coerceAtLeast(40)
                 assertTrue(
                     "nav selection did not move one tab width: before=$beforeX settled=$settledX minimum=$minimumTravel",
                     settledX - beforeX >= minimumTravel
                 )
+
+                val midCandidate = candidates.firstOrNull { file ->
+                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    try {
+                        val x = accentCentroidX(bitmap)
+                        x > beforeX + 6 && x < settledX - 6
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
                 assertTrue(
-                    "nav selection jumped instead of visibly sliding: before=$beforeX mid=$midX settled=$settledX",
-                    midX > beforeX + 6 && midX < settledX - 6
+                    "nav selection had no rendered intermediate frame between $beforeX and $settledX",
+                    midCandidate != null
                 )
+                val midFile = File(motionDir, "nav-mid.png")
+                midCandidate!!.copyTo(midFile, overwrite = true)
             } finally {
                 before.recycle()
-                mid.recycle()
                 settled.recycle()
+                candidates.forEach(File::delete)
             }
         }
     }
@@ -122,8 +137,8 @@ class FlowMotionBehaviorTest {
                 "university home did not appear",
                 device.wait(Until.hasObject(By.textContains("Flow 모션대학교")), 6_000)
             )
-            val connect = device.wait(Until.findObject(By.text("에브리타임 연결")), 5_000)
-                ?: error("connect button missing")
+            val connect = device.wait(Until.findObject(By.text("시간표 연결")), 5_000)
+                ?: error("timetable connect button missing")
             val bounds = connect.visibleBounds
             device.click(bounds.centerX(), bounds.centerY())
 
