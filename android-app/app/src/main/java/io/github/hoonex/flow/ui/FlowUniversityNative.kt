@@ -136,8 +136,7 @@ fun FlowUniversityNativeRoot(
                             profile = it
                             store.saveProfile(it)
                         },
-                        onChooseMajor = { majorOpen = true },
-                        onCampus = { tab = NativeUniversityTab.CAMPUS }
+                        onChooseMajor = { majorOpen = true }
                     )
                     NativeUniversityTab.SETTINGS -> NativeUniversitySettings(
                         university = university!!,
@@ -561,8 +560,7 @@ private fun NativeUniversitySchool(
     initialProfile: UniversityProfile?,
     major: UniversityMajor?,
     onProfile: (UniversityProfile) -> Unit,
-    onChooseMajor: () -> Unit,
-    onCampus: () -> Unit
+    onChooseMajor: () -> Unit
 ) {
     var profile by remember(university.id, initialProfile) { mutableStateOf(initialProfile) }
     var loading by remember(university.id) { mutableStateOf(initialProfile == null) }
@@ -615,8 +613,6 @@ private fun NativeUniversitySchool(
                 }
             }
         }
-        item { FlowSectionTitle("CAMPUS", "캠퍼스") }
-        item { NativeHubCard("네이티브 캠퍼스 열기", "강의실 · 학식 · 카페 · 편의점 · 도보 경로", onCampus, Modifier.fillMaxWidth()) }
         val rows = listOf("설립" to school.foundation, "구분" to school.division.ifBlank { school.kind }, "주소" to school.address, "전화" to school.phone).filter { it.second.isNotBlank() }
         if (rows.isNotEmpty()) {
             item { FlowSectionTitle("PROFILE", "기본 정보") }
