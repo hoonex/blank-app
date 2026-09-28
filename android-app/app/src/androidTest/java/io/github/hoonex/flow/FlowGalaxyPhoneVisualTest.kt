@@ -265,7 +265,9 @@ class FlowGalaxyPhoneVisualTest {
 
     private fun assertAboveBottomNavigation(targetText: String, tabLabel: String) {
         val target = device.findObject(By.textContains(targetText)) ?: error("Missing target text: $targetText")
-        val tab = device.findObject(By.text(tabLabel)) ?: error("Missing bottom-navigation tab: $tabLabel")
+        val tab = device.findObjects(By.text(tabLabel))
+            .maxByOrNull { it.visibleBounds.centerY() }
+            ?: error("Missing bottom-navigation tab: $tabLabel")
         assertTrue(
             "$targetText is overlapped by bottom navigation: ${target.visibleBounds} vs ${tab.visibleBounds}",
             target.visibleBounds.bottom < tab.visibleBounds.top
