@@ -103,8 +103,10 @@ class FlowGalaxyPhoneVisualTest {
             scrollUntilText("데이터 새로고침")
             assertAboveBottomNavigation("데이터 새로고침", "오늘")
             clickTextAndWaitForText("설정", "데이터와 모드")
+            clickTextAndWaitForText("앱 업데이트 확인", "Preview 빌드에서는 업데이트 설치가 비활성화됩니다.")
             capture("25-galaxy-s25-school-settings")
             assertTrue("primary manage action missing", device.hasObject(By.textContains("학교 데이터 새로고침")))
+            assertTrue("preview updater state missing", device.hasObject(By.textContains("Preview 빌드에서는 업데이트 설치가 비활성화됩니다.")))
         }
 
         clearState()
