@@ -15,9 +15,9 @@ enum class FlowTaskKind(val label: String) {
 }
 
 enum class FlowTaskScope(val label: String) {
-    FLOW("Flow"),
-    SCHOOL("School"),
-    UNIVERSITY("University")
+    FLOW("전체"),
+    SCHOOL("학교"),
+    UNIVERSITY("대학")
 }
 
 data class FlowTask(
