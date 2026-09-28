@@ -35,7 +35,6 @@ class FlowMotionBehaviorTest {
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
         motionDir = File(context.getExternalFilesDir(null), "motion-proof").apply {
-            deleteRecursively()
             mkdirs()
         }
         SchoolStore(context).clear()
