@@ -697,6 +697,7 @@ private fun NativeUniversitySettings(
                             UpdatePhase.CHECKING -> "업데이트 확인 중…"
                             UpdatePhase.DOWNLOADING -> "업데이트 다운로드 중…"
                             UpdatePhase.VERIFYING -> "업데이트 검증 중…"
+                            UpdatePhase.AVAILABLE -> "새 업데이트 사용 가능"
                             UpdatePhase.READY -> "업데이트 설치 준비 완료"
                             UpdatePhase.UP_TO_DATE -> "Flow가 최신 버전입니다"
                             else -> "업데이트 확인"
