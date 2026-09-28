@@ -347,17 +347,6 @@ private fun NativeMetric(label: String, value: String, modifier: Modifier) {
 }
 
 @Composable
-private fun NativeHubCard(title: String, subtitle: String, onClick: () -> Unit, modifier: Modifier) {
-    FlowCard(modifier, onClick = onClick) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(title, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
-            Text(subtitle, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
-            Text("열기  ↗", color = FlowPalette.Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
-        }
-    }
-}
-
-@Composable
 private fun NativeUniversitySchedule(timetable: Timetable?, onImport: () -> Unit) {
     val now = rememberFlowMinuteNow()
     var mode by rememberSaveable { mutableStateOf(0) }
