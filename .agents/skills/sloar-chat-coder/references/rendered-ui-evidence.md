@@ -18,6 +18,8 @@ When the acceptance claim is visual and rendered evidence is available, completi
 
 If rendered evidence is unavailable, report the visual scope as unverified rather than inferring success from source or automation.
 
+For an information-bearing native surface, inspect whether compact presentation preserves the user's immediate decision, exceptional state, and accessible route to detail. Across resize, orientation, or device shape, check that selection, edit content, and focus remain understandable. A good isolated component can still dominate its page or diverge from the product's visual/interaction language; cover those scopes when the claim depends on them. Use the platform's actual render and input evidence rather than assuming a web browser demonstrates native behavior.
+
 ## Evidence identity
 
 A useful rendered-evidence record identifies at least:

@@ -50,7 +50,25 @@ KNOWN_OFFICIAL_COMPANIONS = {
                 "references/reference-research-and-critique.md": "72aeec70b0001cd441d010fe40ca31b804360d94",
                 "references/surface-recipes.md": "052a9c101ca65a29146e38bb8312aa122e92f3d4",
                 "references/visual-verification.md": "66a0903ab724095bb51f923ab5cfd9e30fd57311",
-            }
+            },
+            # Exact 0.8.0 companion shipped at Sloar 0.10.3. Fingerprinting
+            # the whole tree preserves custom installs while upgrading an
+            # untouched official copy.
+            {
+                "NOTICE.md": "7dc49a14715c9d63eb5137f872276eb98a924196",
+                "SKILL.md": "8e61c8b483dfb52beaac2f955be1c3d848800b99",
+                "references/adaptive-design-discovery.md": "02371fdf07e3877b42a76604dc0d870739f226a2",
+                "references/anti-ai-slop.md": "aad52fad2867025dde456d47772030d7cd708602",
+                "references/design-discovery.md": "2a099ad8207abc8930a33edd98c2b46fae1b2a18",
+                "references/design-system-authority.md": "d0011b976f59dd3ae382695c1d624cbfb29a98bd",
+                "references/design-taxonomy.md": "e58e7584b43797b88aef95044584ef13610374b9",
+                "references/identity-and-logo.md": "1530c4ab1f178036da0d1a7ad1f8f72e636c3f88",
+                "references/reference-research-and-critique.md": "6d6ec2670fc15345e256da7673d4af49cdc5da61",
+                "references/structural-ui-engineering.md": "6f0313781fd65eecdceb626a7813ce90718b7874",
+                "references/style-implementation-catalog.md": "7bbdc6eb13e8800bdfcebe884044d881ff8e0ff2",
+                "references/surface-recipes.md": "052a9c101ca65a29146e38bb8312aa122e92f3d4",
+                "references/visual-verification.md": "66a0903ab724095bb51f923ab5cfd9e30fd57311",
+            },
         ],
     },
     # The Apple companion intentionally has no local semantic version. Exact

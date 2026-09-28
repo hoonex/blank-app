@@ -128,6 +128,14 @@ Do not ask a beginner to identify implementation details such as connector names
 
 A locally installed GitHub CLI is separate from a ChatGPT GitHub App connection. Likewise, installing a Plugin does not automatically grant every underlying App permission.
 
+When GitHub reads work but a requested write does not, diagnose the missing layer before asking the user to install anything:
+
+1. If this chat has no GitHub write operation exposed, classify the surface as read-only for this task. App installation cannot make an absent tool callable; use an available authorized transport or report the publication boundary.
+2. If a write operation is exposed but the target repository is inaccessible or the connector reports no installation, check whether the connected GitHub identity has the relevant GitHub App installed on the owning account/organization and whether that repository is selected. For the OpenAI GitHub plugin using **ChatGPT Codex Connector**, the [GitHub App installation page](https://github.com/apps/chatgpt-codex-connector/installations/new) lets the user select the account and repository; an organization may require its administrator to approve installation. GitHub identity authorization and GitHub App installation are separate. Confirm this is the app used by the current connection before recommending it.
+3. If the repository is accessible but a particular write is rejected, inspect the actual error and required operation: Contents, Pull requests, workflow-file permission, branch protection, or other policy can differ. Request only the missing capability when needed; do not repeatedly reconnect or reinstall for an unrelated policy denial.
+
+The ordinary ChatGPT GitHub read connection may itself be read-only on the current product surface. Do not promise that installing ChatGPT Codex Connector enables writes in a chat that does not expose them. After user-controlled setup, verify the specific repository and operation again; never claim a successful write from a connected badge or a read result alone. Keep the user-facing request to one concrete step, without asking for tokens or installing an app on their behalf.
+
 If the user asks for Plugin setup, prefer current official OpenAI documentation because product menus and availability change. Sloar itself is an Agent Skill repository and does not claim that installing the Skill automatically installs or authorizes any external App.
 
 ## First-run response contract
