@@ -56,6 +56,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.hoonex.flow.BuildConfig
 import io.github.hoonex.flow.data.ClassMoment
+import io.github.hoonex.flow.data.FlowPlannerStore
+import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.isDueOn
 import io.github.hoonex.flow.data.ScheduledClass
 import io.github.hoonex.flow.data.Timetable
 import io.github.hoonex.flow.data.University
@@ -245,8 +248,14 @@ private fun NativeUniversityHome(
     major: UniversityMajor?,
     onImport: () -> Unit
 ) {
+    val context = LocalContext.current
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
+    val dayTasks = remember(now.toLocalDate()) {
+        FlowPlannerStore(context).load().filter {
+            !it.done && it.isDueOn(now.toLocalDate()) && it.scope in setOf(FlowTaskScope.FLOW, FlowTaskScope.UNIVERSITY)
+        }
+    }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val date = remember(now.toLocalDate()) {
         now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
@@ -267,7 +276,7 @@ private fun NativeUniversityHome(
         item { NativeNextClass(moment, timetable != null, onImport) }
 
         if (timetable != null) {
-            item { FlowSectionTitle("", "오늘 일정", "${today.size}개") }
+            item { FlowSectionTitle("", "오늘 수업", "${today.size}개") }
             if (today.isEmpty()) {
                 item {
                     Text(
@@ -280,6 +289,10 @@ private fun NativeUniversityHome(
             } else {
                 item { NativeClassSurface(today) }
             }
+        }
+        if (dayTasks.isNotEmpty()) {
+            item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
+            item { FlowDayTaskSummary(dayTasks) }
         }
     }
 }
@@ -304,7 +317,7 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    item?.subject?.name ?: if (connected) "오늘 일정 완료" else "시간표를 연결하세요",
+                    item?.subject?.name ?: if (connected) "오늘 수업 종료" else "시간표를 연결하세요",
                     color = FlowPalette.Text,
                     fontSize = 29.sp,
                     lineHeight = 33.sp,
@@ -317,7 +330,7 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
                         it.time.place.ifBlank { it.subject.place },
                         it.subject.professor
                     ).filter(String::isNotBlank).joinToString(" · ")
-                } ?: if (connected) "남은 수업이 없습니다." else "공개 공유 링크로 시간표를 가져올 수 있습니다."
+                } ?: if (connected) "오늘 예정된 수업을 모두 마쳤습니다." else "공개 공유 링크로 시간표를 가져올 수 있습니다."
                 Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
                 if (!connected) {
                     FlowPrimaryButton("시간표 연결", onImport, Modifier.fillMaxWidth().padding(top = 16.dp))
