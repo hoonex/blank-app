@@ -111,7 +111,7 @@ private fun FlowHub(
         }
 
         item {
-            FlowSectionTitle("SPACE", "내 공간")
+            FlowSectionTitle("", "내 공간")
             Spacer(Modifier.height(9.dp))
             FlowCard(Modifier.fillMaxWidth()) {
                 Column {
@@ -133,7 +133,7 @@ private fun FlowHub(
         }
 
         item {
-            FlowSectionTitle("TOOLS", "도구")
+            FlowSectionTitle("", "도구")
             Spacer(Modifier.height(9.dp))
             FlowCard(Modifier.fillMaxWidth()) {
                 Column {
