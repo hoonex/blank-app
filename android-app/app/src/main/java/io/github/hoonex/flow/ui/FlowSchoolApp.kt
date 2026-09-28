@@ -46,7 +46,7 @@ import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.FlowTaskScope
-import io.github.hoonex.flow.data.isDueOn
+import io.github.hoonex.flow.data.activeForDay
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.update.GitHubUpdateManager
 import io.github.hoonex.flow.update.UpdatePhase
@@ -278,9 +278,7 @@ private fun SchoolTodayScreen(
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
     val events = dashboard?.eventsOn(selectedDate).orEmpty()
     val dayTasks = remember(selectedLocalDate) {
-        FlowPlannerStore(context).load().filter {
-            !it.done && it.isDueOn(selectedLocalDate) && it.scope in setOf(FlowTaskScope.FLOW, FlowTaskScope.SCHOOL)
-        }
+        FlowPlannerStore(context).load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
     }
 
     LazyColumn(
