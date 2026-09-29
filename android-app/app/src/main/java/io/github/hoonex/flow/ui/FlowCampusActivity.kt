@@ -305,7 +305,10 @@ private fun NativeCampusMap(
     }
 
     LaunchedEffect(map, styleReady, campus, walkRoute) {
-        if (styleReady) map?.let { renderCampusMap(it, campus, walkRoute) }
+        if (styleReady) map?.let {
+            fullyRendered = false
+            renderCampusMap(it, campus, walkRoute)
+        }
     }
 }
 
