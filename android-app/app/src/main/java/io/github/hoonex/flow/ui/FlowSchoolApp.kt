@@ -715,7 +715,8 @@ private fun SchoolSettingsScreen(
                         },
                         detail = updateStatus.message,
                         action = checkUpdate,
-                        enabled = !updateBusy
+                        enabled = !updateBusy,
+                        progress = updateStatus.progress.takeIf { updateStatus.phase == UpdatePhase.DOWNLOADING }
                     )
                 }
             }
@@ -775,7 +776,8 @@ private fun SchoolSettingsActionRow(
     detail: String,
     action: () -> Unit,
     danger: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    progress: Int? = null
 ) {
     Row(
         Modifier
@@ -796,6 +798,11 @@ private fun SchoolSettingsActionRow(
                 fontWeight = FontWeight.Black
             )
             Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            progress?.let { value ->
+                Box(Modifier.fillMaxWidth().padding(top = 9.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(FlowPalette.Stroke)) {
+                    Box(Modifier.fillMaxWidth((value.coerceIn(0, 100) / 100f).coerceAtLeast(.01f)).height(3.dp).background(FlowPalette.Mint))
+                }
+            }
         }
         Text(
             "›",
