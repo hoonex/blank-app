@@ -375,10 +375,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.campusSection(
 
 @Composable
 private fun NativeStateCard(title: String, detail: String) {
-    FlowCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().padding(18.dp)) {
-            Text(title, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
-            Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 5.dp))
-        }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp)) {
+        Text(title, color = FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp))
     }
 }
