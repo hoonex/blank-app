@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val ACTION_OPEN_SCHOOL = "io.github.hoonex.flow.OPEN_SCHOOL"
         const val ACTION_OPEN_UNIVERSITY = "io.github.hoonex.flow.OPEN_UNIVERSITY"
-        const val ACTION_OPEN_WIDGETS = "io.github.hoonex.flow.OPEN_WIDGETS"
+        const val ACTION_OPEN_WIDGETS = "io.github.hoonex.flow.OPEN_WIDGETS"\n        const val ACTION_OPEN_PLANNER = "io.github.hoonex.flow.OPEN_PLANNER"
     }
 
     private val rootRevision = mutableIntStateOf(0)
