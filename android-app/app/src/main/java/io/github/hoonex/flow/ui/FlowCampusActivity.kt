@@ -247,6 +247,7 @@ private fun NativeCampusMap(
 ) {
     var map by remember(mapView) { mutableStateOf<MapLibreMap?>(null) }
     var styleReady by remember(mapView) { mutableStateOf(false) }
+    var fullyRendered by remember(mapView) { mutableStateOf(false) }
 
     Box(
         Modifier
@@ -258,6 +259,9 @@ private fun NativeCampusMap(
         AndroidView(
             factory = {
                 mapView.apply {
+                    addOnDidFinishRenderingMapListener { fully ->
+                        if (fully) fullyRendered = true
+                    }
                     getMapAsync { ready ->
                         ready.uiSettings.isCompassEnabled = true
                         ready.uiSettings.isAttributionEnabled = true
@@ -289,7 +293,13 @@ private fun NativeCampusMap(
                 .align(Alignment.TopStart)
                 .padding(10.dp)
                 .background(Color(0xAA08100E), RoundedCornerShape(10.dp))
-                .semantics { contentDescription = if (styleReady) "Flow 지도 준비됨" else "Flow 지도 로딩 중" }
+                .semantics {
+                    contentDescription = when {
+                        fullyRendered -> "Flow 지도 렌더 완료"
+                        styleReady -> "Flow 지도 스타일 준비됨"
+                        else -> "Flow 지도 로딩 중"
+                    }
+                }
                 .padding(horizontal = 9.dp, vertical = 6.dp)
         )
     }
