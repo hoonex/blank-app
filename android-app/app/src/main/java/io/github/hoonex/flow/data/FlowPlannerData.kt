@@ -82,6 +82,12 @@ fun List<FlowTask>.dueWithinGap(date: LocalDate, scope: FlowTaskScope, startMinu
         minute in maxOf(startMinutes, nowMinutes)..endMinutes
     }
 
+fun List<FlowTask>.nextDueTask(date: LocalDate, scope: FlowTaskScope, nowMinutes: Int): FlowTask? =
+    activeForDay(date, scope).firstOrNull { task ->
+        val due = task.dueDateTime() ?: return@firstOrNull false
+        due.hour * 60 + due.minute >= nowMinutes
+    }
+
 class FlowPlannerStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-planner-v1", Context.MODE_PRIVATE)
 
