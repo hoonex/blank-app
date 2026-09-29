@@ -101,8 +101,8 @@ class FlowMotionBehaviorTest {
             }
 
             val candidates = buildList {
-                repeat(9) { index ->
-                    Thread.sleep(24)
+                repeat(16) { index ->
+                    Thread.sleep(12)
                     val bitmap = instrumentation.uiAutomation.takeScreenshot()
                         ?: error("failed to capture raw nav candidate frame $index")
                     add(bitmap)
