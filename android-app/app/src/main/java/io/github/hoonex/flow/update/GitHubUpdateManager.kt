@@ -56,24 +56,24 @@ object GitHubUpdateManager {
             val manifestAsset = (0 until assets.length()).map { assets.getJSONObject(it) }
                 .firstOrNull { it.optString("name") == "flow-android-release.json" }
                 ?: return@runCatching "release manifest missing"
-            val manifest = JSONObject(getText(manifestAsset.getString("browser_download_url")))
-            val remoteCode = manifest.getLong("versionCode")
+            val manifest = parseUpdateReleaseManifest(getText(manifestAsset.getString("browser_download_url")))
+            val remoteCode = manifest.versionCode
             if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) {
                 if (!silent) _status.value = UpdateStatus(UpdatePhase.UP_TO_DATE, message = "현재 최신 버전입니다.")
                 return@runCatching "up to date"
             }
-            val remoteName = manifest.optString("versionName").ifBlank { remoteCode.toString() }
+            val remoteName = manifest.versionName
             if (silent) {
                 _status.value = UpdateStatus(UpdatePhase.AVAILABLE, message = "Flow $remoteName 업데이트를 사용할 수 있습니다.")
                 return@runCatching "update available"
             }
-            val apkName = manifest.getString("apkName")
+            val apkName = manifest.apkName
             val apkAsset = (0 until assets.length()).map { assets.getJSONObject(it) }
                 .firstOrNull { it.optString("name") == apkName }
                 ?: error("APK asset missing")
-            val expectedSha = manifest.getString("apkSha256").normalizeHex()
-            val expectedSigner = manifest.getString("signerSha256").normalizeHex()
-            if (expectedSigner != BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()) error("release signer lineage mismatch")
+            val expectedSha = manifest.apkSha256
+            val expectedSigner = manifest.signerSha256
+            if (expectedSigner != BuildConfig.UPDATE_SIGNER_SHA256.normalizeUpdateHex()) error("release signer lineage mismatch")
             val updateDir = File(activity.filesDir, "updates").apply { mkdirs() }
             val apk = File(updateDir, apkName)
             if (!silent) _status.value = UpdateStatus(UpdatePhase.DOWNLOADING, progress = 0, message = "새 버전을 다운로드하는 중…")
@@ -117,7 +117,7 @@ object GitHubUpdateManager {
         val validNewer = info != null &&
             info.packageName == BuildConfig.APPLICATION_ID &&
             info.longVersionCode > BuildConfig.VERSION_CODE.toLong() &&
-            signer?.normalizeHex() == BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()
+            signer?.normalizeUpdateHex() == BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()
 
         if (!validNewer) {
             prefs.edit().remove(STAGED).apply()
@@ -153,7 +153,7 @@ object GitHubUpdateManager {
         if (info.longVersionCode != expectedCode || info.longVersionCode <= BuildConfig.VERSION_CODE) error("version mismatch")
         val cert = info.signingInfo?.apkContentsSigners?.firstOrNull() ?: error("APK signer missing")
         val signer = MessageDigest.getInstance("SHA-256").digest(cert.toByteArray()).joinToString("") { "%02X".format(it) }
-        if (signer.normalizeHex() != expectedSigner.normalizeHex()) error("APK signer mismatch")
+        if (signer.normalizeUpdateHex() != expectedSigner.normalizeUpdateHex()) error("APK signer mismatch")
     }
 
     private fun getText(url: String): String {
@@ -210,5 +210,4 @@ object GitHubUpdateManager {
         return digest.digest().joinToString("") { "%02X".format(it) }
     }
 
-    private fun String.normalizeHex() = replace(":", "").replace(" ", "").trim().uppercase()
 }
