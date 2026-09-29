@@ -261,7 +261,13 @@ private fun NativeUniversityHome(
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val nextGap = timetable?.nextGap(now)
     val gapTasks = nextGap?.let { gap ->
-        dayTasks.dueWithinGap(now.toLocalDate(), FlowTaskScope.UNIVERSITY, gap.startMinutes, gap.endMinutes)
+        dayTasks.dueWithinGap(
+            now.toLocalDate(),
+            FlowTaskScope.UNIVERSITY,
+            gap.startMinutes,
+            gap.endMinutes,
+            now.hour * 60 + now.minute
+        )
     }.orEmpty()
     val date = remember(now.toLocalDate()) {
         now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
