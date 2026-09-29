@@ -227,7 +227,7 @@ class FlowGalaxyPhoneVisualTest {
     }
 
     private fun seedIntegratedDayTask() {
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
