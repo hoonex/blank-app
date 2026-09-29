@@ -69,6 +69,7 @@ object GitHubUpdateManager {
                     sourceSha = manifestJson.getString("sourceSha").trim().lowercase()
                 )
             )
+            validateUpdateReleaseTag(chosen.getString("tag_name"), manifest)
             val remoteCode = manifest.versionCode
             if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) {
                 if (!silent) _status.value = UpdateStatus(UpdatePhase.UP_TO_DATE, message = "현재 최신 버전입니다.")
