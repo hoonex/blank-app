@@ -62,4 +62,13 @@ class UniversityScheduleTest {
         assertEquals("13:00", formatScheduleMinutes(780))
     }
 
+    @Test
+    fun scheduleGapKnowsWhenItIsCurrentlyActive() {
+        val gap = ScheduleGap(615, 780)
+        assertEquals(false, gap.isActiveAt(614))
+        assertEquals(true, gap.isActiveAt(615))
+        assertEquals(true, gap.isActiveAt(779))
+        assertEquals(false, gap.isActiveAt(780))
+    }
+
 }
