@@ -147,39 +147,30 @@ fun FlowPlannerRoot() {
 @Composable
 fun FlowDayTaskSummary(tasks: List<FlowTask>) {
     if (tasks.isEmpty()) return
-    FlowCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth()) {
-            tasks.take(4).forEachIndexed { index, task ->
-                val due = task.dueDateTime()
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 17.dp, vertical = 13.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        Modifier.size(8.dp).clip(RoundedCornerShape(999.dp)).background(flowSubjectColor(task.title))
+    Column(Modifier.fillMaxWidth()) {
+        tasks.take(4).forEachIndexed { index, task ->
+            val due = task.dueDateTime()
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(Modifier.size(7.dp).clip(RoundedCornerShape(999.dp)).background(flowSubjectColor(task.title)))
+                Column(Modifier.padding(start = 11.dp).weight(1f)) {
+                    Text(task.title, color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        listOf(task.kind.label, due?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "").filter(String::isNotBlank).joinToString(" · "),
+                        color = FlowPalette.Muted,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
-                    Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text(task.title, color = FlowPalette.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            listOf(task.kind.label, due?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: "").filter(String::isNotBlank).joinToString(" · "),
-                            color = FlowPalette.Muted,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(top = 3.dp)
-                        )
-                    }
-                }
-                if (index != tasks.take(4).lastIndex) {
-                    Box(Modifier.fillMaxWidth().padding(start = 37.dp, end = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                 }
             }
-            if (tasks.size > 4) {
-                Text(
-                    "+${tasks.size - 4}개 더 있음",
-                    color = FlowPalette.Muted,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(horizontal = 17.dp, vertical = 11.dp)
-                )
+            if (index != tasks.take(4).lastIndex) {
+                Box(Modifier.fillMaxWidth().padding(start = 20.dp).height(1.dp).background(FlowPalette.Stroke.copy(alpha = .7f)))
             }
+        }
+        if (tasks.size > 4) {
+            Text("+${tasks.size - 4}개 더 있음", color = FlowPalette.Muted, fontSize = 11.sp, modifier = Modifier.padding(start = 20.dp, top = 6.dp))
         }
     }
 }
