@@ -202,7 +202,6 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
         Modifier
             .fillMaxWidth()
             .background(if (overdue) FlowPalette.Danger.copy(alpha = 0.045f) else Color.Transparent)
-            .clickable(onClick = onToggle)
             .padding(horizontal = 17.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -216,7 +215,8 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
                         overdue -> FlowPalette.Danger.copy(alpha = 0.12f)
                         else -> FlowPalette.SurfaceSoft
                     }
-                ),
+                )
+                .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
             Text(
