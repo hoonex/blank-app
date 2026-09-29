@@ -83,7 +83,8 @@ class FlowRecreationStateTest {
             waitForText("주간 시간표")
 
             device.pressBack()
-            waitForText("오늘 시간표")
+            waitForText("정동고등학교")
+            assertTrue("Back did not return to Today tab", device.hasObject(By.text("오늘")))
 
             device.pressBack()
             waitForText("학교도, 대학도")
