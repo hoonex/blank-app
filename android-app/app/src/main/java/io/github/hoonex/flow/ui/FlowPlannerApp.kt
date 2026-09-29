@@ -87,22 +87,19 @@ fun FlowPlannerRoot() {
         }
 
         item {
-            FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                Column(Modifier.fillMaxWidth().padding(20.dp)) {
-                    Text(
-                        when {
-                            stats.overdue > 0 -> "밀린 일정 ${stats.overdue}개"
-                            stats.today > 0 -> "오늘 ${stats.today}개 마감"
-                            openTasks.isEmpty() -> "남은 일정 없음"
-                            else -> "7일 안에 ${stats.nextSevenDays}개"
-                        },
-                        color = FlowPalette.Text,
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(top = 7.dp)
-                    )
-                    Text("완료 ${stats.completed}개 · 열린 일정 ${openTasks.size}개", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 5.dp))
-                }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp)) {
+                Text(
+                    when {
+                        stats.overdue > 0 -> "밀린 일정 ${stats.overdue}개"
+                        stats.today > 0 -> "오늘 ${stats.today}개 마감"
+                        openTasks.isEmpty() -> "남은 일정 없음"
+                        else -> "7일 안에 ${stats.nextSevenDays}개"
+                    },
+                    color = FlowPalette.Text,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text("완료 ${stats.completed}개 · 열린 일정 ${openTasks.size}개", color = FlowPalette.Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
 
@@ -118,9 +115,13 @@ fun FlowPlannerRoot() {
         item { FlowSectionTitle("", "다가오는 일정", "${upcoming.size}개") }
         if (upcoming.isEmpty()) {
             item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Text("추가된 일정이 없습니다. 과제나 시험을 Flow에 넣어두면 School과 University를 오가도 한곳에서 볼 수 있습니다.", color = FlowPalette.Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(18.dp))
-                }
+                Text(
+                    "추가된 일정이 없습니다. 과제나 시험을 Flow에 넣으면 학교와 대학 화면에서도 함께 볼 수 있습니다.",
+                    color = FlowPalette.Muted,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier.padding(horizontal = 2.dp, vertical = 6.dp)
+                )
             }
         } else {
             item { PlannerTaskSurface(upcoming, now, onToggle = ::toggle, onDelete = ::delete) }
