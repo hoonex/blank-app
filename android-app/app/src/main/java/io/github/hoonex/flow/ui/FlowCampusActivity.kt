@@ -168,45 +168,41 @@ private fun FlowCampusScreen(mapView: MapView) {
                 )
             }
             item {
-                FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                    Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                        Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            campus.center.roadAddress.ifBlank { campus.center.address }.ifBlank { university?.address.orEmpty() },
-                            color = FlowPalette.Muted,
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                        val resolved = campus.places.count { it.resolved && it.place != null }
-                        Text(
-                            "강의 $resolved · 학식 ${campus.nearby.dining.size} · 카페 ${campus.nearby.cafes.size} · 편의점 ${campus.nearby.stores.size} · 식당 ${campus.nearby.food.size}",
-                            color = FlowPalette.Mint,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 10.dp)
-                        )
-                    }
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp)) {
+                    Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        campus.center.roadAddress.ifBlank { campus.center.address }.ifBlank { university?.address.orEmpty() },
+                        color = FlowPalette.Muted,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    val resolved = campus.places.count { it.resolved && it.place != null }
+                    Text(
+                        "강의 $resolved · 학식 ${campus.nearby.dining.size} · 카페 ${campus.nearby.cafes.size} · 편의점 ${campus.nearby.stores.size} · 식당 ${campus.nearby.food.size}",
+                        color = FlowPalette.Mint,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 9.dp)
+                    )
                 }
             }
 
             route?.let { (place, walk) ->
                 item {
-                    FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                            Text("도보 경로", color = FlowPalette.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Text("${campus.center.name} → ${place.name}", color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
-                            Text(
-                                when {
-                                    routeLoading -> "실제 도보 경로 계산 중…"
-                                    walk?.status == "OK" -> "약 ${(walk.timeSeconds / 60).coerceAtLeast(1)}분 · ${walk.distance}m · 경로점 ${walk.points.size}개"
-                                    else -> "도보 경로를 찾지 못했습니다."
-                                },
-                                color = FlowPalette.Muted,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(top = 5.dp)
-                            )
-                        }
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 5.dp)) {
+                        Text("도보 경로", color = FlowPalette.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${campus.center.name} → ${place.name}", color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
+                        Text(
+                            when {
+                                routeLoading -> "실제 도보 경로 계산 중…"
+                                walk?.status == "OK" -> "약 ${(walk.timeSeconds / 60).coerceAtLeast(1)}분 · ${walk.distance}m · 경로점 ${walk.points.size}개"
+                                else -> "도보 경로를 찾지 못했습니다."
+                            },
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
             }
