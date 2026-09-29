@@ -56,4 +56,10 @@ class UniversityScheduleTest {
             timetable.nextBoundary(LocalDateTime.of(2026, 9, 7, 12, 0))
         )
     }
+    @Test
+    fun formatsScheduleMinuteLabelsWithLeadingZeros() {
+        assertEquals("09:05", formatScheduleMinutes(545))
+        assertEquals("13:00", formatScheduleMinutes(780))
+    }
+
 }
