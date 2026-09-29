@@ -59,7 +59,7 @@ class FlowCampusMapVisualTest {
             assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스")), 5_000))
             assertTrue("native map evidence missing", device.wait(Until.hasObject(By.textContains("Flow 지도")), 8_000))
             device.waitForIdle()
-            assertTrue("campus map did not settle", device.wait(Until.hasObject(By.textContains("공학관")), 2_000))
+            assertTrue("campus map did not settle", device.wait(Until.hasObject(By.textContains("정문")), 4_000))
             val file = File(screenshotDir, "16-native-campus-map.png")
             assertTrue("failed to capture native campus map", device.takeScreenshot(file))
             assertTrue("native campus screenshot is empty", file.length() > 10_000)
