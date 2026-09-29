@@ -41,6 +41,7 @@ object GitHubUpdateManager {
             return@withContext "preview updater disabled"
         }
         if (!silent) _status.value = UpdateStatus(UpdatePhase.CHECKING, message = "새 버전을 확인하는 중…")
+        var pendingApk: File? = null
         runCatching {
             val releases = JSONArray(getText("https://api.github.com/repos/${BuildConfig.GITHUB_REPOSITORY}/releases?per_page=20"))
             var release: JSONObject? = null
@@ -87,6 +88,7 @@ object GitHubUpdateManager {
             if (expectedSigner != BuildConfig.UPDATE_SIGNER_SHA256.normalizeUpdateHex()) error("release signer lineage mismatch")
             val updateDir = File(activity.filesDir, "updates").apply { mkdirs() }
             val apk = File(updateDir, apkName)
+            pendingApk = apk
             if (!silent) _status.value = UpdateStatus(UpdatePhase.DOWNLOADING, progress = 0, message = "새 버전을 다운로드하는 중…")
             download(apkAsset.getString("browser_download_url"), apk) { progress ->
                 if (!silent) _status.value = UpdateStatus(UpdatePhase.DOWNLOADING, progress, "새 버전을 다운로드하는 중… $progress%")
@@ -95,10 +97,12 @@ object GitHubUpdateManager {
             if (sha256(apk) != expectedSha) error("APK checksum mismatch")
             verifyArchive(activity, apk, remoteCode, expectedSigner)
             activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE).edit().putString(STAGED, apk.absolutePath).apply()
+            pendingApk = null
             if (!silent) _status.value = UpdateStatus(UpdatePhase.READY, progress = 100, message = "검증 완료. Android 설치 화면을 엽니다.")
             activity.runOnUiThread { requestInstall(activity, apk) }
             "install requested"
         }.getOrElse {
+            pendingApk?.delete()
             val message = it.message ?: "update failed"
             if (!silent) _status.value = UpdateStatus(UpdatePhase.FAILED, message = "업데이트를 완료하지 못했습니다. $message")
             if (!silent) message else "update check failed"
