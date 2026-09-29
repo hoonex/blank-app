@@ -86,14 +86,14 @@ data class ScheduleGap(val startMinutes: Int, val endMinutes: Int) {
     val durationMinutes: Int get() = endMinutes - startMinutes
 }
 
-fun todayIndex(now: LocalDateTime = LocalDateTime.now()): Int = now.dayOfWeek.value - 1
+fun todayIndex(now: LocalDateTime = flowAcademicNow()): Int = now.dayOfWeek.value - 1
 
 fun Timetable.classesForDay(day: Int): List<ScheduledClass> = subjects
     .flatMap { subject -> subject.times.map { ScheduledClass(subject, it) } }
     .filter { it.time.day == day }
     .sortedBy { it.time.startMinutes }
 
-fun Timetable.classMoment(now: LocalDateTime = LocalDateTime.now()): ClassMoment {
+fun Timetable.classMoment(now: LocalDateTime = flowAcademicNow()): ClassMoment {
     val minute = now.hour * 60 + now.minute
     val today = classesForDay(todayIndex(now))
     val current = today.firstOrNull { minute in it.time.startMinutes until it.time.endMinutes }
@@ -101,7 +101,7 @@ fun Timetable.classMoment(now: LocalDateTime = LocalDateTime.now()): ClassMoment
     return ClassMoment(current, next)
 }
 
-fun Timetable.nextGap(now: LocalDateTime = LocalDateTime.now()): ScheduleGap? {
+fun Timetable.nextGap(now: LocalDateTime = flowAcademicNow()): ScheduleGap? {
     val minute = now.hour * 60 + now.minute
     val day = classesForDay(todayIndex(now))
     if (day.size < 2) return null
@@ -120,7 +120,7 @@ fun Timetable.weeklyMinutes(): Int = subjects.sumOf { subject ->
     subject.times.sumOf { (it.endMinutes - it.startMinutes).coerceAtLeast(0) }
 }
 
-fun Timetable.nextBoundary(now: LocalDateTime = LocalDateTime.now()): LocalDateTime? {
+fun Timetable.nextBoundary(now: LocalDateTime = flowAcademicNow()): LocalDateTime? {
     val today = now.toLocalDate()
     return (0L..7L)
         .asSequence()
