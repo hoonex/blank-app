@@ -159,11 +159,9 @@ private fun WidgetGallery(
             }
         } else {
             item {
-                FlowCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(18.dp)) {
-                        Text("설치된 Flow 위젯 없음", color = FlowPalette.Text, fontWeight = FontWeight.Black)
-                        Text("아래에서 위젯을 추가하면 여기에서 각 위젯의 데이터 소스와 세부정보를 바로 관리할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 5.dp))
-                    }
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp)) {
+                    Text("설치된 Flow 위젯 없음", color = FlowPalette.Text, fontWeight = FontWeight.Black)
+                    Text("아래에서 위젯을 추가하면 데이터 소스와 세부정보를 위젯별로 관리할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
