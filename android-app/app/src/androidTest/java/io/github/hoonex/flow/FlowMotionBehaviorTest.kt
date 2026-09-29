@@ -193,6 +193,11 @@ class FlowMotionBehaviorTest {
                 "sheet did not settle with close action",
                 device.wait(Until.hasObject(By.text("닫기")), 2_000)
             )
+            val close = device.findObject(By.text("닫기")) ?: error("close action missing after settle")
+            assertTrue(
+                "sheet close action overlaps system navigation: bottom=${close.visibleBounds.bottom} display=${device.displayHeight}",
+                close.visibleBounds.bottom <= device.displayHeight - 24
+            )
         }
     }
 
