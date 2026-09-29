@@ -26,6 +26,7 @@ import io.github.hoonex.flow.data.University
 import io.github.hoonex.flow.data.UniversityMajor
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.schoolDate8
+import io.github.hoonex.flow.data.flowAcademicNow
 import io.github.hoonex.flow.ui.FlowMode
 import io.github.hoonex.flow.ui.FlowModeStore
 import org.junit.After
