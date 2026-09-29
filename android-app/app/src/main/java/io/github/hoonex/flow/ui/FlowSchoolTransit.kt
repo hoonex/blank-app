@@ -220,7 +220,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
         routes?.let { bundle ->
             item {
                 FlowSectionTitle(
-                    "ROUTES",
+                    "",
                     bundle.destination?.name ?: selected?.name ?: selection.school.name,
                     if (bundle.realtimeCoverage == "none") "예상 경로" else "실시간 반영"
                 )
