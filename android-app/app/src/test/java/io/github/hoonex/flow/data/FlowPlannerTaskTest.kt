@@ -48,5 +48,22 @@ class FlowPlannerTaskTest {
         assertEquals(listOf("flow", "school"), tasks.activeForDay(date, FlowTaskScope.SCHOOL).map { it.id })
         assertEquals(listOf("flow", "university"), tasks.activeForDay(date, FlowTaskScope.UNIVERSITY).map { it.id })
     }
+    @Test
+    fun dueWithinGapIncludesOnlyTasksWhoseDeadlineFallsInsideGap() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "before", title = "수업 직후 전", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "inside", title = "공강 중", dueAt = "2026-09-29T11:30:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "edge", title = "공강 끝", dueAt = "2026-09-29T13:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "other", title = "학교 일정", dueAt = "2026-09-29T12:00:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "after", title = "공강 뒤", dueAt = "2026-09-29T14:00:00", scope = FlowTaskScope.UNIVERSITY)
+        )
+
+        assertEquals(
+            listOf("inside", "edge"),
+            tasks.dueWithinGap(date, FlowTaskScope.UNIVERSITY, 615, 780).map { it.id }
+        )
+    }
+
 }
 
