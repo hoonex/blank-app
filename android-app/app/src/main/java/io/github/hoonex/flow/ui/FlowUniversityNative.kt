@@ -300,8 +300,9 @@ private fun NativeUniversityHome(
                     Text("  $start–$end · ${nextGap.durationMinutes}분", color = FlowPalette.Muted, fontSize = 12.sp)
                 }
                 if (gapTasks.isNotEmpty()) {
+                    val due = gapTasks.first().dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
                     Text(
-                        "${gapTasks.first().title}${if (gapTasks.size > 1) " 외 ${gapTasks.size - 1}개" else ""} 마감",
+                        "${gapTasks.first().title}${due?.let { " · $it 마감" } ?: " 마감"}${if (gapTasks.size > 1) " · 외 ${gapTasks.size - 1}개" else ""}",
                         color = FlowPalette.Text,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
