@@ -295,7 +295,7 @@ private fun NativeUniversityHome(
                         color = FlowPalette.Text,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 2.dp, top = 5.dp)
+                        modifier = Modifier.padding(start = 2.dp, top = 5.dp, end = 2.dp)
                     )
                 }
             }
