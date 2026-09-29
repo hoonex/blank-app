@@ -85,6 +85,7 @@ data class ClassMoment(val current: ScheduledClass?, val next: ScheduledClass?)
 
 data class ScheduleGap(val startMinutes: Int, val endMinutes: Int) {
     val durationMinutes: Int get() = endMinutes - startMinutes
+    fun isActiveAt(minutes: Int): Boolean = minutes in startMinutes until endMinutes
 }
 
 fun formatScheduleMinutes(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, minutes / 60, minutes % 60)
