@@ -73,6 +73,7 @@ import io.github.hoonex.flow.data.classMoment
 import io.github.hoonex.flow.data.classesForDay
 import io.github.hoonex.flow.data.dueWithinGap
 import io.github.hoonex.flow.data.nextGap
+import io.github.hoonex.flow.data.nextDueTask
 import io.github.hoonex.flow.data.todayIndex
 import io.github.hoonex.flow.data.totalCredits
 import io.github.hoonex.flow.data.weeklyMinutes
@@ -260,13 +261,15 @@ private fun NativeUniversityHome(
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val nextGap = timetable?.nextGap(now)
+    val nowMinutes = now.hour * 60 + now.minute
+    val nextTask = dayTasks.nextDueTask(now.toLocalDate(), FlowTaskScope.UNIVERSITY, nowMinutes)
     val gapTasks = nextGap?.let { gap ->
         dayTasks.dueWithinGap(
             now.toLocalDate(),
             FlowTaskScope.UNIVERSITY,
             gap.startMinutes,
             gap.endMinutes,
-            now.hour * 60 + now.minute
+            nowMinutes
         )
     }.orEmpty()
     val date = remember(now.toLocalDate()) {
@@ -304,6 +307,18 @@ private fun NativeUniversityHome(
                         modifier = Modifier.padding(start = 2.dp, top = 5.dp, end = 2.dp)
                     )
                 }
+            }
+        }
+
+        if (nextGap == null && nextTask != null) {
+            item {
+                val due = nextTask.dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                Text(
+                    "다음 할 일  ${nextTask.title}${due?.let { " · $it 마감" } ?: ""}",
+                    color = FlowPalette.Muted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                )
             }
         }
 
