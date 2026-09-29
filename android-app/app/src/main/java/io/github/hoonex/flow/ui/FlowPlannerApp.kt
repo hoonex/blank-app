@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -216,6 +218,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
                         else -> FlowPalette.SurfaceSoft
                     }
                 )
+                .semantics { contentDescription = if (task.done) "${task.title} 완료 취소" else "${task.title} 완료" }
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
