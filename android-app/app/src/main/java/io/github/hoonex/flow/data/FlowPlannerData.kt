@@ -75,11 +75,11 @@ fun List<FlowTask>.activeForDay(date: LocalDate, scope: FlowTaskScope): List<Flo
             (task.scope == FlowTaskScope.FLOW || task.scope == scope)
     }
 
-fun List<FlowTask>.dueWithinGap(date: LocalDate, scope: FlowTaskScope, startMinutes: Int, endMinutes: Int): List<FlowTask> =
+fun List<FlowTask>.dueWithinGap(date: LocalDate, scope: FlowTaskScope, startMinutes: Int, endMinutes: Int, nowMinutes: Int = startMinutes): List<FlowTask> =
     activeForDay(date, scope).filter { task ->
         val due = task.dueDateTime() ?: return@filter false
         val minute = due.hour * 60 + due.minute
-        minute in startMinutes..endMinutes
+        minute in maxOf(startMinutes, nowMinutes)..endMinutes
     }
 
 class FlowPlannerStore(context: Context) {
