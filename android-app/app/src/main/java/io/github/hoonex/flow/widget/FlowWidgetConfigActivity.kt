@@ -104,7 +104,7 @@ class FlowWidgetConfigActivity : ComponentActivity() {
                     item {
                         io.github.hoonex.flow.ui.FlowLargeTitle("위젯 설정", "각 위젯의 데이터 소스와 표시 정보를 따로 정할 수 있습니다.")
                     }
-                    item { FlowSectionTitle("SOURCE", "데이터 소스", "하나 선택") }
+                    item { FlowSectionTitle("", "데이터 소스", "하나 선택") }
                     item {
                         FlowCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.fillMaxWidth()) {
@@ -121,7 +121,7 @@ class FlowWidgetConfigActivity : ComponentActivity() {
                             }
                         }
                     }
-                    item { FlowSectionTitle("DETAIL", "표시 정보") }
+                    item { FlowSectionTitle("", "표시 정보") }
                     item {
                         FlowCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.fillMaxWidth()) {
