@@ -10,6 +10,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import io.github.hoonex.flow.data.CampusLecturePlace
+import io.github.hoonex.flow.data.CampusNearby
+import io.github.hoonex.flow.data.CampusPlace
+import io.github.hoonex.flow.data.CampusSnapshot
+import io.github.hoonex.flow.data.CampusStore
 import io.github.hoonex.flow.data.CourseTime
 import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolDashboard
@@ -238,6 +243,36 @@ class FlowVisualAuditTest {
             homepage = "https://example.edu"
         )
         store.saveUniversity(university)
+        val campusCenter = CampusPlace(
+            id = "visual-center",
+            name = university.name,
+            address = university.address,
+            roadAddress = university.address,
+            category = "학교",
+            phone = "",
+            x = "128.60145",
+            y = "35.87143",
+            distance = 0
+        )
+        val engineering = CampusPlace(
+            id = "visual-engineering",
+            name = "공학관",
+            address = university.address,
+            roadAddress = university.address,
+            category = "강의실",
+            phone = "",
+            x = "128.60305",
+            y = "35.87215",
+            distance = 180
+        )
+        CampusStore(context).save(
+            university.id,
+            CampusSnapshot(
+                center = campusCenter,
+                places = listOf(CampusLecturePlace("공학관 301", true, 96, engineering)),
+                nearby = CampusNearby(emptyList(), emptyList(), emptyList(), emptyList())
+            )
+        )
         store.saveProfile(
             UniversityProfile(
                 school = university,
