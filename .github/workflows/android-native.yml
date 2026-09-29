@@ -20,10 +20,7 @@ permissions:
 
 concurrency:
   group: flow-android-native-${{ github.event.pull_request.number || github.ref }}
-  # Keep the authoritative HEAD audit alive while follow-up polish commits arrive.
-  # Otherwise rapid visual iteration repeatedly cancels the expensive Android build
-  # before it reaches emulator evidence, leaving no verified checkpoint.
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   android-native:
