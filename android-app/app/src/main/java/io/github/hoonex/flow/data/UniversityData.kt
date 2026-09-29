@@ -10,6 +10,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
+import java.util.Locale
 
 private const val EDGE = "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/university-data"
 
@@ -85,6 +86,8 @@ data class ClassMoment(val current: ScheduledClass?, val next: ScheduledClass?)
 data class ScheduleGap(val startMinutes: Int, val endMinutes: Int) {
     val durationMinutes: Int get() = endMinutes - startMinutes
 }
+
+fun formatScheduleMinutes(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, minutes / 60, minutes % 60)
 
 fun todayIndex(now: LocalDateTime = flowAcademicNow()): Int = now.dayOfWeek.value - 1
 
