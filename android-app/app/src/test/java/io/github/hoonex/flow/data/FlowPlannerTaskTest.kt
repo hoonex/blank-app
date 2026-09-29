@@ -63,6 +63,10 @@ class FlowPlannerTaskTest {
             listOf("inside", "edge"),
             tasks.dueWithinGap(date, FlowTaskScope.UNIVERSITY, 615, 780).map { it.id }
         )
+        assertEquals(
+            listOf("edge"),
+            tasks.dueWithinGap(date, FlowTaskScope.UNIVERSITY, 615, 780, nowMinutes = 720).map { it.id }
+        )
     }
 
 }
