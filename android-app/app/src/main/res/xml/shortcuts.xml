@@ -23,17 +23,6 @@
             android:targetClass="io.github.hoonex.flow.MainActivity" />
     </shortcut>
     <shortcut
-        android:shortcutId="flow_planner"
-        android:enabled="true"
-        android:icon="@drawable/ic_flow_mark"
-        android:shortcutShortLabel="플래너"
-        android:shortcutLongLabel="Flow 플래너 열기">
-        <intent
-            android:action="io.github.hoonex.flow.OPEN_PLANNER"
-            android:targetPackage="io.github.hoonex.flow"
-            android:targetClass="io.github.hoonex.flow.MainActivity" />
-    </shortcut>
-    <shortcut
         android:shortcutId="flow_widgets"
         android:enabled="true"
         android:icon="@drawable/ic_flow_mark"
