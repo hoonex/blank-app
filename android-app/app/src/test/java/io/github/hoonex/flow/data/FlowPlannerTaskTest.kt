@@ -80,6 +80,7 @@ class FlowPlannerTaskTest {
         )
 
         assertEquals("next", tasks.nextDueTask(date, FlowTaskScope.UNIVERSITY, nowMinutes = 630)?.id)
+        assertEquals(null, tasks.nextDueTask(date, FlowTaskScope.UNIVERSITY, nowMinutes = 1_081))
     }
 
 }
