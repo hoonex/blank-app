@@ -220,7 +220,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
             contentAlignment = Alignment.Center
         ) {
             Text(
-                if (task.done) "✓" else kindGlyph(task.kind),
+                if (task.done) "✓" else "○",
                 color = when {
                     task.done -> Color(0xFF05211C)
                     overdue -> FlowPalette.Danger
@@ -324,11 +324,6 @@ private fun PlannerChip(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun kindGlyph(kind: FlowTaskKind): String = when (kind) {
-    FlowTaskKind.ASSIGNMENT -> "A"
-    FlowTaskKind.EXAM -> "E"
-    FlowTaskKind.TODO -> "T"
-}
 
 private fun dueLabel(due: LocalDateTime?, overdue: Boolean): String {
     if (due == null) return "날짜 없음"
