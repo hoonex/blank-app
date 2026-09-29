@@ -923,7 +923,7 @@ private fun NativeFlowSheet(
                         .background(FlowPalette.Surface)
                         .clickable(onClick = {})
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .padding(start = 20.dp, top = 14.dp, end = 20.dp, bottom = 26.dp)
                 ) {
                     Box(
                         Modifier
