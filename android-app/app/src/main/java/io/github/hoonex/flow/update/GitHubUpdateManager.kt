@@ -56,7 +56,18 @@ object GitHubUpdateManager {
             val manifestAsset = (0 until assets.length()).map { assets.getJSONObject(it) }
                 .firstOrNull { it.optString("name") == "flow-android-release.json" }
                 ?: return@runCatching "release manifest missing"
-            val manifest = parseUpdateReleaseManifest(getText(manifestAsset.getString("browser_download_url")))
+            val manifestJson = JSONObject(getText(manifestAsset.getString("browser_download_url")))
+            val manifest = validateUpdateReleaseManifest(
+                UpdateReleaseManifest(
+                    schema = manifestJson.getInt("schema"),
+                    apkName = manifestJson.getString("apkName").trim(),
+                    apkSha256 = manifestJson.getString("apkSha256").normalizeUpdateHex(),
+                    signerSha256 = manifestJson.getString("signerSha256").normalizeUpdateHex(),
+                    versionName = manifestJson.getString("versionName").trim(),
+                    versionCode = manifestJson.getLong("versionCode"),
+                    sourceSha = manifestJson.getString("sourceSha").trim().lowercase()
+                )
+            )
             val remoteCode = manifest.versionCode
             if (remoteCode <= BuildConfig.VERSION_CODE.toLong()) {
                 if (!silent) _status.value = UpdateStatus(UpdatePhase.UP_TO_DATE, message = "현재 최신 버전입니다.")
