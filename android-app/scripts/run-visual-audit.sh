@@ -57,11 +57,17 @@ adb shell am instrument -w -r \
 recreation_status=${PIPESTATUS[0]}
 
 adb shell rm -rf "$REMOTE_MOTION" || true
+# android-emulator-runner starts with animations disabled for deterministic UI
+# tests. Compose tween/Animatable honors animator_duration_scale, so explicitly
+# restore only that scale while capturing real motion evidence.
+adb shell settings put global animator_duration_scale 1.0
+adb shell am force-stop io.github.hoonex.flow
 adb shell am instrument -w -r \
   -e class io.github.hoonex.flow.FlowMotionBehaviorTest \
   io.github.hoonex.flow.test/androidx.test.runner.AndroidJUnitRunner \
   | tee -a "$OUT/instrumentation.txt"
 motion_status=${PIPESTATUS[0]}
+adb shell settings put global animator_duration_scale 0.0
 
 # Exercise representative surfaces at a Galaxy S25-like FHD+ geometry.
 # 1080x2340 is the physical panel resolution; 480 dpi yields a ~360dp-wide
