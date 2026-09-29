@@ -38,7 +38,7 @@ private enum class FlowDestination { SCHOOL, UNIVERSITY, PLANNER }
 class FlowModeStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE)
     fun load(): FlowMode? = prefs.getString("mode", null)?.let { runCatching { FlowMode.valueOf(it) }.getOrNull() }
-    fun save(mode: FlowMode) { prefs.edit().putString("mode", mode.name).apply() }\n    fun saveEntryDestination(destination: String) { prefs.edit().putString("entry_destination", destination).apply() }\n    fun consumeEntryDestination(): String? {\n        val destination = prefs.getString("entry_destination", null)\n        prefs.edit().remove("entry_destination").apply()\n        return destination\n    }
+    fun save(mode: FlowMode) { prefs.edit().putString("mode", mode.name).apply() }
 }
 
 @Composable
