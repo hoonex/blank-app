@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -287,7 +289,12 @@ private fun NativeCampusMap(
             color = Color.White,
             fontSize = 9.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.TopStart).padding(10.dp).background(Color(0xAA08100E), RoundedCornerShape(10.dp)).padding(horizontal = 9.dp, vertical = 6.dp)
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(10.dp)
+                .background(Color(0xAA08100E), RoundedCornerShape(10.dp))
+                .semantics { contentDescription = if (styleReady) "Flow 지도 준비됨" else "Flow 지도 로딩 중" }
+                .padding(horizontal = 9.dp, vertical = 6.dp)
         )
     }
 
