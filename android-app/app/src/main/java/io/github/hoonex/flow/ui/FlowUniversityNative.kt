@@ -258,6 +258,7 @@ private fun NativeUniversityHome(
         FlowPlannerStore(context).load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
+    val nextGap = timetable?.nextGap(now)
     val date = remember(now.toLocalDate()) {
         now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
     }
@@ -275,6 +276,17 @@ private fun NativeUniversityHome(
             )
         }
         item { NativeNextClass(moment, timetable != null, onImport) }
+
+        if (nextGap != null) {
+            item {
+                val start = "%02d:%02d".format(nextGap.startMinutes / 60, nextGap.startMinutes % 60)
+                val end = "%02d:%02d".format(nextGap.endMinutes / 60, nextGap.endMinutes % 60)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("다음 공강", color = FlowPalette.Mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("  $start–$end · ${nextGap.durationMinutes}분", color = FlowPalette.Muted, fontSize = 12.sp)
+                }
+            }
+        }
 
         if (timetable != null) {
             item { FlowSectionTitle("", "오늘 수업", "${today.size}개") }
