@@ -117,7 +117,7 @@ object GitHubUpdateManager {
         val validNewer = info != null &&
             info.packageName == BuildConfig.APPLICATION_ID &&
             info.longVersionCode > BuildConfig.VERSION_CODE.toLong() &&
-            signer?.normalizeUpdateHex() == BuildConfig.UPDATE_SIGNER_SHA256.normalizeHex()
+            signer?.normalizeUpdateHex() == BuildConfig.UPDATE_SIGNER_SHA256.normalizeUpdateHex()
 
         if (!validNewer) {
             prefs.edit().remove(STAGED).apply()
