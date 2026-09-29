@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -104,6 +105,7 @@ private fun FlowCampusScreen(mapView: MapView) {
     var route by remember { mutableStateOf<Pair<CampusPlace, CampusWalkRoute?>?>(null) }
     var routeLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 700
 
     fun selectPlace(campus: CampusSnapshot, place: CampusPlace) {
         routeLoading = true
@@ -164,7 +166,8 @@ private fun FlowCampusScreen(mapView: MapView) {
                 NativeCampusMap(
                     mapView = mapView,
                     campus = campus,
-                    walkRoute = route?.second
+                    walkRoute = route?.second,
+                    compactHeight = compactHeight
                 )
             }
             item {
@@ -243,7 +246,8 @@ private fun FlowCampusScreen(mapView: MapView) {
 private fun NativeCampusMap(
     mapView: MapView,
     campus: CampusSnapshot,
-    walkRoute: CampusWalkRoute?
+    walkRoute: CampusWalkRoute?,
+    compactHeight: Boolean
 ) {
     var map by remember(mapView) { mutableStateOf<MapLibreMap?>(null) }
     var styleReady by remember(mapView) { mutableStateOf(false) }
@@ -252,7 +256,7 @@ private fun NativeCampusMap(
     Box(
         Modifier
             .fillMaxWidth()
-            .height(330.dp)
+            .height(if (compactHeight) 270.dp else 330.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(FlowPalette.Surface)
     ) {
