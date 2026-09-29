@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.surface
 
+import io.github.hoonex.flow.data.flowAcademicNow
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -19,7 +20,7 @@ import java.time.ZoneId
 object UniversitySurfaceScheduler {
     private const val REQUEST_CODE = 4102
 
-    fun scheduleNext(context: Context, now: LocalDateTime = LocalDateTime.now()) {
+    fun scheduleNext(context: Context, now: LocalDateTime = flowAcademicNow()) {
         val appContext = context.applicationContext
         val alarmManager = appContext.getSystemService(AlarmManager::class.java)
         val pendingIntent = refreshIntent(appContext)
