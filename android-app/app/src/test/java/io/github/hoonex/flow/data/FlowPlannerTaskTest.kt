@@ -69,5 +69,18 @@ class FlowPlannerTaskTest {
         )
     }
 
+    @Test
+    fun nextDueTaskSkipsElapsedAndOtherScopeTasks() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "elapsed", title = "이미 지남", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "school", title = "학교", dueAt = "2026-09-29T10:30:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "next", title = "다음 과제", dueAt = "2026-09-29T11:00:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "later", title = "나중 과제", dueAt = "2026-09-29T18:00:00", scope = FlowTaskScope.FLOW)
+        )
+
+        assertEquals("next", tasks.nextDueTask(date, FlowTaskScope.UNIVERSITY, nowMinutes = 630)?.id)
+    }
+
 }
 
