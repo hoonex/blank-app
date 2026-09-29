@@ -233,7 +233,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
         Column(Modifier.padding(start = 13.dp).weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(start = 10.dp, top = 7.dp, bottom = 7.dp))
+                Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(start = 14.dp, top = 9.dp, bottom = 9.dp))
             }
             Text(
                 listOf(task.kind.label, task.scope.label, dueLabel(due, overdue)).filter(String::isNotBlank).joinToString(" · "),
