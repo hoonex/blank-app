@@ -144,7 +144,7 @@ private fun WidgetGallery(
         }
 
         if (active.isNotEmpty()) {
-            item { FlowSectionTitle("INSTALLED", "설치된 위젯", "${active.size}개") }
+            item { FlowSectionTitle("", "설치된 위젯", "${active.size}개") }
             item {
                 FlowCard(Modifier.fillMaxWidth(), accent = true) {
                     Column(Modifier.fillMaxWidth()) {
@@ -168,7 +168,7 @@ private fun WidgetGallery(
             }
         }
 
-        item { FlowSectionTitle("ADD", "새 위젯 추가", "홈 화면") }
+        item { FlowSectionTitle("", "새 위젯 추가", "홈 화면") }
         item {
             FlowCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth()) {
