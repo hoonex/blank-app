@@ -71,6 +71,7 @@ import io.github.hoonex.flow.data.UniversityProfile
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
 import io.github.hoonex.flow.data.classesForDay
+import io.github.hoonex.flow.data.dueWithinGap
 import io.github.hoonex.flow.data.nextGap
 import io.github.hoonex.flow.data.todayIndex
 import io.github.hoonex.flow.data.totalCredits
@@ -259,6 +260,9 @@ private fun NativeUniversityHome(
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val nextGap = timetable?.nextGap(now)
+    val gapTasks = nextGap?.let { gap ->
+        dayTasks.dueWithinGap(now.toLocalDate(), FlowTaskScope.UNIVERSITY, gap.startMinutes, gap.endMinutes)
+    }.orEmpty()
     val date = remember(now.toLocalDate()) {
         now.toLocalDate().format(DateTimeFormatter.ofPattern("M월 d일 EEEE", Locale.KOREAN))
     }
@@ -284,6 +288,15 @@ private fun NativeUniversityHome(
                 Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("다음 공강", color = FlowPalette.Mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text("  $start–$end · ${nextGap.durationMinutes}분", color = FlowPalette.Muted, fontSize = 12.sp)
+                }
+                if (gapTasks.isNotEmpty()) {
+                    Text(
+                        "${gapTasks.first().title}${if (gapTasks.size > 1) " 외 ${gapTasks.size - 1}개" else ""} 마감",
+                        color = FlowPalette.Text,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 2.dp, top = 5.dp)
+                    )
                 }
             }
         }
