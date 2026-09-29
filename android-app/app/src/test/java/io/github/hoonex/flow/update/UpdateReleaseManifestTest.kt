@@ -8,41 +8,33 @@ class UpdateReleaseManifestTest {
     private val sha = "A".repeat(64)
     private val source = "b".repeat(40)
 
+    private fun manifest(
+        schema: Int = 1,
+        apkName: String = "Flow-Android-v0.1.123.apk",
+        apkSha256: String = sha,
+        signerSha256: String = sha,
+        versionName: String = "0.1.123",
+        versionCode: Long = 100123,
+        sourceSha: String = source
+    ) = UpdateReleaseManifest(schema, apkName, apkSha256, signerSha256, versionName, versionCode, sourceSha)
+
     @Test
-    fun parsesReleaseWorkflowSchema() {
-        val manifest = parseUpdateReleaseManifest(
-            """{"schema":1,"apkName":"Flow-Android-v0.1.123.apk","apkSha256":"$sha","signerSha256":"$sha","versionName":"0.1.123","versionCode":100123,"sourceSha":"$source"}"""
-        )
-        assertEquals("Flow-Android-v0.1.123.apk", manifest.apkName)
-        assertEquals(100123L, manifest.versionCode)
-        assertEquals(source, manifest.sourceSha)
+    fun acceptsReleaseWorkflowContract() {
+        val value = validateUpdateReleaseManifest(manifest())
+        assertEquals("Flow-Android-v0.1.123.apk", value.apkName)
+        assertEquals(100123L, value.versionCode)
+        assertEquals(source, value.sourceSha)
     }
 
     @Test
     fun rejectsUnknownSchemaAndUnsafeAssetName() {
-        assertThrows(IllegalArgumentException::class.java) {
-            parseUpdateReleaseManifest(
-                """{"schema":2,"apkName":"Flow.apk","apkSha256":"$sha","signerSha256":"$sha","versionName":"1","versionCode":2,"sourceSha":"$source"}"""
-            )
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            parseUpdateReleaseManifest(
-                """{"schema":1,"apkName":"../Flow.apk","apkSha256":"$sha","signerSha256":"$sha","versionName":"1","versionCode":2,"sourceSha":"$source"}"""
-            )
-        }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(schema = 2)) }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkName = "../Flow.apk")) }
     }
 
     @Test
     fun rejectsMalformedTrustMaterial() {
-        assertThrows(IllegalArgumentException::class.java) {
-            parseUpdateReleaseManifest(
-                """{"schema":1,"apkName":"Flow.apk","apkSha256":"1234","signerSha256":"$sha","versionName":"1","versionCode":2,"sourceSha":"$source"}"""
-            )
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            parseUpdateReleaseManifest(
-                """{"schema":1,"apkName":"Flow.apk","apkSha256":"$sha","signerSha256":"$sha","versionName":"1","versionCode":2,"sourceSha":"short"}"""
-            )
-        }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkSha256 = "1234")) }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(sourceSha = "short")) }
     }
 }
