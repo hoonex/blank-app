@@ -72,6 +72,7 @@ import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
 import io.github.hoonex.flow.data.classesForDay
 import io.github.hoonex.flow.data.dueWithinGap
+import io.github.hoonex.flow.data.formatScheduleMinutes
 import io.github.hoonex.flow.data.nextGap
 import io.github.hoonex.flow.data.nextDueTask
 import io.github.hoonex.flow.data.todayIndex
