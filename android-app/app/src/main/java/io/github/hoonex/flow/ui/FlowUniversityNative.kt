@@ -292,8 +292,8 @@ private fun NativeUniversityHome(
 
         if (nextGap != null) {
             item {
-                val start = "%02d:%02d".format(nextGap.startMinutes / 60, nextGap.startMinutes % 60)
-                val end = "%02d:%02d".format(nextGap.endMinutes / 60, nextGap.endMinutes % 60)
+                val start = formatScheduleMinutes(nextGap.startMinutes)
+                val end = formatScheduleMinutes(nextGap.endMinutes)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("다음 공강", color = FlowPalette.Mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text("  $start–$end · ${nextGap.durationMinutes}분", color = FlowPalette.Muted, fontSize = 12.sp)
