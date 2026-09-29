@@ -90,6 +90,8 @@ class FlowGalaxyPhoneVisualTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
+            waitForText("다음 공강")
+            waitForText("오늘 제출할 과제")
             capture("23-galaxy-s25-university-home")
             clickTextAndWaitForText("시간표", "시간표 다시 가져오기")
             scrollUntilText("시간표 다시 가져오기")
