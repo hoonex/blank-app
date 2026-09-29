@@ -233,10 +233,10 @@ private fun FlowCampusScreen(mapView: MapView) {
                 }
             }
 
-            campusSection("DINING", "학식 · 구내식당", campus.nearby.dining) { selectPlace(campus, it) }
-            campusSection("CAFE", "카페", campus.nearby.cafes) { selectPlace(campus, it) }
-            campusSection("STORE", "편의점", campus.nearby.stores) { selectPlace(campus, it) }
-            campusSection("FOOD", "주변 식당", campus.nearby.food) { selectPlace(campus, it) }
+            campusSection("dining", "학식 · 구내식당", campus.nearby.dining) { selectPlace(campus, it) }
+            campusSection("cafe", "카페", campus.nearby.cafes) { selectPlace(campus, it) }
+            campusSection("store", "편의점", campus.nearby.stores) { selectPlace(campus, it) }
+            campusSection("food", "주변 식당", campus.nearby.food) { selectPlace(campus, it) }
         }
     }
 }
@@ -349,14 +349,14 @@ private fun CampusPlace.toLatLng(): LatLng? {
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.campusSection(
-    kicker: String,
+    keyPrefix: String,
     title: String,
     places: List<CampusPlace>,
     onPlace: (CampusPlace) -> Unit
 ) {
     if (places.isEmpty()) return
-    item { FlowSectionTitle(kicker, title, "${places.size}곳 · 탭해서 경로") }
-    items(places.take(6), key = { "$kicker-${it.id}-${it.name}" }) { place ->
+    item { FlowSectionTitle("", title, "${places.size}곳 · 탭해서 경로") }
+    items(places.take(6), key = { "$keyPrefix-${it.id}-${it.name}" }) { place ->
         FlowCard(Modifier.fillMaxWidth(), onClick = { onPlace(place) }) {
             Column(Modifier.fillMaxWidth().padding(15.dp)) {
                 Text(place.name, color = FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
