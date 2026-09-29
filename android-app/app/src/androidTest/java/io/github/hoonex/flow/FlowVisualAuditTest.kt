@@ -321,6 +321,17 @@ class FlowVisualAuditTest {
                 )
             )
         )
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "visual-audit-live-day-task",
+                    title = "오늘 제출할 과제",
+                    kind = FlowTaskKind.ASSIGNMENT,
+                    scope = FlowTaskScope.UNIVERSITY,
+                    dueAt = flowAcademicNow().toLocalDate().atTime(11, 30).toString()
+                )
+            )
+        )
     }
 
     private fun clickTab(label: String) = clickText(label)
