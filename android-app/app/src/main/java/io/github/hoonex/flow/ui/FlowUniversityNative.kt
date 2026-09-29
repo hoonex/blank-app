@@ -298,7 +298,7 @@ private fun NativeUniversityHome(
                 val start = formatScheduleMinutes(nextGap.startMinutes)
                 val end = formatScheduleMinutes(nextGap.endMinutes)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("다음 공강", color = FlowPalette.Mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(if (nextGap.isActiveAt(nowMinutes)) "현재 공강" else "다음 공강", color = FlowPalette.Mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text("  $start–$end · ${nextGap.durationMinutes}분", color = FlowPalette.Muted, fontSize = 12.sp)
                 }
                 if (gapTasks.isNotEmpty()) {
