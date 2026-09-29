@@ -4,6 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -78,7 +81,24 @@ class FlowMotionBehaviorTest {
             val scheduleNodes = device.findObjects(By.text("시간표"))
             val scheduleTab = scheduleNodes.maxByOrNull { it.visibleBounds.centerY() } ?: error("schedule tab missing")
             val bounds = scheduleTab.visibleBounds
-            device.click(bounds.centerX(), bounds.centerY())
+            // Inject without UiDevice's accessibility-idle synchronization. Waiting for
+            // accessibility idle here can consume the entire 340 ms animation before
+            // the first framebuffer sample is taken.
+            val eventTime = SystemClock.uptimeMillis()
+            val down = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_DOWN, bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0).apply {
+                source = InputDevice.SOURCE_TOUCHSCREEN
+            }
+            val up = MotionEvent.obtain(eventTime, eventTime + 18, MotionEvent.ACTION_UP, bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0).apply {
+                source = InputDevice.SOURCE_TOUCHSCREEN
+            }
+            try {
+                assertTrue("failed to inject nav down", instrumentation.uiAutomation.injectInputEvent(down, false))
+                Thread.sleep(18)
+                assertTrue("failed to inject nav up", instrumentation.uiAutomation.injectInputEvent(up, false))
+            } finally {
+                down.recycle()
+                up.recycle()
+            }
 
             val candidates = buildList {
                 repeat(9) { index ->
