@@ -50,7 +50,7 @@ class FlowThemeVisualTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("학교도, 대학도")
             capture("20-flow-hub-dark")
-            clickTextAndWaitForText("대학 찾기 · Flow University", "대학 찾기")
+            clickTextAndWaitForText("대학교", "대학 찾기")
             capture("21-university-setup-dark")
         }
     }

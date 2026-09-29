@@ -16,11 +16,6 @@
         android:supportsRtl="true">
 
         <activity
-            android:name=".ui.FlowCampusActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Flow" />
-
-        <activity
             android:name=".widget.FlowWidgetConfigActivity"
             android:exported="true"
             android:theme="@style/Theme.Flow" />

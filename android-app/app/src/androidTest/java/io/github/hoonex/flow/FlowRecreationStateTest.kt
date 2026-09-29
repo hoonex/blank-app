@@ -47,11 +47,11 @@ class FlowRecreationStateTest {
             waitForText("학교도, 대학도")
             scrollUntilText("과제 · 시험")
             clickText("과제 · 시험")
-            waitForText("Planner")
+            waitForText("플래너")
 
             scenario.recreate()
 
-            waitForText("Planner")
+            waitForText("플래너")
             assertTrue("Planner destination fell back to the hub", !device.hasObject(By.textContains("학교도, 대학도")))
         }
     }
@@ -83,7 +83,8 @@ class FlowRecreationStateTest {
             waitForText("주간 시간표")
 
             device.pressBack()
-            waitForText("오늘 시간표")
+            waitForText("정동고등학교")
+            assertTrue("Back did not return to Today tab", device.hasObject(By.text("오늘")))
 
             device.pressBack()
             waitForText("학교도, 대학도")

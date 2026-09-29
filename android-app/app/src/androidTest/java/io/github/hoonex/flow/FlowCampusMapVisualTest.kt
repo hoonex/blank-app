@@ -1,7 +1,6 @@
 package io.github.hoonex.flow
 
 import android.content.Context
-import android.content.Intent
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -15,7 +14,8 @@ import io.github.hoonex.flow.data.CampusSnapshot
 import io.github.hoonex.flow.data.CampusStore
 import io.github.hoonex.flow.data.University
 import io.github.hoonex.flow.data.UniversityStore
-import io.github.hoonex.flow.ui.FlowCampusActivity
+import io.github.hoonex.flow.ui.FlowMode
+import io.github.hoonex.flow.ui.FlowModeStore
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -37,6 +37,7 @@ class FlowCampusMapVisualTest {
         device = UiDevice.getInstance(instrumentation)
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         seedCampus()
+        FlowModeStore(context).save(FlowMode.UNIVERSITY)
         device.setOrientationNatural()
     }
 
@@ -49,11 +50,15 @@ class FlowCampusMapVisualTest {
 
     @Test
     fun captureInteractiveNativeCampusMap() {
-        val intent = Intent(context, FlowCampusActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        ActivityScenario.launch<FlowCampusActivity>(intent).use {
-            assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스 지도")), 5_000))
-            assertTrue("native map evidence missing", device.wait(Until.hasObject(By.textContains("MapLibre · OpenFreeMap")), 8_000))
-            Thread.sleep(5_000)
+        ActivityScenario.launch(MainActivity::class.java).use {
+            assertTrue("university home missing", device.wait(Until.hasObject(By.textContains("Flow 테스트대학교")), 5_000))
+            val campusNodes = device.findObjects(By.text("캠퍼스"))
+            val campusTab = campusNodes.maxByOrNull { it.visibleBounds.centerY() } ?: error("campus tab missing")
+            val bounds = campusTab.visibleBounds
+            device.click(bounds.centerX(), bounds.centerY())
+            assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스")), 5_000))
+            assertTrue("native map evidence missing", device.wait(Until.hasObject(By.textContains("Flow 지도")), 8_000))
+            assertTrue("campus map style did not become ready", device.wait(Until.hasObject(By.desc("Flow 지도 준비됨")), 12_000))
             device.waitForIdle()
             val file = File(screenshotDir, "16-native-campus-map.png")
             assertTrue("failed to capture native campus map", device.takeScreenshot(file))

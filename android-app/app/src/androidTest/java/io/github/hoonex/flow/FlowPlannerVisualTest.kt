@@ -72,11 +72,12 @@ class FlowPlannerVisualTest {
     fun capturePlannerAndAddSheet() {
         ActivityScenario.launch(MainActivity::class.java).use {
             scrollUntilText("과제 · 시험")
-            clickTextAndWaitForText("과제 · 시험", "Planner")
+            clickTextAndWaitForText("과제 · 시험", "플래너")
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
-            clickTextAndWaitForText("새 일정 추가", "일정 추가")
+            scrollUntilText("새 일정 추가")
+            clickTextAndWaitForText("새 일정 추가", "새 일정")
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
             capture("19-planner-add")
         }

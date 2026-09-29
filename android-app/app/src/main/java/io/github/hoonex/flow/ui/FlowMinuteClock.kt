@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.ui
 
+import io.github.hoonex.flow.data.flowAcademicNow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,12 +22,12 @@ import java.time.LocalDateTime
 @Composable
 internal fun rememberFlowMinuteNow(): LocalDateTime {
     val lifecycleOwner = LocalLifecycleOwner.current
-    var now by remember { mutableStateOf(LocalDateTime.now()) }
+    var now by remember { mutableStateOf(flowAcademicNow()) }
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                val current = LocalDateTime.now()
+                val current = flowAcademicNow()
                 now = current
                 delay(flowMillisUntilNextMinute(current))
             }

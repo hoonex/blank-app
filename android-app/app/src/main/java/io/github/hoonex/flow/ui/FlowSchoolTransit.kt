@@ -113,8 +113,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            FlowSectionTitle("TRANSIT", "교통", "대구 버스 · 지하철")
-            Text("현재 위치에서 학교까지 바로 찾거나, 다른 목적지를 검색할 수 있습니다.", color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+            FlowLargeTitle("교통", "현재 위치에서 학교까지 바로 찾거나 다른 목적지를 검색합니다.", "대구")
         }
         item {
             FlowCard(Modifier.fillMaxWidth(), accent = true) {
@@ -136,7 +135,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            item { FlowSectionTitle("DESTINATION", "다른 목적지", "선택") }
+            item { FlowSectionTitle("", "다른 목적지", "선택") }
         }
         item {
             FlowTextField(
@@ -181,7 +180,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
             }
         }
         if (suggestions.isNotEmpty()) {
-            item { FlowSectionTitle("PLACES", "실제 장소", "${suggestions.size}개") }
+            item { FlowSectionTitle("", "실제 장소", "${suggestions.size}개") }
             items(suggestions, key = { it.id }) { place ->
                 FlowCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -221,7 +220,7 @@ fun FlowSchoolTransitScreen(selection: SchoolSelection) {
         routes?.let { bundle ->
             item {
                 FlowSectionTitle(
-                    "ROUTES",
+                    "",
                     bundle.destination?.name ?: selected?.name ?: selection.school.name,
                     if (bundle.realtimeCoverage == "none") "예상 경로" else "실시간 반영"
                 )

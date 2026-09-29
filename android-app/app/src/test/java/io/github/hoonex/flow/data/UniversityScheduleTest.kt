@@ -56,4 +56,27 @@ class UniversityScheduleTest {
             timetable.nextBoundary(LocalDateTime.of(2026, 9, 7, 12, 0))
         )
     }
+    @Test
+    fun formatsScheduleMinuteLabelsWithLeadingZeros() {
+        assertEquals("09:05", formatScheduleMinutes(545))
+        assertEquals("13:00", formatScheduleMinutes(780))
+    }
+
+    @Test
+    fun scheduleGapKnowsWhenItIsCurrentlyActive() {
+        val gap = ScheduleGap(615, 780)
+        assertEquals(false, gap.isActiveAt(614))
+        assertEquals(true, gap.isActiveAt(615))
+        assertEquals(true, gap.isActiveAt(779))
+        assertEquals(false, gap.isActiveAt(780))
+    }
+
+    @Test
+    fun keepsCurrentGapVisibleUntilNextClassStarts() {
+        val gap = timetable.nextGap(LocalDateTime.of(2026, 9, 7, 10, 30))
+        assertEquals(600, gap?.startMinutes)
+        assertEquals(660, gap?.endMinutes)
+        assertEquals(true, gap?.isActiveAt(630))
+    }
+
 }

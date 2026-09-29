@@ -15,9 +15,9 @@ enum class FlowTaskKind(val label: String) {
 }
 
 enum class FlowTaskScope(val label: String) {
-    FLOW("Flow"),
-    SCHOOL("School"),
-    UNIVERSITY("University")
+    FLOW("전체"),
+    SCHOOL("학교"),
+    UNIVERSITY("대학")
 }
 
 data class FlowTask(
@@ -67,6 +67,26 @@ fun List<FlowTask>.sortedPlannerTasks(): List<FlowTask> = sortedWith(
 )
 
 fun FlowTask.isDueOn(date: LocalDate): Boolean = dueDateTime()?.toLocalDate() == date
+
+fun List<FlowTask>.activeForDay(date: LocalDate, scope: FlowTaskScope): List<FlowTask> =
+    sortedPlannerTasks().filter { task ->
+        !task.done &&
+            task.isDueOn(date) &&
+            (task.scope == FlowTaskScope.FLOW || task.scope == scope)
+    }
+
+fun List<FlowTask>.dueWithinGap(date: LocalDate, scope: FlowTaskScope, startMinutes: Int, endMinutes: Int, nowMinutes: Int = startMinutes): List<FlowTask> =
+    activeForDay(date, scope).filter { task ->
+        val due = task.dueDateTime() ?: return@filter false
+        val minute = due.hour * 60 + due.minute
+        minute in maxOf(startMinutes, nowMinutes)..endMinutes
+    }
+
+fun List<FlowTask>.nextDueTask(date: LocalDate, scope: FlowTaskScope, nowMinutes: Int): FlowTask? =
+    activeForDay(date, scope).firstOrNull { task ->
+        val due = task.dueDateTime() ?: return@firstOrNull false
+        due.hour * 60 + due.minute >= nowMinutes
+    }
 
 class FlowPlannerStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-planner-v1", Context.MODE_PRIVATE)

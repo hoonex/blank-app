@@ -2,6 +2,7 @@ package io.github.hoonex.flow.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class FlowPlannerTaskTest {
@@ -33,4 +34,54 @@ class FlowPlannerTaskTest {
 
         assertEquals(listOf("early", "late", "done"), tasks.sortedPlannerTasks().map { it.id })
     }
+    @Test
+    fun activeForDayIncludesFlowAndMatchingAcademicScopeOnly() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "flow", title = "공통", dueAt = "2026-09-29T08:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "school", title = "학교", dueAt = "2026-09-29T09:00:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "university", title = "대학", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "done", title = "완료", dueAt = "2026-09-29T11:00:00", scope = FlowTaskScope.SCHOOL, done = true),
+            FlowTask(id = "tomorrow", title = "내일", dueAt = "2026-09-30T08:00:00", scope = FlowTaskScope.FLOW)
+        )
+
+        assertEquals(listOf("flow", "school"), tasks.activeForDay(date, FlowTaskScope.SCHOOL).map { it.id })
+        assertEquals(listOf("flow", "university"), tasks.activeForDay(date, FlowTaskScope.UNIVERSITY).map { it.id })
+    }
+    @Test
+    fun dueWithinGapIncludesOnlyTasksWhoseDeadlineFallsInsideGap() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "before", title = "수업 직후 전", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "inside", title = "공강 중", dueAt = "2026-09-29T11:30:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "edge", title = "공강 끝", dueAt = "2026-09-29T13:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "other", title = "학교 일정", dueAt = "2026-09-29T12:00:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "after", title = "공강 뒤", dueAt = "2026-09-29T14:00:00", scope = FlowTaskScope.UNIVERSITY)
+        )
+
+        assertEquals(
+            listOf("inside", "edge"),
+            tasks.dueWithinGap(date, FlowTaskScope.UNIVERSITY, 615, 780).map { it.id }
+        )
+        assertEquals(
+            listOf("edge"),
+            tasks.dueWithinGap(date, FlowTaskScope.UNIVERSITY, 615, 780, nowMinutes = 720).map { it.id }
+        )
+    }
+
+    @Test
+    fun nextDueTaskSkipsElapsedAndOtherScopeTasks() {
+        val date = LocalDate.of(2026, 9, 29)
+        val tasks = listOf(
+            FlowTask(id = "elapsed", title = "이미 지남", dueAt = "2026-09-29T10:00:00", scope = FlowTaskScope.FLOW),
+            FlowTask(id = "school", title = "학교", dueAt = "2026-09-29T10:30:00", scope = FlowTaskScope.SCHOOL),
+            FlowTask(id = "next", title = "다음 과제", dueAt = "2026-09-29T11:00:00", scope = FlowTaskScope.UNIVERSITY),
+            FlowTask(id = "later", title = "나중 과제", dueAt = "2026-09-29T18:00:00", scope = FlowTaskScope.FLOW)
+        )
+
+        assertEquals("next", tasks.nextDueTask(date, FlowTaskScope.UNIVERSITY, nowMinutes = 630)?.id)
+        assertEquals(null, tasks.nextDueTask(date, FlowTaskScope.UNIVERSITY, nowMinutes = 1_081))
+    }
+
 }
+

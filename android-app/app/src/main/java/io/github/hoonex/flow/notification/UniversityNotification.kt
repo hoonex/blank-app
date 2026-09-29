@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.notification
 
+import io.github.hoonex.flow.data.flowAcademicNow
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -46,7 +47,7 @@ object UniversityNotification {
         val store = UniversityStore(context)
         val university = store.loadUniversity()
         val timetable = store.loadTimetable()
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         val moment = timetable?.classMoment(now)
 
         val title: String

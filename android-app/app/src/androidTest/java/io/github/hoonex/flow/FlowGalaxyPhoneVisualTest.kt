@@ -26,6 +26,7 @@ import io.github.hoonex.flow.data.University
 import io.github.hoonex.flow.data.UniversityMajor
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.schoolDate8
+import io.github.hoonex.flow.data.flowAcademicNow
 import io.github.hoonex.flow.ui.FlowMode
 import io.github.hoonex.flow.ui.FlowModeStore
 import org.junit.After
@@ -85,13 +86,17 @@ class FlowGalaxyPhoneVisualTest {
             capture("22-galaxy-s25-hub")
         }
 
+        seedIntegratedDayTask()
         seedRepresentativeUniversity()
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
+            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
+            waitForText("오늘 제출할 과제")
             capture("23-galaxy-s25-university-home")
-            scrollUntilText("시간표 다시 동기화")
-            assertAboveBottomNavigation("시간표 다시 동기화", "홈")
+            clickTextAndWaitForText("시간표", "시간표 다시 가져오기")
+            scrollUntilText("시간표 다시 가져오기")
+            assertAboveBottomNavigation("시간표 다시 가져오기", "시간표")
         }
 
         seedRepresentativeSchool()
@@ -102,8 +107,10 @@ class FlowGalaxyPhoneVisualTest {
             scrollUntilText("데이터 새로고침")
             assertAboveBottomNavigation("데이터 새로고침", "오늘")
             clickTextAndWaitForText("설정", "데이터와 모드")
+            clickTextAndWaitForText("앱 업데이트 확인", "Preview 빌드에서는 업데이트 설치가 비활성화됩니다.")
             capture("25-galaxy-s25-school-settings")
             assertTrue("primary manage action missing", device.hasObject(By.textContains("학교 데이터 새로고침")))
+            assertTrue("preview updater state missing", device.hasObject(By.textContains("Preview 빌드에서는 업데이트 설치가 비활성화됩니다.")))
         }
 
         clearState()
@@ -111,7 +118,7 @@ class FlowGalaxyPhoneVisualTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("학교도, 대학도")
             scrollUntilText("과제 · 시험")
-            clickTextAndWaitForText("과제 · 시험", "Planner")
+            clickTextAndWaitForText("과제 · 시험", "플래너")
             waitForText("영어 수행평가 제출")
             capture("26-galaxy-s25-planner")
         }
@@ -220,6 +227,22 @@ class FlowGalaxyPhoneVisualTest {
         )
     }
 
+    private fun seedIntegratedDayTask() {
+        val now = flowAcademicNow()
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "galaxy-integrated-task",
+                    title = "오늘 제출할 과제",
+                    note = "수업과 함께 보이는 Flow 일정",
+                    dueAt = now.toLocalDate().atTime(11, 30).toString(),
+                    kind = FlowTaskKind.ASSIGNMENT,
+                    scope = FlowTaskScope.FLOW
+                )
+            )
+        )
+    }
+
     private fun seedPlanner() {
         val now = LocalDateTime.now()
         FlowPlannerStore(context).save(
@@ -245,7 +268,9 @@ class FlowGalaxyPhoneVisualTest {
 
     private fun assertAboveBottomNavigation(targetText: String, tabLabel: String) {
         val target = device.findObject(By.textContains(targetText)) ?: error("Missing target text: $targetText")
-        val tab = device.findObject(By.text(tabLabel)) ?: error("Missing bottom-navigation tab: $tabLabel")
+        val tab = device.findObjects(By.text(tabLabel))
+            .maxByOrNull { it.visibleBounds.centerY() }
+            ?: error("Missing bottom-navigation tab: $tabLabel")
         assertTrue(
             "$targetText is overlapped by bottom navigation: ${target.visibleBounds} vs ${tab.visibleBounds}",
             target.visibleBounds.bottom < tab.visibleBounds.top

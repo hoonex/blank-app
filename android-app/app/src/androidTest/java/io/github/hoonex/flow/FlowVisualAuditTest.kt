@@ -10,7 +10,17 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import io.github.hoonex.flow.data.CampusLecturePlace
+import io.github.hoonex.flow.data.CampusNearby
+import io.github.hoonex.flow.data.CampusPlace
+import io.github.hoonex.flow.data.CampusSnapshot
+import io.github.hoonex.flow.data.CampusStore
 import io.github.hoonex.flow.data.CourseTime
+import io.github.hoonex.flow.data.FlowPlannerStore
+import io.github.hoonex.flow.data.FlowTask
+import io.github.hoonex.flow.data.FlowTaskKind
+import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.flowAcademicNow
 import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolEvent
@@ -68,7 +78,7 @@ class FlowVisualAuditTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("학교도, 대학도")
             capture("01-flow-hub")
-            clickTextAndWaitForText("대학 찾기 · Flow University", "대학 찾기")
+            clickTextAndWaitForText("대학교", "대학 찾기")
             capture("02-university-setup")
         }
 
@@ -79,13 +89,16 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             capture("03-university-home")
 
-            scrollUntilText("시간표 다시 동기화")
-            clickTextAndWaitForText("시간표 다시 동기화", "시간표 연결")
-            capture("04-everytime-sheet")
-            clickTextUntilGone("닫기")
-
             clickTextAndWaitForText("시간표", "2026년 2학기")
             capture("05-university-schedule")
+
+            clickTextAndWaitForText("주간", "09:00")
+            capture("05b-university-week-grid")
+
+            scrollUntilText("시간표 다시 가져오기")
+            clickTextAndWaitForText("시간표 다시 가져오기", "시간표 연결")
+            capture("04-everytime-sheet")
+            clickTextUntilGone("닫기")
 
             clickTextAndWaitForText("학교", "공시 지표")
             capture("06-university-profile")
@@ -97,6 +110,7 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
+            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
             device.waitForIdle()
             capture("08-university-home-landscape")
             device.setOrientationNatural()
@@ -109,13 +123,17 @@ class FlowVisualAuditTest {
             waitForText("정동고등학교")
             capture("09-school-today")
 
+            val tomorrow = LocalDate.now().plusDays(1).dayOfMonth.toString()
+            clickTextAndWaitForText(tomorrow, "한국사")
+            capture("09b-school-date-selected")
+
             clickTextAndWaitForText("시간표", "주간 시간표")
             capture("10-school-week")
 
-            clickTextAndWaitForText("교통", "대구 버스")
+            clickTextAndWaitForText("교통", "현재 위치에서 학교까지")
             capture("11-school-transit")
 
-            clickTextAndWaitForText("학교", "SCHOOL")
+            clickTextAndWaitForText("학교", "학교 구분")
             capture("12-school-info")
 
             clickTextAndWaitForText("설정", "데이터와 모드")
@@ -133,13 +151,13 @@ class FlowVisualAuditTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
-            clickTextAndWaitForText("학교", "공시 지표")
-            scrollUntilText("네이티브 캠퍼스 열기")
-            capture("15-native-campus-entry")
+            clickTab("캠퍼스")
+            waitForText("Flow 지도")
+            capture("15-native-campus-tab")
         }
 
         val captures = screenshotDir.listFiles { file -> file.extension == "png" }.orEmpty()
-        assertTrue("expected fifteen visual-audit screenshots, found ${captures.size}", captures.size == 15)
+        assertTrue("expected seventeen visual-audit screenshots, found ${captures.size}", captures.size == 17)
         captures.forEach { file ->
             val bitmap = BitmapFactory.decodeFile(file.absolutePath)
             assertNotNull("could not decode screenshot: ${file.name}", bitmap)
@@ -160,7 +178,10 @@ class FlowVisualAuditTest {
     private fun seedRepresentativeSchool() {
         val today = LocalDate.now()
         val todayRaw = schoolDate8(today)
-        val tomorrowRaw = schoolDate8(today.plusDays(1))
+        val tomorrow = today.plusDays(1)
+        val tomorrowRaw = schoolDate8(tomorrow)
+        val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        val weekEnd = weekStart.plusDays(4)
         val school = FlowSchool(
             officeCode = "D10",
             officeName = "대구광역시교육청",
@@ -176,19 +197,33 @@ class FlowVisualAuditTest {
             highSchoolType = "일반고"
         )
         val selection = SchoolSelection(school, "2", "6")
-        val periods = listOf(
-            SchoolPeriod(todayRaw, 1, "국어", "2", "6"),
-            SchoolPeriod(todayRaw, 2, "수학", "2", "6"),
-            SchoolPeriod(todayRaw, 3, "영어", "2", "6"),
-            SchoolPeriod(todayRaw, 4, "과학", "2", "6"),
-            SchoolPeriod(tomorrowRaw, 1, "한국사", "2", "6"),
-            SchoolPeriod(tomorrowRaw, 2, "정보", "2", "6")
+        val subjects = listOf(
+            listOf("국어", "수학", "영어", "과학", "정보"),
+            listOf("영어", "문학", "수학", "체육", "한국사"),
+            listOf("수학", "음악", "정보", "영어", "사회"),
+            listOf("과학", "국어", "체육", "수학", "영어"),
+            listOf("한국사", "정보", "문학", "과학", "자율")
         )
+        val periods = (0L..4L).flatMap { dayOffset ->
+            val date = weekStart.plusDays(dayOffset)
+            val raw = schoolDate8(date)
+            subjects[dayOffset.toInt()].mapIndexed { index, subject ->
+                val displaySubject = if (date == tomorrow && index == 0) "한국사" else subject
+                SchoolPeriod(raw, index + 1, displaySubject, "2", "6")
+            }
+        }.toMutableList().apply {
+            if (none { it.date == tomorrowRaw }) {
+                add(SchoolPeriod(tomorrowRaw, 1, "한국사", "2", "6"))
+                add(SchoolPeriod(tomorrowRaw, 2, "정보", "2", "6"))
+            }
+        }
+        val from = minOf(weekStart, tomorrow)
+        val to = maxOf(weekEnd, tomorrow)
         val dashboard = SchoolDashboard(
             school = school,
             selected = todayRaw,
-            from = todayRaw,
-            to = tomorrowRaw,
+            from = schoolDate8(from),
+            to = schoolDate8(to),
             timetable = periods,
             meals = listOf(SchoolMeal(todayRaw, "중식", listOf("현미밥", "미역국", "닭갈비", "김치"), "742 kcal")),
             events = listOf(SchoolEvent(todayRaw, "동아리 활동", "창의융합 프로젝트"))
@@ -214,6 +249,36 @@ class FlowVisualAuditTest {
             homepage = "https://example.edu"
         )
         store.saveUniversity(university)
+        val campusCenter = CampusPlace(
+            id = "visual-center",
+            name = university.name,
+            address = university.address,
+            roadAddress = university.address,
+            category = "학교",
+            phone = "",
+            x = "128.60145",
+            y = "35.87143",
+            distance = 0
+        )
+        val engineering = CampusPlace(
+            id = "visual-engineering",
+            name = "공학관",
+            address = university.address,
+            roadAddress = university.address,
+            category = "강의실",
+            phone = "",
+            x = "128.60305",
+            y = "35.87215",
+            distance = 180
+        )
+        CampusStore(context).save(
+            university.id,
+            CampusSnapshot(
+                center = campusCenter,
+                places = listOf(CampusLecturePlace("공학관 301", true, 96, engineering)),
+                nearby = CampusNearby(emptyList(), emptyList(), emptyList(), emptyList())
+            )
+        )
         store.saveProfile(
             UniversityProfile(
                 school = university,
@@ -258,6 +323,17 @@ class FlowVisualAuditTest {
                             CourseTime(day, 780, 855, "13:00", "14:15", "IT관 204")
                         }
                     )
+                )
+            )
+        )
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "visual-audit-live-day-task",
+                    title = "오늘 제출할 과제",
+                    kind = FlowTaskKind.ASSIGNMENT,
+                    scope = FlowTaskScope.UNIVERSITY,
+                    dueAt = flowAcademicNow().toLocalDate().atTime(11, 30).toString()
                 )
             )
         )

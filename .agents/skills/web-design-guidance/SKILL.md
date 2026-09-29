@@ -1,0 +1,310 @@
+---
+name: web-design-guidance
+description: Design, build, or review user-facing web UI with product context, organic information adaptation, glanceable hierarchy, repository design-system preservation, interaction states, and observed rendered visual verification. Use for substantial web UI/UX work unless the repository or user supplies a stronger design workflow. Repository and user design rules always win.
+license: MIT
+metadata:
+  version: "0.8.1"
+---
+
+# Web Design Guidance Companion
+
+This is an optional design-engineering companion bundled with Sloar Chat Coder. Sloar owns repository continuity, exact state, recovery, verification evidence, and publication safety. This companion owns only **web UI design reasoning and visual acceptance guidance**.
+
+Use it for substantial user-facing web work: new pages, redesigns, dashboards, landing pages, auth/onboarding, settings, navigation, responsive shells, component systems, or visual/interaction audits. Do not activate it for backend-only work, trivial copy edits, or when the repository already defines a more specific design workflow that fully covers the task.
+
+## Precedence
+
+Design decisions follow this order:
+
+```text
+explicit user direction
+> repository design rules / design system / brand guidance
+> shipped UI patterns, tokens, components, assets
+> this companion's fallback guidance
+```
+
+Never replace a coherent existing design system merely because another style is fashionable. Never treat a generic design catalog as more authoritative than the product itself.
+
+## 1. Discover before designing
+
+Before a substantial UI change, inspect the repository for durable design evidence:
+
+- `DESIGN.md`, `DESIGN_SYSTEM.md`, brand docs, ADRs, product specs, screenshots, Storybook, component docs;
+- CSS variables, Tailwind/theme config, token files, typography setup, icon library, component primitives;
+- repeated layout, radius, shadow, density, color, motion, and interaction conventions in shipped screens;
+- responsive breakpoints and existing accessibility constraints.
+
+Read [references/design-discovery.md](references/design-discovery.md) for repository discovery.
+
+Do not create a new persistent design-system document by default. If the repository already owns one, update it only when the task legitimately changes the system. If no design memory exists, keep a compact in-turn design direction for one-off or narrow work. However, when repeated agent work, multi-screen redesign, or visible design drift makes the lack of durable authority itself a material risk, establish the smallest appropriate durable design authority instead of repeatedly re-inventing the system.
+
+Read [references/design-system-authority.md](references/design-system-authority.md) when durable design authority is justified. Prefer existing tokens/theme/components or an existing design document; create a compact repository-owned design-system document only when cross-screen design memory cannot be expressed clearly in existing durable sources.
+
+## 2. Adapt clarification depth to ambiguity
+
+A user should not need to know words such as `neumorphism`, `glassmorphism`, `brutalism`, `direct manipulation`, or `spring motion` to get a coherent result.
+
+For a new or materially redesigned surface, first classify relevant design/product facts as:
+
+```text
+KNOWN | INFERRED | UNKNOWN
+```
+
+Then ask only questions whose answers can materially change the design and are expensive to reverse if guessed wrong.
+
+Use this heuristic:
+
+```text
+question value
+≈ decision impact × uncertainty × rework cost
+  ÷ reversibility
+```
+
+The question count is adaptive, not fixed. A well-specified request may need zero questions; a very vague `make a cool site` request may justify a compact batch of several high-value questions. Do not ask low-value token questions such as exact radius/shadow/spacing before the design direction exists.
+
+Ask in experiential language the user can answer:
+
+```text
+정보를 빨리 훑는 게 더 중요해, 아니면 첫인상이 강한 게 더 중요해?
+차분하고 고급스러움 / 친근하고 부드러움 / 실험적이고 강렬함 중 어디에 가까워?
+버튼이 눌리고 따라오는 손맛이 필요해, 아니면 움직임은 최소화할까?
+```
+
+When vocabulary is the blocker, offer 2-3 materially different direction candidates instead of asking a long style questionnaire. If the user says `you decide` / `알아서`, stop optional clarification and choose from product/repository evidence.
+
+Read [references/adaptive-design-discovery.md](references/adaptive-design-discovery.md) for question budgeting, entry/exit conditions, contradiction handling, and continuity rules.
+
+## 3. Build a multi-axis Design DNA
+
+Do not treat design as one style-name selector. `minimalism`, `glassmorphism`, `bento`, `tactile UI`, and `spring motion` describe different axes.
+
+For material new work, establish a compact direction such as:
+
+```text
+surface: product | dashboard | landing | auth/onboarding | settings | content | commerce | other
+primary user job:
+philosophy/tone:
+material language:
+composition:
+interaction language:
+motion posture:
+density:
+typography/color stance:
+existing system to preserve:
+signature decision:
+responsive risk:
+interaction/state risk:
+```
+
+A concise version is enough when most axes are obvious. Do not invent a complex style stack merely because the taxonomy exists.
+
+The **signature decision** is one intentional choice tied to the product's real content, workflow, state, or composition that makes the surface feel designed rather than assembled from defaults. It can be restrained. Utility-heavy product UI should not invent spectacle merely to be distinctive.
+
+Read [references/design-taxonomy.md](references/design-taxonomy.md) for multi-axis vocabulary covering minimalism/maximalism/editorial/brutalism/functional systems, flat/soft/glass/tactile materials, grid/bento/asymmetric/spatial composition, microinteraction/direct manipulation/context-aware interaction, and restrained/spring/physics/morphing/cinematic motion.
+
+The taxonomy is a translation tool, not a checklist. Avoid style soup.
+
+When the user explicitly names visual styles or requests researched, implementable directions, read [references/style-implementation-catalog.md](references/style-implementation-catalog.md). Its 22 entries connect real references to visual grammar, feasible implementation, and acceptance checks. Select a coherent primary direction with supporting axes rather than installing all 22 as a theme. For a named style where visual fidelity depends on nontrivial imagery, typography, textures, composition or 3D, apply the mandatory [implementation-reference and asset-feasibility gate](references/reference-research-and-critique.md) before building the full page. A style name or inspiration URL by itself is not evidence of an implementable medium. If the actual asset source/tool is missing, explicitly scope a stylized interpretation or report the fidelity gap; do not quietly replace required visual assets with generic CSS shapes. Before implementing material style changes, inspect the relevant reference and the target product's existing system, then build and visually verify a representative vertical slice (real control states, narrow layout, readable content). A palette swap, reference screenshot, or CSS draft alone does not demonstrate the named style is implemented.
+
+## 4. Build the system before decoration
+
+Establish or preserve the visual hierarchy in this order:
+
+1. content and user journey;
+2. layout/composition and information hierarchy;
+3. typography and density;
+4. semantic color and contrast;
+5. components and interaction states;
+6. responsive behavior;
+7. motion/material/detail.
+
+Do not use effects to compensate for weak hierarchy. A blur, gradient, large radius, shadow, or animation is not a design system.
+
+For sustained product work, treat every material UI change as a **delta against the authoritative system**, not as permission to invent a fresh local style. Before introducing a new card type, surface material, radius tier, shadow level, color role, spacing scale, icon container, or prominent section, first check whether an existing primitive or hierarchy can express the requirement. A new visible element should earn its place through user action, state feedback, comprehension, semantic grouping, accessibility/responsive need, or product identity—not merely because the layout feels empty.
+
+Read [references/design-system-authority.md](references/design-system-authority.md) for the subtractive-first gate, component/token discipline, hierarchy budget, theme coherence, reference locking, and deviation contract. Read [references/surface-recipes.md](references/surface-recipes.md) for surface-specific defaults and anti-patterns.
+
+For an information-bearing UI or a substantial layout change, distinguish the user's goal and non-negotiable function from their suggested surface. A requested new panel may fit an existing region, but preserve explicit requirements for persistent visibility, simultaneous comparison, and discoverable actions. Use the smallest relevant context read: user job (glance, read, compare, edit, monitor, explore), page/product purpose, information dependencies and exceptions, available container space, input, current interaction state, and actual visual tools. Read [references/organic-interface-design.md](references/organic-interface-design.md) when space, density, prioritization, or state transitions could change the user's decision. Do not apply minimalist compression to tasks requiring simultaneous detail.
+
+## Structural integrity is part of UI quality
+
+A surface that renders beautifully can still be an engineering failure. For substantial implementation or repeated AI-assisted edits, separately inspect whether the visible result is integrated into the repository's real architecture instead of being patched around it.
+
+Before adding a material feature, identify the authoritative owners for route/page composition, data/cache state, domain/application state, component boundaries, styling/tokens, async/interaction lifecycles, and important side effects. Prefer extending those owners over adding mirrored state, synchronizing effects, duplicate request paths, near-copy components, specificity escalation, one-off tokens, or another special-case branch.
+
+After the visible behavior works, perform a short structural pass from:
+
+```text
+product decision
+-> authoritative owner
+-> state/data flow
+-> component boundary
+-> styling/design-system boundary
+-> side effects/lifecycle
+-> verification
+-> obsolete-path removal
+```
+
+Treat visual, behavioral, and structural success as different claims. A screenshot cannot prove ownership; a green test suite cannot prove visual hierarchy; a build cannot prove that duplicate state, stale adapters, orphaned CSS, or race-prone effects were not introduced.
+
+Read [references/structural-ui-engineering.md](references/structural-ui-engineering.md) for source-of-truth rules, component/state/effect/CSS audits, dependency and abstraction budgets, obsolete-path cleanup, change-locality analysis, and the structural proof matrix.
+
+## 5. Anti-AI-slop means replacing defaults with decisions
+
+Do not optimize for `looks less AI` by swapping one fashionable default for another. The goal is product-specific intent and coherent execution.
+
+Common high-signal generated/default patterns include, when unchosen:
+
+- untouched component-library/starter visual language;
+- purple/indigo AI palette or purple-to-blue gradient;
+- gradient hero headlines;
+- centered badge + H1 + two CTAs + three equal feature cards;
+- decorative glass, glow, aurora/blob or meaningless visual effects;
+- bento grids with no information-architecture reason;
+- identical oversized rounded cards and pill geometry everywhere;
+- one neutral default font used without a deliberate type system;
+- the same small cluster of `tasteful` fonts used as a second-order default;
+- Lucide/other icons in identical rounded-square chips for every feature;
+- fake stats, testimonials, charts, company logos or activity data;
+- generic SaaS copy such as vague `Transform / Elevate / Unlock` claims;
+- hover lift and scroll reveal applied to everything;
+- happy-path-only components with missing loading/error/focus/pressed/empty states.
+
+Do **not** ban these patterns globally. A glass nav, Inter, centered composition, purple brand or bento grid can be correct when product/repository/user evidence justifies it.
+
+For material generation/redesign/review, audit meaningful tells by:
+
+```text
+severity: P0 | P1 | P2
+certainty: CODE-CERTAIN | RENDER-CERTAIN | INFERRED
+why it reads generic
+product/context justification, if any
+correction
+```
+
+P0/P1 conflicts with the committed Design DNA should be fixed or explicitly justified before a high-confidence visual-completion claim. P2 is polish and may remain when deliberate or out of scope.
+
+Read [references/anti-ai-slop.md](references/anti-ai-slop.md) for the full catalog, causes, alternatives, second-order-default checks, and re-audit gate.
+
+## 6. Text and responsive resilience are release criteria
+
+UI must survive real content, not just ideal mock copy.
+
+- headings and labels may wrap naturally across viewport widths and locales;
+- long names, URLs, IDs, chips, badges, tables, and buttons must not silently clip essential information;
+- components must remain usable under browser zoom and text scaling;
+- use wrapping, disclosure, scrolling, truncation with an accessible full-value path, or layout adaptation intentionally;
+- test narrow mobile, intermediate/tablet, ordinary desktop, and wide desktop widths appropriate to the repository rather than one screenshot size only;
+- do not hard-code a line break solely to make one captured viewport look perfect unless the content itself owns that break.
+
+Responsive resilience includes semantic representation: available space may change which useful detail is foregrounded, summarized, or revealed on request. Preserve decision-critical facts and access to full detail. A component in a narrow desktop sidebar is narrow even if the viewport is wide. Check actual content and representation boundaries, not only named device widths; see [references/organic-interface-design.md](references/organic-interface-design.md).
+
+## 7. Every interactive surface needs states
+
+A polished component is not only its default screenshot. Cover states relevant to the task:
+
+```text
+default
+hover (where pointer exists)
+active/pressed
+focus-visible
+selected/current
+loading
+empty
+error
+success
+disabled (only when semantically necessary)
+```
+
+Do not add state variants that the component cannot actually enter. Keyboard and touch behavior are part of the component contract, not optional polish.
+
+## 8. Motion must explain or respond
+
+Motion should communicate causality, continuity, hierarchy, context change, or direct manipulation. Prefer a few coherent transitions over unrelated effects.
+
+- immediate press/interaction feedback matters more than decorative entrance animation;
+- motion attached to direct manipulation should be interruptible when practical;
+- avoid long choreography that delays the user's next action;
+- respect `prefers-reduced-motion`;
+- use compositor-friendly properties for hot paths;
+- do not add a dependency solely for visual motion if the repository can meet the interaction requirement with its existing stack.
+
+If Apple-like gesture/material behavior is explicitly requested and the bundled `apple-web-design` companion exists, read that specialized skill after this one. Its rules refine interaction behavior; they do not replace the broader discovery/taxonomy here.
+
+## Craft, novelty, and delight
+
+Do not expose complexity merely because the implementation contains it. New technology should normally appear to the user as clearer behavior, not as a badge advertising the mechanism behind it. A sophisticated animation engine, agent, cache, transition system, or rendering technique earns its place only when the experience becomes more coherent, direct, expressive, reliable, or memorable.
+
+Treat transitions between states as designed surfaces, not dead space between screenshots. `idle -> working`, `loading -> content`, `editing -> saved`, `failed -> recovered`, `collapsed -> expanded`, and responsive layout changes should preserve context and make the next state understandable.
+
+Allow a small **delight budget** after hierarchy, behavior, accessibility, performance, and structure are sound. One carefully chosen tactile response, continuity detail, material transition, spatial relationship, or completion moment can give the product character even when it is not strictly required for task completion. It must remain interruptible where appropriate, inexpensive enough for the product, and removable without breaking the core task.
+
+Do not distribute spectacle everywhere. A signature detail is stronger when the surrounding interface is restrained. Polish should reward attention, not demand it.
+
+## 9. Accessibility and clarity outrank aesthetics
+
+- maintain semantic structure and native controls where practical;
+- preserve visible keyboard focus;
+- do not encode state or meaning by color alone;
+- maintain readable contrast over images, gradients, translucency, and disabled states;
+- touch targets and spacing must remain operable on small screens;
+- avoid motion/transparency choices that destroy usability under user accessibility preferences;
+- form errors must identify what failed and how to recover.
+
+Repository-specific accessibility standards take precedence when stricter.
+
+## 10. Visual verification is mandatory for visual claims when available
+
+Code inspection, DOM geometry, unit tests, lint heuristics, and a green build do not prove that a UI looks correct or non-generic.
+
+For material UI changes, use rendered evidence when the environment provides a browser/screenshot path. Inspect at least the changed surface and the responsive/state risks relevant to the task. Compare against repository references or the established Design DNA, not against a generic aesthetic preference.
+
+Separate ability to run, capture, deliver pixels to this model, actually inspect them, interact with the UI, and re-inspect after a correction. A generated screenshot file is not an observed visual pass. Critique component, page, and relevant product context as the change warrants. Read [references/visual-observation-loop.md](references/visual-observation-loop.md) for capability routing, evidence, iteration, and scale-sensitive completion.
+
+Run a short anti-slop re-audit on the rendered result. Ask whether the important choices are:
+
+```text
+justified
+coherent
+product-specific
+state/responsive complete
+not merely a second-order default
+```
+
+Also apply the subtractive deletion test to newly introduced visible structure: if removing an element would not materially hurt the user's task, understanding, state awareness, accessibility, or product identity, strongly prefer removing it rather than preserving generated decoration.
+
+Read [references/visual-verification.md](references/visual-verification.md) for the acceptance contract.
+
+If rendered evidence is unavailable, say that visual correctness remains unverified rather than upgrading code-level evidence into a visual success claim. Do not keep the turn open indefinitely waiting for unavailable visual tooling; Sloar's bounded terminalization still applies.
+
+## 11. Preserve design memory without polluting the project
+
+When a project already has durable design memory, reuse it. Useful forms include:
+
+- repository-owned design-system docs;
+- design tokens/theme files;
+- Storybook/component examples;
+- accepted screenshot baselines;
+- current-status/product-history records that explain visual decisions.
+
+Do not create parallel Sloar-owned design history merely to impose a convention. Sloar can checkpoint the committed Design DNA and unresolved high-impact design decisions as hot state when continuity matters, while the repository remains the durable source of product design truth.
+
+If the project repeatedly receives UI changes and lacks a durable source of design truth, the absence of design memory is itself a drift risk. In that case, establish the smallest repository-owned authority justified by the work—prefer code-level tokens/primitives and existing docs; use a compact design-system document only when cross-screen rules would otherwise remain implicit. Once established, later UI work should preserve it or record a deliberate scoped/system-level deviation rather than silently creating a parallel convention.
+
+Read [references/design-system-authority.md](references/design-system-authority.md) for authority precedence and the deviation contract.
+
+## 12. Completion report
+
+For substantial UI work, report only what materially helps review:
+
+- the design direction actually used or preserved;
+- any high-impact ambiguity that was clarified or deliberately inferred;
+- the surface/component scope changed;
+- meaningful P0/P1 anti-slop findings fixed or intentionally retained with context;
+- structural ownership/state/component/effect/CSS issues fixed or still unverified when relevant;
+- rendered visual checks that actually ran and the viewport/state coverage;
+- accessibility/responsive/visual limitations still unverified;
+- any deliberate signature-detail/delight decision that materially defines the experience;
+- deliberate design boundaries (what was not redesigned).
+
+Do not present a style name, anti-slop score, component-library choice, successful build, or clean screenshot as proof of total quality. Quality is supported by product fit, coherent system usage, understandable ownership, real states, structural hygiene, and rendered evidence.
