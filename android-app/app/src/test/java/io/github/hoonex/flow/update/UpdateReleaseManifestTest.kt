@@ -34,6 +34,17 @@ class UpdateReleaseManifestTest {
     }
 
     @Test
+    fun bindsManifestVersionToReleaseTag() {
+        validateUpdateReleaseTag("android-v0.1.123", manifest())
+        assertThrows(IllegalArgumentException::class.java) {
+            validateUpdateReleaseTag("android-v0.1.124", manifest())
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            validateUpdateReleaseTag("v0.1.123", manifest())
+        }
+    }
+
+    @Test
     fun rejectsMalformedTrustMaterial() {
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkSha256 = "1234")) }
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(signerSha256 = "G".repeat(64))) }
