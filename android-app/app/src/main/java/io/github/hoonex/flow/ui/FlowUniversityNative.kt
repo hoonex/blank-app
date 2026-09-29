@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -255,6 +256,7 @@ private fun NativeUniversityHome(
     onImport: () -> Unit
 ) {
     val context = LocalContext.current
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 500
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
     val dayTasks = remember(now.toLocalDate()) {
@@ -279,8 +281,8 @@ private fun NativeUniversityHome(
 
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(20.dp, if (compactHeight) 10.dp else 18.dp, 20.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compactHeight) 10.dp else 16.dp)
     ) {
         item {
             FlowLargeTitle(
@@ -289,7 +291,7 @@ private fun NativeUniversityHome(
                 trailing = major?.name ?: date
             )
         }
-        item { NativeNextClass(moment, timetable != null, onImport) }
+        item { NativeNextClass(moment, timetable != null, onImport, compactHeight) }
 
         if (nextGap != null) {
             item {
@@ -347,7 +349,7 @@ private fun NativeUniversityHome(
 }
 
 @Composable
-private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: () -> Unit) {
+private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: () -> Unit, compact: Boolean = false) {
     val item = moment.current ?: moment.next
     val subjectColor = item?.subject?.name?.let(::flowSubjectColor) ?: FlowPalette.Accent
     FlowCard(Modifier.fillMaxWidth()) {
@@ -358,7 +360,7 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
                     .height(4.dp)
                     .background(subjectColor)
             )
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = if (compact) 11.dp else 18.dp)) {
                 Text(
                     if (moment.current != null) "지금 수업" else if (moment.next != null) "다음 수업" else "오늘",
                     color = subjectColor,
@@ -368,8 +370,8 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
                 Text(
                     item?.subject?.name ?: if (connected) "오늘 수업 종료" else "시간표를 연결하세요",
                     color = FlowPalette.Text,
-                    fontSize = 29.sp,
-                    lineHeight = 33.sp,
+                    fontSize = if (compact) 24.sp else 29.sp,
+                    lineHeight = if (compact) 27.sp else 33.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 5.dp)
                 )
@@ -380,7 +382,7 @@ private fun NativeNextClass(moment: ClassMoment, connected: Boolean, onImport: (
                         it.subject.professor
                     ).filter(String::isNotBlank).joinToString(" · ")
                 } ?: if (connected) "오늘 예정된 수업을 모두 마쳤습니다." else "공개 공유 링크로 시간표를 가져올 수 있습니다."
-                Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                Text(detail, color = FlowPalette.Muted, fontSize = 12.sp, lineHeight = if (compact) 15.sp else 18.sp, modifier = Modifier.padding(top = if (compact) 3.dp else 6.dp))
                 if (!connected) {
                     FlowPrimaryButton("시간표 연결", onImport, Modifier.fillMaxWidth().padding(top = 16.dp))
                 }
