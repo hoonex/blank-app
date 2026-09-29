@@ -30,11 +30,14 @@ class UpdateReleaseManifestTest {
     fun rejectsUnknownSchemaAndUnsafeAssetName() {
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(schema = 2)) }
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkName = "../Flow.apk")) }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkName = "..\\\\Flow.apk")) }
     }
 
     @Test
     fun rejectsMalformedTrustMaterial() {
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(apkSha256 = "1234")) }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(signerSha256 = "G".repeat(64))) }
+        assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(versionCode = 0)) }
         assertThrows(IllegalArgumentException::class.java) { validateUpdateReleaseManifest(manifest(sourceSha = "short")) }
     }
 }
