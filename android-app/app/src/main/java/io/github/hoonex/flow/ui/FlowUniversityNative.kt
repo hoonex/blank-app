@@ -707,7 +707,8 @@ private fun NativeUniversitySettings(
                         },
                         detail = updateStatus.message,
                         action = checkUpdate,
-                        enabled = !updateBusy
+                        enabled = !updateBusy,
+                        progress = updateStatus.progress.takeIf { updateStatus.phase == UpdatePhase.DOWNLOADING }
                     )
                     Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
                     NativeSettingsRow("대학교 다시 선택", "대학·학과·시간표 데이터를 초기화합니다.", changeUniversity, danger = true)
@@ -719,7 +720,7 @@ private fun NativeUniversitySettings(
 }
 
 @Composable
-private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false, enabled: Boolean = true) {
+private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit, danger: Boolean = false, enabled: Boolean = true, progress: Int? = null) {
     Row(
         Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = action).padding(horizontal = 17.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -727,6 +728,11 @@ private fun NativeSettingsRow(title: String, detail: String, action: () -> Unit,
         Column(Modifier.weight(1f)) {
             Text(title, color = if (!enabled) FlowPalette.Dim else if (danger) FlowPalette.Danger else FlowPalette.Text, fontSize = 15.sp, fontWeight = FontWeight.Black)
             Text(detail, color = FlowPalette.Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            progress?.let { value ->
+                Box(Modifier.fillMaxWidth().padding(top = 9.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(FlowPalette.Stroke)) {
+                    Box(Modifier.fillMaxWidth((value.coerceIn(0, 100) / 100f).coerceAtLeast(.01f)).height(3.dp).background(FlowPalette.Mint))
+                }
+            }
         }
         Text("›", color = if (!enabled) FlowPalette.Dim else if (danger) FlowPalette.Danger else FlowPalette.Mint, fontSize = 22.sp)
     }
