@@ -20,4 +20,8 @@ fun validateUpdateReleaseManifest(manifest: UpdateReleaseManifest): UpdateReleas
     return manifest
 }
 
+fun validateUpdateReleaseTag(tagName: String, manifest: UpdateReleaseManifest) {
+    require(tagName == "android-v${manifest.versionName}") { "release tag/version mismatch" }
+}
+
 internal fun String.normalizeUpdateHex() = replace(":", "").replace(" ", "").trim().uppercase()
