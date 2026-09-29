@@ -71,4 +71,12 @@ class UniversityScheduleTest {
         assertEquals(false, gap.isActiveAt(780))
     }
 
+    @Test
+    fun keepsCurrentGapVisibleUntilNextClassStarts() {
+        val gap = timetable.nextGap(LocalDateTime.of(2026, 9, 7, 10, 30))
+        assertEquals(600, gap?.startMinutes)
+        assertEquals(660, gap?.endMinutes)
+        assertEquals(true, gap?.isActiveAt(630))
+    }
+
 }
