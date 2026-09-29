@@ -105,6 +105,7 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
+            waitForText("다음 공강")
             device.waitForIdle()
             capture("08-university-home-landscape")
             device.setOrientationNatural()
