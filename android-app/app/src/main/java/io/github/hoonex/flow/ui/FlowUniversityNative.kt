@@ -97,7 +97,8 @@ private enum class NativeUniversityTab(val label: String) {
 fun FlowUniversityNativeRoot(
     enablePinnedNotification: () -> Unit,
     disablePinnedNotification: () -> Unit,
-    checkUpdate: () -> Unit
+    checkUpdate: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = LocalContext.current
     val store = remember { UniversityStore(context) }
@@ -137,7 +138,8 @@ fun FlowUniversityNativeRoot(
                         university = university!!,
                         timetable = timetable,
                         major = major,
-                        onImport = { importOpen = true }
+                        onImport = { importOpen = true },
+                        openPlanner = openPlanner
                     )
                     NativeUniversityTab.SCHEDULE -> NativeUniversitySchedule(timetable) { importOpen = true }
                     NativeUniversityTab.CAMPUS -> FlowCampusTab()
@@ -253,7 +255,8 @@ private fun NativeUniversityHome(
     university: University,
     timetable: Timetable?,
     major: UniversityMajor?,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = LocalContext.current
     val compactHeight = LocalConfiguration.current.screenHeightDp < 500
@@ -343,7 +346,7 @@ private fun NativeUniversityHome(
         }
         if (dayTasks.isNotEmpty()) {
             item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
-            item { FlowDayTaskSummary(dayTasks) }
+            item { FlowDayTaskSummary(dayTasks, openPlanner) }
         }
     }
 }
