@@ -340,12 +340,21 @@ class UniversityMiniWidget : GlanceAppWidget() {
         if (runtime.source == FlowWidgetSource.SCHOOL) {
             val classes = SchoolStore(context).loadDashboard()?.classesOn(schoolDate8()).orEmpty()
             val first = classes.firstOrNull()
+            val firstTask = todayTasks(context, FlowTaskScope.SCHOOL).firstOrNull()
             provideContent {
                 val size = LocalSize.current
                 MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {
-                    Text("Flow · ${first?.let { "${it.period}교시" } ?: "오늘"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                    Text(
+                        when {
+                            first != null -> "Flow · ${first.period}교시"
+                            firstTask != null -> "Flow · 오늘 할 일"
+                            else -> "Flow · 오늘"
+                        },
+                        maxLines = 1,
+                        style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    )
                     Spacer(GlanceModifier.height(3.dp))
-                    Text(first?.subject ?: if (classes.isEmpty()) "수업 없음" else "${classes.size}개 수업", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (size.width < 130.dp) 12.sp else 14.sp, fontWeight = FontWeight.Bold))
+                    Text(first?.subject ?: firstTask?.title ?: "수업 없음", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (size.width < 130.dp) 12.sp else 14.sp, fontWeight = FontWeight.Bold))
                 }
             }
             return
@@ -353,13 +362,17 @@ class UniversityMiniWidget : GlanceAppWidget() {
 
         val moment = UniversityStore(context).loadTimetable()?.classMoment()
         val item = moment?.current ?: moment?.next
+        val firstTask = todayTasks(context, FlowTaskScope.UNIVERSITY).firstOrNull()
         val prefix = when {
             moment?.current != null -> "지금"
             moment?.next != null -> "다음"
+            firstTask != null -> "오늘 할 일"
             else -> "Flow"
         }
-        val title = item?.subject?.name ?: "수업 없음"
-        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start } ?: "대학교"
+        val title = item?.subject?.name ?: firstTask?.title ?: "수업 없음"
+        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start }
+            ?: firstTask?.dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))?.let { "$it 마감" }
+            ?: "대학교"
         provideContent {
             val size = LocalSize.current
             MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {
