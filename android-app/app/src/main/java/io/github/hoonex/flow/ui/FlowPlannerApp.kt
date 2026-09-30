@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -214,7 +215,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
                 .background(
                     when {
                         task.done -> FlowPalette.Mint
-                        overdue -> FlowPalette.Danger.copy(alpha = 0.12f)
+                        overdue -> FlowPalette.Danger.copy(alpha = 0.10f)
                         else -> FlowPalette.SurfaceSoft
                     }
                 )
@@ -222,16 +223,24 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                if (task.done) "✓" else "○",
-                color = when {
-                    task.done -> Color(0xFF05211C)
-                    overdue -> FlowPalette.Danger
-                    else -> FlowPalette.Mint
-                },
-                fontWeight = FontWeight.Black,
-                fontSize = 14.sp
-            )
+            Box(
+                Modifier
+                    .size(17.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .then(
+                        if (task.done) Modifier.background(Color(0xFF05211C))
+                        else Modifier.border(
+                            width = 1.5.dp,
+                            color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
+                            shape = RoundedCornerShape(7.dp)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (task.done) {
+                    Text("✓", color = FlowPalette.Mint, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                }
+            }
         }
         Column(Modifier.padding(start = 13.dp).weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
