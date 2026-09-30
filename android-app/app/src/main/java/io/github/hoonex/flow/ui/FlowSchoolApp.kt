@@ -47,6 +47,7 @@ import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.FlowTaskScope
 import io.github.hoonex.flow.data.activeForDay
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.update.GitHubUpdateManager
 import io.github.hoonex.flow.update.UpdatePhase
@@ -268,11 +269,11 @@ private fun SchoolTodayScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val selectedLocalDate = remember(selectedDate) {
         runCatching { LocalDate.parse(selectedDate, DateTimeFormatter.BASIC_ISO_DATE) }
-            .getOrDefault(LocalDate.now())
+            .getOrDefault(flowAcademicToday())
     }
     val actualTodayDate = remember(actualToday) {
         runCatching { LocalDate.parse(actualToday, DateTimeFormatter.BASIC_ISO_DATE) }
-            .getOrDefault(LocalDate.now())
+            .getOrDefault(flowAcademicToday())
     }
     val classes = dashboard?.classesOn(selectedDate).orEmpty()
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
@@ -511,14 +512,14 @@ private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashbo
     val anchor = remember(dashboard?.selected) {
         runCatching {
             LocalDate.parse(dashboard?.selected.orEmpty(), DateTimeFormatter.BASIC_ISO_DATE)
-        }.getOrDefault(LocalDate.now())
+        }.getOrDefault(flowAcademicToday())
     }
     val weekStart = remember(anchor) { anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
     val weekDates = remember(weekStart) { (0L..4L).map(weekStart::plusDays) }
     val timetable = dashboard?.timetable.orEmpty()
     val classesByDate = remember(timetable) { timetable.groupBy { it.date } }
     val maxPeriod = (timetable.maxOfOrNull { it.period } ?: 7).coerceAtLeast(7)
-    val today = LocalDate.now()
+    val today = flowAcademicToday()
 
     LazyColumn(
         Modifier.fillMaxSize(),
