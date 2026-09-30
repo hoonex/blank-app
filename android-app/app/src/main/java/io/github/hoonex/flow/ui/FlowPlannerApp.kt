@@ -1,5 +1,7 @@
 package io.github.hoonex.flow.ui
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -263,6 +265,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
 
 @Composable
 private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var kind by remember { mutableStateOf(FlowTaskKind.ASSIGNMENT) }
@@ -312,11 +315,35 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                     items(dates, key = { it.toString() }) { item ->
                         PlannerChip(shortDate(item, today), item == date, compactHeight) { date = item }
                     }
+                    item {
+                        PlannerChip("날짜 선택", date !in dates, compactHeight) {
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, day -> date = LocalDate.of(year, month + 1, day) },
+                                date.year,
+                                date.monthValue - 1,
+                                date.dayOfMonth
+                            ).show()
+                        }
+                    }
                 }
 
                 Text("마감 시간", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (compactHeight) 9.dp else 14.dp, bottom = if (compactHeight) 5.dp else 7.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    times.forEach { item -> PlannerChip(item.format(DateTimeFormatter.ofPattern("HH:mm")), item == time, compactHeight) { time = item } }
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    items(times, key = { it.toString() }) { item ->
+                        PlannerChip(item.format(DateTimeFormatter.ofPattern("HH:mm")), item == time, compactHeight) { time = item }
+                    }
+                    item {
+                        PlannerChip("시간 선택", time !in times, compactHeight) {
+                            TimePickerDialog(
+                                context,
+                                { _, hour, minute -> time = LocalTime.of(hour, minute) },
+                                time.hour,
+                                time.minute,
+                                true
+                            ).show()
+                        }
+                    }
                 }
 
                     AnimatedVisibility(title.isBlank(), enter = fadeIn(), exit = fadeOut()) {
