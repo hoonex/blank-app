@@ -89,9 +89,8 @@ class FlowPlannerVisualTest {
             clickTextAndWaitForText("새 일정 추가", "새 일정")
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
             capture("19-planner-add")
-            scrollUntilText("Flow에 저장")
-            val saveAction = device.findObject(By.text("Flow에 저장"))
-            assertNotNull("planner save action missing", saveAction)
+            val saveAction = device.wait(Until.findObject(By.text("Flow에 저장")), 3_000)
+            assertNotNull("planner save action missing from compact first viewport", saveAction)
             val saveBounds = saveAction!!.visibleBounds
             assertTrue("planner save action is unreachable on compact screens", saveBounds.width() > 0 && saveBounds.centerY() in 1 until device.displayHeight)
         }
