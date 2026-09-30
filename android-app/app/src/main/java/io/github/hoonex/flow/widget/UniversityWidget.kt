@@ -30,6 +30,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import io.github.hoonex.flow.MainActivity
+import io.github.hoonex.flow.data.FlowPlannerStore
+import io.github.hoonex.flow.data.FlowTask
+import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.activeForDay
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
@@ -70,6 +75,14 @@ private fun widgetRuntime(context: Context, id: GlanceId): WidgetRuntime {
 
 private fun compact(width: Dp, height: Dp): Boolean = width < 190.dp || height < 92.dp
 private fun roomy(height: Dp): Boolean = height >= 145.dp
+
+private fun todayTasks(context: Context, scope: FlowTaskScope): List<FlowTask> =
+    FlowPlannerStore(context).load().activeForDay(flowAcademicToday(), scope)
+
+private fun taskDetail(task: FlowTask): String {
+    val due = task.dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+    return listOf(task.kind.label, due?.let { "$it 마감" }.orEmpty()).filter(String::isNotBlank).joinToString(" · ")
+}
 
 class UniversityWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
