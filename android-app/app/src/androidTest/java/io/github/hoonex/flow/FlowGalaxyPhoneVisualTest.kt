@@ -37,8 +37,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @RunWith(AndroidJUnit4::class)
 class FlowGalaxyPhoneVisualTest {
@@ -135,7 +133,7 @@ class FlowGalaxyPhoneVisualTest {
     }
 
     private fun seedRepresentativeSchool() {
-        val today = LocalDate.now()
+        val today = flowAcademicNow().toLocalDate()
         val todayRaw = schoolDate8(today)
         val tomorrowRaw = schoolDate8(today.plusDays(1))
         val school = FlowSchool(
@@ -244,7 +242,7 @@ class FlowGalaxyPhoneVisualTest {
     }
 
     private fun seedPlanner() {
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
