@@ -192,11 +192,12 @@ class FlowMotionBehaviorTest {
 
             val settled = BitmapFactory.decodeFile(settledFile.absolutePath)
             try {
-                val settledTop = findSheetSurfaceTop(settled)
+                val sheetColor = sheetSurfaceSample(settled)
+                val settledTop = findSheetSurfaceTop(settled, sheetColor)
                 assertTrue("could not locate settled sheet surface: $settledTop", settledTop >= 0)
 
                 val earlyCandidate = candidates.firstOrNull { bitmap ->
-                    val top = findSheetSurfaceTop(bitmap)
+                    val top = findSheetSurfaceTop(bitmap, sheetColor)
                     top >= 0 && top - settledTop >= 20
                 }
                 assertTrue(
@@ -248,11 +249,15 @@ class FlowMotionBehaviorTest {
         return if (count >= 20) (sumX / count).toInt() else -1
     }
 
-    private fun findSheetSurfaceTop(bitmap: Bitmap): Int {
-        if (bitmap.width < 20 || bitmap.height < 180) return -1
+    private fun sheetSurfaceSample(bitmap: Bitmap): Int {
         val x = minOf(8, bitmap.width - 1)
         val sampleY = (bitmap.height - 90).coerceAtLeast(bitmap.height / 2)
-        val target = bitmap.getPixel(x, sampleY)
+        return bitmap.getPixel(x, sampleY)
+    }
+
+    private fun findSheetSurfaceTop(bitmap: Bitmap, target: Int): Int {
+        if (bitmap.width < 20 || bitmap.height < 180) return -1
+        val x = minOf(8, bitmap.width - 1)
         val run = 14
 
         for (y in 0 until bitmap.height - run) {
