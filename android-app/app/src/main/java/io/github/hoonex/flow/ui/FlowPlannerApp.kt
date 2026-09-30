@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -287,14 +288,20 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .fillMaxHeight(if (compactHeight) 0.94f else 0.84f)
                     .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                     .background(FlowPalette.SurfaceSoft)
-                    .verticalScroll(rememberScrollState())
                     .imePadding()
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = if (compactHeight) 14.dp else 22.dp)
             ) {
-                FlowLargeTitle("새 일정", "필요한 정보만 간단히 입력하세요.")
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, top = if (compactHeight) 14.dp else 22.dp, bottom = 8.dp)
+                ) {
+                    FlowLargeTitle("새 일정", "필요한 정보만 간단히 입력하세요.")
 
                 FlowTextField(title, { title = it }, "과제 · 시험 · 할 일 제목", Modifier.fillMaxWidth().padding(top = if (compactHeight) 10.dp else 16.dp), leading = "+")
                 FlowTextField(note, { note = it }, "메모 (선택)", Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 9.dp), singleLine = false)
@@ -321,16 +328,23 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                     times.forEach { item -> PlannerChip(item.format(DateTimeFormatter.ofPattern("HH:mm")), item == time, compactHeight) { time = item } }
                 }
 
-                AnimatedVisibility(title.isBlank(), enter = fadeIn(), exit = fadeOut()) {
-                    Text("제목을 입력하면 저장할 수 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, modifier = Modifier.padding(top = if (compactHeight) 6.dp else 10.dp))
+                    AnimatedVisibility(title.isBlank(), enter = fadeIn(), exit = fadeOut()) {
+                        Text("제목을 입력하면 저장할 수 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, modifier = Modifier.padding(top = if (compactHeight) 6.dp else 10.dp))
+                    }
                 }
-                FlowPrimaryButton(
-                    "Flow에 저장",
-                    { save(FlowTask(title = title.trim(), note = note.trim(), dueAt = LocalDateTime.of(date, time).toString(), kind = kind, scope = scope)) },
-                    Modifier.fillMaxWidth().padding(top = if (compactHeight) 9.dp else 14.dp),
-                    enabled = title.isNotBlank()
-                )
-                FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 8.dp))
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, bottom = if (compactHeight) 12.dp else 16.dp)
+                ) {
+                    FlowPrimaryButton(
+                        "Flow에 저장",
+                        { save(FlowTask(title = title.trim(), note = note.trim(), dueAt = LocalDateTime.of(date, time).toString(), kind = kind, scope = scope)) },
+                        Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 10.dp),
+                        enabled = title.isNotBlank()
+                    )
+                    FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 8.dp))
+                }
             }
         }
     }
