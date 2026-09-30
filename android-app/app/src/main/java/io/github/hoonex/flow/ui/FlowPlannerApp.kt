@@ -161,13 +161,16 @@ fun FlowPlannerRoot() {
 }
 
 @Composable
-fun FlowDayTaskSummary(tasks: List<FlowTask>) {
+fun FlowDayTaskSummary(tasks: List<FlowTask>, onOpenPlanner: (() -> Unit)? = null) {
     if (tasks.isEmpty()) return
     Column(Modifier.fillMaxWidth()) {
         tasks.take(4).forEachIndexed { index, task ->
             val due = task.dueDateTime()
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 9.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .then(if (onOpenPlanner != null) Modifier.clickable(onClick = onOpenPlanner) else Modifier)
+                    .padding(horizontal = 2.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.size(7.dp).clip(RoundedCornerShape(999.dp)).background(flowSubjectColor(task.title)))
@@ -179,6 +182,9 @@ fun FlowDayTaskSummary(tasks: List<FlowTask>) {
                         fontSize = 11.sp,
                         modifier = Modifier.padding(top = 2.dp)
                     )
+                }
+                if (onOpenPlanner != null) {
+                    Text("›", color = FlowPalette.Dim, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
             if (index != tasks.take(4).lastIndex) {
