@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.notification
 
+import io.github.hoonex.flow.data.FlowAcademicZone
 import io.github.hoonex.flow.data.flowAcademicNow
 import android.Manifest
 import android.app.NotificationChannel
@@ -16,8 +17,6 @@ import io.github.hoonex.flow.MainActivity
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
 import io.github.hoonex.flow.surface.UniversitySurfaceScheduler
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 object UniversityNotification {
     private const val CHANNEL = "flow_university_live"
@@ -100,7 +99,7 @@ object UniversityNotification {
 
         targetMinutes?.let { minute ->
             val target = now.toLocalDate().atStartOfDay().plusMinutes(minute.toLong())
-            val millis = target.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val millis = target.atZone(FlowAcademicZone).toInstant().toEpochMilli()
             if (millis > System.currentTimeMillis()) {
                 builder.setWhen(millis).setUsesChronometer(true).setChronometerCountDown(true).setShowWhen(true)
             }
