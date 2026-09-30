@@ -39,6 +39,12 @@ class FlowModeStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE)
     fun load(): FlowMode? = prefs.getString("mode", null)?.let { runCatching { FlowMode.valueOf(it) }.getOrNull() }
     fun save(mode: FlowMode) { prefs.edit().putString("mode", mode.name).apply() }
+    fun requestPlannerEntry() { prefs.edit().putBoolean("planner-entry-once", true).apply() }
+    fun consumePlannerEntry(): Boolean {
+        val requested = prefs.getBoolean("planner-entry-once", false)
+        if (requested) prefs.edit().remove("planner-entry-once").apply()
+        return requested
+    }
 }
 
 @Composable
@@ -46,13 +52,17 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
     val context = LocalContext.current
     val store = remember { FlowModeStore(context) }
     val initialDestination = remember {
-        when (store.load()) {
-            FlowMode.SCHOOL -> FlowDestination.SCHOOL
-            FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
-            null -> when {
-                SchoolStore(context).loadSelection() != null -> FlowDestination.SCHOOL
-                UniversityStore(context).loadUniversity() != null -> FlowDestination.UNIVERSITY
-                else -> null
+        if (store.consumePlannerEntry()) {
+            FlowDestination.PLANNER
+        } else {
+            when (store.load()) {
+                FlowMode.SCHOOL -> FlowDestination.SCHOOL
+                FlowMode.UNIVERSITY -> FlowDestination.UNIVERSITY
+                null -> when {
+                    SchoolStore(context).loadSelection() != null -> FlowDestination.SCHOOL
+                    UniversityStore(context).loadUniversity() != null -> FlowDestination.UNIVERSITY
+                    else -> null
+                }
             }
         }
     }
