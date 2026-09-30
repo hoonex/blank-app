@@ -95,15 +95,19 @@ class UniversityWidget : GlanceAppWidget() {
             val dashboard = store.loadDashboard()
             val classes = dashboard?.classesOn(schoolDate8()).orEmpty()
             val meals = dashboard?.mealsOn(schoolDate8()).orEmpty()
+            val tasks = todayTasks(context, FlowTaskScope.SCHOOL)
             val first = classes.firstOrNull()
+            val firstTask = tasks.firstOrNull()
             val headline = when {
                 selection == null -> "학교를 설정하세요"
-                classes.isEmpty() -> "오늘 수업 없음"
-                else -> first?.subject ?: "오늘 ${classes.size}개 수업"
+                first != null -> first.subject
+                firstTask != null -> firstTask.title
+                else -> "오늘 수업 없음"
             }
             val detail = when {
                 selection == null -> "Flow 앱에서 학교·학년·반 선택"
                 first != null -> "${first.period}교시 · 오늘 ${classes.size}개${meals.firstOrNull()?.let { " · ${it.type}" } ?: ""}"
+                firstTask != null -> taskDetail(firstTask)
                 else -> selection.school.name
             }
             provideContent {
@@ -129,19 +133,23 @@ class UniversityWidget : GlanceAppWidget() {
         val store = UniversityStore(context)
         val university = store.loadUniversity()
         val moment = store.loadTimetable()?.classMoment()
+        val firstTask = todayTasks(context, FlowTaskScope.UNIVERSITY).firstOrNull()
         val headline = when {
             moment?.current != null -> moment.current.subject.name
             moment?.next != null -> moment.next.subject.name
+            firstTask != null -> firstTask.title
             else -> "오늘 수업 없음"
         }
         val kicker = when {
             moment?.current != null -> "지금 수업"
             moment?.next != null -> "다음 수업"
+            firstTask != null -> "오늘 할 일"
             else -> "Flow"
         }
         val detail = when {
             moment?.current != null -> "${moment.current.time.end} 종료 · ${moment.current.time.place.ifBlank { moment.current.subject.place }}"
             moment?.next != null -> "${moment.next.time.start} 시작 · ${moment.next.time.place.ifBlank { moment.next.subject.place }}"
+            firstTask != null -> taskDetail(firstTask)
             else -> university?.name ?: "Flow"
         }
         provideContent {
