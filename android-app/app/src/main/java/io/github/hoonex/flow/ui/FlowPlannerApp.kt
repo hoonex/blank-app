@@ -45,6 +45,7 @@ import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.isDueOn
 import io.github.hoonex.flow.data.plannerStats
 import io.github.hoonex.flow.data.sortedPlannerTasks
@@ -60,7 +61,7 @@ fun FlowPlannerRoot() {
     val store = remember { FlowPlannerStore(context) }
     var tasks by remember { mutableStateOf(store.load()) }
     var addOpen by remember { mutableStateOf(false) }
-    val now = LocalDateTime.now()
+    val now = rememberFlowMinuteNow()
     val stats = tasks.plannerStats(now)
     val today = now.toLocalDate()
     val openTasks = tasks.sortedPlannerTasks().filterNot { it.done }
@@ -248,7 +249,7 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
                 Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(start = 14.dp, top = 9.dp, bottom = 9.dp))
             }
             Text(
-                listOf(task.kind.label, task.scope.label, dueLabel(due, overdue)).filter(String::isNotBlank).joinToString(" · "),
+                listOf(task.kind.label, task.scope.label, dueLabel(due, overdue, now.toLocalDate())).filter(String::isNotBlank).joinToString(" · "),
                 color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
@@ -265,9 +266,10 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
     var note by remember { mutableStateOf("") }
     var kind by remember { mutableStateOf(FlowTaskKind.ASSIGNMENT) }
     var scope by remember { mutableStateOf(FlowTaskScope.FLOW) }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    val today = flowAcademicToday()
+    var date by remember(today) { mutableStateOf(today) }
     var time by remember { mutableStateOf(LocalTime.of(23, 59)) }
-    val dates = remember { (0L..13L).map { LocalDate.now().plusDays(it) } }
+    val dates = remember(today) { (0L..13L).map { today.plusDays(it) } }
     val times = listOf(LocalTime.of(8, 0), LocalTime.of(13, 0), LocalTime.of(18, 0), LocalTime.of(23, 59))
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -298,7 +300,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                 Text("마감 날짜", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     items(dates, key = { it.toString() }) { item ->
-                        PlannerChip(shortDate(item), item == date) { date = item }
+                        PlannerChip(shortDate(item, today), item == date) { date = item }
                     }
                 }
 
@@ -337,19 +339,19 @@ private fun PlannerChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 
-private fun dueLabel(due: LocalDateTime?, overdue: Boolean): String {
+private fun dueLabel(due: LocalDateTime?, overdue: Boolean, today: LocalDate): String {
     if (due == null) return "날짜 없음"
     val prefix = when {
         overdue -> "지남"
-        due.toLocalDate() == LocalDate.now() -> "오늘"
-        due.toLocalDate() == LocalDate.now().plusDays(1) -> "내일"
+        due.toLocalDate() == today -> "오늘"
+        due.toLocalDate() == today.plusDays(1) -> "내일"
         else -> due.format(DateTimeFormatter.ofPattern("M/d", Locale.KOREAN))
     }
     return "$prefix ${due.format(DateTimeFormatter.ofPattern("HH:mm"))}"
 }
 
-private fun shortDate(date: LocalDate): String = when (date) {
-    LocalDate.now() -> "오늘"
-    LocalDate.now().plusDays(1) -> "내일"
+private fun shortDate(date: LocalDate, today: LocalDate): String = when (date) {
+    today -> "오늘"
+    today.plusDays(1) -> "내일"
     else -> date.format(DateTimeFormatter.ofPattern("M/d E", Locale.KOREAN))
 }
