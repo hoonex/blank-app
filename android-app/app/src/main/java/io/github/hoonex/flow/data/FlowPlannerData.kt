@@ -39,7 +39,7 @@ data class FlowTaskStats(
     val overdue: Int
 )
 
-fun List<FlowTask>.plannerStats(now: LocalDateTime = LocalDateTime.now()): FlowTaskStats {
+fun List<FlowTask>.plannerStats(now: LocalDateTime = flowAcademicNow()): FlowTaskStats {
     val today = now.toLocalDate()
     var todayCount = 0
     var nextSeven = 0
