@@ -299,7 +299,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                         .fillMaxWidth()
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, top = if (compactHeight) 14.dp else 22.dp, bottom = 8.dp)
+                        .padding(start = 20.dp, top = if (compactHeight) 14.dp else 22.dp, end = 20.dp, bottom = 8.dp)
                 ) {
                     FlowLargeTitle("새 일정", "필요한 정보만 간단히 입력하세요.")
 
@@ -335,7 +335,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, bottom = if (compactHeight) 12.dp else 16.dp)
+                        .padding(start = 20.dp, end = 20.dp, bottom = if (compactHeight) 12.dp else 16.dp)
                 ) {
                     FlowPrimaryButton(
                         "Flow에 저장",
