@@ -306,10 +306,12 @@ class FlowGalaxyPhoneVisualTest {
                 device.waitForIdle()
                 return
             }
-            val scrollable = device.findObject(By.scrollable(true))
-            if (scrollable != null) {
-                runCatching { scrollable.scroll(Direction.DOWN, 0.85f) }
-            } else {
+            val scrollable = device.findObjects(By.scrollable(true))
+                .maxByOrNull { it.visibleBounds.height() }
+            val scrolled = scrollable?.let {
+                runCatching { it.scroll(Direction.DOWN, 0.85f) }.getOrDefault(false)
+            } ?: false
+            if (!scrolled) {
                 device.swipe(x, startY, x, endY, 28)
             }
             device.waitForIdle()
