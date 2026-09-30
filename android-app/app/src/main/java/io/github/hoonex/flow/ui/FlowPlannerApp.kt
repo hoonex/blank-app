@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -279,6 +282,8 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                     .background(FlowPalette.SurfaceSoft)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding()
                     .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 22.dp)
             ) {
