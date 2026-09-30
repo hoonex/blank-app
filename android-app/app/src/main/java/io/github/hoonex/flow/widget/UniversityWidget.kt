@@ -177,6 +177,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
             val store = SchoolStore(context)
             val selection = store.loadSelection()
             val classes = store.loadDashboard()?.classesOn(schoolDate8()).orEmpty()
+            val tasks = todayTasks(context, FlowTaskScope.SCHOOL)
             provideContent {
                 val size = LocalSize.current
                 val count = when {
@@ -192,8 +193,10 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     Text(
                         when {
                             selection == null -> "학교를 설정하세요"
-                            classes.isEmpty() -> "오늘 수업 없음"
-                            else -> "오늘 ${classes.size}개 수업"
+                            classes.isNotEmpty() && tasks.isNotEmpty() -> "수업 ${classes.size} · 할 일 ${tasks.size}"
+                            classes.isNotEmpty() -> "오늘 ${classes.size}개 수업"
+                            tasks.isNotEmpty() -> "오늘 ${tasks.size}개 할 일"
+                            else -> "오늘 수업 없음"
                         },
                         maxLines = 1,
                         style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold)
@@ -202,6 +205,12 @@ class UniversityTodayWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(6.dp))
                         classes.take(count).forEach { item ->
                             Text("${item.period}교시  ${item.subject}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
+                            Spacer(GlanceModifier.height(2.dp))
+                        }
+                    } else if (runtime.showContext && tasks.isNotEmpty() && size.height >= 105.dp) {
+                        Spacer(GlanceModifier.height(6.dp))
+                        tasks.take(count).forEach { task ->
+                            Text("할 일  ${task.title}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
                             Spacer(GlanceModifier.height(2.dp))
                         }
                     } else if (runtime.showContext && selection != null && size.height >= 105.dp) {
@@ -217,6 +226,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
         val timetable = store.loadTimetable()
         val university = store.loadUniversity()
         val classes = timetable?.classesForDay(todayIndex()).orEmpty()
+        val tasks = todayTasks(context, FlowTaskScope.UNIVERSITY)
         provideContent {
             val size = LocalSize.current
             val count = when {
@@ -231,9 +241,11 @@ class UniversityTodayWidget : GlanceAppWidget() {
                 Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                 Text(
                     when {
-                        timetable == null -> "시간표를 연결하세요"
-                        classes.isEmpty() -> "오늘은 공강"
-                        else -> "오늘 ${classes.size}개 일정"
+                        timetable == null && tasks.isEmpty() -> "시간표를 연결하세요"
+                        classes.isNotEmpty() && tasks.isNotEmpty() -> "수업 ${classes.size} · 할 일 ${tasks.size}"
+                        classes.isNotEmpty() -> "오늘 ${classes.size}개 수업"
+                        tasks.isNotEmpty() -> "오늘 ${tasks.size}개 할 일"
+                        else -> "오늘은 공강"
                     },
                     maxLines = 1,
                     style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold)
@@ -242,6 +254,12 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     Spacer(GlanceModifier.height(6.dp))
                     classes.take(count).forEach { item ->
                         Text("${item.time.start}  ${item.subject.name}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
+                        Spacer(GlanceModifier.height(2.dp))
+                    }
+                } else if (runtime.showContext && tasks.isNotEmpty() && size.height >= 105.dp) {
+                    Spacer(GlanceModifier.height(6.dp))
+                    tasks.take(count).forEach { task ->
+                        Text("할 일  ${task.title}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
                         Spacer(GlanceModifier.height(2.dp))
                     }
                 } else if (runtime.showContext && classes.isEmpty() && size.height >= 105.dp) {
