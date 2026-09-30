@@ -161,32 +161,58 @@ class FlowMotionBehaviorTest {
             val connect = device.wait(Until.findObject(By.text("시간표 연결")), 5_000)
                 ?: error("timetable connect button missing")
             val bounds = connect.visibleBounds
-            device.click(bounds.centerX(), bounds.centerY())
+            val eventTime = SystemClock.uptimeMillis()
+            val down = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_DOWN, bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0).apply {
+                source = InputDevice.SOURCE_TOUCHSCREEN
+            }
+            val up = MotionEvent.obtain(eventTime, eventTime + 18, MotionEvent.ACTION_UP, bounds.centerX().toFloat(), bounds.centerY().toFloat(), 0).apply {
+                source = InputDevice.SOURCE_TOUCHSCREEN
+            }
+            try {
+                assertTrue("failed to inject sheet down", instrumentation.uiAutomation.injectInputEvent(down, false))
+                Thread.sleep(18)
+                assertTrue("failed to inject sheet up", instrumentation.uiAutomation.injectInputEvent(up, false))
+            } finally {
+                down.recycle()
+                up.recycle()
+            }
 
-            Thread.sleep(60)
-            val earlyFile = File(motionDir, "sheet-early.png")
-            assertTrue("failed to capture early animation frame", device.takeScreenshot(earlyFile))
+            val candidates = buildList {
+                repeat(18) { index ->
+                    Thread.sleep(16)
+                    val bitmap = instrumentation.uiAutomation.takeScreenshot()
+                        ?: error("failed to capture raw sheet candidate frame $index")
+                    add(bitmap)
+                }
+            }
 
-            Thread.sleep(360)
+            Thread.sleep(180)
             val settledFile = File(motionDir, "sheet-settled.png")
             assertTrue("failed to capture settled animation frame", device.takeScreenshot(settledFile))
 
-            val early = BitmapFactory.decodeFile(earlyFile.absolutePath)
             val settled = BitmapFactory.decodeFile(settledFile.absolutePath)
             try {
-                val earlyTop = findSheetSurfaceTop(early)
                 val settledTop = findSheetSurfaceTop(settled)
+                assertTrue("could not locate settled sheet surface: $settledTop", settledTop >= 0)
+
+                val earlyCandidate = candidates.firstOrNull { bitmap ->
+                    val top = findSheetSurfaceTop(bitmap)
+                    top >= 0 && top - settledTop >= 20
+                }
                 assertTrue(
-                    "could not locate sheet surface in screenshots: early=$earlyTop settled=$settledTop",
-                    earlyTop >= 0 && settledTop >= 0
+                    "sheet had no rendered intermediate frame before settledTop=$settledTop",
+                    earlyCandidate != null
                 )
-                assertTrue(
-                    "sheet did not travel upward in rendered pixels: early=$earlyTop settled=$settledTop",
-                    earlyTop - settledTop >= 20
-                )
+                val earlyFile = File(motionDir, "sheet-early.png")
+                earlyFile.outputStream().use { stream ->
+                    assertTrue(
+                        "failed to persist sheet early frame",
+                        earlyCandidate!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    )
+                }
             } finally {
-                early.recycle()
                 settled.recycle()
+                candidates.forEach(Bitmap::recycle)
             }
 
             assertTrue(
