@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,8 @@ import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.isDueOn
 import io.github.hoonex.flow.data.plannerStats
 import io.github.hoonex.flow.data.sortedPlannerTasks
+import io.github.hoonex.flow.widget.UniversityWidgets
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -62,6 +65,7 @@ import java.util.Locale
 fun FlowPlannerRoot() {
     val context = LocalContext.current
     val store = remember { FlowPlannerStore(context) }
+    val scope = rememberCoroutineScope()
     var tasks by remember { mutableStateOf(store.load()) }
     var addOpen by remember { mutableStateOf(false) }
     val now = rememberFlowMinuteNow()
@@ -74,6 +78,7 @@ fun FlowPlannerRoot() {
         val sorted = next.sortedPlannerTasks()
         tasks = sorted
         store.save(sorted)
+        scope.launch { UniversityWidgets.updateAll(context) }
     }
 
     fun toggle(task: FlowTask) {
