@@ -12,6 +12,7 @@ import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.flowAcademicNow
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import org.junit.After
@@ -21,7 +22,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.time.LocalDateTime
 
 @RunWith(AndroidJUnit4::class)
 class FlowPlannerVisualTest {
@@ -38,7 +38,7 @@ class FlowPlannerVisualTest {
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         store = FlowPlannerStore(context)
         resetHubState()
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         store.save(
             listOf(
                 FlowTask(
