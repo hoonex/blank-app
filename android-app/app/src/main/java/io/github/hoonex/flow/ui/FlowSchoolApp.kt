@@ -64,7 +64,7 @@ private enum class SchoolTab(val label: String) {
 }
 
 @Composable
-fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
+fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit, openPlanner: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val store = remember { SchoolStore(context) }
     val scope = rememberCoroutineScope()
@@ -142,7 +142,8 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
                     selectedDate = selectedDateRaw,
                     actualToday = today,
                     onDateSelected = { selectedDateRaw = it },
-                    refresh = { scope.launch { refresh(true) } }
+                    refresh = { scope.launch { refresh(true) } },
+                    openPlanner = openPlanner
                 )
                 SchoolTab.WEEK -> SchoolWeekScreen(selection!!, dashboard)
                 SchoolTab.TRANSIT -> FlowSchoolTransitScreen(selection!!)
@@ -264,7 +265,8 @@ private fun SchoolTodayScreen(
     selectedDate: String,
     actualToday: String,
     onDateSelected: (String) -> Unit,
-    refresh: () -> Unit
+    refresh: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val selectedLocalDate = remember(selectedDate) {
@@ -320,8 +322,14 @@ private fun SchoolTodayScreen(
             )
         }
         if (dayTasks.isNotEmpty()) {
-            item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
-            item { FlowDayTaskSummary(dayTasks) }
+            item {
+                FlowSectionTitle(
+                    "",
+                    if (selectedDate == actualToday) "오늘 할 일" else "이날 할 일",
+                    "${dayTasks.size}개"
+                )
+            }
+            item { FlowDayTaskSummary(dayTasks, openPlanner) }
         }
         item {
             FlowSecondaryButton(
