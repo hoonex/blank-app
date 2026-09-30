@@ -101,6 +101,8 @@ class FlowGalaxyPhoneVisualTest {
         FlowModeStore(context).save(FlowMode.SCHOOL)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동고등학교")
+            waitForText("국어")
+            waitForText("현미밥")
             capture("24-galaxy-s25-school-today")
             scrollUntilText("데이터 새로고침")
             assertAboveBottomNavigation("데이터 새로고침", "오늘")
