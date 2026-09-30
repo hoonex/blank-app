@@ -1,5 +1,6 @@
 package io.github.hoonex.flow.surface
 
+import io.github.hoonex.flow.data.FlowAcademicZone
 import io.github.hoonex.flow.data.flowAcademicNow
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -15,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 object UniversitySurfaceScheduler {
     private const val REQUEST_CODE = 4102
@@ -34,7 +34,7 @@ object UniversitySurfaceScheduler {
             alarmManager.cancel(pendingIntent)
             return
         }
-        val triggerAt = boundary.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val triggerAt = boundary.atZone(FlowAcademicZone).toInstant().toEpochMilli()
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
 
