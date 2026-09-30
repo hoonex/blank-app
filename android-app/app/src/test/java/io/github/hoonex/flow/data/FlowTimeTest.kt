@@ -20,4 +20,11 @@ class FlowTimeTest {
             TimeZone.setDefault(previous)
         }
     }
+    @Test
+    fun nextAcademicMidnightRollsToNextDate() {
+        val now = LocalDateTime.of(2026, 9, 30, 23, 59)
+
+        assertEquals(LocalDateTime.of(2026, 10, 1, 0, 0), nextAcademicMidnight(now))
+    }
+
 }
