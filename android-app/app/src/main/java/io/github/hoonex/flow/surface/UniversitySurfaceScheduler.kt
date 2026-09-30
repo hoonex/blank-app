@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.github.hoonex.flow.data.UniversityStore
+import io.github.hoonex.flow.data.nextAcademicMidnight
 import io.github.hoonex.flow.data.nextBoundary
 import io.github.hoonex.flow.notification.UniversityNotification
 import io.github.hoonex.flow.widget.UniversityWidgets
@@ -29,11 +30,9 @@ object UniversitySurfaceScheduler {
             return
         }
 
-        val boundary = UniversityStore(appContext).loadTimetable()?.nextBoundary(now)
-        if (boundary == null) {
-            alarmManager.cancel(pendingIntent)
-            return
-        }
+        val classBoundary = UniversityStore(appContext).loadTimetable()?.nextBoundary(now)
+        val midnightBoundary = nextAcademicMidnight(now)
+        val boundary = listOfNotNull(classBoundary, midnightBoundary).minOrNull() ?: midnightBoundary
         val triggerAt = boundary.toAcademicEpochMillis()
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
