@@ -76,6 +76,15 @@ class FlowPlannerVisualTest {
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
+            val completeAction = device.wait(Until.findObject(By.desc("영어 수행평가 제출 완료")), 5_000)
+            assertNotNull("planner completion action missing", completeAction)
+            completeAction!!.click()
+            assertTrue("planner completion state did not update", device.wait(Until.hasObject(By.desc("영어 수행평가 제출 완료 취소")), 5_000))
+            assertTrue("planner store did not persist completion", store.load().first { it.id == "planner-assignment" }.done)
+            device.findObject(By.desc("영어 수행평가 제출 완료 취소")).click()
+            assertTrue("planner completion did not restore", device.wait(Until.hasObject(By.desc("영어 수행평가 제출 완료")), 5_000))
+            assertTrue("planner store did not restore completion", !store.load().first { it.id == "planner-assignment" }.done)
+
             scrollUntilText("새 일정 추가")
             clickTextAndWaitForText("새 일정 추가", "새 일정")
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
