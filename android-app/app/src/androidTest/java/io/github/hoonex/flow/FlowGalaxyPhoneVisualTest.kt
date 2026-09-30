@@ -6,6 +6,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import io.github.hoonex.flow.data.CourseTime
@@ -299,13 +300,18 @@ class FlowGalaxyPhoneVisualTest {
         val startY = (device.displayHeight * 0.70f).toInt()
         val endY = (device.displayHeight * 0.24f).toInt()
         val safeBottom = (device.displayHeight * 0.78f).toInt()
-        repeat(12) {
+        repeat(14) {
             val node = device.findObject(selector)
             if (node != null && node.visibleBounds.centerY() in 1 until safeBottom) {
                 device.waitForIdle()
                 return
             }
-            device.swipe(x, startY, x, endY, 28)
+            val scrollable = device.findObject(By.scrollable(true))
+            if (scrollable != null) {
+                runCatching { scrollable.scroll(Direction.DOWN, 0.85f) }
+            } else {
+                device.swipe(x, startY, x, endY, 28)
+            }
             device.waitForIdle()
         }
         val node = device.findObject(selector)
