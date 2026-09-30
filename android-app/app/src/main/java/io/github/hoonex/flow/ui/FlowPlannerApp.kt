@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -275,6 +276,7 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
     var kind by remember { mutableStateOf(FlowTaskKind.ASSIGNMENT) }
     var scope by remember { mutableStateOf(FlowTaskScope.FLOW) }
     val today = flowAcademicToday()
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 700
     var date by remember(today) { mutableStateOf(today) }
     var time by remember { mutableStateOf(LocalTime.of(23, 59)) }
     val dates = remember(today) { (0L..13L).map { today.plusDays(it) } }
@@ -290,58 +292,58 @@ private fun PlannerAddSheet(dismiss: () -> Unit, save: (FlowTask) -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .imePadding()
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 22.dp)
+                    .padding(horizontal = 20.dp, vertical = if (compactHeight) 14.dp else 22.dp)
             ) {
                 FlowLargeTitle("새 일정", "필요한 정보만 간단히 입력하세요.")
 
-                FlowTextField(title, { title = it }, "과제 · 시험 · 할 일 제목", Modifier.fillMaxWidth().padding(top = 16.dp), leading = "+")
-                FlowTextField(note, { note = it }, "메모 (선택)", Modifier.fillMaxWidth().padding(top = 9.dp), singleLine = false)
+                FlowTextField(title, { title = it }, "과제 · 시험 · 할 일 제목", Modifier.fillMaxWidth().padding(top = if (compactHeight) 10.dp else 16.dp), leading = "+")
+                FlowTextField(note, { note = it }, "메모 (선택)", Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 9.dp), singleLine = false)
 
-                Text("종류", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 15.dp, bottom = 7.dp))
+                Text("종류", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (compactHeight) 9.dp else 15.dp, bottom = if (compactHeight) 5.dp else 7.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    FlowTaskKind.entries.forEach { item -> PlannerChip(item.label, item == kind) { kind = item } }
+                    FlowTaskKind.entries.forEach { item -> PlannerChip(item.label, item == kind, compactHeight) { kind = item } }
                 }
 
-                Text("사용 영역", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
+                Text("사용 영역", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (compactHeight) 9.dp else 14.dp, bottom = if (compactHeight) 5.dp else 7.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    FlowTaskScope.entries.forEach { item -> PlannerChip(item.label, item == scope) { scope = item } }
+                    FlowTaskScope.entries.forEach { item -> PlannerChip(item.label, item == scope, compactHeight) { scope = item } }
                 }
 
-                Text("마감 날짜", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
+                Text("마감 날짜", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (compactHeight) 9.dp else 14.dp, bottom = if (compactHeight) 5.dp else 7.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     items(dates, key = { it.toString() }) { item ->
-                        PlannerChip(shortDate(item, today), item == date) { date = item }
+                        PlannerChip(shortDate(item, today), item == date, compactHeight) { date = item }
                     }
                 }
 
-                Text("마감 시간", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 7.dp))
+                Text("마감 시간", color = FlowPalette.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (compactHeight) 9.dp else 14.dp, bottom = if (compactHeight) 5.dp else 7.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    times.forEach { item -> PlannerChip(item.format(DateTimeFormatter.ofPattern("HH:mm")), item == time) { time = item } }
+                    times.forEach { item -> PlannerChip(item.format(DateTimeFormatter.ofPattern("HH:mm")), item == time, compactHeight) { time = item } }
                 }
 
                 AnimatedVisibility(title.isBlank(), enter = fadeIn(), exit = fadeOut()) {
-                    Text("제목을 입력하면 저장할 수 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, modifier = Modifier.padding(top = 10.dp))
+                    Text("제목을 입력하면 저장할 수 있습니다.", color = FlowPalette.Dim, fontSize = 11.sp, modifier = Modifier.padding(top = if (compactHeight) 6.dp else 10.dp))
                 }
                 FlowPrimaryButton(
                     "Flow에 저장",
                     { save(FlowTask(title = title.trim(), note = note.trim(), dueAt = LocalDateTime.of(date, time).toString(), kind = kind, scope = scope)) },
-                    Modifier.fillMaxWidth().padding(top = 14.dp),
+                    Modifier.fillMaxWidth().padding(top = if (compactHeight) 9.dp else 14.dp),
                     enabled = title.isNotBlank()
                 )
-                FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = 8.dp))
+                FlowSecondaryButton("닫기", dismiss, Modifier.fillMaxWidth().padding(top = if (compactHeight) 6.dp else 8.dp))
             }
         }
     }
 }
 
 @Composable
-private fun PlannerChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun PlannerChip(label: String, selected: Boolean, compact: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .clip(RoundedCornerShape(14.dp))
             .background(if (selected) FlowPalette.Mint else FlowPalette.SurfaceRaised)
             .clickable(onClick = onClick)
-            .padding(horizontal = 11.dp, vertical = 9.dp),
+            .padding(horizontal = if (compact) 10.dp else 11.dp, vertical = if (compact) 7.dp else 9.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = if (selected) Color(0xFF05211C) else FlowPalette.Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
