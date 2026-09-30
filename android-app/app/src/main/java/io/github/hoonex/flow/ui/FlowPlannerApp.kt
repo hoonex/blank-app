@@ -196,13 +196,17 @@ private fun PlannerTaskSurface(
     onToggle: (FlowTask) -> Unit,
     onDelete: (FlowTask) -> Unit
 ) {
-    FlowCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth()) {
-            tasks.forEachIndexed { index, task ->
-                PlannerTaskRow(task, now, onToggle = { onToggle(task) }, onDelete = { onDelete(task) })
-                if (index != tasks.lastIndex) {
-                    Box(Modifier.fillMaxWidth().padding(horizontal = 17.dp).height(1.dp).background(FlowPalette.Stroke))
-                }
+    Column(Modifier.fillMaxWidth()) {
+        tasks.forEachIndexed { index, task ->
+            PlannerTaskRow(task, now, onToggle = { onToggle(task) }, onDelete = { onDelete(task) })
+            if (index != tasks.lastIndex) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 43.dp, end = 2.dp)
+                        .height(1.dp)
+                        .background(FlowPalette.Stroke)
+                )
             }
         }
     }
@@ -215,42 +219,29 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (overdue) FlowPalette.Danger.copy(alpha = 0.045f) else Color.Transparent)
-            .padding(horizontal = 17.dp, vertical = 15.dp),
+            .padding(horizontal = 2.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(
-                    when {
+                .size(28.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(if (task.done) FlowPalette.Mint else Color.Transparent)
+                .border(
+                    width = 1.5.dp,
+                    color = when {
                         task.done -> FlowPalette.Mint
-                        overdue -> FlowPalette.Danger.copy(alpha = 0.10f)
-                        else -> FlowPalette.SurfaceSoft
-                    }
+                        overdue -> FlowPalette.Danger
+                        else -> FlowPalette.Muted
+                    },
+                    shape = RoundedCornerShape(999.dp)
                 )
                 .semantics { contentDescription = if (task.done) "${task.title} 완료 취소" else "${task.title} 완료" }
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                Modifier
-                    .size(17.dp)
-                    .clip(RoundedCornerShape(7.dp))
-                    .then(
-                        if (task.done) Modifier.background(Color(0xFF05211C))
-                        else Modifier.border(
-                            width = 1.5.dp,
-                            color = if (overdue) FlowPalette.Danger else FlowPalette.Mint,
-                            shape = RoundedCornerShape(7.dp)
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (task.done) {
-                    Text("✓", color = FlowPalette.Mint, fontWeight = FontWeight.Black, fontSize = 11.sp)
-                }
+            if (task.done) {
+                Text("✓", color = Color(0xFF05211C), fontWeight = FontWeight.Black, fontSize = 13.sp)
             }
         }
         Column(Modifier.padding(start = 13.dp).weight(1f)) {
