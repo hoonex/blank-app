@@ -1,7 +1,7 @@
 package io.github.hoonex.flow.notification
 
-import io.github.hoonex.flow.data.FlowAcademicZone
 import io.github.hoonex.flow.data.flowAcademicNow
+import io.github.hoonex.flow.data.toAcademicEpochMillis
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -99,7 +99,7 @@ object UniversityNotification {
 
         targetMinutes?.let { minute ->
             val target = now.toLocalDate().atStartOfDay().plusMinutes(minute.toLong())
-            val millis = target.atZone(FlowAcademicZone).toInstant().toEpochMilli()
+            val millis = target.toAcademicEpochMillis()
             if (millis > System.currentTimeMillis()) {
                 builder.setWhen(millis).setUsesChronometer(true).setChronometerCountDown(true).setShowWhen(true)
             }
