@@ -81,8 +81,17 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
     BackHandler(enabled = destination != null) { setDestination(null) }
 
     when (destination) {
-        FlowDestination.SCHOOL -> FlowSchoolRoot(onSwitchUniversity = { chooseAcademic(FlowMode.UNIVERSITY) }, checkUpdate = checkUpdate)
-        FlowDestination.UNIVERSITY -> FlowUniversityNativeRoot(enablePinnedNotification, disablePinnedNotification, checkUpdate)
+        FlowDestination.SCHOOL -> FlowSchoolRoot(
+            onSwitchUniversity = { chooseAcademic(FlowMode.UNIVERSITY) },
+            checkUpdate = checkUpdate,
+            openPlanner = { setDestination(FlowDestination.PLANNER) }
+        )
+        FlowDestination.UNIVERSITY -> FlowUniversityNativeRoot(
+            enablePinnedNotification,
+            disablePinnedNotification,
+            checkUpdate,
+            openPlanner = { setDestination(FlowDestination.PLANNER) }
+        )
         FlowDestination.PLANNER -> FlowPlannerRoot()
         null -> FlowHub(
             chooseSchool = { chooseAcademic(FlowMode.SCHOOL) },
