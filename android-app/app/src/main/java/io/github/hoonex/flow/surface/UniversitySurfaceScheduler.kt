@@ -1,7 +1,7 @@
 package io.github.hoonex.flow.surface
 
-import io.github.hoonex.flow.data.FlowAcademicZone
 import io.github.hoonex.flow.data.flowAcademicNow
+import io.github.hoonex.flow.data.toAcademicEpochMillis
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -34,7 +34,7 @@ object UniversitySurfaceScheduler {
             alarmManager.cancel(pendingIntent)
             return
         }
-        val triggerAt = boundary.atZone(FlowAcademicZone).toInstant().toEpochMilli()
+        val triggerAt = boundary.toAcademicEpochMillis()
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
 
