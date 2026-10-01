@@ -110,7 +110,7 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
-            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
+            assertTrue("live-day task missing", device.wait(Until.hasObject(By.textContains("오늘 제출할 과제")), 5_000))
             device.waitForIdle()
             capture("08-university-home-landscape")
             device.setNaturalPortraitAndWait()
@@ -326,6 +326,9 @@ class FlowVisualAuditTest {
                 )
             )
         )
+        val now = flowAcademicNow()
+        val nowMinute = now.hour * 60 + now.minute
+        val liveDayDueMinute = if (nowMinute < 780) maxOf(630, nowMinute).coerceAtMost(779) else 1439
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
@@ -333,7 +336,7 @@ class FlowVisualAuditTest {
                     title = "오늘 제출할 과제",
                     kind = FlowTaskKind.ASSIGNMENT,
                     scope = FlowTaskScope.UNIVERSITY,
-                    dueAt = flowAcademicNow().toLocalDate().atTime(11, 30).toString()
+                    dueAt = now.toLocalDate().atTime(liveDayDueMinute / 60, liveDayDueMinute % 60).toString()
                 )
             )
         )
