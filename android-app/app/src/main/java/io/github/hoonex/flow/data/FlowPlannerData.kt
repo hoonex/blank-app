@@ -134,6 +134,10 @@ class FlowPlannerStore(context: Context) {
         prefs.edit().putString("tasks", array.toString()).apply()
     }
 
+    fun setDone(id: String, done: Boolean = true) {
+        save(load().map { task -> if (task.id == id) task.copy(done = done) else task })
+    }
+
     fun clear() {
         prefs.edit().clear().apply()
     }
