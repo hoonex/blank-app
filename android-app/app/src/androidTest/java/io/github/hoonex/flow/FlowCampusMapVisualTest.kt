@@ -38,14 +38,14 @@ class FlowCampusMapVisualTest {
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         seedCampus()
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun cleanup() {
         UniversityStore(context).clear()
         CampusStore(context).clear(universityId)
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
@@ -58,7 +58,8 @@ class FlowCampusMapVisualTest {
             device.click(bounds.centerX(), bounds.centerY())
             assertTrue("campus header missing", device.wait(Until.hasObject(By.textContains("캠퍼스")), 5_000))
             assertTrue("native map evidence missing", device.wait(Until.hasObject(By.textContains("Flow 지도")), 8_000))
-            assertTrue("campus map style did not become ready", device.wait(Until.hasObject(By.desc("Flow 지도 준비됨")), 12_000))
+            assertTrue("campus map style did not become ready", device.wait(Until.hasObject(By.desc("Flow 지도 스타일 준비됨")), 12_000))
+            assertTrue("campus map did not fully render", device.wait(Until.hasObject(By.desc("Flow 지도 렌더 완료")), 15_000))
             device.waitForIdle()
             val file = File(screenshotDir, "16-native-campus-map.png")
             assertTrue("failed to capture native campus map", device.takeScreenshot(file))

@@ -21,6 +21,7 @@ import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
 import io.github.hoonex.flow.data.flowAcademicNow
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolEvent
@@ -46,7 +47,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class FlowVisualAuditTest {
@@ -64,12 +64,12 @@ class FlowVisualAuditTest {
             mkdirs()
         }
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
         clearState()
     }
 
@@ -110,10 +110,10 @@ class FlowVisualAuditTest {
             waitForText("정동대학교")
             device.setOrientationLeft()
             waitForText("정동대학교")
-            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
+            assertTrue("live-day task missing", device.wait(Until.hasObject(By.textContains("오늘 제출할 과제")), 5_000))
             device.waitForIdle()
             capture("08-university-home-landscape")
-            device.setOrientationNatural()
+            device.setNaturalPortraitAndWait()
         }
 
         seedRepresentativeSchool()
@@ -123,7 +123,7 @@ class FlowVisualAuditTest {
             waitForText("정동고등학교")
             capture("09-school-today")
 
-            val tomorrow = LocalDate.now().plusDays(1).dayOfMonth.toString()
+            val tomorrow = flowAcademicToday().plusDays(1).dayOfMonth.toString()
             clickTextAndWaitForText(tomorrow, "한국사")
             capture("09b-school-date-selected")
 
@@ -176,7 +176,7 @@ class FlowVisualAuditTest {
     }
 
     private fun seedRepresentativeSchool() {
-        val today = LocalDate.now()
+        val today = flowAcademicToday()
         val todayRaw = schoolDate8(today)
         val tomorrow = today.plusDays(1)
         val tomorrowRaw = schoolDate8(tomorrow)
@@ -326,6 +326,9 @@ class FlowVisualAuditTest {
                 )
             )
         )
+        val now = flowAcademicNow()
+        val nowMinute = now.hour * 60 + now.minute
+        val liveDayDueMinute = if (nowMinute < 780) maxOf(630, nowMinute).coerceAtMost(779) else 1439
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
@@ -333,7 +336,7 @@ class FlowVisualAuditTest {
                     title = "오늘 제출할 과제",
                     kind = FlowTaskKind.ASSIGNMENT,
                     scope = FlowTaskScope.UNIVERSITY,
-                    dueAt = flowAcademicNow().toLocalDate().atTime(11, 30).toString()
+                    dueAt = now.toLocalDate().atTime(liveDayDueMinute / 60, liveDayDueMinute % 60).toString()
                 )
             )
         )

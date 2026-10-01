@@ -31,14 +31,14 @@ class FlowShortcutNavigationTest {
         device = UiDevice.getInstance(instrumentation)
         clearState()
         seedSchool()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
         device.pressHome()
         clearState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
@@ -49,6 +49,9 @@ class FlowShortcutNavigationTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         )
         waitForText("정동고등학교")
+
+        openShortcut(MainActivity.ACTION_OPEN_PLANNER)
+        waitForText("플래너")
 
         openShortcut(MainActivity.ACTION_OPEN_UNIVERSITY)
         waitForText("대학교")

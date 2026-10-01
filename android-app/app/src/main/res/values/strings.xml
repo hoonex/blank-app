@@ -13,6 +13,8 @@
     <string name="shortcut_school_long">Flow 학교 바로 열기</string>
     <string name="shortcut_university">대학교</string>
     <string name="shortcut_university_long">Flow 대학교 바로 열기</string>
+    <string name="shortcut_planner">플래너</string>
+    <string name="shortcut_planner_long">Flow 플래너 바로 열기</string>
     <string name="shortcut_widgets">위젯</string>
     <string name="shortcut_widgets_long">Flow 위젯 열기</string>
 </resources>

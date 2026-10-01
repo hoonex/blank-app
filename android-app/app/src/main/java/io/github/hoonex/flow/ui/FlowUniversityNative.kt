@@ -97,7 +97,8 @@ private enum class NativeUniversityTab(val label: String) {
 fun FlowUniversityNativeRoot(
     enablePinnedNotification: () -> Unit,
     disablePinnedNotification: () -> Unit,
-    checkUpdate: () -> Unit
+    checkUpdate: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = LocalContext.current
     val store = remember { UniversityStore(context) }
@@ -137,7 +138,8 @@ fun FlowUniversityNativeRoot(
                         university = university!!,
                         timetable = timetable,
                         major = major,
-                        onImport = { importOpen = true }
+                        onImport = { importOpen = true },
+                        openPlanner = openPlanner
                     )
                     NativeUniversityTab.SCHEDULE -> NativeUniversitySchedule(timetable) { importOpen = true }
                     NativeUniversityTab.CAMPUS -> FlowCampusTab()
@@ -253,14 +255,17 @@ private fun NativeUniversityHome(
     university: University,
     timetable: Timetable?,
     major: UniversityMajor?,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val compactHeight = LocalConfiguration.current.screenHeightDp < 500
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
-    val dayTasks = remember(now.toLocalDate()) {
-        FlowPlannerStore(context).load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
+    val plannerStore = remember { FlowPlannerStore(context) }
+    var dayTasks by remember(now.toLocalDate()) {
+        mutableStateOf(plannerStore.load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY))
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val nextGap = timetable?.nextGap(now)
@@ -343,7 +348,17 @@ private fun NativeUniversityHome(
         }
         if (dayTasks.isNotEmpty()) {
             item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
-            item { FlowDayTaskSummary(dayTasks) }
+            item {
+                FlowDayTaskSummary(
+                    dayTasks,
+                    onOpenPlanner = openPlanner,
+                    onComplete = { task ->
+                        plannerStore.setDone(task.id)
+                        dayTasks = plannerStore.load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
+                        scope.launch { UniversityWidgets.updateAll(context) }
+                    }
+                )
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ import io.github.hoonex.flow.data.FlowPlannerStore
 import io.github.hoonex.flow.data.FlowTask
 import io.github.hoonex.flow.data.FlowTaskKind
 import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.flowAcademicNow
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import org.junit.After
@@ -21,7 +22,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.time.LocalDateTime
 
 @RunWith(AndroidJUnit4::class)
 class FlowPlannerVisualTest {
@@ -38,7 +38,7 @@ class FlowPlannerVisualTest {
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         store = FlowPlannerStore(context)
         resetHubState()
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         store.save(
             listOf(
                 FlowTask(
@@ -59,13 +59,13 @@ class FlowPlannerVisualTest {
                 )
             )
         )
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
         resetHubState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
@@ -76,10 +76,23 @@ class FlowPlannerVisualTest {
             assertTrue("seeded assignment missing", device.wait(Until.hasObject(By.text("영어 수행평가 제출")), 5_000))
             capture("18-planner")
 
+            val completeAction = device.wait(Until.findObject(By.desc("영어 수행평가 제출 완료")), 5_000)
+            assertNotNull("planner completion action missing", completeAction)
+            completeAction!!.click()
+            assertTrue("planner completion state did not update", device.wait(Until.hasObject(By.desc("영어 수행평가 제출 완료 취소")), 5_000))
+            assertTrue("planner store did not persist completion", store.load().first { it.id == "planner-assignment" }.done)
+            device.findObject(By.desc("영어 수행평가 제출 완료 취소")).click()
+            assertTrue("planner completion did not restore", device.wait(Until.hasObject(By.desc("영어 수행평가 제출 완료")), 5_000))
+            assertTrue("planner store did not restore completion", !store.load().first { it.id == "planner-assignment" }.done)
+
             scrollUntilText("새 일정 추가")
             clickTextAndWaitForText("새 일정 추가", "새 일정")
             assertTrue("planner title input missing", device.wait(Until.hasObject(By.textContains("과제 · 시험 · 할 일 제목")), 5_000))
             capture("19-planner-add")
+            val saveAction = device.wait(Until.findObject(By.text("Flow에 저장")), 3_000)
+            assertNotNull("planner save action missing from compact first viewport", saveAction)
+            val saveBounds = saveAction!!.visibleBounds
+            assertTrue("planner save action is unreachable on compact screens", saveBounds.width() > 0 && saveBounds.centerY() in 1 until device.displayHeight)
         }
     }
 

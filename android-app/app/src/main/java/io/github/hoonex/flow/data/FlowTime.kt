@@ -16,3 +16,9 @@ internal fun flowAcademicNow(): LocalDateTime =
 
 internal fun flowAcademicToday(): LocalDate =
     LocalDate.now(FlowAcademicZone)
+
+internal fun LocalDateTime.toAcademicEpochMillis(): Long =
+    atZone(FlowAcademicZone).toInstant().toEpochMilli()
+
+internal fun nextAcademicMidnight(now: LocalDateTime = flowAcademicNow()): LocalDateTime =
+    now.toLocalDate().plusDays(1).atStartOfDay()

@@ -39,7 +39,7 @@ data class FlowTaskStats(
     val overdue: Int
 )
 
-fun List<FlowTask>.plannerStats(now: LocalDateTime = LocalDateTime.now()): FlowTaskStats {
+fun List<FlowTask>.plannerStats(now: LocalDateTime = flowAcademicNow()): FlowTaskStats {
     val today = now.toLocalDate()
     var todayCount = 0
     var nextSeven = 0
@@ -132,6 +132,10 @@ class FlowPlannerStore(context: Context) {
             )
         }
         prefs.edit().putString("tasks", array.toString()).apply()
+    }
+
+    fun setDone(id: String, done: Boolean = true) {
+        save(load().map { task -> if (task.id == id) task.copy(done = done) else task })
     }
 
     fun clear() {

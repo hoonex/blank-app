@@ -30,6 +30,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import io.github.hoonex.flow.MainActivity
+import io.github.hoonex.flow.data.FlowPlannerStore
+import io.github.hoonex.flow.data.FlowTask
+import io.github.hoonex.flow.data.FlowTaskScope
+import io.github.hoonex.flow.data.activeForDay
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.UniversityStore
 import io.github.hoonex.flow.data.classMoment
@@ -71,6 +76,14 @@ private fun widgetRuntime(context: Context, id: GlanceId): WidgetRuntime {
 private fun compact(width: Dp, height: Dp): Boolean = width < 190.dp || height < 92.dp
 private fun roomy(height: Dp): Boolean = height >= 145.dp
 
+private fun todayTasks(context: Context, scope: FlowTaskScope): List<FlowTask> =
+    FlowPlannerStore(context).load().activeForDay(flowAcademicToday(), scope)
+
+private fun taskDetail(task: FlowTask): String {
+    val due = task.dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+    return listOf(task.kind.label, due?.let { "$it 마감" }.orEmpty()).filter(String::isNotBlank).joinToString(" · ")
+}
+
 class UniversityWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 
@@ -82,15 +95,19 @@ class UniversityWidget : GlanceAppWidget() {
             val dashboard = store.loadDashboard()
             val classes = dashboard?.classesOn(schoolDate8()).orEmpty()
             val meals = dashboard?.mealsOn(schoolDate8()).orEmpty()
+            val tasks = todayTasks(context, FlowTaskScope.SCHOOL)
             val first = classes.firstOrNull()
+            val firstTask = tasks.firstOrNull()
             val headline = when {
                 selection == null -> "학교를 설정하세요"
-                classes.isEmpty() -> "오늘 수업 없음"
-                else -> first?.subject ?: "오늘 ${classes.size}개 수업"
+                first != null -> first.subject
+                firstTask != null -> firstTask.title
+                else -> "오늘 수업 없음"
             }
             val detail = when {
                 selection == null -> "Flow 앱에서 학교·학년·반 선택"
                 first != null -> "${first.period}교시 · 오늘 ${classes.size}개${meals.firstOrNull()?.let { " · ${it.type}" } ?: ""}"
+                firstTask != null -> taskDetail(firstTask)
                 else -> selection.school.name
             }
             provideContent {
@@ -116,19 +133,23 @@ class UniversityWidget : GlanceAppWidget() {
         val store = UniversityStore(context)
         val university = store.loadUniversity()
         val moment = store.loadTimetable()?.classMoment()
+        val firstTask = todayTasks(context, FlowTaskScope.UNIVERSITY).firstOrNull()
         val headline = when {
             moment?.current != null -> moment.current.subject.name
             moment?.next != null -> moment.next.subject.name
+            firstTask != null -> firstTask.title
             else -> "오늘 수업 없음"
         }
         val kicker = when {
             moment?.current != null -> "지금 수업"
             moment?.next != null -> "다음 수업"
+            firstTask != null -> "오늘 할 일"
             else -> "Flow"
         }
         val detail = when {
             moment?.current != null -> "${moment.current.time.end} 종료 · ${moment.current.time.place.ifBlank { moment.current.subject.place }}"
             moment?.next != null -> "${moment.next.time.start} 시작 · ${moment.next.time.place.ifBlank { moment.next.subject.place }}"
+            firstTask != null -> taskDetail(firstTask)
             else -> university?.name ?: "Flow"
         }
         provideContent {
@@ -156,6 +177,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
             val store = SchoolStore(context)
             val selection = store.loadSelection()
             val classes = store.loadDashboard()?.classesOn(schoolDate8()).orEmpty()
+            val tasks = todayTasks(context, FlowTaskScope.SCHOOL)
             provideContent {
                 val size = LocalSize.current
                 val count = when {
@@ -171,8 +193,10 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     Text(
                         when {
                             selection == null -> "학교를 설정하세요"
-                            classes.isEmpty() -> "오늘 수업 없음"
-                            else -> "오늘 ${classes.size}개 수업"
+                            classes.isNotEmpty() && tasks.isNotEmpty() -> "수업 ${classes.size} · 할 일 ${tasks.size}"
+                            classes.isNotEmpty() -> "오늘 ${classes.size}개 수업"
+                            tasks.isNotEmpty() -> "오늘 ${tasks.size}개 할 일"
+                            else -> "오늘 수업 없음"
                         },
                         maxLines = 1,
                         style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold)
@@ -181,6 +205,12 @@ class UniversityTodayWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(6.dp))
                         classes.take(count).forEach { item ->
                             Text("${item.period}교시  ${item.subject}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
+                            Spacer(GlanceModifier.height(2.dp))
+                        }
+                    } else if (runtime.showContext && tasks.isNotEmpty() && size.height >= 105.dp) {
+                        Spacer(GlanceModifier.height(6.dp))
+                        tasks.take(count).forEach { task ->
+                            Text("할 일  ${task.title}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
                             Spacer(GlanceModifier.height(2.dp))
                         }
                     } else if (runtime.showContext && selection != null && size.height >= 105.dp) {
@@ -196,6 +226,7 @@ class UniversityTodayWidget : GlanceAppWidget() {
         val timetable = store.loadTimetable()
         val university = store.loadUniversity()
         val classes = timetable?.classesForDay(todayIndex()).orEmpty()
+        val tasks = todayTasks(context, FlowTaskScope.UNIVERSITY)
         provideContent {
             val size = LocalSize.current
             val count = when {
@@ -210,9 +241,11 @@ class UniversityTodayWidget : GlanceAppWidget() {
                 Spacer(GlanceModifier.height(if (small) 4.dp else 7.dp))
                 Text(
                     when {
-                        timetable == null -> "시간표를 연결하세요"
-                        classes.isEmpty() -> "오늘은 공강"
-                        else -> "오늘 ${classes.size}개 일정"
+                        timetable == null && tasks.isEmpty() -> "시간표를 연결하세요"
+                        classes.isNotEmpty() && tasks.isNotEmpty() -> "수업 ${classes.size} · 할 일 ${tasks.size}"
+                        classes.isNotEmpty() -> "오늘 ${classes.size}개 수업"
+                        tasks.isNotEmpty() -> "오늘 ${tasks.size}개 할 일"
+                        else -> "오늘은 공강"
                     },
                     maxLines = 1,
                     style = TextStyle(color = WidgetText, fontSize = if (small) 15.sp else 18.sp, fontWeight = FontWeight.Bold)
@@ -221,6 +254,12 @@ class UniversityTodayWidget : GlanceAppWidget() {
                     Spacer(GlanceModifier.height(6.dp))
                     classes.take(count).forEach { item ->
                         Text("${item.time.start}  ${item.subject.name}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
+                        Spacer(GlanceModifier.height(2.dp))
+                    }
+                } else if (runtime.showContext && tasks.isNotEmpty() && size.height >= 105.dp) {
+                    Spacer(GlanceModifier.height(6.dp))
+                    tasks.take(count).forEach { task ->
+                        Text("할 일  ${task.title}", maxLines = 1, style = TextStyle(color = WidgetMuted, fontSize = if (small) 9.sp else 11.sp))
                         Spacer(GlanceModifier.height(2.dp))
                     }
                 } else if (runtime.showContext && classes.isEmpty() && size.height >= 105.dp) {
@@ -301,12 +340,21 @@ class UniversityMiniWidget : GlanceAppWidget() {
         if (runtime.source == FlowWidgetSource.SCHOOL) {
             val classes = SchoolStore(context).loadDashboard()?.classesOn(schoolDate8()).orEmpty()
             val first = classes.firstOrNull()
+            val firstTask = todayTasks(context, FlowTaskScope.SCHOOL).firstOrNull()
             provideContent {
                 val size = LocalSize.current
                 MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {
-                    Text("Flow · ${first?.let { "${it.period}교시" } ?: "오늘"}", maxLines = 1, style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold))
+                    Text(
+                        when {
+                            first != null -> "Flow · ${first.period}교시"
+                            firstTask != null -> "Flow · 오늘 할 일"
+                            else -> "Flow · 오늘"
+                        },
+                        maxLines = 1,
+                        style = TextStyle(color = WidgetAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    )
                     Spacer(GlanceModifier.height(3.dp))
-                    Text(first?.subject ?: if (classes.isEmpty()) "수업 없음" else "${classes.size}개 수업", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (size.width < 130.dp) 12.sp else 14.sp, fontWeight = FontWeight.Bold))
+                    Text(first?.subject ?: firstTask?.title ?: "수업 없음", maxLines = 1, style = TextStyle(color = WidgetText, fontSize = if (size.width < 130.dp) 12.sp else 14.sp, fontWeight = FontWeight.Bold))
                 }
             }
             return
@@ -314,13 +362,17 @@ class UniversityMiniWidget : GlanceAppWidget() {
 
         val moment = UniversityStore(context).loadTimetable()?.classMoment()
         val item = moment?.current ?: moment?.next
+        val firstTask = todayTasks(context, FlowTaskScope.UNIVERSITY).firstOrNull()
         val prefix = when {
             moment?.current != null -> "지금"
             moment?.next != null -> "다음"
+            firstTask != null -> "오늘 할 일"
             else -> "Flow"
         }
-        val title = item?.subject?.name ?: "수업 없음"
-        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start } ?: "대학교"
+        val title = item?.subject?.name ?: firstTask?.title ?: "수업 없음"
+        val time = item?.let { if (moment?.current != null) "${it.time.end}까지" else it.time.start }
+            ?: firstTask?.dueDateTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))?.let { "$it 마감" }
+            ?: "대학교"
         provideContent {
             val size = LocalSize.current
             MiniShell(if (size.height < 58.dp) 8.dp else 11.dp) {
