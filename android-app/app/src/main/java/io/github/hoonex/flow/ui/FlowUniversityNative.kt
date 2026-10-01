@@ -262,8 +262,9 @@ private fun NativeUniversityHome(
     val compactHeight = LocalConfiguration.current.screenHeightDp < 500
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
-    val dayTasks = remember(now.toLocalDate()) {
-        FlowPlannerStore(context).load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
+    val plannerStore = remember { FlowPlannerStore(context) }
+    var dayTasks by remember(now.toLocalDate()) {
+        mutableStateOf(plannerStore.load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY))
     }
     val moment = timetable?.classMoment(now) ?: ClassMoment(null, null)
     val nextGap = timetable?.nextGap(now)
@@ -346,7 +347,16 @@ private fun NativeUniversityHome(
         }
         if (dayTasks.isNotEmpty()) {
             item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
-            item { FlowDayTaskSummary(dayTasks, openPlanner) }
+            item {
+                FlowDayTaskSummary(
+                    dayTasks,
+                    onOpenPlanner = openPlanner,
+                    onComplete = { task ->
+                        plannerStore.setDone(task.id)
+                        dayTasks = plannerStore.load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
+                    }
+                )
+            }
         }
     }
 }
