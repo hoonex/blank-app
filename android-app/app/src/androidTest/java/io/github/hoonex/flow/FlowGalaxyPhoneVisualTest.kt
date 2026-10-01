@@ -90,7 +90,7 @@ class FlowGalaxyPhoneVisualTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
-            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
+            assertTrue("live-day task missing", device.wait(Until.hasObject(By.textContains("오늘 제출할 과제")), 5_000))
             waitForText("오늘 제출할 과제")
             capture("23-galaxy-s25-university-home")
             scrollUntilText("오늘 할 일")
@@ -259,13 +259,15 @@ class FlowGalaxyPhoneVisualTest {
 
     private fun seedIntegratedDayTask() {
         val now = flowAcademicNow()
+        val nowMinute = now.hour * 60 + now.minute
+        val liveDayDueMinute = if (nowMinute < 780) maxOf(630, nowMinute).coerceAtMost(779) else 1439
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
                     id = "galaxy-integrated-task",
                     title = "오늘 제출할 과제",
                     note = "수업과 함께 보이는 Flow 일정",
-                    dueAt = now.toLocalDate().atTime(11, 30).toString(),
+                    dueAt = now.toLocalDate().atTime(liveDayDueMinute / 60, liveDayDueMinute % 60).toString(),
                     kind = FlowTaskKind.ASSIGNMENT,
                     scope = FlowTaskScope.FLOW
                 )
