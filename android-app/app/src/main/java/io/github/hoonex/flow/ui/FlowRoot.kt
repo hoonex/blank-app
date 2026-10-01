@@ -67,10 +67,16 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
         }
     }
     var destinationName by rememberSaveable { mutableStateOf(initialDestination?.name) }
+    var plannerReturnName by rememberSaveable { mutableStateOf<String?>(null) }
     val destination = destinationName?.let { saved -> runCatching { FlowDestination.valueOf(saved) }.getOrNull() }
 
     fun setDestination(next: FlowDestination?) {
         destinationName = next?.name
+    }
+
+    fun openPlannerFrom(origin: FlowDestination?) {
+        plannerReturnName = origin?.name
+        setDestination(FlowDestination.PLANNER)
     }
 
     fun chooseAcademic(next: FlowMode) {
@@ -78,25 +84,35 @@ fun FlowRoot(enablePinnedNotification: () -> Unit, disablePinnedNotification: ()
         setDestination(if (next == FlowMode.SCHOOL) FlowDestination.SCHOOL else FlowDestination.UNIVERSITY)
     }
 
-    BackHandler(enabled = destination != null) { setDestination(null) }
+    BackHandler(enabled = destination != null) {
+        if (destination == FlowDestination.PLANNER) {
+            val returnDestination = plannerReturnName?.let { saved ->
+                runCatching { FlowDestination.valueOf(saved) }.getOrNull()
+            }
+            plannerReturnName = null
+            setDestination(returnDestination)
+        } else {
+            setDestination(null)
+        }
+    }
 
     when (destination) {
         FlowDestination.SCHOOL -> FlowSchoolRoot(
             onSwitchUniversity = { chooseAcademic(FlowMode.UNIVERSITY) },
             checkUpdate = checkUpdate,
-            openPlanner = { setDestination(FlowDestination.PLANNER) }
+            openPlanner = { openPlannerFrom(FlowDestination.SCHOOL) }
         )
         FlowDestination.UNIVERSITY -> FlowUniversityNativeRoot(
             enablePinnedNotification,
             disablePinnedNotification,
             checkUpdate,
-            openPlanner = { setDestination(FlowDestination.PLANNER) }
+            openPlanner = { openPlannerFrom(FlowDestination.UNIVERSITY) }
         )
         FlowDestination.PLANNER -> FlowPlannerRoot()
         null -> FlowHub(
             chooseSchool = { chooseAcademic(FlowMode.SCHOOL) },
             chooseUniversity = { chooseAcademic(FlowMode.UNIVERSITY) },
-            choosePlanner = { setDestination(FlowDestination.PLANNER) },
+            choosePlanner = { openPlannerFrom(null) },
             openWidgets = { context.startActivity(Intent(context, FlowWidgetGalleryActivity::class.java)) }
         )
     }
