@@ -64,12 +64,12 @@ class FlowVisualAuditTest {
             mkdirs()
         }
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
         clearState()
     }
 
@@ -113,7 +113,7 @@ class FlowVisualAuditTest {
             assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
             device.waitForIdle()
             capture("08-university-home-landscape")
-            device.setOrientationNatural()
+            device.setNaturalPortraitAndWait()
         }
 
         seedRepresentativeSchool()
