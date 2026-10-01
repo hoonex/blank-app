@@ -36,13 +36,13 @@ class FlowRecreationStateTest {
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
         clearState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
