@@ -56,7 +56,7 @@ class FlowMotionBehaviorTest {
             )
         }
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
@@ -64,7 +64,7 @@ class FlowMotionBehaviorTest {
         SchoolStore(context).clear()
         UniversityStore(context).clear()
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
