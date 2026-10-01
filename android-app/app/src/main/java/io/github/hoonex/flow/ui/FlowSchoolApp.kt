@@ -269,6 +269,7 @@ private fun SchoolTodayScreen(
     openPlanner: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     val selectedLocalDate = remember(selectedDate) {
         runCatching { LocalDate.parse(selectedDate, DateTimeFormatter.BASIC_ISO_DATE) }
             .getOrDefault(flowAcademicToday())
@@ -337,6 +338,7 @@ private fun SchoolTodayScreen(
                     onComplete = { task ->
                         plannerStore.setDone(task.id)
                         dayTasks = plannerStore.load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
+                        scope.launch { UniversityWidgets.updateAll(context) }
                     }
                 )
             }
