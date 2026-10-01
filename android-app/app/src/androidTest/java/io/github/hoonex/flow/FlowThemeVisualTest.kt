@@ -31,13 +31,13 @@ class FlowThemeVisualTest {
         device = UiDevice.getInstance(instrumentation)
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
         runCatching { device.executeShellCommand("cmd uimode night auto") }
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
         clearState()
     }
 
