@@ -190,14 +190,20 @@ fun FlowDayTaskSummary(
                 if (onComplete != null) {
                     Box(
                         Modifier
-                            .size(30.dp)
-                            .clip(RoundedCornerShape(11.dp))
-                            .background(FlowPalette.SurfaceSoft)
+                            .size(44.dp)
                             .semantics { contentDescription = "${task.title} 완료" }
                             .clickable { onComplete(task) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("✓", color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                        Box(
+                            Modifier
+                                .size(30.dp)
+                                .clip(RoundedCornerShape(11.dp))
+                                .background(FlowPalette.SurfaceSoft),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("✓", color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                        }
                     }
                 } else if (onOpenPlanner != null) {
                     Text("›", color = FlowPalette.Dim, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -248,27 +254,33 @@ private fun PlannerTaskRow(task: FlowTask, now: LocalDateTime, onToggle: () -> U
     ) {
         Box(
             Modifier
-                .size(28.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(if (task.done) FlowPalette.Mint else Color.Transparent)
-                .border(
-                    width = 1.5.dp,
-                    color = when {
-                        task.done -> FlowPalette.Mint
-                        overdue -> FlowPalette.Danger
-                        else -> FlowPalette.Muted
-                    },
-                    shape = RoundedCornerShape(999.dp)
-                )
+                .size(44.dp)
                 .semantics { contentDescription = if (task.done) "${task.title} 완료 취소" else "${task.title} 완료" }
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            if (task.done) {
-                Text("✓", color = Color(0xFF05211C), fontWeight = FontWeight.Black, fontSize = 13.sp)
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(if (task.done) FlowPalette.Mint else Color.Transparent)
+                    .border(
+                        width = 1.5.dp,
+                        color = when {
+                            task.done -> FlowPalette.Mint
+                            overdue -> FlowPalette.Danger
+                            else -> FlowPalette.Muted
+                        },
+                        shape = RoundedCornerShape(999.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (task.done) {
+                    Text("✓", color = Color(0xFF05211C), fontWeight = FontWeight.Black, fontSize = 13.sp)
+                }
             }
         }
-        Column(Modifier.padding(start = 13.dp).weight(1f)) {
+        Column(Modifier.padding(start = 5.dp).weight(1f)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(task.title, color = if (task.done) FlowPalette.Dim else FlowPalette.Text, fontSize = 16.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
                 Text("삭제", color = FlowPalette.Dim, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onDelete).padding(start = 14.dp, top = 9.dp, bottom = 9.dp))
