@@ -93,18 +93,32 @@ class FlowGalaxyPhoneVisualTest {
             assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
             waitForText("오늘 제출할 과제")
             capture("23-galaxy-s25-university-home")
+            val universityComplete = device.wait(Until.findObject(By.desc("오늘 제출할 과제 완료")), 5_000)
+            assertNotNull("university live-day completion action missing", universityComplete)
+            universityComplete!!.click()
+            assertTrue("university task did not leave live day", device.wait(Until.gone(By.desc("오늘 제출할 과제 완료")), 5_000))
+            assertTrue("university task completion opened planner", !device.hasObject(By.text("플래너")))
+            assertTrue("university task completion was not persisted", FlowPlannerStore(context).load().first { it.id == "galaxy-integrated-task" }.done)
             clickTextAndWaitForText("시간표", "시간표 다시 가져오기")
             scrollUntilText("시간표 다시 가져오기")
             assertAboveBottomNavigation("시간표 다시 가져오기", "시간표")
         }
 
         seedRepresentativeSchool()
+        seedSchoolDayTask()
         FlowModeStore(context).save(FlowMode.SCHOOL)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동고등학교")
             waitForText("국어")
             waitForText("현미밥")
             capture("24-galaxy-s25-school-today")
+            scrollUntilText("오늘 학교 할 일")
+            val schoolComplete = device.wait(Until.findObject(By.desc("오늘 학교 할 일 완료")), 5_000)
+            assertNotNull("school live-day completion action missing", schoolComplete)
+            schoolComplete!!.click()
+            assertTrue("school task did not leave live day", device.wait(Until.gone(By.desc("오늘 학교 할 일 완료")), 5_000))
+            assertTrue("school task completion opened planner", !device.hasObject(By.text("플래너")))
+            assertTrue("school task completion was not persisted", FlowPlannerStore(context).load().first { it.id == "galaxy-school-task" }.done)
             scrollUntilText("데이터 새로고침")
             assertAboveBottomNavigation("데이터 새로고침", "오늘")
             clickTextAndWaitForText("설정", "데이터와 모드")
@@ -239,6 +253,22 @@ class FlowGalaxyPhoneVisualTest {
                     dueAt = now.toLocalDate().atTime(11, 30).toString(),
                     kind = FlowTaskKind.ASSIGNMENT,
                     scope = FlowTaskScope.FLOW
+                )
+            )
+        )
+    }
+
+    private fun seedSchoolDayTask() {
+        val now = flowAcademicNow()
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "galaxy-school-task",
+                    title = "오늘 학교 할 일",
+                    note = "학교 홈에서 바로 완료",
+                    dueAt = now.toLocalDate().atTime(16, 0).toString(),
+                    kind = FlowTaskKind.TODO,
+                    scope = FlowTaskScope.SCHOOL
                 )
             )
         )
