@@ -55,7 +55,7 @@ class FlowGalaxyPhoneVisualTest {
             mkdirs()
         }
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
 
         assertEquals("Galaxy profile width override missing", 1080, device.displayWidth)
         assertTrue(
@@ -75,7 +75,7 @@ class FlowGalaxyPhoneVisualTest {
     @After
     fun restore() {
         clearState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
