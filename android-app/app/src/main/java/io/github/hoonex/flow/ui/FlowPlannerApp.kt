@@ -173,7 +173,15 @@ fun FlowDayTaskSummary(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .then(if (onOpenPlanner != null) Modifier.clickable(onClick = onOpenPlanner) else Modifier)
+                    .then(
+                        if (onOpenPlanner != null) {
+                            Modifier
+                                .semantics { contentDescription = "${task.title} 플래너에서 열기" }
+                                .clickable(onClick = onOpenPlanner)
+                        } else {
+                            Modifier
+                        }
+                    )
                     .padding(horizontal = 2.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
