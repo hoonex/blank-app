@@ -161,7 +161,11 @@ fun FlowPlannerRoot() {
 }
 
 @Composable
-fun FlowDayTaskSummary(tasks: List<FlowTask>, onOpenPlanner: (() -> Unit)? = null) {
+fun FlowDayTaskSummary(
+    tasks: List<FlowTask>,
+    onOpenPlanner: (() -> Unit)? = null,
+    onComplete: ((FlowTask) -> Unit)? = null
+) {
     if (tasks.isEmpty()) return
     Column(Modifier.fillMaxWidth()) {
         tasks.take(4).forEachIndexed { index, task ->
@@ -183,7 +187,19 @@ fun FlowDayTaskSummary(tasks: List<FlowTask>, onOpenPlanner: (() -> Unit)? = nul
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
-                if (onOpenPlanner != null) {
+                if (onComplete != null) {
+                    Box(
+                        Modifier
+                            .size(30.dp)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(FlowPalette.SurfaceSoft)
+                            .semantics { contentDescription = "${task.title} 완료" }
+                            .clickable { onComplete(task) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("✓", color = FlowPalette.Mint, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                    }
+                } else if (onOpenPlanner != null) {
                     Text("›", color = FlowPalette.Dim, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
