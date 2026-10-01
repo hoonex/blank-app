@@ -280,8 +280,9 @@ private fun SchoolTodayScreen(
     val classes = dashboard?.classesOn(selectedDate).orEmpty()
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
     val events = dashboard?.eventsOn(selectedDate).orEmpty()
-    val dayTasks = remember(selectedLocalDate) {
-        FlowPlannerStore(context).load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
+    val plannerStore = remember { FlowPlannerStore(context) }
+    var dayTasks by remember(selectedLocalDate) {
+        mutableStateOf(plannerStore.load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL))
     }
 
     LazyColumn(
@@ -329,7 +330,16 @@ private fun SchoolTodayScreen(
                     "${dayTasks.size}개"
                 )
             }
-            item { FlowDayTaskSummary(dayTasks, openPlanner) }
+            item {
+                FlowDayTaskSummary(
+                    dayTasks,
+                    onOpenPlanner = openPlanner,
+                    onComplete = { task ->
+                        plannerStore.setDone(task.id)
+                        dayTasks = plannerStore.load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
+                    }
+                )
+            }
         }
         item {
             FlowSecondaryButton(
