@@ -38,14 +38,14 @@ class FlowCampusMapVisualTest {
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
         seedCampus()
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun cleanup() {
         UniversityStore(context).clear()
         CampusStore(context).clear(universityId)
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
