@@ -7,6 +7,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import io.github.hoonex.flow.data.FlowPlannerStore
+import io.github.hoonex.flow.data.FlowTask
+import io.github.hoonex.flow.data.FlowTaskKind
+import io.github.hoonex.flow.data.FlowTaskScope
 import io.github.hoonex.flow.data.FlowSchool
 import io.github.hoonex.flow.data.SchoolDashboard
 import io.github.hoonex.flow.data.SchoolSelection
@@ -53,6 +57,40 @@ class FlowRecreationStateTest {
 
             waitForText("플래너")
             assertTrue("Planner destination fell back to the hub", !device.hasObject(By.textContains("학교도, 대학도")))
+        }
+    }
+
+    @Test
+    fun plannerReturnSourceSurvivesActivityRecreation() {
+        seedSchool()
+        val today = io.github.hoonex.flow.data.flowAcademicNow().toLocalDate()
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "recreation-school-task",
+                    title = "재생성 복귀 테스트",
+                    dueAt = today.atTime(18, 0).toString(),
+                    kind = FlowTaskKind.TODO,
+                    scope = FlowTaskScope.SCHOOL
+                )
+            )
+        )
+        FlowModeStore(context).save(FlowMode.SCHOOL)
+
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            waitForText("정동고등학교")
+            scrollUntilText("재생성 복귀 테스트")
+            val plannerLink = device.wait(Until.findObject(By.desc("재생성 복귀 테스트 플래너에서 열기")), 5_000)
+                ?: error("Live-day planner link missing before recreation")
+            plannerLink.click()
+            waitForText("플래너")
+
+            scenario.recreate()
+            waitForText("플래너")
+
+            device.pressBack()
+            waitForText("정동고등학교")
+            assertTrue("Planner return source was lost across recreation", !device.hasObject(By.textContains("학교도, 대학도")))
         }
     }
 
@@ -124,6 +162,7 @@ class FlowRecreationStateTest {
     private fun clearState() {
         SchoolStore(context).clear()
         UniversityStore(context).clear()
+        FlowPlannerStore(context).clear()
         context.getSharedPreferences("flow-native-shell-v1", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
