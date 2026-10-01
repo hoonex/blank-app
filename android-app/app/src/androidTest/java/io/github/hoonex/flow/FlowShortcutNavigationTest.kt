@@ -31,14 +31,14 @@ class FlowShortcutNavigationTest {
         device = UiDevice.getInstance(instrumentation)
         clearState()
         seedSchool()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @After
     fun restore() {
         device.pressHome()
         clearState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
