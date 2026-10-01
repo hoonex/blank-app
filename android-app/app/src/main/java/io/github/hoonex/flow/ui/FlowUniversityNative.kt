@@ -259,6 +259,7 @@ private fun NativeUniversityHome(
     openPlanner: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val compactHeight = LocalConfiguration.current.screenHeightDp < 500
     val now = rememberFlowMinuteNow()
     val today = timetable?.classesForDay(todayIndex(now)).orEmpty()
@@ -354,6 +355,7 @@ private fun NativeUniversityHome(
                     onComplete = { task ->
                         plannerStore.setDone(task.id)
                         dayTasks = plannerStore.load().activeForDay(now.toLocalDate(), FlowTaskScope.UNIVERSITY)
+                        scope.launch { UniversityWidgets.updateAll(context) }
                     }
                 )
             }
