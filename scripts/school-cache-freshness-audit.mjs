@@ -23,6 +23,7 @@ const context={
 };
 vm.createContext(context);
 vm.runInContext(source.slice(0,init),context,{filename:'school.js'});
+assert.equal(vm.runInContext('CACHE_TTL_MS',context),12*60*60*1000,'bundled School data should not be polled every few minutes');
 vm.runInContext("profile={school:{schoolCode:'12345',officeCode:'D10',name:'테스트학교',kind:'고등학교'},grade:1,className:'1'};selectedDate=noon(new Date());",context);
 context.renderActiveView=()=>{};
 context.loading=()=>{};
