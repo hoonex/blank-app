@@ -7,7 +7,10 @@ const ALLERGY_KEY = 'flow-school-allergies-v1';
 const BELL_KEY = 'flow-school-bell-v1';
 const MEDIA_PREFIX = 'flow-school-media-v1:';
 const CACHE_PREFIX = 'flow-school-cache-v4:';
-const CACHE_TTL_MS = 10 * 60 * 1000;
+// School dashboard bundles timetable, meals, and events in one API response.
+// They change infrequently; revalidate at most twice a day while a tab stays open.
+// New dates and a deliberate Today refresh still fetch immediately.
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const AUTO_REFRESH_RETRY_MS = 2 * 60 * 1000;
 const RANK_TOTAL_KEY = 'flow-school-rank-total-v1';
 const $ = (s) => document.querySelector(s);
