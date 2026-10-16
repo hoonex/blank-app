@@ -7,6 +7,8 @@ const ALLERGY_KEY = 'flow-school-allergies-v1';
 const BELL_KEY = 'flow-school-bell-v1';
 const MEDIA_PREFIX = 'flow-school-media-v1:';
 const CACHE_PREFIX = 'flow-school-cache-v4:';
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const AUTO_REFRESH_RETRY_MS = 2 * 60 * 1000;
 const RANK_TOTAL_KEY = 'flow-school-rank-total-v1';
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -53,6 +55,10 @@ let searchResults = [];
 let searchTimer = null;
 let searchAbort = null;
 let dashboardAbort = null;
+let dashboardLoadingKey = '';
+let lastObservedToday = ymd(new Date());
+let lastAutoRefreshKey = '';
+let lastAutoRefreshAt = 0;
 let toastTimer = null;
 let installPrompt = null;
 const memoryCache = new Map();
@@ -154,17 +160,38 @@ function openSwitch(){if(!profile)return;$('#currentSchoolMeta').textContent=`${
 function reselectClass(){if(!profile)return;selectedSetupSchool=profile.school;closeDialog($('#switchDialog'));chooseSchool(profile.school)}
 function clearProfile(){localStorage.removeItem(PROFILE_KEY);localStorage.removeItem(OLD_PROFILE_KEY);profile=null;data=null;dataKey='';memoryCache.clear();closeDialog($('#switchDialog'));showLanding()}
 
-function saveCache(key,payload){memoryCache.set(key,payload);try{writeJson(cacheStorageKey(key),{at:Date.now(),payload})}catch{}}
-function loadCache(key){if(memoryCache.has(key))return memoryCache.get(key);const cached=readJson(cacheStorageKey(key),null);if(cached?.payload){memoryCache.set(key,cached.payload);return cached.payload}return null}
+function saveCache(key,payload){const entry={at:Date.now(),payload};memoryCache.set(key,entry);try{writeJson(cacheStorageKey(key),entry)}catch{}}
+function loadCache(key,{allowStale=false}={}){
+  const entry=memoryCache.get(key)||readJson(cacheStorageKey(key),null);
+  if(!entry?.payload)return null;
+  if(!allowStale&&(!Number.isFinite(entry.at)||Date.now()-entry.at>=CACHE_TTL_MS||entry.at>Date.now()))return null;
+  memoryCache.set(key,entry);
+  return entry.payload;
+}
 async function loadDashboard({force=false}={}){
-  if(!profile)return;const key=queryKey();if(!force){const cached=loadCache(key);if(cached){data=cached;dataKey=key;renderActiveView();return}}
-  dashboardAbort?.abort();dashboardAbort=new AbortController();loading(true);$('#errorBox')?.classList.add('hidden');
+  if(!profile)return;const key=queryKey();if(!force){if(dashboardLoadingKey===key)return;const cached=loadCache(key);if(cached){data=cached;dataKey=key;$('#errorBox')?.classList.add('hidden');renderActiveView();return}}
+  dashboardAbort?.abort();dashboardAbort=new AbortController();const controller=dashboardAbort;dashboardLoadingKey=key;loading(true);$('#errorBox')?.classList.add('hidden');
   try{
-    const result=await api({action:'dashboard',office:profile.school.officeCode,school:profile.school.schoolCode,grade:profile.grade,class:profile.className,kind:profile.school.kind,date:ymd(selectedDate)},dashboardAbort.signal);
+    const result=await api({action:'dashboard',office:profile.school.officeCode,school:profile.school.schoolCode,grade:profile.grade,class:profile.className,kind:profile.school.kind,date:ymd(selectedDate)},controller.signal);
     data=result;dataKey=key;if(data.school){profile.school={...profile.school,...data.school};writeJson(PROFILE_KEY,profile)}saveCache(key,data);renderActiveView();
-  }catch(error){if(error.name==='AbortError')return;const cached=loadCache(key);data=cached||{school:profile.school,timetable:[],meals:[],events:[]};dataKey=key;renderActiveView();if($('#errorBox')){$('#errorBox').textContent=cached?'새 데이터를 불러오지 못해 마지막 저장 정보를 표시합니다.':(error.message||'학교 정보를 불러오지 못했습니다.');$('#errorBox').classList.remove('hidden')}}finally{loading(false)}
+  }catch(error){if(error.name==='AbortError')return;const cached=loadCache(key,{allowStale:true});data=cached||{school:profile.school,timetable:[],meals:[],events:[]};dataKey=key;renderActiveView();if($('#errorBox')){$('#errorBox').textContent=cached?'새 데이터를 불러오지 못해 마지막 저장 정보를 표시합니다.':(error.message||'학교 정보를 불러오지 못했습니다.');$('#errorBox').classList.remove('hidden')}}finally{if(dashboardAbort===controller){dashboardLoadingKey='';loading(false)}}
 }
 function ensureDataFor(date,{force=false}={}){selectedDate=noon(date);const key=queryKey();if(!force&&data&&dataKey===key){renderActiveView();return}loadDashboard({force})}
+
+function refreshDashboardIfStale(){
+  if(!profile||document.visibilityState==='hidden')return;
+  const now=new Date(),today=ymd(now);
+  if(today!==lastObservedToday){
+    const wasViewingToday=ymd(selectedDate)===lastObservedToday;
+    lastObservedToday=today;
+    if(wasViewingToday){ensureDataFor(now);return}
+  }
+  if(ymd(selectedDate)!==today)return;
+  const key=queryKey();
+  if(dashboardLoadingKey===key||(dataKey===key&&loadCache(key)))return;
+  if(lastAutoRefreshKey===key&&Date.now()-lastAutoRefreshAt<AUTO_REFRESH_RETRY_MS)return;
+  lastAutoRefreshKey=key;lastAutoRefreshAt=Date.now();loadDashboard();
+}
 
 async function loadMedia(){
   if(!profile)return;const key=MEDIA_PREFIX+profile.school.schoolCode;const cached=readJson(key,null);if(cached){media=cached;renderMedia();return}
@@ -294,7 +321,7 @@ function bind(){
   $('#landingThemeBtn')?.addEventListener('click',cycleTheme);
   $('#schoolSearch')?.addEventListener('input',()=>debounceSearch('#schoolSearch','#schoolResults'));$('#schoolSearchBtn')?.addEventListener('click',()=>runSearch('#schoolSearch','#schoolResults'));$('#schoolSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter')runSearch('#schoolSearch','#schoolResults')});$('#switchSearch')?.addEventListener('input',()=>debounceSearch('#switchSearch','#switchResults'));
   $('#schoolBtn')?.addEventListener('click',openSwitch);$('#mobileSchoolBtn')?.addEventListener('click',openSwitch);$('#reselectClassBtn')?.addEventListener('click',reselectClass);$('#changeSchoolBtn')?.addEventListener('click',clearProfile);$('#setupSave')?.addEventListener('click',saveSetup);
-  $('#prevDay')?.addEventListener('click',()=>shiftDay(-1));$('#nextDay')?.addEventListener('click',()=>shiftDay(1));$('#todayBtn')?.addEventListener('click',()=>ensureDataFor(new Date()));$('#dateTitle')?.addEventListener('click',()=>$('#datePicker')?.showPicker?.());$('#datePicker')?.addEventListener('change',()=>{if(!$('#datePicker').value)return;const[y,m,d]=$('#datePicker').value.split('-').map(Number);ensureDataFor(new Date(y,m-1,d,12))});
+  $('#prevDay')?.addEventListener('click',()=>shiftDay(-1));$('#nextDay')?.addEventListener('click',()=>shiftDay(1));$('#todayBtn')?.addEventListener('click',()=>ensureDataFor(new Date(),{force:true}));$('#dateTitle')?.addEventListener('click',()=>$('#datePicker')?.showPicker?.());$('#datePicker')?.addEventListener('change',()=>{if(!$('#datePicker').value)return;const[y,m,d]=$('#datePicker').value.split('-').map(Number);ensureDataFor(new Date(y,m-1,d,12))});
   $('#editSubjectsBtn')?.addEventListener('click',()=>{editMode=!editMode;renderTimetable()});$('#saveSubjectBtn')?.addEventListener('click',saveSubject);$('#resetSubjectBtn')?.addEventListener('click',resetSubject);$('#customSubjectInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveSubject()}});
   $('#allergyBtn')?.addEventListener('click',()=>{renderAllergyGrid();openDialog('#allergyDialog')});$('#saveAllergyBtn')?.addEventListener('click',saveAllergies);$('#mealDetailBtn')?.addEventListener('click',()=>$('#mealDetails').classList.toggle('hidden'));
   $('#prevWeek')?.addEventListener('click',()=>shiftWeek(-1));$('#nextWeek')?.addEventListener('click',()=>shiftWeek(1));$('#thisWeekBtn')?.addEventListener('click',()=>ensureDataFor(new Date()));
@@ -307,5 +334,6 @@ function bind(){
 
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 bind();
-setInterval(renderClock,30000);
+setInterval(()=>{renderClock();refreshDashboardIfStale()},30000);
+document.addEventListener('visibilitychange',refreshDashboardIfStale);
 if(profile){showDashboard();loadDashboard();loadMedia()}else showLanding();
