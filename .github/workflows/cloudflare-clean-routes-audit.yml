@@ -33,8 +33,11 @@ jobs:
           node --check school-today-topbar.js
           node --check school-today-exam-feed.js
           node --check tests/cloudflare-clean-routes-audit.mjs
+          node --check school.js
+          node --check scripts/school-cache-freshness-audit.mjs
           python -m json.tool wrangler.jsonc >/dev/null
           node tests/cloudflare-clean-routes-audit.mjs
+          node scripts/school-cache-freshness-audit.mjs
           grep -q '"name": "blank-app"' wrangler.jsonc
           grep -q '"binding": "ASSETS"' wrangler.jsonc
           grep -q 'cloudflare-worker.mjs' .assetsignore

@@ -129,7 +129,8 @@ for(const testCase of cases){
   if(Number.isFinite(result.idleMutations2s)&&result.idleMutations2s>8)failed=true;
   if(result.scheduleState&&!result.scheduleState.scheduleVisible)failed=true;
   if(Number.isFinite(result.tabP95Ms)&&result.tabP95Ms>500)failed=true;
-  if(result.dashboardRequestCount>1)failed=true;
+  // Calendar date navigation may load a different month; only identical dashboard queries are duplicates.
+  if(new Set(result.dashboardRequests).size!==result.dashboardRequestCount)failed=true;
   report.cases.push(result);await context.close();await writeReport();
 }
 

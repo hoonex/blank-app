@@ -310,6 +310,15 @@ html[data-flow-school-ui="v2"] .date-controller button{
    the date control owns a full hero row, utility copy is compact, and secondary Today
    panes stack instead of falling back to desktop geometry. */
 @media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  /* Keep calendar tap targets compact and legible on wide portrait tablets. */
+  html[data-flow-school-ui="v2"] body #scheduleView .calendar-day{
+    height:60px!important;
+    min-height:60px!important;
+    max-height:60px!important;
+  }
+  html[data-flow-school-ui="v2"] body #scheduleView .calendar-event-label{
+    display:none!important;
+  }
   html[data-flow-school-ui="v2"] .school-hero,
   html[data-flow-school-ui="v2"] .school-hero-content{
     min-height:172px!important;
