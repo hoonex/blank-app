@@ -108,7 +108,12 @@ async function installFixtures(page) {
     if (action === 'classes') return json(route, { classes: ['1', '2', '3', '4', '5', '6', '7', '8'] });
     if (action === 'media') return json(route, { media: { hero: '', logo: logoSvg, logoSource: 'fixture-official' }, homepage: SCHOOL.homepage }, 200, { 'cache-control': 'public, max-age=86400' });
     if (action === 'place') return json(route, { provider: 'kakao', place: { id: 'school-place', name: SCHOOL.name, url: 'https://place.map.kakao.com/7240101', address: SCHOOL.address, roadAddress: SCHOOL.address, phone: SCHOOL.phone, x: '128.687', y: '35.875', distance: '0' } });
-    if (action === 'dashboard') return json(route, schoolDashboard(u.searchParams.get('date') || ymd(new Date())));
+    const bundle = schoolDashboard(u.searchParams.get('date') || ymd(new Date()));
+    if (action === 'school-info') return json(route, { school: bundle.school });
+    if (action === 'timetable') return json(route, { from: bundle.from, to: bundle.to, timetable: bundle.timetable });
+    if (action === 'meals') return json(route, { meals: bundle.meals });
+    if (action === 'events') return json(route, { events: bundle.events, scheduleMeta: bundle.scheduleMeta });
+    if (action === 'dashboard') return json(route, bundle);
     return json(route, { error: `unknown school fixture ${action}` }, 404);
   });
   await page.route('**/functions/v1/school-logo**', route => route.fulfill({ status: 204, body: '' }));
