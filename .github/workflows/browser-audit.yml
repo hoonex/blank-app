@@ -48,6 +48,15 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/browser-audit.mjs
 
+      - name: Verify independent School resource caching
+        if: success()
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-resource-integration-audit
+        run: |
+          node --check tests/school-resource-integration-audit.cjs
+          node tests/school-resource-integration-audit.cjs
+
       - name: Diagnose shared tablet desktop ratio cascade
         if: success()
         env:
