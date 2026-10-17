@@ -28,7 +28,7 @@ class FlowWidgetGalleryVisualTest {
         context = instrumentation.targetContext
         device = UiDevice.getInstance(instrumentation)
         screenshotDir = File(context.getExternalFilesDir(null), "visual-audit").apply { mkdirs() }
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
     }
 
     @Test

@@ -47,6 +47,7 @@ import io.github.hoonex.flow.data.SchoolSelection
 import io.github.hoonex.flow.data.SchoolStore
 import io.github.hoonex.flow.data.FlowTaskScope
 import io.github.hoonex.flow.data.activeForDay
+import io.github.hoonex.flow.data.flowAcademicToday
 import io.github.hoonex.flow.data.schoolDate8
 import io.github.hoonex.flow.update.GitHubUpdateManager
 import io.github.hoonex.flow.update.UpdatePhase
@@ -63,7 +64,7 @@ private enum class SchoolTab(val label: String) {
 }
 
 @Composable
-fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
+fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit, openPlanner: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val store = remember { SchoolStore(context) }
     val scope = rememberCoroutineScope()
@@ -141,7 +142,8 @@ fun FlowSchoolRoot(onSwitchUniversity: () -> Unit, checkUpdate: () -> Unit) {
                     selectedDate = selectedDateRaw,
                     actualToday = today,
                     onDateSelected = { selectedDateRaw = it },
-                    refresh = { scope.launch { refresh(true) } }
+                    refresh = { scope.launch { refresh(true) } },
+                    openPlanner = openPlanner
                 )
                 SchoolTab.WEEK -> SchoolWeekScreen(selection!!, dashboard)
                 SchoolTab.TRANSIT -> FlowSchoolTransitScreen(selection!!)
@@ -263,22 +265,25 @@ private fun SchoolTodayScreen(
     selectedDate: String,
     actualToday: String,
     onDateSelected: (String) -> Unit,
-    refresh: () -> Unit
+    refresh: () -> Unit,
+    openPlanner: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
     val selectedLocalDate = remember(selectedDate) {
         runCatching { LocalDate.parse(selectedDate, DateTimeFormatter.BASIC_ISO_DATE) }
-            .getOrDefault(LocalDate.now())
+            .getOrDefault(flowAcademicToday())
     }
     val actualTodayDate = remember(actualToday) {
         runCatching { LocalDate.parse(actualToday, DateTimeFormatter.BASIC_ISO_DATE) }
-            .getOrDefault(LocalDate.now())
+            .getOrDefault(flowAcademicToday())
     }
     val classes = dashboard?.classesOn(selectedDate).orEmpty()
     val meals = dashboard?.mealsOn(selectedDate).orEmpty()
     val events = dashboard?.eventsOn(selectedDate).orEmpty()
-    val dayTasks = remember(selectedLocalDate) {
-        FlowPlannerStore(context).load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
+    val plannerStore = remember { FlowPlannerStore(context) }
+    var dayTasks by remember(selectedLocalDate) {
+        mutableStateOf(plannerStore.load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL))
     }
 
     LazyColumn(
@@ -319,8 +324,24 @@ private fun SchoolTodayScreen(
             )
         }
         if (dayTasks.isNotEmpty()) {
-            item { FlowSectionTitle("", "오늘 할 일", "${dayTasks.size}개") }
-            item { FlowDayTaskSummary(dayTasks) }
+            item {
+                FlowSectionTitle(
+                    "",
+                    if (selectedDate == actualToday) "오늘 할 일" else "이날 할 일",
+                    "${dayTasks.size}개"
+                )
+            }
+            item {
+                FlowDayTaskSummary(
+                    dayTasks,
+                    onOpenPlanner = openPlanner,
+                    onComplete = { task ->
+                        plannerStore.setDone(task.id)
+                        dayTasks = plannerStore.load().activeForDay(selectedLocalDate, FlowTaskScope.SCHOOL)
+                        scope.launch { UniversityWidgets.updateAll(context) }
+                    }
+                )
+            }
         }
         item {
             FlowSecondaryButton(
@@ -511,14 +532,14 @@ private fun SchoolWeekScreen(selection: SchoolSelection, dashboard: SchoolDashbo
     val anchor = remember(dashboard?.selected) {
         runCatching {
             LocalDate.parse(dashboard?.selected.orEmpty(), DateTimeFormatter.BASIC_ISO_DATE)
-        }.getOrDefault(LocalDate.now())
+        }.getOrDefault(flowAcademicToday())
     }
     val weekStart = remember(anchor) { anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
     val weekDates = remember(weekStart) { (0L..4L).map(weekStart::plusDays) }
     val timetable = dashboard?.timetable.orEmpty()
     val classesByDate = remember(timetable) { timetable.groupBy { it.date } }
     val maxPeriod = (timetable.maxOfOrNull { it.period } ?: 7).coerceAtLeast(7)
-    val today = LocalDate.now()
+    val today = flowAcademicToday()
 
     LazyColumn(
         Modifier.fillMaxSize(),

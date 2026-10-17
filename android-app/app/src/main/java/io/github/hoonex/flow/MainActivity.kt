@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
         const val ACTION_OPEN_SCHOOL = "io.github.hoonex.flow.OPEN_SCHOOL"
         const val ACTION_OPEN_UNIVERSITY = "io.github.hoonex.flow.OPEN_UNIVERSITY"
         const val ACTION_OPEN_WIDGETS = "io.github.hoonex.flow.OPEN_WIDGETS"
+        const val ACTION_OPEN_PLANNER = "io.github.hoonex.flow.OPEN_PLANNER"
     }
 
     private val rootRevision = mutableIntStateOf(0)
@@ -102,6 +103,10 @@ class MainActivity : ComponentActivity() {
             }
             ACTION_OPEN_WIDGETS -> {
                 startActivity(Intent(this, FlowWidgetGalleryActivity::class.java))
+                true
+            }
+            ACTION_OPEN_PLANNER -> {
+                FlowModeStore(this).requestPlannerEntry()
                 true
             }
             else -> false

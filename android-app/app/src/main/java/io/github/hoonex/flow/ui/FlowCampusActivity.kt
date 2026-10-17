@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -104,6 +105,7 @@ private fun FlowCampusScreen(mapView: MapView) {
     var route by remember { mutableStateOf<Pair<CampusPlace, CampusWalkRoute?>?>(null) }
     var routeLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 700
 
     fun selectPlace(campus: CampusSnapshot, place: CampusPlace) {
         routeLoading = true
@@ -164,49 +166,46 @@ private fun FlowCampusScreen(mapView: MapView) {
                 NativeCampusMap(
                     mapView = mapView,
                     campus = campus,
-                    walkRoute = route?.second
+                    walkRoute = route?.second,
+                    compactHeight = compactHeight
                 )
             }
             item {
-                FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                    Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                        Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            campus.center.roadAddress.ifBlank { campus.center.address }.ifBlank { university?.address.orEmpty() },
-                            color = FlowPalette.Muted,
-                            fontSize = 12.sp,
-                            lineHeight = 18.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                        val resolved = campus.places.count { it.resolved && it.place != null }
-                        Text(
-                            "강의 $resolved · 학식 ${campus.nearby.dining.size} · 카페 ${campus.nearby.cafes.size} · 편의점 ${campus.nearby.stores.size} · 식당 ${campus.nearby.food.size}",
-                            color = FlowPalette.Mint,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 10.dp)
-                        )
-                    }
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp)) {
+                    Text(campus.center.name.ifBlank { university?.name.orEmpty() }, color = FlowPalette.Text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        campus.center.roadAddress.ifBlank { campus.center.address }.ifBlank { university?.address.orEmpty() },
+                        color = FlowPalette.Muted,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    val resolved = campus.places.count { it.resolved && it.place != null }
+                    Text(
+                        "강의 $resolved · 학식 ${campus.nearby.dining.size} · 카페 ${campus.nearby.cafes.size} · 편의점 ${campus.nearby.stores.size} · 식당 ${campus.nearby.food.size}",
+                        color = FlowPalette.Mint,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 9.dp)
+                    )
                 }
             }
 
             route?.let { (place, walk) ->
                 item {
-                    FlowCard(Modifier.fillMaxWidth(), accent = true) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp)) {
-                            Text("도보 경로", color = FlowPalette.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Text("${campus.center.name} → ${place.name}", color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 6.dp))
-                            Text(
-                                when {
-                                    routeLoading -> "실제 도보 경로 계산 중…"
-                                    walk?.status == "OK" -> "약 ${(walk.timeSeconds / 60).coerceAtLeast(1)}분 · ${walk.distance}m · 경로점 ${walk.points.size}개"
-                                    else -> "도보 경로를 찾지 못했습니다."
-                                },
-                                color = FlowPalette.Muted,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(top = 5.dp)
-                            )
-                        }
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 5.dp)) {
+                        Text("도보 경로", color = FlowPalette.Accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${campus.center.name} → ${place.name}", color = FlowPalette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 5.dp))
+                        Text(
+                            when {
+                                routeLoading -> "실제 도보 경로 계산 중…"
+                                walk?.status == "OK" -> "약 ${(walk.timeSeconds / 60).coerceAtLeast(1)}분 · ${walk.distance}m · 경로점 ${walk.points.size}개"
+                                else -> "도보 경로를 찾지 못했습니다."
+                            },
+                            color = FlowPalette.Muted,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
             }
@@ -247,21 +246,26 @@ private fun FlowCampusScreen(mapView: MapView) {
 private fun NativeCampusMap(
     mapView: MapView,
     campus: CampusSnapshot,
-    walkRoute: CampusWalkRoute?
+    walkRoute: CampusWalkRoute?,
+    compactHeight: Boolean
 ) {
     var map by remember(mapView) { mutableStateOf<MapLibreMap?>(null) }
     var styleReady by remember(mapView) { mutableStateOf(false) }
+    var fullyRendered by remember(mapView) { mutableStateOf(false) }
 
     Box(
         Modifier
             .fillMaxWidth()
-            .height(330.dp)
+            .height(if (compactHeight) 270.dp else 330.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(FlowPalette.Surface)
     ) {
         AndroidView(
             factory = {
                 mapView.apply {
+                    addOnDidFinishRenderingMapListener { fully ->
+                        if (fully) fullyRendered = true
+                    }
                     getMapAsync { ready ->
                         ready.uiSettings.isCompassEnabled = true
                         ready.uiSettings.isAttributionEnabled = true
@@ -293,13 +297,22 @@ private fun NativeCampusMap(
                 .align(Alignment.TopStart)
                 .padding(10.dp)
                 .background(Color(0xAA08100E), RoundedCornerShape(10.dp))
-                .semantics { contentDescription = if (styleReady) "Flow 지도 준비됨" else "Flow 지도 로딩 중" }
+                .semantics {
+                    contentDescription = when {
+                        fullyRendered -> "Flow 지도 렌더 완료"
+                        styleReady -> "Flow 지도 스타일 준비됨"
+                        else -> "Flow 지도 로딩 중"
+                    }
+                }
                 .padding(horizontal = 9.dp, vertical = 6.dp)
         )
     }
 
     LaunchedEffect(map, styleReady, campus, walkRoute) {
-        if (styleReady) map?.let { renderCampusMap(it, campus, walkRoute) }
+        if (styleReady) map?.let {
+            fullyRendered = false
+            renderCampusMap(it, campus, walkRoute)
+        }
     }
 }
 

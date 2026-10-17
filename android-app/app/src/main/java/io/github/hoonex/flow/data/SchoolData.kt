@@ -59,7 +59,7 @@ data class SchoolDashboard(
     fun eventsOn(date: String): List<SchoolEvent> = events.filter { it.date == date }
 }
 
-fun schoolDate8(date: LocalDate = LocalDate.now()): String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
+fun schoolDate8(date: LocalDate = flowAcademicToday()): String = date.format(DateTimeFormatter.BASIC_ISO_DATE)
 
 class SchoolStore(context: Context) {
     private val prefs = context.getSharedPreferences("flow-school-native-v1", Context.MODE_PRIVATE)
@@ -93,7 +93,7 @@ object SchoolApi {
         root.optJSONArray("classes").toStringList()
     }
 
-    suspend fun dashboard(selection: SchoolSelection, date: LocalDate = LocalDate.now()): SchoolDashboard = withContext(Dispatchers.IO) {
+    suspend fun dashboard(selection: SchoolSelection, date: LocalDate = flowAcademicToday()): SchoolDashboard = withContext(Dispatchers.IO) {
         val s = selection.school
         val url = "$SCHOOL_EDGE?action=dashboard&office=${enc(s.officeCode)}&school=${enc(s.schoolCode)}&grade=${enc(selection.grade)}&class=${enc(selection.className)}&kind=${enc(s.kind.ifBlank { "고등학교" })}&date=${schoolDate8(date)}"
         parseDashboard(getJson(url), fallbackSchool = s)
