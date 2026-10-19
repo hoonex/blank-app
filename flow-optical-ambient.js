@@ -15,39 +15,27 @@
       style=document.createElement('style');
       style.id=VISUAL_STYLE_ID;
       style.textContent=`
-/* One responsive spacing rhythm. */
+/* Flow spacing: one fluid rhythm driven by available shape, not device labels.
+   No additional runtime style layer; clamp also caps very wide monitors. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-  --flow-school-page-inset:18px;
-  --flow-school-section-gap:16px;
-  --flow-school-control-gap:8px;
-  --flow-school-card-pad:18px;
-  --flow-school-card-radius:20px;
+  --flow-school-page-inset:clamp(10px,calc(0.9vi + 6px),26px);
+  --flow-school-section-gap:clamp(12px,calc(0.85vi + 8px),24px);
+  --flow-school-control-gap:clamp(7px,calc(0.3vi + 6px),12px);
+  --flow-school-card-pad:clamp(15px,calc(0.8vi + 10px),26px);
+  --flow-school-card-radius:clamp(18px,calc(0.5vi + 16px),24px);
   --flow-school-control-radius:12px;
 }
-@media(max-width:699px){
+@media (orientation:portrait){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-page-inset:10px;
-    --flow-school-section-gap:12px;
-    --flow-school-control-gap:8px;
-    --flow-school-card-pad:15px;
-    --flow-school-card-radius:18px;
+    --flow-school-page-inset:clamp(10px,2vi,23px);
+    --flow-school-section-gap:clamp(12px,calc(1.2vi + 7px),21px);
+    --flow-school-control-gap:clamp(7px,calc(0.42vi + 5px),11px);
   }
 }
-@media(min-width:700px) and (max-width:1180px){
+@media (orientation:landscape) and (max-height:600px){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-page-inset:18px;
-    --flow-school-section-gap:16px;
-    --flow-school-control-gap:8px;
-    --flow-school-card-pad:18px;
-    --flow-school-card-radius:20px;
-  }
-}
-@media(min-width:1181px){
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-section-gap:18px;
-    --flow-school-control-gap:10px;
-    --flow-school-card-pad:18px;
-    --flow-school-card-radius:20px;
+    --flow-school-section-gap:clamp(11px,calc(0.65vi + 7px),18px);
+    --flow-school-card-pad:clamp(14px,calc(0.5vi + 10px),19px);
   }
 }
 
