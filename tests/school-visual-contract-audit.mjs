@@ -28,6 +28,8 @@ function dashboard(selected){
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixtures(page){
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   await page.route('**/functions/v1/school-data**',route=>{const u=new URL(route.request().url()),action=u.searchParams.get('action')||'search';if(action==='dashboard')return json(route,dashboard((u.searchParams.get('date')||ymd(new Date())).replace(/-/g,'')));if(action==='media')return json(route,{media:{hero:'',logo:''},homepage:SCHOOL.homepage});if(action==='place')return json(route,{provider:'kakao',place:{id:'fixture',name:SCHOOL.name,url:'https://place.map.kakao.com/7240101',address:SCHOOL.address,roadAddress:SCHOOL.address,phone:SCHOOL.phone,x:'128.687',y:'35.875'}});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6','7','8']});if(action==='search')return json(route,{schools:[SCHOOL]});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
 }
