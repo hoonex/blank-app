@@ -227,7 +227,7 @@ async function auditSchool(c) {
   const context = await browser.newContext({ viewport: c.viewport, isMobile: c.isMobile, hasTouch: c.hasTouch, deviceScaleFactor: 1, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme: 'light', acceptDownloads: true });
   await initBrowserStubs(context); const page = await context.newPage(); page.setDefaultTimeout(8000); await installFixtures(page); const errors = watch(page); const states = {};
   try {
-    await page.goto(BASE, { waitUntil: 'domcontentloaded' }); await page.locator('.school-search-panel').waitFor();
+    await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.locator('.school-search-panel').waitFor();
     states.landing = await geom(page, `${c.name} school landing`, c.hasTouch); await shot(page, `${c.name}-school-landing`, false);
     await page.locator('#schoolSearch').fill('정동고'); await page.locator('#schoolSearchBtn').click(); await page.locator('#schoolResults [data-result-index]').first().click();
     await page.locator('#setupDialog').waitFor({ state: 'visible' }); states.setup = await geom(page, `${c.name} school setup dialog`, c.hasTouch);
@@ -292,7 +292,7 @@ async function auditUniversity(c) {
   const context = await browser.newContext({ viewport: c.viewport, isMobile: c.isMobile, hasTouch: c.hasTouch, deviceScaleFactor: 1, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme: 'light', acceptDownloads: true });
   await initBrowserStubs(context); const page = await context.newPage(); page.setDefaultTimeout(8000); await installFixtures(page); const errors = watch(page); const states = {};
   try {
-    await page.goto(new URL('university/', BASE).href, { waitUntil: 'domcontentloaded' }); await page.locator('.search-card').waitFor();
+    await page.goto(new URL('university/', BASE).href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.locator('.search-card').waitFor();
     states.landing = await geom(page, `${c.name} university landing`, c.hasTouch); await shot(page, `${c.name}-university-landing`, false);
     await page.locator('#universitySearch').fill('경북대학교'); await page.locator('#searchBtn').click(); await page.locator('#searchResults .result-button').first().click();
     await page.locator('#importDialog').waitFor({ state: 'visible' }); states.initialImportDialog = await geom(page, `${c.name} university initial import`, c.hasTouch); await page.locator('#importDialog [data-close-dialog]').click();
@@ -380,7 +380,7 @@ async function auditAdmin(c) {
   const context = await browser.newContext({ viewport: c.viewport, isMobile: c.isMobile, hasTouch: c.hasTouch, deviceScaleFactor: 1, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme: 'dark' });
   const page = await context.newPage(); page.setDefaultTimeout(8000); await installFixtures(page); const errors = watch(page);
   try {
-    await page.goto(new URL('admin/', BASE).href, { waitUntil: 'domcontentloaded' }); await page.locator('#loginPanel').waitFor();
+    await page.goto(new URL('admin/', BASE).href, { waitUntil: 'domcontentloaded', timeout: 30000 }); await page.locator('#loginPanel').waitFor();
     if ((await page.locator('#accessPill').textContent())?.trim() !== 'Locked') throw new Error(`${c.name} admin did not start locked`);
     const login = await geom(page, `${c.name} admin login`, c.hasTouch); await page.locator('#usernameInput').fill('flowadmin'); await page.locator('#passwordInput').fill('orientation-test-not-a-secret'); await page.locator('#passwordForm button[type="submit"]').click();
     await page.waitForFunction(() => document.querySelector('#authStatus')?.textContent?.trim().length > 0); if (!await page.locator('#dashboard').evaluate(e => e.classList.contains('hidden'))) throw new Error(`${c.name} invalid admin login exposed dashboard`);

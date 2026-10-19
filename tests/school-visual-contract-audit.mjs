@@ -28,12 +28,22 @@ function dashboard(selected){
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixtures(page){
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   await page.route('**/functions/v1/school-data**',route=>{const u=new URL(route.request().url()),action=u.searchParams.get('action')||'search';if(action==='dashboard')return json(route,dashboard((u.searchParams.get('date')||ymd(new Date())).replace(/-/g,'')));if(action==='media')return json(route,{media:{hero:'',logo:''},homepage:SCHOOL.homepage});if(action==='place')return json(route,{provider:'kakao',place:{id:'fixture',name:SCHOOL.name,url:'https://place.map.kakao.com/7240101',address:SCHOOL.address,roadAddress:SCHOOL.address,phone:SCHOOL.phone,x:'128.687',y:'35.875'}});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6','7','8']});if(action==='search')return json(route,{schools:[SCHOOL]});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
 }
 async function clickVisible(page,selector){const items=page.locator(selector);for(let i=0;i<await items.count();i++){const item=items.nth(i);if(await item.isVisible()){await item.click();return item}}throw new Error(`No visible target: ${selector}`)}
 const n=v=>Number.parseFloat(v)||0;
-function expected(c){return c.width<700?{section:12,control:8,pad:15,inset:10,status:12}:c.width<=1180?{section:16,control:8,pad:18,inset:18,status:8}:{section:18,control:10,pad:18,inset:null,status:10}}
+function expected(c){
+  const clamp=(lo,v,hi)=>Math.max(lo,Math.min(v,hi));
+  const w=c.width,h=c.height,short=w>h&&h<=520;
+  const section=short?clamp(10,6+h*.0115,13):clamp(12,8+w*.0078,23);
+  const control=clamp(8,5+w*.0036,12);
+  const pad=short?clamp(14,10+h*.0055,17):clamp(15,10+w*.0065,23);
+  const inset=clamp(10,5+w*.011,26);
+  return{section,control,pad,inset,status:w<700?12:control};
+}
 async function visualState(page,c,label){
   return page.evaluate(({width,label})=>{
     const root=document.documentElement,dashboard=document.querySelector('#dashboard'),cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
@@ -58,7 +68,7 @@ function verify(c,state){
   const e=expected(c);if(state.contract!=='v7')throw new Error(`${c.name}/${state.label}: visual contract missing ${JSON.stringify(state)}`);if(state.ambient!=='on')throw new Error(`${c.name}/${state.label}: ambient unexpectedly off`);
   for(const item of state.shapes)if(String(item.cornerShape).includes('squircle'))throw new Error(`${c.name}/${state.label}: squircle leaked at ${item.selector} ${JSON.stringify(item)}`);
   if(state.navShape){if(String(state.navShape.shape).includes('squircle')||String(state.navShape.lensShape).includes('squircle'))throw new Error(`${c.name}/${state.label}: nav squircle leaked ${JSON.stringify(state.navShape)}`);if(c.width<1181&&n(state.navShape.radius)<24)throw new Error(`${c.name}/${state.label}: compact nav lost pill curvature ${JSON.stringify(state.navShape)}`)}
-  if(n(state.tokens.section)!==e.section||n(state.tokens.control)!==e.control||n(state.tokens.pad)!==e.pad)throw new Error(`${c.name}/${state.label}: spacing tokens drifted expected=${JSON.stringify(e)} got=${JSON.stringify(state.tokens)}`);
+  if(!state.tokens.section.startsWith('clamp(')||!state.tokens.control.startsWith('clamp(')||!state.tokens.pad.startsWith('clamp('))throw new Error(`${c.name}/${state.label}: fluid spacing tokens missing ${JSON.stringify(state.tokens)}`);
   if(state.label==='today'){
     if(Math.abs(n(state.gaps.status)-e.status)>.25||Math.abs(n(state.gaps.today)-e.section)>.25||Math.abs(n(state.gaps.right)-e.section)>.25)throw new Error(`${c.name}: Today gaps inconsistent expected status=${e.status}px ${JSON.stringify(state.gaps)}`);
     if(Math.abs(n(state.padding.timetable)-e.pad)>.25||Math.abs(n(state.padding.meal)-e.pad)>.25)throw new Error(`${c.name}: Today card padding inconsistent ${JSON.stringify(state.padding)}`);

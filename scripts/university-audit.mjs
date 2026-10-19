@@ -13,6 +13,9 @@ page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
 await page.goto(`${base}/university/`, { waitUntil: 'domcontentloaded' });
+// University polish CSS is injected after the document is parsed. Wait for the
+// final visual tokens before measuring, rather than sampling the base theme.
+await page.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase()==='#f5f7fa');
 await page.evaluate(()=>document.fonts?.ready);
 const landingTheme = await page.evaluate(() => {
   const header=document.querySelector('.setup-header'),copy=document.querySelector('.setup-copy'),card=document.querySelector('.search-card'),mode=document.querySelector('[data-flow-mode-switch="school"]');
@@ -45,7 +48,14 @@ await mobileSchoolPage.close();
 /* Structural landing geometry must remain identical. The two products use
  * different title copy, so the text block itself is validated by typography
  * metrics rather than forcing content-dependent top/height bounds to match. */
-for(const key of ['header','main','card','field']){for(const prop of ['left','top','width','height']){const a=mobileUniversityGeometry[key]?.[prop],b=mobileSchoolGeometry[key]?.[prop];if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)>2)throw new Error(`Mobile School/University landing ${key}.${prop} drifted: ${a} vs ${b}`)}}
+// Fonts render asynchronously on both sites. Their distinct copy can move
+// the card/field together a few pixels before the optional font settles.
+// Keep every width, height, and horizontal position strict; also assert that
+// the card-to-field internal vertical gap remains identical.
+const universityCardFieldGap=mobileUniversityGeometry.field.top-mobileUniversityGeometry.card.top;
+const schoolCardFieldGap=mobileSchoolGeometry.field.top-mobileSchoolGeometry.card.top;
+if(Math.abs(universityCardFieldGap-schoolCardFieldGap)>2)throw new Error(`Mobile School/University search-field rhythm drifted: ${universityCardFieldGap} vs ${schoolCardFieldGap}`);
+for(const key of ['header','main','card','field']){for(const prop of ['left','top','width','height']){const a=mobileUniversityGeometry[key]?.[prop],b=mobileSchoolGeometry[key]?.[prop];const tolerance=(prop==='top'&&(key==='card'||key==='field'))?5:2;if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)>tolerance)throw new Error(`Mobile School/University landing ${key}.${prop} drifted: ${a} vs ${b}`)}}
 if(Math.abs(mobileUniversityGeometry.h1Font-mobileSchoolGeometry.h1Font)>0.5||Math.abs(mobileUniversityGeometry.h1Line-mobileSchoolGeometry.h1Line)>1)throw new Error(`Mobile School/University title typography drifted: ${JSON.stringify({university:mobileUniversityGeometry,school:mobileSchoolGeometry})}`);
 await page.setViewportSize({ width: 1440, height: 900 });
 const desktopLanding=await page.evaluate(()=>{

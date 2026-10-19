@@ -47,9 +47,14 @@ async function state(page,label){
 function verifyBase(c,s){
   assert(s.spacing==='v1',`${c.name}/${s.label}: spacing system missing`);
   assert(s.root.scroll<=s.root.client+2,`${c.name}/${s.label}: horizontal overflow ${JSON.stringify(s.root)}`);
-  const section=num(s.tokens.section),control=num(s.tokens.control),card=num(s.tokens.card),page=num(s.tokens.page),dense=Math.max(4,control-2);
-  assert(section>0&&control>0&&card>0&&page>0,`${c.name}/${s.label}: missing tokens ${JSON.stringify(s.tokens)}`);
-  assert(s.tokens.dense.length>0,`${c.name}/${s.label}: dense spacing token missing ${JSON.stringify(s.tokens)}`);
+  const clamp=(lo,v,hi)=>Math.max(lo,Math.min(v,hi));
+  const width=c.width,height=c.height,short=width>height&&height<=520;
+  const section=short?clamp(10,6+height*.0115,13):clamp(12,8+width*.0078,23);
+  const control=clamp(8,5+width*.0036,12);
+  const card=short?clamp(14,10+height*.0055,17):clamp(15,10+width*.0065,23);
+  const page=clamp(10,5+width*.011,26),dense=Math.max(4,control-2);
+  assert(s.tokens.section.startsWith('clamp(')&&s.tokens.control.startsWith('clamp(')&&s.tokens.card.startsWith('clamp(')&&s.tokens.page.startsWith('clamp('),`${c.name}/${s.label}: fluid token contract absent ${JSON.stringify(s.tokens)}`);
+  assert(s.tokens.dense.startsWith('max(')&&s.tokens.dense.includes('clamp('),`${c.name}/${s.label}: dense token is not derived from control gap`);
   return{section,control,card,page,dense};
 }
 function verifyToday(c,s){
@@ -73,6 +78,8 @@ function verifyToday(c,s){
       assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
     }
   }
+  if(c.name==='tablet-portrait')assert(x.boxes.right.left>x.boxes.tt.right,`${c.name}: portrait with room should retain parallel context`);
+  if(c.name==='mobile-landscape')assert(x.boxes.right.left>x.boxes.tt.right,`${c.name}: landscape must use parallel content rails`);
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift ${JSON.stringify(x.view)}`)}
   return t;
 }

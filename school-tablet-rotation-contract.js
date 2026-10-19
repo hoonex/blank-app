@@ -80,11 +80,7 @@ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboar
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid:has(>.info-tile:nth-child(13):last-child)>.info-tile:last-child{
   grid-column:auto/span 2!important;
 }
-@media (min-width:821px){
-  html body #landing .school-search-panel{
-    transform:translateY(-30px)!important;
-  }
-}
+/* Landing search follows the grid align-items:center; do not offset it against University. */
 html[data-flow-school-ui="v2"] body #switchDialog[open]{
   z-index:240!important;
 }
