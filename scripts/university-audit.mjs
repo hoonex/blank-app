@@ -13,6 +13,9 @@ page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg
 page.on('pageerror', (err) => pageErrors.push(String(err)));
 
 await page.goto(`${base}/university/`, { waitUntil: 'domcontentloaded' });
+// University polish CSS is injected after the document is parsed. Wait for the
+// final visual tokens before measuring, rather than sampling the base theme.
+await page.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase()==='#f5f7fa');
 await page.evaluate(()=>document.fonts?.ready);
 const landingTheme = await page.evaluate(() => {
   const header=document.querySelector('.setup-header'),copy=document.querySelector('.setup-copy'),card=document.querySelector('.search-card'),mode=document.querySelector('[data-flow-mode-switch="school"]');
