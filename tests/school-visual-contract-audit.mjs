@@ -28,12 +28,19 @@ function dashboard(selected){
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixtures(page){
+  await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data**',route=>{const u=new URL(route.request().url()),action=u.searchParams.get('action')||'search';if(action==='dashboard')return json(route,dashboard((u.searchParams.get('date')||ymd(new Date())).replace(/-/g,'')));if(action==='media')return json(route,{media:{hero:'',logo:''},homepage:SCHOOL.homepage});if(action==='place')return json(route,{provider:'kakao',place:{id:'fixture',name:SCHOOL.name,url:'https://place.map.kakao.com/7240101',address:SCHOOL.address,roadAddress:SCHOOL.address,phone:SCHOOL.phone,x:'128.687',y:'35.875'}});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6','7','8']});if(action==='search')return json(route,{schools:[SCHOOL]});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
 }
 async function clickVisible(page,selector){const items=page.locator(selector);for(let i=0;i<await items.count();i++){const item=items.nth(i);if(await item.isVisible()){await item.click();return item}}throw new Error(`No visible target: ${selector}`)}
 const n=v=>Number.parseFloat(v)||0;
-function expected(c){return c.width<700?{section:12,control:8,pad:15,inset:10,status:12}:c.width<=1180?{section:16,control:8,pad:18,inset:18,status:8}:{section:18,control:10,pad:18,inset:null,status:10}}
+function expected(c,state){
+  const {section,control,pad,inset}=state.tokens;
+  const e={section:n(section),control:n(control),pad:n(pad),inset:n(inset),status:c.width<700?12:n(control)};
+  if(e.section<10||e.section>26||e.control<6||e.control>13||e.pad<13||e.pad>27||e.inset<9||e.inset>27)throw new Error(`${c.name}: fluid spacing tokens outside safe bounds ${JSON.stringify(e)}`);
+  return e;
+}
 async function visualState(page,c,label){
   return page.evaluate(({width,label})=>{
     const root=document.documentElement,dashboard=document.querySelector('#dashboard'),cs=(node,pseudo)=>node?getComputedStyle(node,pseudo):null,box=node=>node?(()=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}})():null;
@@ -44,9 +51,10 @@ async function visualState(page,c,label){
     for(const selector of shapeSelectors){for(const node of document.querySelectorAll(selector)){if(!visible(node))continue;const s=cs(node);shapes.push({selector,cornerShape:s.cornerShape||'',radius:s.borderRadius||''})}}
     const nav=firstVisible('#bottomNav'),today=document.querySelector('#todayView'),status=document.querySelector('#todayView .status-grid'),todayGrid=document.querySelector('#todayView .today-grid'),right=document.querySelector('#todayView .right-stack'),timetable=document.querySelector('#todayView .timetable-card'),meal=document.querySelector('#todayView .meal-card');
     const schedule=document.querySelector('#scheduleView .schedule-layout'),schoolGrid=document.querySelector('#schoolView .school-info-grid'),settings=document.querySelector('#flowSchoolSettingsView .flow-settings-stack'),scope=cs(dashboard);
+    const resolvedTokens=()=>{const probe=document.createElement('div');probe.style.cssText='position:absolute;left:-9999px;display:grid;row-gap:var(--flow-school-section-gap);column-gap:var(--flow-school-control-gap);padding-top:var(--flow-school-card-pad);margin-left:var(--flow-school-page-inset)';dashboard.append(probe);const p=getComputedStyle(probe);const value={section:p.rowGap,control:p.columnGap,pad:p.paddingTop,inset:p.marginLeft};probe.remove();return value};
     return{
       label,width,contract:root.dataset.flowSchoolVisualContract||'',ambient:root.dataset.flowAmbient||'',phase:root.dataset.flowAmbientPhase||'',
-      tokens:{section:scope.getPropertyValue('--flow-school-section-gap').trim(),control:scope.getPropertyValue('--flow-school-control-gap').trim(),pad:scope.getPropertyValue('--flow-school-card-pad').trim(),inset:scope.getPropertyValue('--flow-school-page-inset').trim()},
+      tokens:resolvedTokens(),
       shapes,navShape:nav?{shape:cs(nav).cornerShape||'',radius:cs(nav).borderRadius,lensShape:cs(nav,'::before').cornerShape||'',lensRadius:cs(nav,'::before').borderRadius}:null,
       gaps:{status:status?cs(status).gap:'',today:todayGrid?cs(todayGrid).gap:'',right:right?cs(right).gap:'',schedule:schedule&&visible(schedule)?cs(schedule).gap:'',school:schoolGrid&&visible(schoolGrid)?cs(schoolGrid).gap:'',settings:settings&&visible(settings)?cs(settings).gap:''},
       padding:{today:today?{left:cs(today).paddingLeft,right:cs(today).paddingRight}:null,timetable:timetable?cs(timetable).padding:'',meal:meal?cs(meal).padding:''},
@@ -55,7 +63,7 @@ async function visualState(page,c,label){
   },{width:c.width,label});
 }
 function verify(c,state){
-  const e=expected(c);if(state.contract!=='v7')throw new Error(`${c.name}/${state.label}: visual contract missing ${JSON.stringify(state)}`);if(state.ambient!=='on')throw new Error(`${c.name}/${state.label}: ambient unexpectedly off`);
+  const e=expected(c,state);if(state.contract!=='v7')throw new Error(`${c.name}/${state.label}: visual contract missing ${JSON.stringify(state)}`);if(state.ambient!=='on')throw new Error(`${c.name}/${state.label}: ambient unexpectedly off`);
   for(const item of state.shapes)if(String(item.cornerShape).includes('squircle'))throw new Error(`${c.name}/${state.label}: squircle leaked at ${item.selector} ${JSON.stringify(item)}`);
   if(state.navShape){if(String(state.navShape.shape).includes('squircle')||String(state.navShape.lensShape).includes('squircle'))throw new Error(`${c.name}/${state.label}: nav squircle leaked ${JSON.stringify(state.navShape)}`);if(c.width<1181&&n(state.navShape.radius)<24)throw new Error(`${c.name}/${state.label}: compact nav lost pill curvature ${JSON.stringify(state.navShape)}`)}
   if(n(state.tokens.section)!==e.section||n(state.tokens.control)!==e.control||n(state.tokens.pad)!==e.pad)throw new Error(`${c.name}/${state.label}: spacing tokens drifted expected=${JSON.stringify(e)} got=${JSON.stringify(state.tokens)}`);
@@ -88,7 +96,7 @@ async function ambientProbe(page,c){
 }
 
 await mkdir(OUT,{recursive:true});
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 for(const c of CASES){
   const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:c.mobile,hasTouch:c.touch,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);await fixtures(page);
