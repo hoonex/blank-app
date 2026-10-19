@@ -8,7 +8,7 @@ const INDEX_HTML=await readFile(new URL('../index.html',import.meta.url),'utf8')
 const SCHOOL={officeCode:'D10',officeName:'대구광역시교육청',schoolCode:'7240101',name:'정동고등학교',kind:'고등학교',location:'대구광역시',highSchoolType:'일반고',type:'사립'};
 const CASES=[
   {name:'phone-portrait',width:390,height:844,mobile:true,today:1,right:1,calendar:1,info:2},
-  {name:'phone-landscape',width:844,height:390,mobile:true,today:1,right:2,calendar:1,info:2},
+  {name:'phone-landscape',width:844,height:390,mobile:true,today:1,right:2,calendar:2,info:2},
   {name:'tablet-portrait',width:768,height:1024,mobile:false,today:1,right:2,calendar:1,info:2},
   {name:'tablet-landscape',width:1024,height:768,mobile:false,today:1,right:2,calendar:2,info:3},
   {name:'short-wide',width:1024,height:580,mobile:false,today:1,right:2,calendar:2,info:3},
