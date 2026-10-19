@@ -28,6 +28,8 @@ function dashboard(selected){
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function fixtures(page){
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.abort());
   await page.route('**/functions/v1/school-data**',route=>{
     const url=new URL(route.request().url()),action=url.searchParams.get('action')||'';
     if(action==='dashboard')return json(route,dashboard((url.searchParams.get('date')||ymd()).replace(/-/g,'')));
