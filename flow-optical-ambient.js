@@ -15,39 +15,22 @@
       style=document.createElement('style');
       style.id=VISUAL_STYLE_ID;
       style.textContent=`
-/* One responsive spacing rhythm. */
+/* Fluid spacing is shared by every School surface regardless of device label.
+   Orientation changes composition; the available inline space controls density.
+   The clamped scale keeps a 390px phone touch-safe without wasting 1920px width. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-  --flow-school-page-inset:18px;
-  --flow-school-section-gap:16px;
-  --flow-school-control-gap:8px;
-  --flow-school-card-pad:18px;
-  --flow-school-card-radius:20px;
+  --flow-school-page-inset:clamp(10px,calc(5px + 1.1vw),26px);
+  --flow-school-section-gap:clamp(12px,calc(8px + .78vw),23px);
+  --flow-school-control-gap:clamp(8px,calc(5px + .36vw),12px);
+  --flow-school-card-pad:clamp(15px,calc(10px + .65vw),23px);
+  --flow-school-card-radius:clamp(18px,calc(15px + .32vw),21px);
   --flow-school-control-radius:12px;
 }
-@media(max-width:699px){
+/* Short landscape windows need a tighter vertical rhythm, not a phone label. */
+@media(orientation:landscape) and (max-height:520px){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-page-inset:10px;
-    --flow-school-section-gap:12px;
-    --flow-school-control-gap:8px;
-    --flow-school-card-pad:15px;
-    --flow-school-card-radius:18px;
-  }
-}
-@media(min-width:700px) and (max-width:1180px){
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-page-inset:18px;
-    --flow-school-section-gap:16px;
-    --flow-school-control-gap:8px;
-    --flow-school-card-pad:18px;
-    --flow-school-card-radius:20px;
-  }
-}
-@media(min-width:1181px){
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden){
-    --flow-school-section-gap:18px;
-    --flow-school-control-gap:10px;
-    --flow-school-card-pad:18px;
-    --flow-school-card-radius:20px;
+    --flow-school-section-gap:clamp(10px,calc(6px + 1.15vh),13px);
+    --flow-school-card-pad:clamp(14px,calc(10px + .55vh),17px);
   }
 }
 
