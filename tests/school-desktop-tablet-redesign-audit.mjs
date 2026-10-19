@@ -18,6 +18,8 @@ const ymd=(d=new Date())=>{
 const json=(route,body,status=200)=>route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)});
 function dashboard(){const selected=ymd();return{school:SCHOOL,selected,from:selected,to:selected,timetable:Array.from({length:7},(_,i)=>({date:selected,period:i+1,subject:['자율·자치활동','선택과목','음악 감상과 비평','사진의 이해','선택과목','선택과목','영어Ⅱ'][i],grade:'2',className:'6'})),meals:[{date:selected,type:'중식',dishes:['찰현미밥','한우설렁탕','골뱅이야채무침','서문시장삼각만두','깍두기'],calories:'873.1 Kcal',nutrition:'',origin:''}],events:[{date:selected,name:'2학기 전국 영어듣기능력평가',content:'',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:1}}}
 async function fixture(page){
+  await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data**',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard());if(action==='media')return json(route,{media:{},homepage:SCHOOL.homepage});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6']});if(action==='place')return json(route,{provider:'kakao',place:null});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.route('**/functions/v1/flow-quest-event**',route=>route.fulfill({status:204,body:''}));
@@ -32,6 +34,12 @@ async function state(page){return page.evaluate(()=>{
 })}
 function assertTwoColumn(name,s){
   if(!s.timetable||!s.meal||s.meal.left<=s.timetable.left+100||Math.abs(s.meal.top-s.timetable.top)>180)throw new Error(`${name}: non-mobile viewport did not use the shared desktop content proportion ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
+}
+function assertOrientationComposition(c,s){
+  if(!s.timetable||!s.meal)throw new Error(`${c.name}: missing Today cards`);
+  if(c.width>=1260&&c.width>=c.height)return assertTwoColumn(c.name,s);
+  const stacked=s.meal.top>=s.timetable.bottom+8&&Math.abs(s.meal.left-s.timetable.left)<=3;
+  if(!stacked)throw new Error(`${c.name}: compact or portrait Today should flow vertically ${JSON.stringify({timetable:s.timetable,meal:s.meal})}`);
 }
 function assertWideTodayDensity(c,s){
   if(c.width<1181||c.height<681)return;
@@ -53,7 +61,7 @@ function assertState(c,s){
     if(!s.top.visible||!s.dock.visible||s.dock.days!==5)throw new Error(`${c.name}: tablet app bar/date rail incomplete ${JSON.stringify({top:s.top,dock:s.dock})}`);
     if(!s.nav.visible||s.nav.position!=='fixed'||s.nav.radius<24)throw new Error(`${c.name}: tablet floating pill nav missing ${JSON.stringify(s.nav)}`);
     if(s.hero.visible)throw new Error(`${c.name}: legacy Today hero visible on tablet ${JSON.stringify(s.hero)}`);
-    assertTwoColumn(c.name,s);
+    assertOrientationComposition(c,s);
   }else{
     if(!s.sidebar.visible||!s.sideNav.visible||!s.main)throw new Error(`${c.name}: desktop workspace rail missing ${JSON.stringify({sidebar:s.sidebar,sideNav:s.sideNav,main:s.main})}`);
     if((s.sidebar.box?.width||0)<200||(s.sidebar.box?.width||999)>235||(s.sidebar.box?.height||0)<c.height-64)throw new Error(`${c.name}: persistent desktop rail geometry regressed ${JSON.stringify(s.sidebar)}`);
@@ -61,7 +69,7 @@ function assertState(c,s){
     if(Math.abs((s.sidebar.box?.top||0)-(s.main?.top||0))>4||s.main.left<(s.sidebar.box?.right||0)+12)throw new Error(`${c.name}: main workspace no longer starts beside the rail ${JSON.stringify({sidebar:s.sidebar.box,main:s.main})}`);
     if(s.top.visible||s.nav.visible||s.toggleVisible)throw new Error(`${c.name}: duplicate mobile/Today-Week chrome leaked into desktop ${JSON.stringify({top:s.top,nav:s.nav,toggleVisible:s.toggleVisible})}`);
     if(!s.hero.visible||s.hero.imageVisible||s.hero.shadeVisible||(s.hero.box?.height||999)>110)throw new Error(`${c.name}: desktop neutral Today header contract failed ${JSON.stringify(s.hero)}`);
-    assertTwoColumn(c.name,s);
+    assertOrientationComposition(c,s);
     const used=(s.meal?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
     if(used<Math.min(1050,available*.84))throw new Error(`${c.name}: desktop Today workspace under-uses the main column ${JSON.stringify({used,available,shell:s.shell,main:s.main,timetable:s.timetable,meal:s.meal})}`);
   }
@@ -69,7 +77,7 @@ function assertState(c,s){
 }
 
 await mkdir(OUT,{recursive:true});
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 for(const c of CASES){
   const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:false,hasTouch:c.touch,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(15000);
