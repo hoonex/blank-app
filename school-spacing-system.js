@@ -171,7 +171,7 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) 
 html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout>.calendar-card{
   margin-bottom:0!important;
 }
-@media (orientation:landscape) and (min-width:980px){
+@media (orientation:landscape) and (min-width:800px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout{
     grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr)!important;
   }
@@ -191,16 +191,28 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) 
 html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile-empty{
   grid-column:1/-1!important;
 }
+/* Fill lone last tiles in portrait/compact pairs instead of stranding
+   a half-width card on the left edge. In wide grids, center the remainder
+   without manually positioning every tile in a 12-column matrix. */
+@media (orientation:portrait) and (max-width:1099px),
+       (orientation:landscape) and (max-width:899px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(odd):not(.info-tile-empty){
+    grid-column:1/-1!important;
+  }
+}
 @media (orientation:landscape) and (min-width:900px),
        (orientation:portrait) and (min-width:1100px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid{
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
   }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(3n+1):not(.info-tile-empty){grid-column:2!important}
 }
 @media (orientation:landscape) and (min-width:1280px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid{
     grid-template-columns:repeat(4,minmax(0,1fr))!important;
   }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(3n+1):not(.info-tile-empty){grid-column:auto!important}
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(4n+1):not(.info-tile-empty){grid-column:2 / span 2!important}
 }
 
 /* Week retains the period-by-day matrix. Give each subject a readable minimum
