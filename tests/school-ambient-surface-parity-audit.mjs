@@ -148,7 +148,7 @@ async function capture(browser,entry,ambient){
       localStorage.setItem('flow-ambient-v1',ambient);
       localStorage.setItem('flow-motion-v1','off');
     },{school:SCHOOL,ambient});
-    await page.goto(BASE,{waitUntil:'domcontentloaded'});
+    await page.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
     await page.locator('#dashboard:not(.hidden)').waitFor();
     await page.locator('#todayView .period-button').first().waitFor();
     await page.waitForFunction(expected=>document.documentElement.dataset.flowExperience==='ready'&&document.documentElement.dataset.flowAmbient===expected,ambient);
