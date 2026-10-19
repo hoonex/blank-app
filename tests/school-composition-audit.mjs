@@ -27,6 +27,8 @@ const cases=[
 
 function response(route,body){return route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
 async function installFixture(page){
+  await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action')||'';
     if(action==='dashboard')return response(route,dashboard);
@@ -87,7 +89,7 @@ async function inspectInfo(page){
   });
 }
 
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={};
 for(const testCase of cases){
   const context=await browser.newContext({viewport:testCase.viewport,isMobile:testCase.isMobile,hasTouch:testCase.hasTouch,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
@@ -137,11 +139,11 @@ for(const testCase of cases){
   if(testCase.viewport.width<=520){
     if(info.last.width<info.grid.width*.94)throw new Error(`${testCase.name}/school: final tile should own the single-column row ${JSON.stringify(info)}`);
   }else if(testCase.viewport.width>=1181&&!testCase.hasTouch){
-    const lastFive=info.tiles.slice(-5);
-    const rowSpread=Math.max(...lastFive.map(tile=>tile.top))-Math.min(...lastFive.map(tile=>tile.top));
-    const rowCoverage=(Math.max(...lastFive.map(tile=>tile.right))-Math.min(...lastFive.map(tile=>tile.left)))/info.grid.width;
-    if(rowSpread>2||rowCoverage<.98||lastFive.at(-1)?.label!=='계열'){
-      throw new Error(`${testCase.name}/school: canonical desktop profile row is not balanced ${JSON.stringify({rowSpread,rowCoverage,lastFive,info})}`);
+    // Automatic 4-column grid centers a lone remainder across two columns.
+    // Old 12-column test demanded five tiles on one row; that would revive the
+    // manual placement system this redesign is intentionally removing.
+    if(centerDelta>Math.max(6,info.grid.width*.01)||info.last.width<info.grid.width*.35||info.tiles.at(-1)?.label!=='계열'){
+      throw new Error(`${testCase.name}/school: final desktop profile tile is visually stranded ${JSON.stringify({centerDelta,info})}`);
     }
   }else if(centerDelta>4){
     throw new Error(`${testCase.name}/school: incomplete final row is visually stranded ${JSON.stringify({centerDelta,info})}`);

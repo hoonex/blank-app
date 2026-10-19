@@ -24,7 +24,7 @@ function dashboard(selected){
   return{school:SCHOOL,selected,from:ymd(monday),to:add(ymd(monday),4),timetable,meals:[{date:selected,type:'중식',dishes:['현미밥','닭갈비(5.6.15.)','계란찜(1.)','배추김치(9.)'],calories:'742 Kcal'}],events:[{date:add(selected,2),name:'학급 행사',content:'학급별 행사',grade2:'Y'},{date:add(selected,7),name:'진로 체험',content:'진로 체험 활동',grade2:'Y'}],scheduleMeta:{mode:'fixture',count:2}};
 }
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-async function fixtures(page){
+async function fixtures(page){await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data**',route=>{const u=new URL(route.request().url()),action=u.searchParams.get('action')||'search';if(action==='dashboard')return json(route,dashboard((u.searchParams.get('date')||ymd(new Date())).replace(/-/g,'')));if(action==='media')return json(route,{media:{hero:'',logo:''},homepage:SCHOOL.homepage});if(action==='place')return json(route,{provider:'kakao',place:{id:'fixture',name:SCHOOL.name,url:'https://place.map.kakao.com/7240101',address:SCHOOL.address,roadAddress:SCHOOL.address,phone:SCHOOL.phone,x:'128.687',y:'35.875'}});if(action==='classes')return json(route,{classes:['1','2','3','4','5','6','7','8']});if(action==='search')return json(route,{schools:[SCHOOL]});return json(route,{})});
   await page.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
   await page.route('https://t1.kakaocdn.net/kas/static/ba.min.js',route=>route.fulfill({status:200,contentType:'application/javascript',body:''}));
@@ -41,7 +41,12 @@ async function state(page,label){
     const school=q('#schoolView'),profile=q('#schoolView .profile-hero'),info=q('#schoolView .school-info-grid'),actions=q('#schoolView .school-actions');
     const settings=q('#flowSchoolSettingsView'),stack=q('#flowSchoolSettingsView .flow-settings-stack'),settingsCard=q('#flowSchoolSettingsView .flow-settings-card');
     const props=n=>{const s=cs(n);return n&&s?{display:s.display,gap:s.gap,rowGap:s.rowGap,columnGap:s.columnGap,marginTop:s.marginTop,marginBottom:s.marginBottom,paddingLeft:s.paddingLeft,paddingRight:s.paddingRight,padding:s.padding}:null};
-    return{label,spacing:document.documentElement.dataset.flowSchoolSpacingSystem||'',tokens:{section:d.getPropertyValue('--flow-school-section-gap').trim(),control:d.getPropertyValue('--flow-school-control-gap').trim(),card:d.getPropertyValue('--flow-school-card-pad').trim(),page:d.getPropertyValue('--flow-school-page-inset').trim(),dense:d.getPropertyValue('--flow-school-dense-gap').trim()},root:{client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth},today:{view:props(today),status:props(status),grid:props(todayGrid),right:props(right),tt:props(tt),meal:props(meal),boxes:{status:box(status),grid:box(todayGrid),tt:box(tt),right:box(right),meal:box(meal),up:box(up)}},schedule:{view:props(schedule),layout:props(layout),calendar:props(calendar),calendarGrid:props(calendarGrid),boxes:{calendar:box(calendar),event:box(eventCard)}},school:{view:props(school),info:props(info),actions:props(actions),boxes:{profile:box(profile),info:box(info),actions:box(actions)}},settings:{view:props(settings),stack:props(stack),card:props(settingsCard)}};
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;display:grid;row-gap:var(--flow-school-section-gap);column-gap:var(--flow-school-control-gap);padding-top:var(--flow-school-card-pad);padding-right:var(--flow-school-dense-gap);margin-left:var(--flow-school-page-inset)';
+    dash.append(probe);const ps=getComputedStyle(probe);
+    const tokens={section:ps.rowGap,control:ps.columnGap,card:ps.paddingTop,page:ps.marginLeft,dense:ps.paddingRight};
+    probe.remove();
+    return{label,spacing:document.documentElement.dataset.flowSchoolSpacingSystem||'',tokens,root:{client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth},today:{view:props(today),status:props(status),grid:props(todayGrid),right:props(right),tt:props(tt),meal:props(meal),boxes:{status:box(status),grid:box(todayGrid),tt:box(tt),right:box(right),meal:box(meal),up:box(up)}},schedule:{view:props(schedule),layout:props(layout),calendar:props(calendar),calendarGrid:props(calendarGrid),boxes:{calendar:box(calendar),event:box(eventCard)}},school:{view:props(school),info:props(info),actions:props(actions),boxes:{profile:box(profile),info:box(info),actions:box(actions)}},settings:{view:props(settings),stack:props(stack),card:props(settingsCard)}};
   },label);
 }
 function verifyBase(c,s){
@@ -53,27 +58,29 @@ function verifyBase(c,s){
   return{section,control,card,page,dense};
 }
 function verifyToday(c,s){
-  const t=verifyBase(c,s),x=s.today,statusGap=c.width<700?12:t.control;
+  const t=verifyBase(c,s),x=s.today;
+  const portrait=c.width<c.height,wideLandscape=!portrait&&c.width>=1260;
+  const utilityTwo=(!portrait&&c.width>=680&&c.width<1260)||(portrait&&c.width>=690);
+  const statusGap=c.width<700?12:t.control;
   assert(close(num(x.status.gap),statusGap),`${c.name}: status gap ${x.status.gap} != ${statusGap}`);
-  assert(close(num(x.grid.gap),t.section),`${c.name}: today grid gap ${x.grid.gap} != ${t.section}`);
-  assert(close(num(x.right.gap),t.section),`${c.name}: right stack gap ${x.right.gap} != ${t.section}`);
-  assert(close(num(x.tt.padding),t.card)&&close(num(x.meal.padding),t.card),`${c.name}: Today card padding drift ${JSON.stringify({tt:x.tt.padding,meal:x.meal.padding,token:t.card})}`);
-  assert(close(num(x.status.marginBottom),t.section),`${c.name}: status-to-content margin ${x.status.marginBottom} != ${t.section}`);
-  if(c.width<=820){
-    assert(x.grid.display==='grid',`${c.name}: Today stack is not grid ${JSON.stringify({grid:x.grid.display,right:x.right.display})}`);
-    assert(close(x.boxes.grid.top-x.boxes.status.bottom,t.section,1),`${c.name}: rendered status→Today gap mismatch ${JSON.stringify({actual:x.boxes.grid.top-x.boxes.status.bottom,token:t.section})}`);
-    if(c.width<=520){
-      assert(x.right.display==='flex',`${c.name}: phone utility stack must stay flex ${JSON.stringify(x.right)}`);
-      assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);
-      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
-    }else{
-      assert(x.right.display==='grid',`${c.name}: non-phone utility rail must stay grid ${JSON.stringify(x.right)}`);
-      assert(close(x.boxes.right.left-x.boxes.tt.right,t.section,1),`${c.name}: rendered timetable→utility horizontal gap mismatch ${JSON.stringify({actual:x.boxes.right.left-x.boxes.tt.right,token:t.section})}`);
-      assert(close(x.boxes.right.top,x.boxes.tt.top,1),`${c.name}: shared desktop proportion lost top alignment ${JSON.stringify({timetableTop:x.boxes.tt.top,rightTop:x.boxes.right.top})}`);
-      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
-    }
+  assert(close(num(x.grid.gap),t.section),`${c.name}: Today grid gap ${x.grid.gap} != ${t.section}`);
+  assert(close(num(x.right.gap),t.section),`${c.name}: Today utility gap ${x.right.gap} != ${t.section}`);
+  assert(close(num(x.tt.padding),t.card)&&close(num(x.meal.padding),t.card),`${c.name}: Today card padding differs from fluid token`);
+  assert(close(num(x.status.marginBottom),t.section),`${c.name}: status-to-content gap differs from fluid token`);
+  assert(x.grid.display==='grid'&&x.right.display==='grid',`${c.name}: Today composition is not grid`);
+  assert(close(x.boxes.grid.top-x.boxes.status.bottom,t.section,1.25),`${c.name}: status to Today geometry mismatch`);
+  if(wideLandscape){
+    assert(close(x.boxes.right.left-x.boxes.tt.right,t.section,1.5),`${c.name}: wide Today side-by-side gap mismatch`);
+    assert(close(x.boxes.right.top,x.boxes.tt.top,1.5),`${c.name}: wide Today cards not aligned`);
+  }else{
+    assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1.5),`${c.name}: portrait/compact timetable to utilities gap mismatch`);
   }
-  if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift ${JSON.stringify(x.view)}`)}
+  if(utilityTwo&&!wideLandscape){
+    assert(close(x.boxes.up.left-x.boxes.meal.right,t.section,1.5),`${c.name}: utility card horizontal gap mismatch`);
+  }else{
+    assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1.5),`${c.name}: utility card vertical gap mismatch`);
+  }
+  if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift`)}
   return t;
 }
 function verifySchedule(c,s,t,todayLeft){
@@ -100,10 +107,10 @@ function verifySchool(c,s,t,todayLeft){
 function verifySettings(c,s,t){verifyBase(c,s);assert(close(num(s.settings.stack.gap),t.section),`${c.name}: settings stack gap ${s.settings.stack.gap} != ${t.section}`);if(s.settings.card)assert(close(num(s.settings.card.padding),t.card),`${c.name}: settings card padding ${s.settings.card.padding} != ${t.card}`)}
 
 await mkdir(OUT,{recursive:true});
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 for(const c of CASES){
-  const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:c.mobile,hasTouch:c.touch,deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);await fixtures(page);const row={name:c.name,viewport:{width:c.width,height:c.height},states:{}};
+  const context=await browser.newContext({viewport:{width:c.width,height:c.height},isMobile:c.mobile,hasTouch:c.touch,serviceWorkers:'block',deviceScaleFactor:1,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});const page=await context.newPage();page.setDefaultTimeout(12000);await fixtures(page);const row={name:c.name,viewport:{width:c.width,height:c.height},states:{}};
   try{
     await page.addInitScript(school=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-school-transit-lab-v1','off')},SCHOOL);
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSpacingSystem==='v1'&&document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolContentRatio==='ready');await page.waitForTimeout(100);

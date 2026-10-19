@@ -25,6 +25,8 @@ on:
       - 'tests/school-visual-contract-audit.mjs'
       - 'tests/school-bottom-nav-dark-audit.mjs'
       - 'tests/school-spacing-system-audit.mjs'
+      - 'tests/school-orientation-fluid-audit.mjs'
+      - 'school-spacing-system.js'
       - 'tests/school-settings-responsive-sweep-audit.mjs'
       - 'tests/school-settings-shell-parity-audit.mjs'
       - 'tests/school-settings-short-desktop-diagnostic.mjs'
@@ -60,6 +62,7 @@ jobs:
           node --check tests/school-visual-contract-audit.mjs
           node --check tests/school-bottom-nav-dark-audit.mjs
           node --check tests/school-spacing-system-audit.mjs
+          node --check tests/school-orientation-fluid-audit.mjs
           node --check tests/school-settings-responsive-sweep-audit.mjs
           node --check tests/school-settings-shell-parity-audit.mjs
           node --check tests/school-settings-short-desktop-diagnostic.mjs
@@ -109,6 +112,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-spacing-system-audit
         run: node tests/school-spacing-system-audit.mjs
+      - name: Verify orientation-first fluid layout at eight aspect ratios
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+          FLOW_TEST_OUT: school-orientation-fluid-audit
+        run: node tests/school-orientation-fluid-audit.mjs
       - name: Verify bottom-nav proportions and dark materials
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
@@ -140,6 +148,7 @@ jobs:
             school-toolbar-grouping-audit
             school-visual-contract-audit
             school-spacing-system-audit
+            school-orientation-fluid-audit
             school-bottom-nav-dark-audit
             school-settings-shell-parity-audit
             school-settings-responsive-sweep-audit

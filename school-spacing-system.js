@@ -112,6 +112,124 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoo
   margin:0!important;
   padding:var(--flow-school-card-pad)!important;
 }
+
+/* Layout primitives: let orientation choose the reading flow, and usable
+   width determine whether adjacent columns have enough room to breathe.
+   Semantic week tables remain row/column grids, not arbitrary cards. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:var(--flow-school-section-gap)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:var(--flow-school-section-gap)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .status-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-control-gap)!important;
+}
+@media (orientation:portrait) and (min-width:690px),
+       (orientation:landscape) and (min-width:680px) and (max-width:1259px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media (orientation:landscape) and (min-width:1260px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
+    grid-template-columns:minmax(0,1.42fr) minmax(0,.78fr)!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid>.timetable-card,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid>.right-stack{
+    grid-column:auto!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  /* The dashboard currently exposes two summary cards, not four.
+     Four forced tracks left half of the wide header unusable. */
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .status-grid{
+    width:100%!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .status-grid>.clock-card{
+    grid-column:auto!important;
+  }
+}
+
+/* Calendar plus day detail are peers only when two meaningful columns fit.
+   A narrow landscape viewport must not compress either column. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:var(--flow-school-section-gap)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout>.calendar-card{
+  margin-bottom:0!important;
+}
+@media (orientation:landscape) and (min-width:800px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout{
+    grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr)!important;
+  }
+}
+
+/* Information tiles have equal automatic columns instead of 12 hand-placed
+   lanes and nth-child centering rules from the legacy desktop style. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-section-gap)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile{
+  grid-column:auto!important;
+  min-width:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile-empty{
+  grid-column:1/-1!important;
+}
+/* Fill lone last tiles in portrait/compact pairs instead of stranding
+   a half-width card on the left edge. In wide grids, center the remainder
+   without manually positioning every tile in a 12-column matrix. */
+@media (orientation:portrait) and (max-width:1099px),
+       (orientation:landscape) and (max-width:899px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(odd):not(.info-tile-empty){
+    grid-column:1/-1!important;
+  }
+}
+@media (orientation:landscape) and (min-width:900px),
+       (orientation:portrait) and (min-width:1100px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(3n+1):not(.info-tile-empty){grid-column:2!important}
+}
+@media (orientation:landscape) and (min-width:1280px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(3n+1):not(.info-tile-empty){grid-column:auto!important}
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #schoolView#schoolView .school-info-grid>.info-tile:last-child:nth-child(4n+1):not(.info-tile-empty){grid-column:2 / span 2!important}
+}
+
+/* Week retains the period-by-day matrix. Give each subject a readable minimum
+   and scroll inside the table instead of squeezing five day columns to 8px text. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #weekView#weekView .week-table-wrap{
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto!important;
+  overscroll-behavior-inline:contain;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #weekView#weekView .week-table{
+  width:100%;
+  min-width:740px;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #weekView#weekView .week-cell{
+  font-size:clamp(.72rem,calc(.63rem + .15vi),.84rem)!important;
+}
 `;
   document.head.append(style);
 }

@@ -7,9 +7,11 @@ const now=new Date(),today=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(no
 const dashboard={school:profile.school,selected:today,from:today,to:today,timetable:Array.from({length:7},(_,i)=>({date:today,period:i+1,subject:`과목 ${i+1}`})),meals:[{date:today,type:'중식',dishes:['현미밥','국'],calories:'700 Kcal'}],events:[{date:today,name:'평가',content:'일정'}],scheduleMeta:{mode:'fixture',count:1}};
 const json=(route,body)=>route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)});
 
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const context=await browser.newContext({viewport:{width:768,height:1024},hasTouch:true,locale:'ko-KR',timezoneId:'Asia/Seoul'});
 const page=await context.newPage();
+await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+await page.route('https://fonts.gstatic.com/**',r=>r.abort());
 await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
 await page.route('**/functions/v1/school-logo*',route=>route.fulfill({status:204,body:''}));
 await page.addInitScript(profile=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');localStorage.setItem('flow-school-transit-lab-v1','off')},profile);
@@ -42,7 +44,8 @@ const report=await page.evaluate(()=>{
   return{layout:document.documentElement.dataset.flowSchoolLayout,ratioReady:document.documentElement.dataset.flowSchoolContentRatio||'',contract:Boolean(document.getElementById('flow-school-layout-contract-style')),computed,matched};
 });
 console.log(JSON.stringify(report,null,2));
-const ratio=report.computed.tt.box.width/report.computed.right.box.width;
-const target=1.42/.72;
+const actual=report.computed;
+const verticalGap=actual.right.box.top-actual.tt.box.bottom;
+const sameRail=Math.abs(actual.right.box.left-actual.tt.box.left)<=3&&Math.abs(actual.right.box.width-actual.tt.box.width)<=3;
 await browser.close();
-if(Math.abs(report.computed.tt.box.top-report.computed.right.box.top)>3||Math.abs(ratio-target)>.12)throw new Error(`tablet ratio cascade unresolved: actual=${ratio.toFixed(3)} target=${target.toFixed(3)}`);
+if(!sameRail||verticalGap<9||verticalGap>24)throw new Error(`portrait flow is not a shared vertical rail: ${JSON.stringify({sameRail,verticalGap,computed:actual})}`);

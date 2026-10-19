@@ -23,6 +23,8 @@ const close=(a,b,t=3)=>Math.abs(a-b)<=t;
 const assert=(value,message)=>{if(!value)throw new Error(message)};
 
 async function wire(page){
+  await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));
+  await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data*',route=>{
     const action=new URL(route.request().url()).searchParams.get('action')||'';
     if(action==='dashboard')return json(route,dashboard);
@@ -67,7 +69,7 @@ async function headerState(page,view){
   },view);
 }
 
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={generatedAt:new Date().toISOString(),cases:[],failures:[]};
 for(const c of cases){
   const context=await browser.newContext({viewport:{width:c.width,height:c.height},deviceScaleFactor:1,isMobile:false,hasTouch:false,locale:'ko-KR',timezoneId:'Asia/Seoul',colorScheme:'light'});
@@ -90,7 +92,7 @@ for(const c of cases){
     assert(s.hero&&s.hero.height>=60&&s.hero.height<=92&&!s.heroNameVisible,`${c.name}: Today command bar still behaves like duplicate school hero ${JSON.stringify({hero:s.hero,heroNameVisible:s.heroNameVisible})}`);
     assert(s.status.length===2&&close(s.status[0].top,s.status[1].top)&&Math.abs(s.status[0].width-s.status[1].width)<=8,`${c.name}: two desktop status surfaces do not use the row ${JSON.stringify(s.status)}`);
     assert(s.status[1].right>=s.main.right-12,`${c.name}: status row leaves desktop dead space ${JSON.stringify({status:s.status,main:s.main})}`);
-    const ratio=s.today.tt.width/s.today.right.width,target=1.42/.72;
+    const ratio=s.today.tt.width/s.today.right.width,target=1.42/.78;
     assert(close(s.today.tt.top,s.today.right.top)&&s.today.right.left>=s.today.tt.right+10&&Math.abs(ratio-target)<=.12,`${c.name}: Today workspace ratio/columns failed ${JSON.stringify({ratio,target,today:s.today})}`);
     assert(close(s.today.meal.left,s.today.up.left)&&s.today.up.top>=s.today.meal.bottom+10,`${c.name}: utility rail is not vertically stacked ${JSON.stringify(s.today)}`);
     assert(s.scroll.width<=s.scroll.client+2,`${c.name}: horizontal overflow ${JSON.stringify(s.scroll)}`);
