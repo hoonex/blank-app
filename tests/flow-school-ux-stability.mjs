@@ -76,7 +76,7 @@ try {
   for(const c of CASES){
     const context = await browser.newContext({
       viewport:{width:c.width,height:c.height},isMobile:c.mobile,
-      hasTouch:c.mobile,locale:'ko-KR',timezoneId:'Asia/Seoul'
+      hasTouch:c.mobile,serviceWorkers:'block',locale:'ko-KR',timezoneId:'Asia/Seoul'
     });
     await context.addInitScript(p=>{localStorage.setItem('flow-school-profile-v3',JSON.stringify(p))},PROFILE);
     const page=await context.newPage();
