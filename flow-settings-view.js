@@ -101,7 +101,20 @@ function restartSettingsMotion(panel){
   panel.classList.add('flow-settings-enter');
   panel.addEventListener('animationend',()=>panel.classList.remove('flow-settings-enter'),{once:true});
 }
-function showSettings(kind){
+const SCHOOL_SETTINGS_PARAM='settings';
+function schoolSettingsUrlActive(){return new URL(location.href).searchParams.get(SCHOOL_SETTINGS_PARAM)==='1'}
+function setSchoolSettingsRoute(active,{push=false}={}){
+  const url=new URL(location.href);
+  if(active)url.searchParams.set(SCHOOL_SETTINGS_PARAM,'1');
+  else url.searchParams.delete(SCHOOL_SETTINGS_PARAM);
+  const target=url.pathname+url.search+url.hash;
+  if(target!==location.pathname+location.search+location.hash){
+    if(push)history.pushState({...history.state,flowSettings:active},'',target);
+    else history.replaceState(history.state,'',target);
+  }
+}
+function showSettings(kind,{updateHistory=true}={}){
+  if(kind==='school'&&updateHistory)setSchoolSettingsRoute(true,{push:true});
   dismissToast();const panel=makePanel(kind);if(!panel)return;const group=kind==='school'?'[data-view-panel]':'[data-panel]';$$(group).forEach(node=>node.classList.toggle('hidden',node!==panel));restartSettingsMotion(panel);$$('[data-view]').forEach(node=>node.classList.remove('active'));settingsTriggers(kind).forEach(node=>node.classList.add('active'));syncPanel(kind,panel);
   const old=kind==='school'?$('#settingsDialog'):$('#flowUniversitySettingsDialog');if(old?.open)old.close();
 }
@@ -110,9 +123,9 @@ function isUniversity(){return Boolean($('#appView')&&$('.mobile-header'))}
 function init(){
   ensureStyles();const kind=isSchool()?'school':isUniversity()?'university':'';if(!kind)return;makePanel(kind);syncPanels();
   document.addEventListener('click',event=>{const trigger=event.target.closest(kind==='school'?'#mobileSettingsBtn,#settingsBtn':'.flow-mobile-settings,.flow-university-settings-button');if(!trigger)return;event.preventDefault();event.stopImmediatePropagation();showSettings(kind)},true);
-  document.addEventListener('click',event=>{const view=event.target.closest('[data-view]');if(view&&!view.matches('#mobileSettingsBtn,.flow-mobile-settings')){dismissToast();settingsTriggers(kind).forEach(node=>node.classList.remove('active'))}});
-  window.addEventListener('popstate',()=>{dismissToast();settingsTriggers(kind).forEach(node=>node.classList.remove('active'))},{passive:true});
+  document.addEventListener('click',event=>{const view=event.target.closest('[data-view]');if(view&&!view.matches('#mobileSettingsBtn,.flow-mobile-settings')){if(kind==='school'&&schoolSettingsUrlActive())setSchoolSettingsRoute(false);dismissToast();settingsTriggers(kind).forEach(node=>node.classList.remove('active'))}});
+  window.addEventListener('popstate',()=>{dismissToast();if(kind==='school'&&schoolSettingsUrlActive())showSettings(kind,{updateHistory:false});else settingsTriggers(kind).forEach(node=>node.classList.remove('active'))},{passive:true});
   window.addEventListener('flow:glass-mode-changed',()=>syncPanels({fill:false}),{passive:true});
-  setTimeout(()=>{makePanel(kind);syncPanels()},0)
+  setTimeout(()=>{makePanel(kind);syncPanels();if(kind==='school'&&schoolSettingsUrlActive()&&$('#dashboard:not(.hidden)'))showSettings(kind,{updateHistory:false})},0)
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
