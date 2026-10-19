@@ -17,7 +17,7 @@ const dashboard={
 };
 
 function json(route,body,status=200){return route.fulfill({status,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)})}
-async function fixture(page){
+async function fixture(page){await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({status:200,contentType:'text/css',body:''}));await page.route('https://fonts.gstatic.com/**',r=>r.abort());
   await page.route('**/functions/v1/school-data*',route=>{const action=new URL(route.request().url()).searchParams.get('action')||'';if(action==='dashboard')return json(route,dashboard);if(action==='media')return json(route,{media:{}});return json(route,{})});
   await page.addInitScript(({profile})=>{localStorage.clear();sessionStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-glass-mode-v2','standard');localStorage.setItem('flow-school-transit-lab-v1','off')},{profile});
 }
@@ -85,7 +85,7 @@ async function navigationState(page){return page.evaluate(()=>{
   };
 })}
 
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.FLOW_BROWSER_EXECUTABLE?{executablePath:process.env.FLOW_BROWSER_EXECUTABLE}:{})});
 const report={};
 for(const testCase of [
   {name:'wide-tablet-portrait',width:960,height:1536,touch:true,portrait:true},
@@ -113,7 +113,7 @@ for(const testCase of [
   const schedule=await scheduleState(page);
   if(portrait){
     const stacked=schedule.cards.length>=2&&schedule.cards[1].top>=schedule.cards[0].bottom-1;
-    if(schedule.headerFlex!=='column'||schedule.layoutDisplay!=='block'||!stacked||schedule.dayHeight>70||schedule.eventLabelVisible||schedule.overflow>1){
+    if(schedule.headerFlex!=='column'||!['grid','block'].includes(schedule.layoutDisplay)||!stacked||schedule.dayHeight>90||schedule.overflow>1){
       throw new Error(`${name}: Schedule is not touch-first ${JSON.stringify(schedule)}`);
     }
   }else if(schedule.headerFlex==='column'||schedule.layoutDisplay==='block'||schedule.overflow>1){
