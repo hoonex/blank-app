@@ -71,11 +71,6 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleV
   margin:0!important;
   padding:var(--flow-school-card-pad)!important;
 }
-@media(max-width:1120px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-layout>.calendar-card{
-    margin-bottom:var(--flow-school-section-gap)!important;
-  }
-}
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-head{
   margin-bottom:var(--flow-school-control-gap)!important;
 }
@@ -84,6 +79,92 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleV
 }
 html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .schedule-list{
   gap:var(--flow-school-control-gap)!important;
+}
+
+/* Orientation-first content geometry, with a minimum comfortable card width.
+   A 768px portrait tablet has room for two readable rails; a 390px portrait
+   phone does not. Landscape uses the same rails without device-name checks. */
+@media(orientation:portrait) and (max-width:620px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    height:auto!important;
+  }
+}
+@media(orientation:portrait) and (min-width:621px) and (max-width:900px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+    height:auto!important;
+    min-height:0!important;
+  }
+}
+@media(orientation:landscape) and (min-width:700px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .right-stack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+    height:auto!important;
+    min-height:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid>.timetable-card{
+    grid-column:1!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .today-grid>.right-stack{
+    grid-column:2!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+}
+@media(min-width:700px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #todayView .status-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    max-width:none!important;
+  }
+}
+@media(orientation:portrait) and (max-width:900px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView .schedule-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-rows:max-content!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView .schedule-layout>.calendar-card{
+    margin-bottom:0!important;
+  }
+}
+@media(orientation:landscape) and (min-width:680px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView .schedule-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView .schedule-layout>.calendar-card{
+    margin-bottom:0!important;
+  }
 }
 
 /* School profile: remove the separate 9/14/15px legacy rhythm. The information
