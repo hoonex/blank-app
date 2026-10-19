@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const BASE = process.env.FLOW_BASE_URL || 'http://127.0.0.1:4173';
@@ -10,6 +10,8 @@ const SCHOOL = {
   location:'대구광역시',highSchoolType:'일반고',type:'사립'
 };
 const PROFILE = {school:SCHOOL,grade:'2',className:'6'};
+const INDEX_HTML = await readFile(new URL('../index.html',import.meta.url),'utf8');
+const SITE_ORIGIN = new URL(BASE).origin;
 const CASES = [
   {name:'phone-portrait',width:390,height:844,mobile:true},
   {name:'phone-landscape',width:844,height:390,mobile:true},
@@ -30,6 +32,12 @@ function dataFor(url) {
   };
 }
 async function installFixtures(page){
+  // The test exercises SPA history, not server rewrites; Python's static server
+  // returns 404 for clean routes in CI. Serve the same document on those URLs.
+  await page.route(url=>url.origin===SITE_ORIGIN&&['/home','/week','/schedule','/school'].includes(url.pathname),route=>{
+    if(new URL(route.request().url()).origin!==SITE_ORIGIN)return route.continue();
+    return route.fulfill({status:200,contentType:'text/html; charset=utf-8',body:INDEX_HTML});
+  });
   // Keep local UI tests deterministic when third-party font hosts are unavailable.
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({
     status:200,contentType:'text/css',body:''
