@@ -9,7 +9,7 @@ const AMBIENT_KEY='flow-ambient-v1';
 const EXAM_KEYWORDS=/시험|평가|모의|중간|기말|고사|수능|학력|듣기/;
 const DAY_WINDOW=40;
 const EXAM_STEP=84;
-const EXAM_STACK_STEP=60;
+const EXAM_STACK_STEP=80;
 let dateState=null,dateRaf=0,dateSuppressUntil=0,lastDetent=0,bootFrame=0;
 let examState={items:[],remote:[],cursor:null,horizon:null,exhausted:false,loading:false,frame:0,interacted:false,signature:''};
 
@@ -124,7 +124,7 @@ html[data-flow-school-ui="v2"] body #todayView .upcoming-card[data-flow-exam-dec
  min-height:0!important;
 }
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 {
- --flow-exam-view-height:336px;
+ --flow-exam-view-height:380px;
  height:var(--flow-exam-view-height)!important;
 }
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-stage-v5{
@@ -136,8 +136,8 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway
 }
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="0"] {--flow-exam-view-height:90px}
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="1"] {--flow-exam-view-height:145px}
-html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"] {--flow-exam-view-height:209px}
-html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"] {--flow-exam-view-height:272px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"] {--flow-exam-view-height:218px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"] {--flow-exam-view-height:302px}
 html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-empty-v5{
  display:grid;place-items:center;min-height:75px;padding:12px;text-align:center;
  color:var(--muted);font-size:.76rem;
@@ -162,11 +162,11 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-empty-
  html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .mobile-school-button{
   grid-column:3!important;justify-self:end!important;
  }
- html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5{--flow-exam-view-height:326px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5{--flow-exam-view-height:374px}
  html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="0"]{--flow-exam-view-height:90px}
  html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="1"]{--flow-exam-view-height:145px}
- html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"]{--flow-exam-view-height:209px}
- html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"]{--flow-exam-view-height:272px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"]{--flow-exam-view-height:218px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"]{--flow-exam-view-height:302px}
 }
 @media(max-width:360px) {
  html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{width:145px!important;min-width:145px!important;max-width:145px!important}
@@ -176,13 +176,23 @@ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-empty-
 html[data-flow-school-ui="v2"] #todayView .upcoming-card[data-flow-exam-deck="v5"]{overflow:visible!important}
 html[data-flow-school-ui="v2"] #todayView .upcoming-card[data-flow-exam-deck="v5"]>#eventList,
 html[data-flow-school-ui="v2"] #todayView .upcoming-card[data-flow-exam-deck="v5"]>#flowExamFeedV3{display:none!important}
-html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5{position:relative;height:336px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:20px;touch-action:pan-y}
+html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5{position:relative;height:380px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-radius:20px;touch-action:pan-y}
 html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5::-webkit-scrollbar{display:none}
-html[data-flow-school-ui="v2"] #todayView .flow-exam-stage-v5{position:sticky;z-index:3;top:0;height:336px;pointer-events:none;overflow:hidden;contain:layout paint}
-html[data-flow-school-ui="v2"] #todayView .flow-exam-runway-v5{position:relative;z-index:1;margin-top:-336px;padding-top:336px}
+html[data-flow-school-ui="v2"] #todayView .flow-exam-stage-v5{position:sticky;z-index:3;top:0;height:380px;pointer-events:none;overflow:hidden;contain:layout paint}
+html[data-flow-school-ui="v2"] #todayView .flow-exam-runway-v5{position:relative;z-index:1;margin-top:-380px;padding-top:380px}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-snap-v5{height:${EXAM_STEP}px;scroll-snap-align:start;scroll-snap-stop:normal}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5{--flow-active:0;position:absolute;isolation:isolate;contain:layout paint style;left:0;right:0;top:0;box-sizing:border-box;height:calc(62px + 64px * var(--flow-active));padding:calc(10px + 6px * var(--flow-active)) calc(12px + 5px * var(--flow-active));border:0;border-radius:calc(15px + 5px * var(--flow-active));corner-shape:squircle;overflow:hidden;background:color-mix(in srgb,var(--surface) 96%,var(--surface-2));box-shadow:0 7px 18px rgba(43,57,78,.065),inset 0 1px 0 rgba(255,255,255,.72);transform:translate3d(0,var(--flow-y,0px),0) scale(var(--flow-scale,1));opacity:var(--flow-opacity,1);filter:saturate(var(--flow-sat,1));transform-origin:50% 0;will-change:transform,opacity;backface-visibility:hidden;transition:box-shadow .14s linear,color .12s linear}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5::before{content:"";position:absolute;z-index:0;inset:0;border-radius:inherit;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 85%,#3956b8),color-mix(in srgb,var(--accent) 61%,#7889d8));opacity:var(--flow-active);transform:translateZ(0);pointer-events:none}
+/* Secondary tests are genuine independent rows, not overlapping paper sheets.
+   A consistent 14px optical gutter makes their boundaries readable on phones. */
+html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5:not([data-active]){
+  border:1px solid color-mix(in srgb,var(--accent) 11%,var(--text) 10%)!important;
+  background:color-mix(in srgb,var(--surface) 95%,var(--surface-2) 5%)!important;
+  box-shadow:0 3px 9px rgba(34,49,77,.065),inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5:not([data-active]) h3{
+  font-size:.73rem!important;font-weight:790!important;
+}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5[data-active]{color:#fff;box-shadow:0 13px 30px color-mix(in srgb,var(--accent) 19%,transparent),inset 0 1px 0 rgba(255,255,255,.27)}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5::after{content:"";position:absolute;z-index:0;right:16px;bottom:12px;width:54px;height:42px;border-radius:13px;corner-shape:squircle;background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(255,255,255,.04));opacity:var(--flow-active);transform:rotate(-8deg);pointer-events:none}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-top-v5{position:relative;z-index:1;display:flex;align-items:center;gap:7px;min-height:22px;color:var(--muted);font-size:.52rem;font-weight:720;white-space:nowrap;transition:color .12s linear}
@@ -193,7 +203,7 @@ html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5 h3{position:relativ
 html[data-flow-school-ui="v2"] #todayView .flow-exam-card-v5[data-active] h3{max-width:76%;margin-top:9px;font-size:.96rem;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-detail-v5{position:relative;z-index:1;max-width:74%;margin:6px 0 0;color:rgba(255,255,255,.78);font-size:.56rem;line-height:1.45;opacity:var(--flow-active);transform:translateY(var(--flow-detail-y,0px));pointer-events:none}
 html[data-flow-school-ui="v2"] #todayView .flow-exam-loading-v5{position:absolute;left:0;right:0;bottom:3px;text-align:center;color:var(--muted);font-size:.48rem;opacity:.7}
-@media(max-width:620px){html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5,html[data-flow-school-ui="v2"] #todayView .flow-exam-stage-v5{height:326px}html[data-flow-school-ui="v2"] #todayView .flow-exam-runway-v5{margin-top:-326px;padding-top:326px}}
+@media(max-width:620px){html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5,html[data-flow-school-ui="v2"] #todayView .flow-exam-stage-v5{height:374px}html[data-flow-school-ui="v2"] #todayView .flow-exam-runway-v5{margin-top:-374px;padding-top:374px}}
 @media(prefers-reduced-motion:reduce){html[data-flow-school-ui="v2"] #todayView #flowExamDeckV5{scroll-behavior:auto!important}}
 `;
   document.head.append(style);
