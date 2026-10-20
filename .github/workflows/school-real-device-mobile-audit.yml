@@ -109,6 +109,11 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-spacing-system-audit
         run: node tests/school-spacing-system-audit.mjs
+      - name: Verify School profile groups, exam first paint and header inset
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+          FLOW_TEST_OUT: school-profile-exam-header-audit
+        run: node tests/school-profile-exam-header-audit.mjs
       - name: Verify bottom-nav proportions and dark materials
         env:
           FLOW_BASE_URL: http://127.0.0.1:4173
