@@ -41,6 +41,9 @@ await page.screenshot({ path: 'university-audit/mobile-landing.png', fullPage: t
 const mobileUniversityGeometry=await page.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};const h1=document.querySelector('.setup-copy h1');return{header:rect(document.querySelector('.setup-header')),main:rect(document.querySelector('.setup-main')),h1:rect(h1),card:rect(document.querySelector('.search-card')),field:rect(document.querySelector('.search-field')),copy:rect(document.querySelector('.setup-copy')),h1Font:parseFloat(getComputedStyle(h1).fontSize),h1Line:parseFloat(getComputedStyle(h1).lineHeight)}});
 const mobileSchoolPage=await context.newPage();
 await mobileSchoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+// School loads its responsive UI layer after the initial HTML; compare only
+// fully styled landings, not a mix of pre- and post-injection geometry.
+await mobileSchoolPage.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
 await mobileSchoolPage.evaluate(()=>document.fonts?.ready);
 const mobileSchoolGeometry=await mobileSchoolPage.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};const h1=document.querySelector('.onboarding-copy h1');return{header:rect(document.querySelector('.landing-header')),main:rect(document.querySelector('.onboarding-main')),h1:rect(h1),card:rect(document.querySelector('.school-search-panel')),field:rect(document.querySelector('.school-search-panel .search-box')),copy:rect(document.querySelector('.onboarding-copy')),h1Font:parseFloat(getComputedStyle(h1).fontSize),h1Line:parseFloat(getComputedStyle(h1).lineHeight)}});
 await mobileSchoolPage.screenshot({path:'university-audit/mobile-school-reference.png',fullPage:true});
@@ -69,6 +72,7 @@ await page.screenshot({ path: 'university-audit/desktop-landing.png', fullPage: 
 const schoolPage=await context.newPage();
 await schoolPage.setViewportSize({width:1440,height:900});
 await schoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
+await schoolPage.waitForFunction(()=>document.documentElement.dataset.flowSchoolUiStyles==='ready');
 await schoolPage.evaluate(()=>document.fonts?.ready);
 const schoolLanding=await schoolPage.evaluate(()=>{
   const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};
