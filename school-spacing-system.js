@@ -206,6 +206,127 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoo
   margin:0!important;
   padding:var(--flow-school-card-pad)!important;
 }
+
+/* Secondary destinations: match Today's compact, readable card rhythm.
+   Keep all dates/controls intact; only the unused vertical chrome is reduced. */
+@media (orientation:portrait) and (max-width:900px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) :is(#scheduleView,#schoolView,#weekView)>.view-header{
+    min-height:68px!important;
+    padding:13px 16px!important;
+    margin-bottom:var(--flow-school-control-gap)!important;
+    align-items:flex-start!important;
+    justify-content:center!important;
+    gap:8px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) :is(#scheduleView,#schoolView,#weekView)>.view-header h1{
+    font-size:clamp(1.35rem,3.7vw,1.65rem)!important;
+    line-height:1.2!important;
+    margin:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) :is(#scheduleView,#schoolView,#weekView)>.view-header p{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-card{
+    padding:12px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-head{
+    margin-bottom:var(--flow-school-control-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-head button{
+    min-width:44px!important;
+    width:44px!important;
+    height:44px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-grid{
+    grid-template-rows:auto repeat(6,52px)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-weekday{
+    padding:4px 0 6px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-day{
+    height:52px!important;
+    max-height:52px!important;
+    padding:5px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-hero,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    min-height:164px!important;
+  }
+}
+@media (orientation:portrait) and (max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-grid{
+    grid-template-rows:auto repeat(6,44px)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #scheduleView#scheduleView .calendar-day{
+    height:44px!important;
+    max-height:44px!important;
+    padding:4px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-hero,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    min-height:148px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    padding:16px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content h2{
+    font-size:1.48rem!important;
+  }
+}
+
+/* Settings: restore clear group boundaries and a scannable hierarchy. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-header{
+  padding:15px 18px!important;
+  margin:0 0 var(--flow-school-section-gap)!important;
+  border:1px solid color-mix(in srgb,var(--text) 10%,transparent)!important;
+  border-radius:20px!important;
+  background:var(--surface)!important;
+  box-shadow:0 5px 18px rgba(30,44,70,.055)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-header h1{
+  font-size:clamp(1.45rem,3vw,1.8rem)!important;
+  margin:0 0 5px!important;
+  line-height:1.2!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-card{
+  position:relative;
+  border:1px solid color-mix(in srgb,var(--text) 15%,transparent)!important;
+  border-radius:20px!important;
+  background:var(--surface)!important;
+  box-shadow:0 8px 22px rgba(30,44,70,.095)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:19px;
+  bottom:19px;
+  width:3px;
+  border-radius:0 4px 4px 0;
+  background:color-mix(in srgb,var(--accent) 64%,transparent);
+  pointer-events:none;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-card h2{
+  font-size:1rem!important;
+  font-weight:800!important;
+  letter-spacing:-.025em!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-card>p{
+  margin-bottom:12px!important;
+  line-height:1.5!important;
+}
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-fields:not(.one){
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-fields:not(.one)>label:first-child{
+    grid-column:1/-1!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoolSettingsView#flowSchoolSettingsView .flow-settings-fields.one{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
 `;
   document.head.append(style);
 }
