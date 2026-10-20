@@ -21,6 +21,20 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden){
   }
 }
 
+/* Desktop-class scrollbars make 100vw wider than the School content viewport.
+   Keep the compact topbar aligned with the clamped page inset instead of 100vw,
+   avoiding an 8px horizontal spill on small Windows landscape/tablet screens. */
+@media(min-width:521px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden):has(#flowTodayDateDock) .mobile-topbar:has(#flowTodayDateDock){
+    box-sizing:border-box!important;
+    width:calc(100% + 2 * var(--flow-school-page-inset))!important;
+    min-width:0!important;
+    max-width:none!important;
+    margin-left:calc(-1 * var(--flow-school-page-inset))!important;
+    margin-right:calc(-1 * var(--flow-school-page-inset))!important;
+  }
+}
+
 /* Today: the legacy mobile stylesheet switched these stacks to display:block,
    which made their declared gap values inert and reintroduced 10/11px margins.
    Keep Today as a real grid. On phones preserve the established utility flex
