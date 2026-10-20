@@ -9,11 +9,11 @@ await fs.mkdir(OUT,{recursive:true});
 const makeProfile=(schoolCode,homepage)=>({school:{officeCode:'D10',schoolCode,name:'테스트고등학교',kind:'고등학교',officeName:'대구광역시교육청',homepage,address:'대구광역시 테스트로 1'},grade:2,className:'1'});
 const json=(route,body)=>route.fulfill({status:200,contentType:'application/json; charset=utf-8',body:JSON.stringify(body)});
 
-async function wireSchoolData(page,{logo=''}){
+async function wireSchoolData(page,{logo='',source=logo?'fixture-primary':'none',homepage='https://school.example'}){
   await page.route('**/functions/v1/school-data**',route=>{
     const url=new URL(route.request().url()),action=url.searchParams.get('action');
-    if(action==='dashboard')return json(route,{school:{name:'테스트고등학교',officeName:'대구광역시교육청',kind:'고등학교',homepage:'https://school.example',address:'대구광역시 테스트로 1'},timetable:[],meals:[],events:[],scheduleMeta:{mode:'month',count:0}});
-    if(action==='media')return json(route,{media:{hero:'',logo,logoSource:logo?'fixture-primary':'none'},homepage:'https://school.example'});
+    if(action==='dashboard')return json(route,{school:{name:'테스트고등학교',officeName:'대구광역시교육청',kind:'고등학교',homepage,address:'대구광역시 테스트로 1'},timetable:[],meals:[],events:[],scheduleMeta:{mode:'month',count:0}});
+    if(action==='media')return json(route,{media:{hero:'',logo,logoSource:source},homepage});
     return json(route,{});
   });
 }
@@ -54,7 +54,32 @@ if(!primaryState.loaded||primaryFallbackRequests!==0)throw new Error(`Primary lo
 await logoPage.screenshot({path:`${OUT}/school-logo-fallback.png`,fullPage:true});
 await logoContext.close();
 
-const report={missRequests,negativeCache:true,primaryFallbackRequests,primaryState};
+
+const sharedIconContext=await browser.newContext({viewport:{width:390,height:844},locale:'ko-KR'});
+const sharedIconPage=await sharedIconContext.newPage();
+await wireSchoolData(sharedIconPage,{logo:primaryLogo,source:'homepage-icon',homepage:'https://jeongdong.dge.hs.kr/jeongdongh/main.do'});
+await sharedIconPage.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
+await sharedIconPage.addInitScript(profile=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light')},makeProfile('7240110','https://jeongdong.dge.hs.kr/jeongdongh/main.do'));
+await sharedIconPage.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+await sharedIconPage.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});
+await sharedIconPage.waitForTimeout(800);
+const genericIcon=await sharedIconPage.locator('#profileLogo').getAttribute('src');
+if(genericIcon)throw new Error('Education-office/shared DGE favicon was presented as a school emblem: '+genericIcon);
+await sharedIconContext.close();
+
+const verifiedContext=await browser.newContext({viewport:{width:390,height:844},locale:'ko-KR'});
+const verifiedPage=await verifiedContext.newPage();
+await wireSchoolData(verifiedPage,{logo:primaryLogo,source:'official-dge-symbol',homepage:'https://jeongdong.dge.hs.kr/jeongdongh/main.do'});
+await verifiedPage.route('**/functions/v1/school-logo**',route=>route.fulfill({status:204,body:''}));
+await verifiedPage.addInitScript(profile=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify(profile));localStorage.setItem('flow-school-theme-v3','light')},makeProfile('7240111','https://jeongdong.dge.hs.kr/jeongdongh/main.do'));
+await verifiedPage.goto(BASE,{waitUntil:'domcontentloaded',timeout:30000});
+await verifiedPage.waitForSelector('#dashboard:not(.hidden)',{timeout:15000});
+await verifiedPage.waitForFunction(()=>document.querySelector('#profileLogo')?.classList.contains('loaded'),null,{timeout:7000});
+const verifiedLogo=await verifiedPage.locator('#profileLogo').getAttribute('src');
+if(!verifiedLogo?.startsWith('data:image/'))throw new Error('Verified school symbol was suppressed');
+await verifiedContext.close();
+
+const report={missRequests,negativeCache:true,primaryFallbackRequests,primaryState,genericFaviconSuppressed:!genericIcon,verifiedSchoolSymbol:!!verifiedLogo};
 await fs.writeFile(`${OUT}/school-logo-fallback-report.json`,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 await browser.close();
