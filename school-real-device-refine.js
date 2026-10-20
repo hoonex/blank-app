@@ -31,7 +31,7 @@ async function eagerProxyLogo(homepage='',schoolCode=''){
   const cacheKey=`${SCHOOL_LOGO_CACHE_PREFIX}${code}`;
   try{
     const cached=JSON.parse(localStorage.getItem(cacheKey)||'null'),age=Date.now()-Number(cached?.savedAt||0),missAge=Date.now()-Number(cached?.missAt||0);
-    if(cached?.dataUrl?.startsWith('data:image/')&&age<14*86400000)return cached.dataUrl;
+    if(cached?.source==='kakao-image-official'&&cached?.dataUrl?.startsWith('data:image/')&&age<14*86400000)return cached.dataUrl;
     if(cached?.missAt&&missAge<24*86400000)return'';
   }catch{}
   try{
