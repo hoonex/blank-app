@@ -31,14 +31,15 @@ async function eagerProxyLogo(homepage='',schoolCode=''){
   const cacheKey=`${SCHOOL_LOGO_CACHE_PREFIX}${code}`;
   try{
     const cached=JSON.parse(localStorage.getItem(cacheKey)||'null'),age=Date.now()-Number(cached?.savedAt||0),missAge=Date.now()-Number(cached?.missAt||0);
-    if(cached?.dataUrl?.startsWith('data:image/')&&age<14*86400000)return cached.dataUrl;
+    if(cached?.source==='kakao-image-official'&&cached?.dataUrl?.startsWith('data:image/')&&age<14*86400000)return cached.dataUrl;
     if(cached?.missAt&&missAge<24*86400000)return'';
   }catch{}
   try{
-    const url=new URL(SCHOOL_LOGO_EDGE);url.searchParams.set('host',host);
+    const url=new URL(SCHOOL_LOGO_EDGE);url.searchParams.set('host',host);const name=String(JSON.parse(localStorage.getItem(SCHOOL_PROFILE_KEY)||'null')?.school?.name||'').trim();if(name)url.searchParams.set('name',name);
     const response=await fetch(url,{cache:'force-cache',signal:AbortSignal.timeout?.(3500)});
     if(response.status===204){try{localStorage.setItem(cacheKey,JSON.stringify({missAt:Date.now()}))}catch{}return''}
     if(!response.ok)return'';
+    if(response.headers.get('x-flow-logo-source')!=='kakao-image-official')return'';
     const type=(response.headers.get('content-type')||'').toLowerCase();if(!type.startsWith('image/'))return'';
     const blob=await response.blob();if(blob.size<32||blob.size>300000)return'';
     const dataUrl=await blobToDataUrl(blob);if(!dataUrl.startsWith('data:image/'))return'';

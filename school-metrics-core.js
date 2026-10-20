@@ -8,7 +8,7 @@ const SEEN_KEY = 'flow-school-seen-v1';
 const KAKAO_PLACE_CACHE_PREFIX = 'flow-school-kakao-place-v1:';
 const SCHOOL_PROFILE_KEY = 'flow-school-profile-v3';
 const SCHOOL_LOGO_CACHE_PREFIX = 'flow-school-logo-fallback-v3:';
-const SCHOOL_LOGO_MISS_TTL = 24 * 86400000;
+const SCHOOL_LOGO_MISS_TTL = 1 * 86400000;
 
 /* Visual layers are styles only now. Runtime behavior lives in school.js. */
 for (const href of ['./school-v5.css','./school-hotfix.css','./school-polish.css']) {
@@ -186,15 +186,18 @@ function blobToDataUrl(blob) {
   });
 }
 
-async function fetchSchoolLogoData(homepage) {
+async function fetchSchoolLogoData(homepage, name) {
   const host = schoolLogoHost(homepage);
   if (!host) return null;
   try {
     const url = new URL(SCHOOL_LOGO_EDGE);
     url.searchParams.set('host', host);
+    url.searchParams.set('name', String(name || '').trim());
     const response = await fetch(url, { cache: 'force-cache' });
     if (response.status === 204) return { miss: true };
     if (!response.ok) return null;
+    // Only an emblem linked to the school's verified official domain qualifies.
+    if(response.headers.get('x-flow-logo-source') !== 'kakao-image-official')return {miss:true};
     const type = response.headers.get('content-type') || '';
     if (!type.toLowerCase().startsWith('image/')) return null;
     const blob = await response.blob();
@@ -217,7 +220,7 @@ async function recoverSchoolLogo({ force = false } = {}) {
   const cacheKey = `${SCHOOL_LOGO_CACHE_PREFIX}${school.schoolCode}`;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
+    if (cached?.source === 'kakao-image-official' && cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
       return applySchoolLogo(cached.dataUrl, cached.source || 'cached-logo-proxy');
     }
     if (!force && cached?.missAt && Date.now() - Number(cached.missAt || 0) < SCHOOL_LOGO_MISS_TTL) return false;
@@ -225,7 +228,7 @@ async function recoverSchoolLogo({ force = false } = {}) {
 
   if (!force && schoolLogoRecoveryPromise) return schoolLogoRecoveryPromise;
   const run = (async () => {
-    const hit = await fetchSchoolLogoData(school.homepage);
+    const hit = await fetchSchoolLogoData(school.homepage, school.name);
     if (hit?.miss) {
       try { localStorage.setItem(cacheKey, JSON.stringify({ missAt: Date.now() })); } catch {}
       return false;

@@ -129,8 +129,15 @@ for(const testCase of cases){
   if(Number.isFinite(result.idleMutations2s)&&result.idleMutations2s>8)failed=true;
   if(result.scheduleState&&!result.scheduleState.scheduleVisible)failed=true;
   if(Number.isFinite(result.tabP95Ms)&&result.tabP95Ms>500)failed=true;
-  // Calendar date navigation may load a different month; only identical dashboard queries are duplicates.
-  if(new Set(result.dashboardRequests).size!==result.dashboardRequestCount)failed=true;
+  // One request must still serve the selected day. The new School exam preview
+  // may prefetch at most four future months on first paint, with one additional
+  // legacy exam-feed fetch while the modules share their transition period.
+  const dates=result.dashboardRequests.map(url=>new URL(url).searchParams.get('date')||'');
+  const baseDate=dates[0]||'';
+  const baseRequests=dates.filter(date=>date===baseDate).length;
+  const futureMonths=new Set(dates.filter(date=>date!==baseDate).map(date=>date.slice(0,6)));
+  result.dashboardRequestBudget={baseRequests,futureMonths:[...futureMonths],max:6};
+  if(baseRequests!==1||result.dashboardRequestCount>6||futureMonths.size>4)failed=true;
   report.cases.push(result);await context.close();await writeReport();
 }
 
