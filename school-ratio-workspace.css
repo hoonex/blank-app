@@ -1,0 +1,220 @@
+@media (min-width:541px) {
+/* Flow School — one responsive workspace composition.
+ * Single composed content layout for the verified School workspace.
+ * Existing mobile/tablet/desktop dataset labels remain compatibility markers;
+ * this sheet never uses them to choose a content layout.
+ */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] {
+  --flow-layout-inset:clamp(12px,1.5vw,24px);
+  --flow-layout-gap:clamp(12px,1.4vw,20px);
+  --flow-layout-radius:clamp(18px,1.7vw,25px);
+  --flow-layout-line:color-mix(in srgb,var(--text) 9%,transparent);
+  --flow-layout-shadow:0 9px 30px rgba(34,50,83,.063);
+}
+/* Preserve the existing functional shell; center its usable workspace. */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) {
+  width:min(1512px,calc(100% - 2 * var(--flow-layout-inset)))!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  column-gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) > main.product-main {
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  transform:none!important;
+}
+/* All sizes share one adaptive content algorithm. Two columns appear only
+   when both have enough room, never because a device was called 'desktop'. */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,345px),1fr))!important;
+  align-items:start!important;
+  gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+  width:100%!important;
+  max-width:none!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:visible!important;
+  box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid > :is(.timetable-card,.right-stack) {
+  grid-column:auto!important;
+  grid-row:auto!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  align-self:start!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid > .right-stack {
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:max-content max-content!important;
+  gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+  align-content:start!important;
+  background:transparent!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid :is(.timetable-card,.meal-card,.upcoming-card) {
+  position:relative!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  min-height:0!important;
+  height:auto!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  padding:var(--flow-school-card-pad,clamp(16px,1.6vw,26px))!important;
+  border:1px solid var(--flow-layout-line)!important;
+  border-radius:var(--flow-layout-radius)!important;
+  background:var(--surface)!important;
+  box-shadow:var(--flow-layout-shadow)!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) .right-stack > .meal-card {
+  border-bottom:1px solid var(--flow-layout-line)!important;
+  border-right:1px solid var(--flow-layout-line)!important;
+}
+/* Calm summary row. Different cards have identical surface and type scale. */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .status-grid {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))!important;
+  gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+  margin-bottom:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .status-grid > .status-card:not(.flow-home-noise) {
+  min-width:0!important;
+  min-height:92px!important;
+  height:auto!important;
+  padding:16px 20px!important;
+  border:0!important;
+  border-radius:var(--flow-layout-radius)!important;
+  background:var(--surface)!important;
+  box-shadow:var(--flow-layout-shadow)!important;
+}
+/* The schedule/School layouts use the same container rules as Today. */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #scheduleView.view:not(.hidden) > .schedule-layout {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr))!important;
+  gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+  align-items:start!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #schoolView.view:not(.hidden) #schoolInfoGrid.school-info-grid {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,355px),1fr))!important;
+  gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+  align-items:start!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #schoolView.view:not(.hidden) #schoolInfoGrid.school-info-grid > .info-group {
+  width:100%!important;
+  min-width:0!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  margin:0!important;
+  padding:clamp(16px,1.8vw,26px)!important;
+  border:1px solid var(--flow-layout-line)!important;
+  border-radius:var(--flow-layout-radius)!important;
+  box-shadow:var(--flow-layout-shadow)!important;
+}
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #schoolView.view:not(.hidden) #schoolInfoGrid .info-group-fields {
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,142px),1fr))!important;
+  gap:6px 16px!important;
+}
+/* Only a genuinely spacious landscape viewport earns persistent navigation.
+ * Hardware classes/touch capabilities never participate in this choice. */
+@media (min-aspect-ratio:5/4) and (min-width:1181px) and (min-height:681px) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) {
+    display:grid!important;
+    grid-template-columns:clamp(196px,16vw,226px) minmax(0,1fr)!important;
+    gap:var(--flow-school-section-gap,var(--flow-layout-gap))!important;
+    align-items:start!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) > #desktopSidebar.desktop-sidebar {
+    display:flex!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    position:sticky!important;
+    top:var(--flow-layout-inset)!important;
+    width:100%!important;
+    min-width:0!important;
+    height:calc(100dvh - 2 * var(--flow-layout-inset))!important;
+    margin:0!important;
+    align-items:stretch!important;
+    padding:18px 15px!important;
+    border:1px solid var(--flow-layout-line)!important;
+    border-radius:var(--flow-layout-radius)!important;
+    background:var(--surface)!important;
+    box-shadow:var(--flow-layout-shadow)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) > main.product-main {
+    grid-column:2!important;
+    grid-row:1!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) :is(.mobile-topbar,#bottomNav) {
+    display:none!important;
+  }
+}
+@media (max-aspect-ratio:5/4), (max-width:1180px), (max-height:680px) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) {
+    display:block!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    padding-bottom:calc(110px + env(safe-area-inset-bottom))!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) > #desktopSidebar.desktop-sidebar {
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) > #bottomNav.mobile-bottom-nav {
+    display:flex!important;
+  }
+}
+/* Portrait uses its vertical space for a readable full-width timetable, while
+   the two contextual cards can still sit next to one another if room permits. */
+@media (max-aspect-ratio:1/1) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid,
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #scheduleView.view:not(.hidden) > .schedule-layout {
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid > .right-stack {
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))!important;
+    grid-template-rows:auto!important;
+  }
+}
+/* A wider meal card can use its width to display menu items in two compact
+   columns. This uses the card's own available space, not device categories. */
+html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) .meal-card {
+  container-type:inline-size;
+}
+@container (min-width:480px) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) .meal-list {
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:4px 12px!important;
+  }
+}
+/* Maintain the established desktop card padding contract. The legacy
+   --flow-school-card-pad uses a different older formula on wide screens. */
+@media (min-width:1181px) and (min-height:681px) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard main.product-main #todayView.view:not(.hidden) > .today-grid :is(.timetable-card,.meal-card,.upcoming-card) {
+    padding:clamp(16px,1.5vw,23px)!important;
+  }
+}
+/* Keep the compact shell's existing 14px outer rail. Changing it by a
+   couple of pixels dislocates the full-bleed topbar and creates overflow. */
+@media (max-width:1180px) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden) {
+    width:min(1320px,calc(100% - 28px))!important;
+    margin-inline:auto!important;
+  }
+}
+/* Never replace user motion accessibility settings. */
+@media(prefers-reduced-motion:reduce) {
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard *,
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard *::before,
+  html[data-flow-school-ui="v2"][data-flow-ratio-workspace="ready"] body #dashboard *::after {
+    scroll-behavior:auto!important;
+  }
+}
+
+}
