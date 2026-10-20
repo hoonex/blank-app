@@ -28,6 +28,8 @@ for(const [name,w,h] of [['phone',390,844],['landscape',844,390],['tablet',768,1
    await p.waitForFunction(()=>document.querySelectorAll('#flowExamDeckV5 .flow-exam-card-v5').length>=4,null,{timeout:12000});
    const preview=await p.evaluate(()=>{const deck=document.getElementById('flowExamDeckV5'),stage=deck.querySelector('.flow-exam-stage-v5'),rect=stage.getBoundingClientRect();return{count:stage.querySelectorAll('.flow-exam-card-v5').length,scrollTop:deck.scrollTop,top:rect.top,cards:[...stage.querySelectorAll('.flow-exam-card-v5')].map(n=>({name:n.querySelector('h3')?.textContent,active:n.hasAttribute('data-active'),visible:n.getBoundingClientRect().top<rect.bottom})),width:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}});
    if(preview.count<4||preview.scrollTop!==0||preview.width>preview.client+2)throw new Error('Initial exam preview incomplete: '+JSON.stringify(preview));
+   const cardGaps=await p.evaluate(()=>{const stage=document.querySelector('#flowExamDeckV5 .flow-exam-stage-v5'),cards=[...stage.querySelectorAll('.flow-exam-card-v5')].slice(0,4).map(n=>n.getBoundingClientRect());return cards.slice(1).map((r,i)=>r.top-cards[i].bottom)});
+   if(cardGaps.some(gap=>gap<8))throw new Error('Upcoming exam cards lack readable separation: '+JSON.stringify(cardGaps));
    await p.locator('#flowExamDeckV5').scrollIntoViewIfNeeded();await p.screenshot({path:OUT+'/phone-exams.png',animations:'disabled'});
  }
  const nav=p.locator('[data-view="school"]:visible').first();await nav.click();
