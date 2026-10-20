@@ -27,12 +27,12 @@ await page.waitForSelector('#rankCard:not([hidden])',{timeout:5000});
 const layout=await page.evaluate(()=>{
   const card=document.querySelector('#rankCard'),fields=[...document.querySelectorAll('#rankCard .rank-field input')],grid=document.querySelector('#schoolInfoGrid');
   const cr=card.getBoundingClientRect();
-  return {viewport:innerWidth,bodyScroll:document.documentElement.scrollWidth,card:{left:cr.left,right:cr.right,width:cr.width},inputs:fields.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width}}),infoText:grid.textContent||'',infoTiles:grid.children.length,status:document.querySelector('#schoolInfoStatus')?.textContent||''};
+  return {viewport:innerWidth,bodyScroll:document.documentElement.scrollWidth,card:{left:cr.left,right:cr.right,width:cr.width},inputs:fields.map(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width}}),infoText:grid.textContent||'',infoTiles:grid.querySelectorAll('.info-tile').length,groups:grid.querySelectorAll(':scope > .info-group').length,status:document.querySelector('#schoolInfoStatus')?.textContent||''};
 });
 if(layout.bodyScroll>layout.viewport+2)throw new Error(`School view overflows horizontally: ${JSON.stringify(layout)}`);
 if(layout.inputs.some(x=>x.left<layout.card.left-1||x.right>layout.card.right+1||x.width<80))throw new Error(`Rank input escaped card: ${JSON.stringify(layout)}`);
 for(const expected of ['공립','일반고','남녀공학','대구광역시교육청','일반계'])if(!layout.infoText.includes(expected))throw new Error(`School info missing ${expected}: ${JSON.stringify(layout)}`);
-if(layout.infoTiles<8)throw new Error(`Too few school info tiles: ${JSON.stringify(layout)}`);
+if(layout.groups!==2||layout.infoTiles<8)throw new Error(`Too few school info tiles: ${JSON.stringify(layout)}`);
 
 await page.locator('#mobileSettingsBtn').click();
 await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();
