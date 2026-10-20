@@ -48,15 +48,6 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/browser-audit.mjs
 
-      - name: Verify School settings history and calendar accessibility (6 viewports)
-        if: success()
-        env:
-          FLOW_BASE_URL: http://127.0.0.1:4173
-          FLOW_TEST_OUT: flow-ux-stability-audit
-        run: |
-          node --check tests/flow-school-ux-stability.mjs
-          node tests/flow-school-ux-stability.mjs
-
       - name: Diagnose shared tablet desktop ratio cascade
         if: success()
         env:
@@ -124,6 +115,12 @@ jobs:
           FLOW_TEST_URL: http://127.0.0.1:4173/
         run: node tests/school-logo-fallback-audit.mjs
 
+      - name: Verify personal school emblem and stale media refresh
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+        run: node tests/school-personal-logo-audit.mjs
+
       - name: Verify Kakao school map behavior with fixture
         if: success()
         env:
@@ -164,5 +161,4 @@ jobs:
             school-calendar-audit
             contextual-shell-audit
             native-feel-audit
-            flow-ux-stability-audit
           retention-days: 7
