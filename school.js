@@ -197,19 +197,68 @@ function refreshDashboardIfStale(){
 }
 
 async function loadMedia(){
-  if(!profile)return;const key=MEDIA_PREFIX+profile.school.schoolCode;const cached=readJson(key,null);if(cached){media=cached;renderMedia();return}
-  try{const result=await api({action:'media',office:profile.school.officeCode,school:profile.school.schoolCode});media=result.media||{};writeJson(key,media);renderMedia()}catch{media={};renderMedia()}
+  if(!profile)return;
+  const code=profile.school.schoolCode,office=profile.school.officeCode,key=MEDIA_PREFIX+code,cached=readJson(key,null);
+  if(cached){media=cached;renderMedia()}
+  // Old cache entries had no timestamp and were never revalidated. An empty
+  // emblem could therefore remain empty permanently after the source recovered.
+  const actualLogo=cached?.logo&&cached.logoSource!=='homepage-icon';
+  const age=Date.now()-Number(cached?.fetchedAt||0),ttl=actualLogo?7*86400000:6*3600000;
+  if(cached&&age>=0&&age<ttl)return;
+  try{
+    const result=await api({action:'media',office,school:code});
+    if(profile?.school?.schoolCode!==code)return;
+    const next={...(result.media||{}),fetchedAt:Date.now()};
+    // An upstream transient failure must not erase a previously verified logo.
+    if(!next.logo&&actualLogo){next.logo=cached.logo;next.logoSource=cached.logoSource}
+    media=next;writeJson(key,next);renderMedia();
+  }catch{if(!cached&&profile?.school?.schoolCode===code){media={};renderMedia()}}
 }
 function setImage(id,url){const img=$(id);if(!img)return;img.classList.remove('loaded');img.removeAttribute('src');if(!url)return;img.onload=()=>img.classList.add('loaded');img.onerror=()=>img.classList.remove('loaded');img.src=url}
 function setBackground(id,url){const el=$(id);if(!el)return;el.classList.toggle('has-image',!!url);el.style.backgroundImage=url?`url("${String(url).replace(/"/g,'%22')}")`:''}
+/* Official emblems may be unavailable on school websites. Allow an explicit,
+   private on-device logo instead of showing an unrelated education-office icon.
+   Files never leave this device; sanitize the bitmap through a small canvas. */
+const SCHOOL_CUSTOM_LOGO_PREFIX='flow-school-personal-emblem-v1:';
+function customSchoolLogo(){
+  const key=profile?.school?.schoolCode;if(!key)return'';
+  try{const value=localStorage.getItem(SCHOOL_CUSTOM_LOGO_PREFIX+key)||'';return /^data:image\/(?:png|jpeg|webp);base64,/i.test(value)?value:''}catch{return''}
+}
+function syncSchoolLogoEditor(){
+  const area=$('#schoolView .school-actions');if(!area||!profile?.school?.schoolCode)return;
+  let input=$('#schoolPersonalLogoInput');
+  if(!input){
+    input=document.createElement('input');input.id='schoolPersonalLogoInput';input.type='file';input.accept='image/png,image/jpeg,image/webp';input.hidden=true;
+    const add=document.createElement('button');add.id='schoolPersonalLogoBtn';add.type='button';add.className='neo-button action-link';add.textContent='학교 로고 직접 설정';
+    const clear=document.createElement('button');clear.id='schoolPersonalLogoReset';clear.type='button';clear.className='neo-button action-link';clear.textContent='직접 설정한 로고 지우기';
+    area.append(add,clear,input);
+    add.addEventListener('click',()=>input.click());
+    clear.addEventListener('click',()=>{try{localStorage.removeItem(SCHOOL_CUSTOM_LOGO_PREFIX+profile?.school?.schoolCode)}catch{}input.value='';renderMedia();toast('직접 설정한 로고를 지웠습니다.');});
+    input.addEventListener('change',async()=>{
+      const file=input.files?.[0];if(!file)return;
+      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>4*1024*1024){toast('4MB 이하 PNG·JPG·WebP만 사용할 수 있어요.');input.value='';return}
+      const code=profile?.school?.schoolCode;
+      try{
+        const bitmap=await createImageBitmap(file);const size=Math.min(256,Math.max(bitmap.width,bitmap.height));
+        if(!Number.isFinite(size)||size<1)throw Error('empty image');
+        const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*size/Math.max(bitmap.width,bitmap.height)));canvas.height=Math.max(1,Math.round(bitmap.height*size/Math.max(bitmap.width,bitmap.height)));
+        const ctx=canvas.getContext('2d');if(!ctx)throw Error('canvas unsupported');ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+        const url=canvas.toDataURL('image/webp',.84);if(!/^data:image\/(?:png|jpeg|webp);base64,/i.test(url)||url.length>380000)throw Error('image too large');
+        if(code!==profile?.school?.schoolCode)return;
+        localStorage.setItem(SCHOOL_CUSTOM_LOGO_PREFIX+code,url);renderMedia();toast('학교 로고를 이 기기에 저장했어요.');
+      }catch{toast('이미지를 저장하지 못했습니다. 더 작은 사진을 사용해 주세요.')}finally{input.value=''}
+    });
+  }
+  const clear=$('#schoolPersonalLogoReset');if(clear)clear.hidden=!customSchoolLogo();
+}
 function renderMedia(){
   const hero=media?.hero||'';
   // DGE's shared homepage favicon can be the education-office mark, not the
   // school's emblem. Prefer a verified official school symbol; otherwise use
   // the existing school monogram instead of a misleading common icon.
   const dge=/(?:^|\.)dge\.(?:hs|ms|es|kg)\.kr$/i.test((()=>{try{return new URL(normalizeUrl(profile?.school?.homepage||'')).hostname}catch{return''}})());
-  const logo=dge&&media?.logoSource==='homepage-icon'?'':media?.logo||'';
-  setBackground('#schoolHeroImage',hero);setBackground('#profilePhoto',hero);setImage('#schoolLogo',logo);setImage('#schoolLogoSmall',logo);setImage('#profileLogo',logo)}
+  const logo=customSchoolLogo()||(dge&&media?.logoSource==='homepage-icon'?'':media?.logo||'');
+  setBackground('#schoolHeroImage',hero);setBackground('#profilePhoto',hero);setImage('#schoolLogo',logo);setImage('#schoolLogoSmall',logo);setImage('#profileLogo',logo);syncSchoolLogoEditor()}
 
 function gradeEventApplies(event){const flag=event?.[`grade${grade()}`];const flags=[1,2,3,4,5,6].map(n=>event?.[`grade${n}`]).filter(Boolean);if(flag==='Y'||!flag)return true;if(flags.length&&flags.every(v=>v!=='Y'))return true;return false}
 function monthEvents(){return (data?.events||[]).filter(gradeEventApplies).sort((a,b)=>String(a.date).localeCompare(String(b.date)))}
