@@ -4,15 +4,23 @@ const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:4173/';
 const OUT=process.env.FLOW_TEST_OUT||'/tmp/flow-school-profile-exam-header';
 await mkdir(OUT,{recursive:true});
 const school={officeCode:'D10',schoolCode:'7240101',name:'정동고등학교',officeName:'대구광역시교육청',kind:'고등학교',homepage:'https://school.example',type:'공립',highSchoolType:'일반고',coed:'남녀공학',dayNight:'주간',founded:'19860301',anniversary:'19860301',jurisdiction:'대구광역시교육청',location:'대구광역시',address:'대구광역시 동구 테스트로 1',phone:'053-000-0000',highSchoolTrack:'일반계'};
-const exams={'202610':[{date:'20261020',name:'10월 전국연합학력평가',content:'시험 일정',grade2:'Y'}],'202611':[{date:'20261119',name:'대학수학능력시험',content:'학교 일정',grade2:'Y'}],'202612':[{date:'20261207',name:'기말시험',content:'시험',grade2:'Y'},{date:'20261208',name:'기말시험 2일차',content:'시험',grade2:'Y'}]};
-const now=new Date(2026,9,20,12);
+const now=new Date(Date.now()+9*3600000);
+const dateKey=(offset,day)=>{const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()+offset,day));return String(d.getUTCFullYear())+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0')};
+const monthKey=offset=>dateKey(offset,1).slice(0,6);
+const todayKey=dateKey(0,now.getUTCDate());
+const exam=(date,name)=>({date,name,content:'시험 일정',grade2:'Y'});
+const exams={
+ [monthKey(0)]:[exam(dateKey(0,Math.min(now.getUTCDate()+1,28)),'이번 달 평가')],
+ [monthKey(1)]:[exam(dateKey(1,7),'다음 달 시험'),exam(dateKey(1,19),'다음 달 학력평가')],
+ [monthKey(2)]:[exam(dateKey(2,7),'기말시험'),exam(dateKey(2,8),'기말시험 2일차')]
+};
 const responses=[];
 const b=await chromium.launch({headless:true});
 for(const [name,w,h] of [['phone',390,844],['tablet',768,1024],['desktop',1366,768]]){
  const c=await b.newContext({viewport:{width:w,height:h},isMobile:w===390,hasTouch:w<=768,locale:'ko-KR',timezoneId:'Asia/Seoul'});
  const p=await c.newPage();
  await p.addInitScript(s=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school:s,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-ambient-v1','off')},school);
- await p.route('**/functions/v1/school-data**',r=>{const u=new URL(r.request().url()),action=u.searchParams.get('action'),date=String(u.searchParams.get('date')||'20261020').replace(/\D/g,'');if(action==='dashboard')responses.push(date.slice(0,6));const payload=action==='dashboard'?{school,selected:date,from:date,to:date,timetable:[],meals:[],events:exams[date.slice(0,6)]||[],scheduleMeta:{mode:'fixture',count:1}}:action==='media'?{media:{hero:'',logo:''},homepage:'https://school.example'}:{classes:['1','2','3','4','5','6']};return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(payload)})});
+ await p.route('**/functions/v1/school-data**',r=>{const u=new URL(r.request().url()),action=u.searchParams.get('action'),date=String(u.searchParams.get('date')||todayKey).replace(/\D/g,'');if(action==='dashboard')responses.push(date.slice(0,6));const payload=action==='dashboard'?{school,selected:date,from:date,to:date,timetable:[],meals:[],events:exams[date.slice(0,6)]||[],scheduleMeta:{mode:'fixture',count:1}}:action==='media'?{media:{hero:'',logo:''},homepage:'https://school.example'}:{classes:['1','2','3','4','5','6']};return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(payload)})});
  await p.route('**/functions/v1/school-logo**',r=>r.fulfill({status:204,body:''}));
  await p.goto(BASE,{waitUntil:'domcontentloaded'});
  await p.locator('#dashboard:not(.hidden)').waitFor();
