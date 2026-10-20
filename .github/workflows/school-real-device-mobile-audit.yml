@@ -60,7 +60,7 @@ jobs:
           node --check tests/school-visual-contract-audit.mjs
           node --check tests/school-bottom-nav-dark-audit.mjs
           node --check tests/school-spacing-system-audit.mjs
-          node --check tests/school-profile-exam-header-audit.mjs
+          node --check tests/school-personal-logo-audit.mjs
           node --check tests/school-settings-responsive-sweep-audit.mjs
           node --check tests/school-settings-shell-parity-audit.mjs
           node --check tests/school-settings-short-desktop-diagnostic.mjs
@@ -110,7 +110,7 @@ jobs:
           FLOW_BASE_URL: http://127.0.0.1:4173
           FLOW_TEST_OUT: school-spacing-system-audit
         run: node tests/school-spacing-system-audit.mjs
-      - name: Verify compact School groups, exam first paint and header alignment
+      - name: Verify School profile groups, exam first paint and header inset
         env:
           FLOW_TEST_URL: http://127.0.0.1:4173/
           FLOW_TEST_OUT: school-profile-exam-header-audit
@@ -146,7 +146,6 @@ jobs:
             school-toolbar-grouping-audit
             school-visual-contract-audit
             school-spacing-system-audit
-            school-profile-exam-header-audit
             school-bottom-nav-dark-audit
             school-settings-shell-parity-audit
             school-settings-responsive-sweep-audit
