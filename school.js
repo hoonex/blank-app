@@ -202,7 +202,14 @@ async function loadMedia(){
 }
 function setImage(id,url){const img=$(id);if(!img)return;img.classList.remove('loaded');img.removeAttribute('src');if(!url)return;img.onload=()=>img.classList.add('loaded');img.onerror=()=>img.classList.remove('loaded');img.src=url}
 function setBackground(id,url){const el=$(id);if(!el)return;el.classList.toggle('has-image',!!url);el.style.backgroundImage=url?`url("${String(url).replace(/"/g,'%22')}")`:''}
-function renderMedia(){const hero=media?.hero||'',logo=media?.logo||'';setBackground('#schoolHeroImage',hero);setBackground('#profilePhoto',hero);setImage('#schoolLogo',logo);setImage('#schoolLogoSmall',logo);setImage('#profileLogo',logo)}
+function renderMedia(){
+  const hero=media?.hero||'';
+  // DGE's shared homepage favicon can be the education-office mark, not the
+  // school's emblem. Prefer a verified official school symbol; otherwise use
+  // the existing school monogram instead of a misleading common icon.
+  const dge=/(?:^|\.)dge\.(?:hs|ms|es|kg)\.kr$/i.test((()=>{try{return new URL(normalizeUrl(profile?.school?.homepage||'')).hostname}catch{return''}})());
+  const logo=dge&&media?.logoSource==='homepage-icon'?'':media?.logo||'';
+  setBackground('#schoolHeroImage',hero);setBackground('#profilePhoto',hero);setImage('#schoolLogo',logo);setImage('#schoolLogoSmall',logo);setImage('#profileLogo',logo)}
 
 function gradeEventApplies(event){const flag=event?.[`grade${grade()}`];const flags=[1,2,3,4,5,6].map(n=>event?.[`grade${n}`]).filter(Boolean);if(flag==='Y'||!flag)return true;if(flags.length&&flags.every(v=>v!=='Y'))return true;return false}
 function monthEvents(){return (data?.events||[]).filter(gradeEventApplies).sort((a,b)=>String(a.date).localeCompare(String(b.date)))}
@@ -289,7 +296,18 @@ function ensureRankCard(){let card=$('#rankCard');if(card)return card;const info
 function renderRank(){const total=Number($('#rankTotal')?.value||0),rank=Number($('#rankValue')?.value||0),main=$('#rankMain'),sub=$('#rankSub');if(!main||!sub)return;if(total>0)localStorage.setItem(RANK_TOTAL_KEY,String(total));if(!(total>0&&rank>0&&rank<=total)){main.textContent='값을 입력하세요';sub.textContent='수강자수 기준';return}const pct=rank/total*100,g=pct<=10?1:pct<=34?2:pct<=66?3:pct<=90?4:5;main.textContent=`상위 ${pct.toFixed(pct<10?1:0)}% · ${g}등급 구간`;sub.textContent=`${rank} / ${total}명`}
 function renderSchoolInfo(){
   const s={...(profile?.school||{}),...(data?.school||{})};if(!s.name)return;$('#profileName').textContent=s.name||'학교';$('#profileKind').textContent=[s.kind,s.highSchoolType].filter(Boolean).join(' · ')||'학교';$('#profileEnglishName').textContent=s.englishName||[s.officeName,s.location].filter(Boolean).join(' · ');
-  const entries=[['설립구분',s.type],['학교 구분',s.highSchoolType||s.kind],['남녀 구분',s.coed],['주야',s.dayNight],['설립일',s.founded?fmtDate8(s.founded):''],['개교기념일',s.anniversary?fmtDate8(s.anniversary):''],['교육청',s.officeName],['관할기관',s.jurisdiction],['지역',s.location],['주소',[s.address,s.addressDetail].filter(Boolean).join(' ')],['전화',s.phone],['팩스',s.fax],['계열',s.highSchoolTrack||s.specialPurpose]];const visible=entries.filter(([,v])=>String(v||'').trim());$('#schoolInfoGrid').innerHTML=visible.length?visible.map(([k,v])=>`<div class="info-tile"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join(''):'<div class="info-tile info-tile-empty"><span>학교 정보</span><strong>공개된 기본정보가 없습니다.</strong></div>';
+  const basics=[['설립구분',s.type],['학교 구분',s.highSchoolType||s.kind],['남녀 구분',s.coed],['주야',s.dayNight],['계열',s.highSchoolTrack||s.specialPurpose],['설립일',s.founded?fmtDate8(s.founded):''],['개교기념일',s.anniversary?fmtDate8(s.anniversary):'']];
+  const contacts=[['교육청',s.officeName],['관할기관',s.jurisdiction],['지역',s.location],['주소',[s.address,s.addressDetail].filter(Boolean).join(' ')],['전화',s.phone],['팩스',s.fax]];
+  const groups=[['기본 정보',basics],['행정 · 연락',contacts]];
+  const visible=[...basics,...contacts].filter(([,v])=>String(v||'').trim());
+  const tile=([k,v])=>`<div class="info-tile"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`;
+  $('#schoolInfoGrid').innerHTML=visible.length?groups.map(([label,entries])=>{
+    const items=entries.filter(([,v])=>String(v||'').trim());
+    return items.length?`<section class="info-group" aria-label="${esc(label)}"><h3>${esc(label)}</h3><div class="info-group-fields">${items.map(tile).join('')}</div></section>`:'';
+  }).join(''):'<section class="info-group"><h3>기본 정보</h3><div class="info-tile info-tile-empty"><span>학교 정보</span><strong>공개된 기본정보가 없습니다.</strong></div></section>';
+  const facts=[s.highSchoolType||s.kind,s.coed,s.dayNight].filter(Boolean);
+  let tags=$('#profileFacts');if(!tags){tags=document.createElement('div');tags.id='profileFacts';tags.className='school-profile-facts';$('#profileEnglishName')?.after(tags)}
+  if(tags)tags.innerHTML=[...new Set(facts)].slice(0,3).map(value=>`<span>${esc(value)}</span>`).join('');
   const status=$('#schoolInfoStatus');if(status)status.textContent=visible.length>=6?`NEIS 학교기본정보 ${visible.length}개 항목을 표시 중입니다.`:`NEIS에서 공개된 학교기본정보 ${visible.length}개 항목만 표시됩니다.`;
   const home=normalizeUrl(s.homepage);$('#homepageLink').href=home||'#';$('#homepageLink').classList.toggle('hidden',!home);$('#mapLink').href=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address||s.name)}`;$('#phoneLink').href=s.phone?`tel:${s.phone.replace(/[^\d+]/g,'')}`:'#';$('#phoneLink').classList.toggle('hidden',!s.phone);const rankCard=ensureRankCard();if(rankCard)rankCard.hidden=!isHigh();renderRank();renderMedia();
 }
@@ -308,7 +326,7 @@ function renderActiveView(){
   if(!profile)return;renderIdentity();if(currentView==='today')renderToday();else if(currentView==='week')renderWeek();else if(currentView==='schedule')renderSchedule();else if(currentView==='school')renderSchoolInfo();
 }
 function switchView(view,{push=true}={}){
-  if(!VIEW_TO_ROUTE[view])view='today';currentView=view;$$('[data-view-panel]').forEach(p=>p.classList.toggle('hidden',p.dataset.viewPanel!==view));$$('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(push&&location.pathname!==VIEW_TO_ROUTE[view])history.pushState({view},'',VIEW_TO_ROUTE[view]);renderActiveView();
+  if(!VIEW_TO_ROUTE[view])view='today';const changed=currentView!==view;currentView=view;$$('[data-view-panel]').forEach(p=>p.classList.toggle('hidden',p.dataset.viewPanel!==view));$$('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(push&&location.pathname!==VIEW_TO_ROUTE[view])history.pushState({view},'',VIEW_TO_ROUTE[view]);renderActiveView();if(changed)window.scrollTo(0,0);
 }
 window.addEventListener('popstate',()=>switchView(ROUTE_TO_VIEW[location.pathname]||'today',{push:false}));
 
