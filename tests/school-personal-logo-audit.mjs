@@ -1,0 +1,25 @@
+import {chromium} from 'playwright';
+const BASE=process.env.FLOW_TEST_URL||'http://127.0.0.1:44001/';
+const school={officeCode:'D10',schoolCode:'7240222',name:'테스트고등학교',kind:'고등학교',homepage:'https://school.example'};
+const b=await chromium.launch({headless:true});const p=await b.newPage({viewport:{width:390,height:844}});
+let mediaRequests=0;
+await p.route('**/functions/v1/school-data**',r=>{const action=new URL(r.request().url()).searchParams.get('action');if(action==='media')mediaRequests++;return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(action==='dashboard'?{school,timetable:[],meals:[],events:[]}:action==='media'?{media:{hero:'',logo:'',logoSource:'none'},homepage:school.homepage}:{classes:['1','2','3']})})});
+await p.route('**/functions/v1/school-logo**',r=>r.fulfill({status:204,body:''}));
+await p.addInitScript(s=>{if(!sessionStorage.getItem('logo-fixture-ready')){localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school:s,grade:2,className:'1'}));localStorage.setItem('flow-school-media-v1:'+s.schoolCode,JSON.stringify({logo:'',logoSource:'none'}));sessionStorage.setItem('logo-fixture-ready','1')}},school);
+await p.goto(BASE,{waitUntil:'domcontentloaded'});await p.locator('#dashboard:not(.hidden)').waitFor();
+await p.waitForFunction(()=>{const m=JSON.parse(localStorage.getItem('flow-school-media-v1:7240222')||'null');return Number(m?.fetchedAt)>0});
+await p.locator('[data-view="school"]:visible').first().click();await p.locator('#schoolPersonalLogoInput').waitFor({state:'attached'});
+const png=await p.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=24;const x=c.getContext('2d');x.fillStyle='#2255aa';x.fillRect(0,0,24,24);return c.toDataURL('image/png').split(',')[1]});
+await p.locator('#schoolPersonalLogoInput').setInputFiles({name:'logo.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+await p.waitForFunction(()=>document.querySelector('#profileLogo')?.classList.contains('loaded'));
+const saved=await p.locator('#profileLogo').getAttribute('src');
+// The static CI server does not rewrite /school; enter from the SPA root.
+await p.goto(BASE,{waitUntil:'domcontentloaded'});await p.locator('#dashboard:not(.hidden)').waitFor();if(!await p.locator('#schoolView:not(.hidden)').count())await p.locator('[data-view="school"]:visible').first().click();
+await p.waitForFunction(()=>document.querySelector('#profileLogo')?.classList.contains('loaded'));
+const restored=await p.locator('#profileLogo').getAttribute('src');
+if(saved!==restored||mediaRequests<1)throw Error('logo cache/reload failed '+JSON.stringify({same:saved===restored,mediaRequests}));
+await p.locator('#schoolPersonalLogoReset').click();
+const reset=await p.evaluate(()=>({saved:localStorage.getItem('flow-school-personal-emblem-v1:7240222'),src:document.querySelector('#profileLogo')?.getAttribute('src'),initial:document.querySelector('#profileInitial')?.textContent}));
+if(reset.saved||reset.src||reset.initial!=='테')throw Error('reset failed '+JSON.stringify(reset));
+console.log('PERSONAL_LOGO_AND_MEDIA_CACHE_PASS',JSON.stringify({mediaRequests,logoUploaded:true,reload:true,reset:true}));
+await b.close();
