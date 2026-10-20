@@ -6,7 +6,7 @@ const OUT=process.env.FLOW_DT_OUT||'school-landscape-toolbar-audit/desktop-table
 const CASES=[
   {name:'tablet-portrait',width:768,height:1024,touch:true,expect:'tablet'},
   {name:'tablet-landscape',width:1024,height:768,touch:true,expect:'tablet'},
-  {name:'wide-touch-tablet',width:1536,height:1024,touch:true,expect:'tablet'},
+  {name:'wide-touch-tablet',width:1536,height:1024,touch:true,expect:'desktop'},
   {name:'desktop',width:1366,height:768,touch:false,expect:'desktop'},
   {name:'large-desktop',width:1920,height:1080,touch:false,expect:'desktop'},
 ];
@@ -53,16 +53,18 @@ function assertState(c,s){
     if(!s.top.visible||!s.dock.visible||s.dock.days!==5)throw new Error(`${c.name}: tablet app bar/date rail incomplete ${JSON.stringify({top:s.top,dock:s.dock})}`);
     if(!s.nav.visible||s.nav.position!=='fixed'||s.nav.radius<24)throw new Error(`${c.name}: tablet floating pill nav missing ${JSON.stringify(s.nav)}`);
     if(s.hero.visible)throw new Error(`${c.name}: legacy Today hero visible on tablet ${JSON.stringify(s.hero)}`);
-    assertTwoColumn(c.name,s);
+    if(c.height>c.width){
+      if(!s.timetable||!s.meal||s.meal.top<s.timetable.bottom+8||Math.abs(s.meal.left-s.timetable.left)>3)throw new Error(`${c.name}: portrait must keep full-width timetable above context cards ${JSON.stringify({tt:s.timetable,meal:s.meal})}`);
+    }else assertTwoColumn(c.name,s);
   }else{
     if(!s.sidebar.visible||!s.sideNav.visible||!s.main)throw new Error(`${c.name}: desktop workspace rail missing ${JSON.stringify({sidebar:s.sidebar,sideNav:s.sideNav,main:s.main})}`);
-    if((s.sidebar.box?.width||0)<200||(s.sidebar.box?.width||999)>235||(s.sidebar.box?.height||0)<c.height-64)throw new Error(`${c.name}: persistent desktop rail geometry regressed ${JSON.stringify(s.sidebar)}`);
+    if((s.sidebar.box?.width||0)<200||(s.sidebar.box?.width||999)>260||(s.sidebar.box?.height||0)<480||(s.sidebar.box?.height||0)>655)throw new Error(`${c.name}: persistent desktop rail geometry regressed ${JSON.stringify(s.sidebar)}`);
     if((s.sideNav.box?.width||0)<170||(s.sideNav.box?.height||0)<180)throw new Error(`${c.name}: desktop destinations are not a vertical rail ${JSON.stringify(s.sideNav)}`);
     if(Math.abs((s.sidebar.box?.top||0)-(s.main?.top||0))>4||s.main.left<(s.sidebar.box?.right||0)+12)throw new Error(`${c.name}: main workspace no longer starts beside the rail ${JSON.stringify({sidebar:s.sidebar.box,main:s.main})}`);
     if(s.top.visible||s.nav.visible||s.toggleVisible)throw new Error(`${c.name}: duplicate mobile/Today-Week chrome leaked into desktop ${JSON.stringify({top:s.top,nav:s.nav,toggleVisible:s.toggleVisible})}`);
     if(!s.hero.visible||s.hero.imageVisible||s.hero.shadeVisible||(s.hero.box?.height||999)>110)throw new Error(`${c.name}: desktop neutral Today header contract failed ${JSON.stringify(s.hero)}`);
     assertTwoColumn(c.name,s);
-    const used=(s.meal?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
+    const used=(s.rightStack.box?.right||0)-(s.timetable?.left||0),available=Math.max(0,(s.main?.width||0)-8);
     if(used<Math.min(1050,available*.84))throw new Error(`${c.name}: desktop Today workspace under-uses the main column ${JSON.stringify({used,available,shell:s.shell,main:s.main,timetable:s.timetable,meal:s.meal})}`);
   }
   assertWideTodayDensity(c,s);

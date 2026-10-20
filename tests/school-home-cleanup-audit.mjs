@@ -31,7 +31,17 @@ async function scheduleState(page){return page.evaluate(()=>{const shown=node=>B
 async function settingsState(page){return page.evaluate(()=>{const panel=document.querySelector('#flowSchoolSettingsView');return{start:panel?.querySelector('[data-flow-bell="start"]')?.value||'',lesson:panel?.querySelector('[data-flow-bell="lesson"]')?.value||'',break:panel?.querySelector('[data-flow-bell="break"]')?.value||'',meal:panel?.querySelector('[data-flow-bell="meal"]')?.value||'',mealEnd:panel?.querySelector('[data-flow-bell="mealEnd"]')?.value||'',summary:panel?.querySelector('.flow-bell-summary strong')?.textContent?.trim()||'',overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}})}
 function noBorder(card){return card?.style?.border?.every(value=>value===0)}
 function separatedStatus(name,home){const [a,b]=home.statusCards;if(!a||!b)throw new Error(`${name}: missing status cards`);const sameRow=Math.abs(a.box.top-b.box.top)<=3&&a.box.left<b.box.left,balanced=Math.abs(a.box.width-b.box.width)<=6,gap=b.box.left-a.box.right;const grid=home.statusGrid;if(!sameRow||!balanced||gap<6||gap>16||grid.style.background!=='rgba(0, 0, 0, 0)'||!noBorder(a)||!noBorder(b)||a.style.background==='rgba(0, 0, 0, 0)'||b.style.background==='rgba(0, 0, 0, 0)'||a.style.shadow==='none'||b.style.shadow==='none')throw new Error(`${name}: status cards are not two independent borderless surfaces ${JSON.stringify(home.statusCards)}`)}
-function tabletComposition(name,home){const c=home.composition;if(home.compact.mode!=='ready'||!home.compact.dockVisible||!home.compact.schoolText.includes('정동고등학교')||!home.compact.schoolText.includes('2학년 6반')||!home.compact.hero||home.compact.hero.height>1.5)throw new Error(`${name}: compact Flow/date/School topbar contract failed ${JSON.stringify(home.compact)}`);const targetRatio=1.42/.72,actualRatio=c.timetable&&c.right?c.timetable.width/c.right.width:0;const sharedDesktopRatio=c.timetable&&c.right&&Math.abs(c.timetable.top-c.right.top)<=3&&c.right.left>=c.timetable.right+8&&Math.abs(actualRatio-targetRatio)<=.08;const stackedUtilities=c.meal&&c.upcoming&&c.rightStyle.display==='grid'&&Math.abs(c.meal.left-c.upcoming.left)<=3&&c.upcoming.top>=c.meal.bottom+8&&Math.abs(c.meal.width-c.upcoming.width)<=3;if(!sharedDesktopRatio||!stackedUtilities)throw new Error(`${name}: tablet content did not use the shared desktop proportion ${JSON.stringify({targetRatio,actualRatio,composition:c})}`)}
+function tabletComposition(name,home){
+  const c=home.composition;
+  if(home.compact.mode!=='ready'||!home.compact.dockVisible||!home.compact.schoolText.includes('정동고등학교')||!home.compact.schoolText.includes('2학년 6반')||!home.compact.hero||home.compact.hero.height>1.5)
+    throw new Error(`${name}: portrait Flow/date/School topbar contract failed ${JSON.stringify(home.compact)}`);
+  if(!c.timetable||!c.right||!c.meal||!c.upcoming)
+    throw new Error(`${name}: missing portrait School content cards`);
+  const stackedPrimary=c.right.top>=c.timetable.bottom+8&&Math.abs(c.right.left-c.timetable.left)<=3&&Math.abs(c.right.width-c.timetable.width)<=3;
+  const twoContexts=c.meal.width>=320&&c.upcoming.width>=320&&c.upcoming.left>=c.meal.right+8&&Math.abs(c.upcoming.top-c.meal.top)<=3;
+  if(!stackedPrimary||!twoContexts)throw new Error(`${name}: portrait should put full-width timetable over separately readable meal and exam cards ${JSON.stringify(c)}`);
+}
+
 
 const browser=await chromium.launch({headless:true});const report={};
 for(const [name,width,height,isMobile] of cases){
@@ -60,4 +70,4 @@ for(const [name,width,height,isMobile] of cases){
   if(transitRequests.length||pageErrors.length||consoleErrors.length)throw new Error(`${name}: browser/runtime regression ${JSON.stringify({transitRequests,pageErrors,consoleErrors})}`);
   report[name]={home,schedule,settings,saved,transitRequests,pageErrors,consoleErrors};await context.close();
 }
-await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),contract:'compact shell where appropriate, independent status cards, desktop content proportion above phone width, mobile single-column utilities, schedule/settings/Transit stability'},null,2));
+await browser.close();await fs.writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({ok:true,viewports:Object.keys(report),contract:'compact shell where appropriate, independent status cards, portrait timetable-first content with readable two-column context, mobile single-column utilities, schedule/settings/Transit stability'},null,2));
