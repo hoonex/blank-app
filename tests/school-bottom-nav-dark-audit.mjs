@@ -41,7 +41,7 @@ async function state(page){return page.evaluate(()=>{
     tabs:tabs.map(node=>({rect:rect(node),color:getComputedStyle(node).color})),
     top:{background:ts.backgroundColor,backgroundImage:ts.backgroundImage,shadow:ts.boxShadow,border:ts.borderBottomColor,backdrop:ts.backdropFilter||ts.webkitBackdropFilter||''},
     school:{background:ss.backgroundColor,shadow:ss.boxShadow,border:ss.borderColor,paddingLeft:ss.paddingLeft,paddingRight:ss.paddingRight,paddingTop:ss.paddingTop,paddingBottom:ss.paddingBottom},
-    today:{polish:document.documentElement.dataset.flowSchoolTodayReviewPolish||'',statusGap:gridStyle?.columnGap||'',statusRects,statusMaterials,timetable:material(timetable),dateFocus:dateStyle?{background:dateStyle.backgroundColor,shadow:dateStyle.boxShadow}:null,examDeck:examDeck?{hidden:examDeck.hidden,display:getComputedStyle(examDeck).display,height:rect(examDeck)?.height||0}:null,examDeckOwner:examCard?.dataset.flowExamDeck||''},
+    today:{polish:document.documentElement.dataset.flowSchoolTodayReviewPolish||'',statusGap:gridStyle?.columnGap||'',statusRects,statusMaterials,timetable:material(timetable),dateFocus:dateStyle?{background:dateStyle.backgroundColor,shadow:dateStyle.boxShadow}:null,examDeck:examDeck?{hidden:examDeck.hidden,display:getComputedStyle(examDeck).display,height:rect(examDeck)?.height||0,count:Number(examDeck.dataset.flowExamCount||0)}:null,examDeckOwner:examCard?.dataset.flowExamDeck||''},
     ambient:{root:rs.backgroundImage,body:bs.backgroundImage}
   };
 })}
@@ -58,7 +58,8 @@ function verifyGeometry(c,s){
 }
 function verifyToday(c,s){
   if(s.today.polish!=='v2')throw new Error(`${c.name}/${s.theme}/${s.mode}: Today review polish v2 did not load`);
-  if(s.today.examDeckOwner!=='v5'||!s.today.examDeck||s.today.examDeck.hidden||s.today.examDeck.display==='none'||s.today.examDeck.height<250)throw new Error(`${c.name}/${s.theme}/${s.mode}: touch exam deck was not preserved ${JSON.stringify(s.today.examDeck)} owner=${s.today.examDeckOwner}`);
+  const exams=s.today.examDeck,expectedHeight=exams?.count===0?70:exams?.count===1?115:exams?.count===2?180:250;
+  if(s.today.examDeckOwner!=='v5'||!exams||exams.hidden||exams.display==='none'||exams.height<expectedHeight)throw new Error(`${c.name}/${s.theme}/${s.mode}: touch exam deck was not preserved ${JSON.stringify(s.today.examDeck)} owner=${s.today.examDeckOwner}`);
   if(c.width<=520){
     const px=v=>num(v),eps=.75;
     if(Math.abs(px(s.school.paddingLeft)-9)>eps||Math.abs(px(s.school.paddingRight)-9)>eps||Math.abs(px(s.school.paddingTop)-6)>eps||Math.abs(px(s.school.paddingBottom)-6)>eps)throw new Error(`${c.name}/${s.theme}/${s.mode}: Today school-button padding ${JSON.stringify(s.school)} != 6px 9px`);
@@ -86,7 +87,7 @@ for(const c of CASES)for(const theme of ['light','dark'])for(const mode of ['sta
   const row={name:c.name,viewport:{width:c.width,height:c.height},theme,mode};
   try{
     await page.addInitScript(({school,theme,mode})=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3',theme);localStorage.setItem('flow-glass-mode-v2',mode);localStorage.setItem('flow-ambient-v1','on')},{school:SCHOOL,theme,mode});
-    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(expected=>document.documentElement.dataset.flowGlassMode===expected,mode);await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolTodayReviewPolish==='v2');await page.waitForFunction(()=>{const card=document.querySelector('#todayView .upcoming-card'),deck=document.querySelector('#flowExamDeckV5');return card?.dataset.flowExamDeck==='v5'&&deck&&!deck.hidden&&getComputedStyle(deck).display!=='none'&&deck.getBoundingClientRect().height>=250});await page.waitForTimeout(220);
+    await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(expected=>document.documentElement.dataset.flowGlassMode===expected,mode);await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolTodayReviewPolish==='v2');await page.waitForFunction(()=>{const card=document.querySelector('#todayView .upcoming-card'),deck=document.querySelector('#flowExamDeckV5');return card?.dataset.flowExamDeck==='v5'&&deck&&!deck.hidden&&getComputedStyle(deck).display!=='none'&&deck.getBoundingClientRect().height>=(Number(deck.dataset.flowExamCount||0)===0?70:Number(deck.dataset.flowExamCount||0)===1?115:Number(deck.dataset.flowExamCount||0)===2?180:250)});await page.waitForTimeout(220);
     row.state=await state(page);
     await page.screenshot({path:`${OUT}/${c.name}-${theme}-${mode}.png`,fullPage:false,animations:'disabled'});
     verifyGeometry(c,row.state);verifyToday(c,row.state);verifyDark(c,row.state);row.pass=true;
