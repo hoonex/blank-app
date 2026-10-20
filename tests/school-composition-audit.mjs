@@ -80,10 +80,10 @@ async function inspectSchedule(page){
 }
 async function inspectInfo(page){
   return page.evaluate(()=>{
-    const grid=document.querySelector('#schoolInfoGrid'),tiles=[...grid.children],last=tiles.at(-1);
+    const grid=document.querySelector('#schoolInfoGrid'),tiles=[...grid.children],last=tiles.at(-1),fields=[...grid.querySelectorAll('.info-tile')];
     const r=node=>{const x=node.getBoundingClientRect();return{left:x.left,right:x.right,top:x.top,bottom:x.bottom,width:x.width,height:x.height,cx:x.left+x.width/2}};
     const tileRects=tiles.map(node=>({...r(node),label:node.querySelector('span')?.textContent?.trim()||''}));
-    return{grid:r(grid),last:r(last),tiles:tileRects,count:tiles.length,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
+    return{grid:r(grid),last:r(last),tiles:tileRects,count:tiles.length,fieldCount:fields.length,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth};
   });
 }
 
@@ -131,20 +131,16 @@ for(const testCase of cases){
 
   await page.waitForSelector('#rankCard:not([hidden])');
   const info=await inspectInfo(page);
-  if(info.count!==13)throw new Error(`${testCase.name}/school: fixture should render 13 profile tiles ${JSON.stringify(info)}`);
-  if(info.scrollWidth>info.clientWidth+1)throw new Error(`${testCase.name}/school: horizontal overflow ${JSON.stringify(info)}`);
-  const centerDelta=Math.abs(info.last.cx-info.grid.cx);
-  if(testCase.viewport.width<=520){
-    if(info.last.width<info.grid.width*.94)throw new Error(`${testCase.name}/school: final tile should own the single-column row ${JSON.stringify(info)}`);
-  }else if(testCase.viewport.width>=1181&&!testCase.hasTouch){
-    const lastFive=info.tiles.slice(-5);
-    const rowSpread=Math.max(...lastFive.map(tile=>tile.top))-Math.min(...lastFive.map(tile=>tile.top));
-    const rowCoverage=(Math.max(...lastFive.map(tile=>tile.right))-Math.min(...lastFive.map(tile=>tile.left)))/info.grid.width;
-    if(rowSpread>2||rowCoverage<.98||lastFive.at(-1)?.label!=='계열'){
-      throw new Error(`${testCase.name}/school: canonical desktop profile row is not balanced ${JSON.stringify({rowSpread,rowCoverage,lastFive,info})}`);
-    }
-  }else if(centerDelta>4){
-    throw new Error(`${testCase.name}/school: incomplete final row is visually stranded ${JSON.stringify({centerDelta,info})}`);
+  // The 13 NEIS fields should be preserved inside two scannable group cards.
+  if(info.count!==2||info.fieldCount!==13)throw new Error('School groups/fields missing: '+JSON.stringify(info));
+  if(info.scrollWidth>info.clientWidth+1)throw new Error('School view horizontal overflow: '+JSON.stringify(info));
+  const first=info.tiles[0],second=info.tiles[1];
+  if(testCase.viewport.width<=900){
+    if(Math.abs(first.left-second.left)>2||second.top<first.bottom+6||first.width<info.grid.width*.92)
+      throw new Error('Phone groups should stack compactly: '+JSON.stringify(info));
+  }else{
+    if(Math.abs(first.top-second.top)>4||second.left<first.right+6||first.width<info.grid.width*.40)
+      throw new Error('Wide school groups should share two columns: '+JSON.stringify(info));
   }
   await page.screenshot({path:`${OUT}/school-composition-${testCase.name}-info.png`,fullPage:true});
   report[testCase.name]={views,info,pageErrors};
