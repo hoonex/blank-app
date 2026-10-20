@@ -374,6 +374,258 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoo
     grid-template-columns:minmax(0,1fr)!important;
   }
 }
+/* Unified capacity-first composition.  The historic "mobile / tablet / desktop"
+   attribute remains only for legacy components; these content rules use
+   orientation and minimum usable card widths, never pointer/device detection. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden){
+  --flow-fluid-outer:clamp(14px,1.5vw,28px);
+  --flow-school-section-gap:clamp(12px,1.35vw,20px)!important;
+  --flow-fluid-gap:var(--flow-school-section-gap);
+  --flow-fluid-radius:clamp(18px,1.65vw,24px);
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) main.product-main :is(#todayView,#scheduleView,#schoolView){
+  min-width:0!important;
+}
+
+/* The card rail uses one gap token in every orientation, including status,
+   timetable, meal, and upcoming sections. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) #todayView :is(.status-grid,.today-grid,.right-stack){
+  gap:var(--flow-school-section-gap)!important;
+}
+
+/* A tall canvas should never squeeze the timetable into a narrow left column.
+   Use one readable primary rail, with two secondary cards only when both fit. */
+@media (orientation:portrait) and (min-width:521px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-rows:max-content!important;
+    align-items:start!important;
+    gap:var(--flow-fluid-gap)!important;
+    height:auto!important;
+    min-height:0!important;
+    background:transparent!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:grid!important;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))!important;
+    grid-template-rows:none!important;
+    grid-auto-rows:max-content!important;
+    align-content:start!important;
+    align-items:start!important;
+    height:auto!important;
+    min-height:0!important;
+    gap:var(--flow-fluid-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack>:is(.meal-card,.upcoming-card){
+    height:auto!important;
+    min-height:0!important;
+  }
+}
+
+/* Landscape becomes side-by-side only once a 390px timetable AND a 290px
+   context panel can fit.  The same condition governs a phone or a monitor. */
+@media (orientation:landscape) and (min-width:700px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    display:grid!important;
+    grid-template-columns:minmax(390px,1.18fr) minmax(285px,.82fr)!important;
+    align-items:start!important;
+    grid-auto-rows:max-content!important;
+    gap:var(--flow-fluid-gap)!important;
+    height:auto!important;
+    min-height:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.timetable-card,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    grid-column:auto!important;grid-row:auto!important;
+    min-width:0!important;min-height:0!important;
+    align-self:start!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:flex!important;
+    flex-direction:column!important;
+    height:auto!important;
+    gap:var(--flow-fluid-gap)!important;
+  }
+}
+
+/* The desktop shell must remain identical on touch and pointer devices.
+   Legacy touch-only topbar overrides must not duplicate the desktop rail. */
+@media (orientation:landscape) and (min-width:1181px) and (min-height:681px){
+ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) .mobile-topbar,
+ html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) #bottomNav.mobile-bottom-nav{
+   display:none!important;
+ }
+}
+
+/* A real workspace rail belongs to a roomy landscape, NOT to a particular
+   hardware class. The user-facing content geometry below stays shared. */
+@media (orientation:landscape) and (min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden){
+    --flow-workspace-rail:clamp(220px,16.8vw,252px);
+    display:grid!important;
+    grid-template-columns:var(--flow-workspace-rail) minmax(0,1fr)!important;
+    width:min(1680px,calc(100% - 2 * var(--flow-fluid-outer)))!important;
+    max-width:none!important;
+    gap:var(--flow-fluid-gap)!important;
+    align-items:start!important;
+    padding:var(--flow-fluid-outer) 0 40px!important;
+    margin-inline:auto!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden)>#desktopSidebar.desktop-sidebar{
+    display:flex!important;
+    width:var(--flow-workspace-rail)!important;
+    min-width:0!important;
+    top:var(--flow-fluid-outer)!important;
+    height:calc(100dvh - 2 * var(--flow-fluid-outer))!important;
+    padding:20px 16px!important;
+    border-radius:var(--flow-fluid-radius)!important;
+    box-shadow:0 14px 34px rgba(35,46,70,.065)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .sidebar-logo{
+    margin-bottom:18px!important;
+    padding-inline:8px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .sidebar-logo .flow-logo-copy strong{
+    font-size:1.42rem!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .school-identity{
+    height:72px!important;min-height:72px!important;
+    margin-bottom:18px!important;padding:10px 12px!important;
+    border-radius:16px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .school-identity-copy strong{
+    font-size:.87rem!important;letter-spacing:-.03em!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .school-identity-copy small{font-size:.68rem!important}
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .side-nav{
+    gap:5px!important;grid-auto-rows:54px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .side-nav .nav-item{
+    height:54px!important;min-height:54px!important;
+    padding:9px 12px 9px 16px!important;
+    border-radius:13px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .side-nav .nav-item span{
+    font-size:.9rem!important;line-height:1.2!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #desktopSidebar .side-nav .nav-item small{
+    font-size:.67rem!important;line-height:1.25!important;margin-top:2px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) #todayView{
+    width:100%!important;max-width:none!important;min-width:0!important;
+    padding:0!important;margin:0!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) #todayView #schoolHero{
+    display:block!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden)>.product-main{
+    width:100%!important;max-width:none!important;min-width:0!important;
+    margin:0!important;padding:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #schoolHero{
+    height:86px!important;min-height:86px!important;
+    margin-bottom:var(--flow-fluid-gap)!important;
+    border-radius:var(--flow-fluid-radius)!important;
+    box-shadow:0 6px 22px rgba(35,46,70,.045)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #schoolHero .school-hero-content{
+    height:86px!important;min-height:86px!important;
+    padding:12px 18px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #schoolHero .school-hero-copy::before{
+    font-size:1.44rem!important;letter-spacing:-.05em!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #schoolHero .school-hero-copy::after{
+    font-size:.73rem!important;margin-top:5px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .status-grid{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:var(--flow-fluid-gap)!important;
+    margin:0 0 var(--flow-fluid-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .status-card:not(.flow-home-noise){
+    min-height:96px!important;padding:16px 20px!important;
+    border-radius:var(--flow-fluid-radius)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .status-card .status-label{
+    font-size:.71rem!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .status-card strong{
+    font-size:1.04rem!important;letter-spacing:-.03em!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    grid-template-columns:minmax(420px,1.15fr) minmax(345px,.85fr)!important;
+    gap:var(--flow-fluid-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView :is(.timetable-card,.meal-card,.upcoming-card){
+    min-height:0!important;height:auto!important;
+    border-radius:var(--flow-fluid-radius)!important;
+    padding:clamp(16px,1.5vw,23px)!important;
+    box-shadow:0 10px 28px rgba(36,48,74,.055)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .card-heading h2{
+    font-size:1.26rem!important;letter-spacing:-.04em!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .card-heading p{
+    font-size:.75rem!important;line-height:1.4!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #timetable{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-rows:minmax(58px,max-content)!important;
+    gap:9px!important;
+    min-width:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #timetable .period-button{
+    min-width:0!important;min-height:58px!important;
+    height:auto!important;padding:10px 12px!important;
+    border:1px solid color-mix(in srgb,var(--text) 5%,transparent)!important;
+    border-radius:14px!important;
+    display:grid!important;grid-template-columns:37px minmax(0,1fr)!important;
+    align-items:center!important;gap:11px!important;
+    box-shadow:none!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #timetable .period-no{
+    width:37px!important;height:37px!important;border-radius:11px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #timetable .period-name{
+    font-size:.9rem!important;line-height:1.3!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView #timetable .flow-period-time{
+    font-size:.72rem!important;line-height:1.3!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #todayView .meal-list :is(.dish,.meal-dish){
+    font-size:.94rem!important;line-height:1.45!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #schoolView .profile-hero,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #schoolView .profile-content{
+    min-height:148px!important;height:148px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #schoolView .profile-content{
+    padding:18px 22px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard #schoolView .profile-content h2{
+    font-size:clamp(1.55rem,2vw,2rem)!important;
+  }
+}
+/* Medium content widths never stretch individual cards solely to fill a track. */
+@media (orientation:landscape) and (min-width:700px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    grid-template-columns:minmax(390px,1.2fr) minmax(280px,.8fr)!important;
+  }
+}
+/* Readable section headings and consistent panel density at any aspect ratio. */
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) :is(#scheduleView,#schoolView)>.view-header{
+  max-width:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard:not(.hidden) :is(#todayView,#schoolView,#scheduleView) :is(.content-card,.calendar-card,.profile-hero,.info-group){
+  box-sizing:border-box!important;
+}
+
 `;
   document.head.append(style);
 }
