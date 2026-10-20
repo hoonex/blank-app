@@ -42,7 +42,8 @@ const report=await page.evaluate(()=>{
   return{layout:document.documentElement.dataset.flowSchoolLayout,ratioReady:document.documentElement.dataset.flowSchoolContentRatio||'',contract:Boolean(document.getElementById('flow-school-layout-contract-style')),computed,matched};
 });
 console.log(JSON.stringify(report,null,2));
-const ratio=report.computed.tt.box.width/report.computed.right.box.width;
-const target=1.42/.72;
+const a=report.computed.tt.box,b=report.computed.right.box;
+const portraitStack=b.top>=a.bottom+8&&Math.abs(b.left-a.left)<=3&&Math.abs(b.width-a.width)<=3;
+const gridTracks=report.computed.right.gridTemplateColumns.split(' ').filter(Boolean);
 await browser.close();
-if(Math.abs(report.computed.tt.box.top-report.computed.right.box.top)>3||Math.abs(ratio-target)>.12)throw new Error(`tablet ratio cascade unresolved: actual=${ratio.toFixed(3)} target=${target.toFixed(3)}`);
+if(!portraitStack||gridTracks.length!==2)throw new Error(`portrait tablet content cascade unresolved: ${JSON.stringify({timetable:a,context:b,gridTracks})}`);
