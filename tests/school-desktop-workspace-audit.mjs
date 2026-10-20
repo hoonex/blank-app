@@ -82,17 +82,20 @@ for(const c of cases){
     assert(s.layout==='desktop',`${c.name}: not classified as desktop ${JSON.stringify(s)}`);
     assert(s.workspace==='v1',`${c.name}: desktop workspace module missing`);
     assert(!s.mobileTopbar&&!s.bottomNav,`${c.name}: mobile navigation leaked into desktop`);
-    assert(s.sidebar&&s.sidebar.width>=190&&s.sidebar.width<=240&&s.sidebar.height>=c.height*.82,`${c.name}: sidebar is not a persistent desktop rail ${JSON.stringify(s.sidebar)}`);
-    assert(s.main&&s.main.left>=s.sidebar.right+12&&s.main.width>=c.width-470,`${c.name}: main workspace does not sit beside the rail ${JSON.stringify({sidebar:s.sidebar,main:s.main})}`);
+    assert(s.sidebar&&s.sidebar.width>=190&&s.sidebar.width<=260&&s.sidebar.height>=480&&s.sidebar.height<=655,`${c.name}: sidebar is not a compact sticky navigation rail ${JSON.stringify(s.sidebar)}`);
+    assert(s.main&&s.main.left>=s.sidebar.right+12&&s.main.width>=Math.min(c.width-540,1260),`${c.name}: main workspace does not sit beside the rail ${JSON.stringify({sidebar:s.sidebar,main:s.main})}`);
     assert(s.nav.length===4&&s.nav.every(x=>x.smallVisible),`${c.name}: desktop nav lost descriptive hierarchy ${JSON.stringify(s.nav)}`);
     for(let i=1;i<s.nav.length;i++)assert(s.nav[i].box.top>=s.nav[i-1].box.bottom+3,`${c.name}: desktop nav is not vertically stacked ${JSON.stringify(s.nav)}`);
     assert(!s.inlineToggle,`${c.name}: duplicate Today/Week segmented control is still visible`);
     assert(s.hero&&s.hero.height>=60&&s.hero.height<=92&&!s.heroNameVisible,`${c.name}: Today command bar still behaves like duplicate school hero ${JSON.stringify({hero:s.hero,heroNameVisible:s.heroNameVisible})}`);
     assert(s.status.length===2&&close(s.status[0].top,s.status[1].top)&&Math.abs(s.status[0].width-s.status[1].width)<=8,`${c.name}: two desktop status surfaces do not use the row ${JSON.stringify(s.status)}`);
     assert(s.status[1].right>=s.main.right-12,`${c.name}: status row leaves desktop dead space ${JSON.stringify({status:s.status,main:s.main})}`);
-    const ratio=s.today.tt.width/s.today.right.width,target=1.42/.72;
+    const ratio=s.today.tt.width/s.today.right.width,target=1; // Capacity-first twin rails
     assert(close(s.today.tt.top,s.today.right.top)&&s.today.right.left>=s.today.tt.right+10&&Math.abs(ratio-target)<=.12,`${c.name}: Today workspace ratio/columns failed ${JSON.stringify({ratio,target,today:s.today})}`);
-    assert(close(s.today.meal.left,s.today.up.left)&&s.today.up.top>=s.today.meal.bottom+10,`${c.name}: utility rail is not vertically stacked ${JSON.stringify(s.today)}`);
+    // Exam content stays readable: always stack utilities in a full-width rail,
+    // rather than slicing a 1920px viewport into three cramped columns.
+    assert(close(s.today.meal.left,s.today.up.left)&&close(s.today.meal.width,s.today.up.width)&&s.today.up.top>=s.today.meal.bottom+10,`${c.name}: utility rail is not consistently stacked ${JSON.stringify(s.today)}`);
+    assert(s.sidebar.height<c.height*.75||c.height<900,`${c.name}: sidebar creates excessive dead height ${JSON.stringify(s.sidebar)}`);
     assert(s.scroll.width<=s.scroll.client+2,`${c.name}: horizontal overflow ${JSON.stringify(s.scroll)}`);
     await page.screenshot({path:`${OUT}/${c.name}-today-viewport.png`,fullPage:false,animations:'disabled'});
 

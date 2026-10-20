@@ -28,7 +28,10 @@ await Promise.all([
   attachStyle('/school-uiux-v2-system.css?v=20260831-1','data-flow-school-ui-v2-system'),
   attachStyle('/school-today-clay.css?v=20260901-1','data-flow-school-today-clay'),
   attachStyle('/school-today-responsive.css?v=20260901-2','data-flow-school-today-responsive'),
+  // One geometry-driven composition for actual content, with existing School data/UI.
+  attachStyle('/school-ratio-workspace.css?v=20261021-1','data-flow-school-ratio-workspace'),
 ]);
+root.dataset.flowRatioWorkspace='ready';
 root.dataset.flowSchoolUi='v2';
 root.dataset.flowSchoolUiStyles='ready';
 

@@ -19,6 +19,7 @@ const SCHOOL_CRITICAL_ASSETS=new Set([
   '/school-metrics.js',
   '/school-surface-cleanup.js',
   '/school-desktop-tablet-redesign.js',
+  '/school-ratio-workspace.css',
   '/school-today-clay.css',
   '/sw.js',
 ]);

@@ -135,12 +135,16 @@ for(const testCase of cases){
   if(info.count!==2||info.fieldCount!==13)throw new Error('School groups/fields missing: '+JSON.stringify(info));
   if(info.scrollWidth>info.clientWidth+1)throw new Error('School view horizontal overflow: '+JSON.stringify(info));
   const first=info.tiles[0],second=info.tiles[1];
-  if(testCase.viewport.width<=900){
+  // School facts follow their actual container width, never the device label.
+  // At 844px landscape the two readable 388px groups fit side by side;
+  // at 768px portrait they use the full row instead of crushing each other.
+  const groupsFitSideBySide=info.grid.width>=740;
+  if(!groupsFitSideBySide){
     if(Math.abs(first.left-second.left)>2||second.top<first.bottom+6||first.width<info.grid.width*.92)
-      throw new Error('Phone groups should stack compactly: '+JSON.stringify(info));
+      throw new Error('Narrow school facts must stack: '+JSON.stringify(info));
   }else{
     if(Math.abs(first.top-second.top)>4||second.left<first.right+6||first.width<info.grid.width*.40)
-      throw new Error('Wide school groups should share two columns: '+JSON.stringify(info));
+      throw new Error('Roomy school facts must share two columns: '+JSON.stringify(info));
   }
   await page.screenshot({path:`${OUT}/school-composition-${testCase.name}-info.png`,fullPage:true});
   report[testCase.name]={views,info,pageErrors};

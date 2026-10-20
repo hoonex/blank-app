@@ -87,6 +87,15 @@ jobs:
           node --check tests/school-composition-audit.mjs
           node tests/school-composition-audit.mjs
 
+      - name: Verify geometry-driven School workspace with real fixtures
+        if: success()
+        env:
+          FLOW_TEST_URL: http://127.0.0.1:4173/
+          FLOW_TEST_OUT: school-ratio-workspace-audit
+        run: |
+          node --check tests/school-ratio-workspace-audit.mjs
+          node tests/school-ratio-workspace-audit.mjs
+
       - name: Verify University profile composition
         if: success()
         env:
@@ -158,6 +167,7 @@ jobs:
           path: |
             browser-audit-artifacts
             school-desktop-workspace-audit
+            school-ratio-workspace-audit
             school-calendar-audit
             contextual-shell-audit
             native-feel-audit
