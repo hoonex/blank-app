@@ -72,7 +72,7 @@ const clip={x:Math.max(0,state.lensRect.left),y:Math.max(0,state.lensRect.top),w
    change a displacement-only pixel metric, so hide only those foreground
    controls for the paired captures. Keep blur/color processing identical and
    disable only feDisplacementMap for the control image. */
-const measurementStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionMeasurement';s.textContent='#bottomNav > :where(.mobile-tab,.bottom-item){visibility:hidden!important}';document.head.append(s);return s.id});
+const measurementStyle=await page.evaluate(()=>{const s=document.createElement('style');s.id='flowRefractionMeasurement';s.textContent='#bottomNav > :where(.mobile-tab,.bottom-item){visibility:hidden!important} #bottomNav > .flow-refraction-copy-lens::after{display:none!important} #bottomNav,#bottomNav::before,#bottomNav .flow-refraction-copy-lens,#bottomNav .flow-refraction-sample{transition:none!important;animation:none!important}';document.head.append(s);return s.id});
 const displacement=await page.evaluate(()=>{const node=document.querySelector('#flow-liquid-nav-refraction feDisplacementMap');if(!node)return null;const scale=node.getAttribute('scale')||'';node.setAttribute('scale','0');return{scale}});
 if(!displacement||!Number.isFinite(Number(displacement.scale))||Number(displacement.scale)<=0)throw new Error(`Optical displacement primitive is missing or neutral: ${JSON.stringify(displacement)}`);
 await page.waitForTimeout(120);const control=await page.screenshot({path:`${OUT}/control-zero-displacement.png`,clip,animations:'disabled'});
