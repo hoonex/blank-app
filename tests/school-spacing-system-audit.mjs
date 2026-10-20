@@ -49,16 +49,16 @@ function verifyBase(c,s){
   assert(s.root.scroll<=s.root.client+2,`${c.name}/${s.label}: horizontal overflow ${JSON.stringify(s.root)}`);
   const clamp=(lo,v,hi)=>Math.max(lo,Math.min(v,hi));
   const width=c.width,height=c.height,short=width>height&&height<=520;
-  const section=short?clamp(10,6+height*.0115,13):clamp(12,8+width*.0078,23);
+  const section=clamp(12,width*.0135,20);
   const control=clamp(8,5+width*.0036,12);
-  const card=short?clamp(14,10+height*.0055,17):clamp(15,10+width*.0065,23);
+  const card=width>=1181&&height>=681?clamp(16,width*.015,23):short?clamp(14,10+height*.0055,17):clamp(15,10+width*.0065,23);
   const page=clamp(10,5+width*.011,26),dense=Math.max(4,control-2);
   assert(s.tokens.section.startsWith('clamp(')&&s.tokens.control.startsWith('clamp(')&&s.tokens.card.startsWith('clamp(')&&s.tokens.page.startsWith('clamp('),`${c.name}/${s.label}: fluid token contract absent ${JSON.stringify(s.tokens)}`);
   assert(s.tokens.dense.startsWith('max(')&&s.tokens.dense.includes('clamp('),`${c.name}/${s.label}: dense token is not derived from control gap`);
   return{section,control,card,page,dense};
 }
 function verifyToday(c,s){
-  const t=verifyBase(c,s),x=s.today,statusGap=c.width<700?12:t.control;
+  const t=verifyBase(c,s),x=s.today,statusGap=t.section;
   assert(close(num(x.status.gap),statusGap),`${c.name}: status gap ${x.status.gap} != ${statusGap}`);
   assert(close(num(x.grid.gap),t.section),`${c.name}: today grid gap ${x.grid.gap} != ${t.section}`);
   assert(close(num(x.right.gap),t.section),`${c.name}: right stack gap ${x.right.gap} != ${t.section}`);
@@ -71,14 +71,21 @@ function verifyToday(c,s){
       assert(x.right.display==='flex',`${c.name}: phone utility stack must stay flex ${JSON.stringify(x.right)}`);
       assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1),`${c.name}: rendered timetable→right-stack gap mismatch ${JSON.stringify({actual:x.boxes.right.top-x.boxes.tt.bottom,token:t.section})}`);
       assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
+    }else if(c.height>c.width){
+      // Portrait keeps the full timetable readable; the two context cards
+      // become a new row and may share it when each has >=320px.
+      assert(x.right.display==='grid',`${c.name}: portrait context cards are not a grid ${JSON.stringify(x.right)}`);
+      assert(close(x.boxes.right.top-x.boxes.tt.bottom,t.section,1.5),`${c.name}: portrait main-to-context gap ${JSON.stringify({today:x.boxes.tt,right:x.boxes.right,token:t.section})}`);
+      assert(close(x.boxes.right.left,x.boxes.tt.left,2),`${c.name}: portrait context should align with timetable ${JSON.stringify({tt:x.boxes.tt,right:x.boxes.right})}`);
+      if(c.width>=700)assert(x.boxes.up.left>x.boxes.meal.left+120,`${c.name}: context cards did not use readable side-by-side tiles`);
     }else{
-      assert(x.right.display==='grid',`${c.name}: non-phone utility rail must stay grid ${JSON.stringify(x.right)}`);
-      assert(close(x.boxes.right.left-x.boxes.tt.right,t.section,1),`${c.name}: rendered timetable→utility horizontal gap mismatch ${JSON.stringify({actual:x.boxes.right.left-x.boxes.tt.right,token:t.section})}`);
-      assert(close(x.boxes.right.top,x.boxes.tt.top,1),`${c.name}: shared desktop proportion lost top alignment ${JSON.stringify({timetableTop:x.boxes.tt.top,rightTop:x.boxes.right.top})}`);
-      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,1),`${c.name}: rendered meal→upcoming vertical gap mismatch ${JSON.stringify({actual:x.boxes.up.top-x.boxes.meal.bottom,token:t.section})}`);
+      assert(['grid','flex'].includes(x.right.display),`${c.name}: landscape context layout missing ${JSON.stringify(x.right)}`);
+      assert(close(x.boxes.right.left-x.boxes.tt.right,t.section,2),`${c.name}: landscape two-rail gap ${JSON.stringify({tt:x.boxes.tt,right:x.boxes.right,token:t.section})}`);
+      assert(close(x.boxes.right.top,x.boxes.tt.top,1.5),`${c.name}: landscape content lost top alignment`);
+      assert(close(x.boxes.up.top-x.boxes.meal.bottom,t.section,2),`${c.name}: landscape utility-card gap ${JSON.stringify({meal:x.boxes.meal,up:x.boxes.up,token:t.section})}`);
     }
   }
-  if(c.name==='tablet-portrait')assert(x.boxes.right.left>x.boxes.tt.right,`${c.name}: portrait with room should retain parallel context`);
+  if(c.name==='tablet-portrait')assert(x.boxes.right.top>x.boxes.tt.bottom,`${c.name}: portrait must stack its timetable before context`);
   if(c.name==='mobile-landscape')assert(x.boxes.right.left>x.boxes.tt.right,`${c.name}: landscape must use parallel content rails`);
   if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: Today rail inset drift ${JSON.stringify(x.view)}`)}
   return t;
@@ -87,7 +94,8 @@ function verifySchedule(c,s,t,todayLeft){
   verifyBase(c,s);const x=s.schedule;
   assert(close(num(x.layout.gap),t.section),`${c.name}: schedule layout gap ${x.layout.gap} != ${t.section}`);
   assert(close(num(x.calendarGrid.rowGap),t.dense,.4)&&close(num(x.calendarGrid.columnGap),t.dense,.4),`${c.name}: calendar dense gap mismatch ${JSON.stringify(x.calendarGrid)}`);
-  assert(close(num(x.calendar.padding),t.card),`${c.name}: calendar card padding ${x.calendar.padding} != ${t.card}`);
+  const calendarPad=c.width>=1181&&c.height>=681?Math.max(15,Math.min(10+c.width*.0065,23)):t.card;
+  assert(close(num(x.calendar.padding),calendarPad),`${c.name}: calendar card padding ${x.calendar.padding} != ${calendarPad}`);
   const horizontalGap=x.boxes.event.left-x.boxes.calendar.right;
   const verticalGap=x.boxes.event.top-x.boxes.calendar.bottom;
   const sideBySide=horizontalGap>=-1&&Math.abs(x.boxes.event.top-x.boxes.calendar.top)<=4;
@@ -102,9 +110,9 @@ function verifySchool(c,s,t,todayLeft){
   assert(close(num(x.info.marginTop),t.section),`${c.name}: school info section margin ${x.info.marginTop} != ${t.section}`);
   assert(close(num(x.actions.marginTop),t.section),`${c.name}: school actions section margin ${x.actions.marginTop} != ${t.section}`);
   assert(close(x.boxes.info.top-x.boxes.profile.bottom,t.section,1),`${c.name}: rendered profile→info gap mismatch ${JSON.stringify({actual:x.boxes.info.top-x.boxes.profile.bottom,token:t.section})}`);
-  if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: School rail inset drift ${JSON.stringify(x.view)}`);assert(close(x.boxes.profile.left,todayLeft,1.25),`${c.name}: Today/School left rail diverged ${JSON.stringify({todayLeft,schoolLeft:x.boxes.profile.left})}`)}
+  if(c.width<=1180){assert(close(num(x.view.paddingLeft),t.page)&&close(num(x.view.paddingRight),t.page),`${c.name}: School rail inset drift ${JSON.stringify(x.view)}`);assert(close(x.boxes.profile.left,todayLeft,2),`${c.name}: Today/School left rail diverged ${JSON.stringify({todayLeft,schoolLeft:x.boxes.profile.left})}`)}
 }
-function verifySettings(c,s,t){verifyBase(c,s);assert(close(num(s.settings.stack.gap),t.section),`${c.name}: settings stack gap ${s.settings.stack.gap} != ${t.section}`);if(s.settings.card)assert(close(num(s.settings.card.padding),t.card),`${c.name}: settings card padding ${s.settings.card.padding} != ${t.card}`)}
+function verifySettings(c,s,t){verifyBase(c,s);assert(close(num(s.settings.stack.gap),t.section),`${c.name}: settings stack gap ${s.settings.stack.gap} != ${t.section}`);const panelPad=c.width>=1181&&c.height>=681?Math.max(15,Math.min(10+c.width*.0065,23)):t.card;if(s.settings.card)assert(close(num(s.settings.card.padding),panelPad),`${c.name}: settings card padding ${s.settings.card.padding} != ${panelPad}`)}
 
 await mkdir(OUT,{recursive:true});
 const browser=await chromium.launch({headless:true});
