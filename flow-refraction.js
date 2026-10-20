@@ -163,10 +163,10 @@ async function prepareFilter(){
   filter.setAttribute('color-interpolation-filters','sRGB');
   const displacement=filter.querySelector('feDisplacementMap'),blur=filter.querySelector('feGaussianBlur'),image=filter.querySelector('feImage');
   if(image){image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','1');image.setAttribute('height','1');image.setAttribute('preserveAspectRatio','none')}
-  /* Object-bbox units make .18 roughly 16px horizontally and 8px vertically on
+  /* Object-bbox units make .225 roughly 20px horizontally and 10px vertically on
      the 89.5x46 mobile lens: strong enough to see the bevel without moving the
      flat center. */
-  displacement?.setAttribute('scale','.18');
+  displacement?.setAttribute('scale','.225');
   blur?.setAttribute('stdDeviation','.001');
   filter.querySelector('feColorMatrix')?.setAttribute('values','1.04');
   if(image&&!mapData){
