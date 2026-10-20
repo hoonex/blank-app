@@ -122,10 +122,10 @@ for(const c of CASES){
         document.documentElement.style.scrollbarGutter='stable';
         const doc=document.documentElement,header=document.querySelector('#dashboard .mobile-topbar');
         const rect=header.getBoundingClientRect();
-        return {client:doc.clientWidth,scroll:doc.scrollWidth,left:rect.left,right:rect.right};
+        return {client:doc.clientWidth,scroll:doc.scrollWidth,usableRight:doc.getBoundingClientRect().right,left:rect.left,right:rect.right};
       });
       const x=row.classicScrollbar;
-      assert(x.scroll<=x.client+2&&x.left>=-1&&x.right<=x.client+1,`${c.name}: classic scrollbar topbar overflow ${JSON.stringify(x)}`);
+      assert(x.scroll<=x.client+2&&x.left>=-1&&x.right<=x.usableRight+1,`${c.name}: classic scrollbar topbar overflow ${JSON.stringify(x)}`);
       await page.evaluate(()=>{document.documentElement.style.scrollbarGutter=''});
     }
     await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await state(page,'schedule');verifySchedule(c,row.states.schedule,tokens,todayLeft);await page.screenshot({path:`${OUT}/${c.name}-schedule.png`,fullPage:false,animations:'disabled'});
