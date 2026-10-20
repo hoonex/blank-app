@@ -21,17 +21,16 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden){
   }
 }
 
-/* Desktop-class scrollbars make 100vw wider than the School content viewport.
-   Keep the compact topbar aligned with the clamped page inset instead of 100vw,
-   avoiding an 8px horizontal spill on small Windows landscape/tablet screens. */
+/* The compact shell has a 14px outer inset; page content has a separate fluid
+   spacing token. Measure the topbar against the shell rail, not 100vw or the
+   fluid content token (which can be wider than the shell at 1024px). */
 @media(min-width:521px) and (max-width:1180px){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard#dashboard.product-shell:not(.hidden):has(#flowTodayDateDock) .mobile-topbar:has(#flowTodayDateDock){
     box-sizing:border-box!important;
-    width:calc(100% + 2 * var(--flow-school-page-inset))!important;
+    width:calc(100% + 28px)!important;
     min-width:0!important;
     max-width:none!important;
-    margin-left:calc(-1 * var(--flow-school-page-inset))!important;
-    margin-right:calc(-1 * var(--flow-school-page-inset))!important;
+    margin-inline:-14px!important;
   }
 }
 
