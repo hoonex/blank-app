@@ -38,11 +38,11 @@ const n=v=>Number.parseFloat(v)||0;
 function expected(c){
   const clamp=(lo,v,hi)=>Math.max(lo,Math.min(v,hi));
   const w=c.width,h=c.height,short=w>h&&h<=520;
-  const section=short?clamp(10,6+h*.0115,13):clamp(12,8+w*.0078,23);
+  const section=clamp(12,w*.0135,20);
   const control=clamp(8,5+w*.0036,12);
-  const pad=short?clamp(14,10+h*.0055,17):clamp(15,10+w*.0065,23);
+  const pad=w>=1181&&h>=681?clamp(16,w*.015,23):short?clamp(14,10+h*.0055,17):clamp(15,10+w*.0065,23);
   const inset=clamp(10,5+w*.011,26);
-  return{section,control,pad,inset,status:w<700?12:control};
+  return{section,control,pad,inset,status:section};
 }
 async function visualState(page,c,label){
   return page.evaluate(({width,label})=>{
