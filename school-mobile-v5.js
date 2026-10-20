@@ -82,6 +82,96 @@ html[data-flow-school-ui="v2"] #flowTodayDateDock[data-flow-kinetic="v5"] .flow-
 /* Keep the time palette visible through the School shell. */
 html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .product-shell,html[data-flow-school-ui="v2"][data-flow-ambient="on"] body .product-main{background-color:color-mix(in srgb,var(--bg) 84%,transparent)!important}
 
+
+/* Secondary School view: group public NEIS metadata instead of a tile per field. */
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid {
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:var(--flow-school-section-gap,14px)!important;align-items:start!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid>.info-group{
+ min-width:0;grid-column:auto!important;padding:17px 18px!important;box-sizing:border-box!important;
+ background:var(--surface)!important;border:1px solid color-mix(in srgb,var(--text) 9%,transparent)!important;
+ border-radius:22px!important;box-shadow:0 8px 23px rgba(33,46,75,.07)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group h3{
+ margin:0 0 10px!important;font-size:.97rem;letter-spacing:-.035em;font-weight:820;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group-fields{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group .info-tile{
+ min-width:0!important;grid-column:auto!important;padding:11px 0!important;margin:0!important;
+ border:0!important;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group .info-tile span{
+ font-size:.65rem!important;color:var(--muted)!important;font-weight:710!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group .info-tile strong{
+ display:block;font-size:.82rem!important;line-height:1.5!important;margin-top:4px!important;
+ overflow-wrap:anywhere;word-break:keep-all;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView .school-profile-facts{
+ display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px;
+}
+html[data-flow-school-ui="v2"] body #dashboard #schoolView .school-profile-facts span{
+ display:inline-flex;align-items:center;font-size:.56rem!important;line-height:1.35!important;
+ border-radius:9px;padding:4px 7px;color:#fff!important;
+ background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.23);opacity:1!important;
+}
+/* Trim dead space when a school has only one upcoming exam available. */
+html[data-flow-school-ui="v2"] body #todayView .upcoming-card[data-flow-exam-deck="v5"] {
+ min-height:0!important;
+}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 {
+ --flow-exam-view-height:336px;
+ height:var(--flow-exam-view-height)!important;
+}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-stage-v5{
+ height:var(--flow-exam-view-height)!important;
+}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-runway-v5{
+ margin-top:calc(-1 * var(--flow-exam-view-height))!important;
+ padding-top:var(--flow-exam-view-height)!important;
+}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="0"] {--flow-exam-view-height:90px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="1"] {--flow-exam-view-height:145px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"] {--flow-exam-view-height:209px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"] {--flow-exam-view-height:272px}
+html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5 .flow-exam-empty-v5{
+ display:grid;place-items:center;min-height:75px;padding:12px;text-align:center;
+ color:var(--muted);font-size:.76rem;
+}
+@media(max-width:520px) {
+ html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid {
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid.school-info-grid>.info-group{
+  padding:15px 16px!important;
+ }
+ html[data-flow-school-ui="v2"] body #dashboard#dashboard#dashboard.product-shell:not(.hidden) .mobile-topbar:has(#flowTodayDateDock){
+  display:grid!important;
+  grid-template-columns:minmax(67px,1fr) minmax(0,1fr) 94px!important;
+  padding-left:max(16px,env(safe-area-inset-left))!important;
+  padding-right:max(16px,env(safe-area-inset-right))!important;
+  justify-content:stretch!important;
+ }
+ html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .flow-logo{
+  grid-column:1!important;justify-self:start!important;min-width:0!important;
+ }
+ html[data-flow-school-ui="v2"] body #dashboard .mobile-topbar .mobile-school-button{
+  grid-column:3!important;justify-self:end!important;
+ }
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5{--flow-exam-view-height:326px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="0"]{--flow-exam-view-height:90px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="1"]{--flow-exam-view-height:145px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="2"]{--flow-exam-view-height:209px}
+ html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5[data-flow-exam-count="3"]{--flow-exam-view-height:272px}
+}
+@media(max-width:360px) {
+ html[data-flow-school-ui="v2"] body #dashboard #flowTodayDateDock{width:145px!important;min-width:145px!important;max-width:145px!important}
+}
+
 /* Scroll-driven exam deck: one detailed card, three readable compact cards, one rear peek. */
 html[data-flow-school-ui="v2"] #todayView .upcoming-card[data-flow-exam-deck="v5"]{overflow:visible!important}
 html[data-flow-school-ui="v2"] #todayView .upcoming-card[data-flow-exam-deck="v5"]>#eventList,
@@ -184,9 +274,25 @@ function updateExamStage(){
   const deck=$('#flowExamDeckV5'),stage=$('.flow-exam-stage-v5',deck);if(!deck||!stage)return;const cursor=deck.scrollTop/EXAM_STEP,index=Math.floor(cursor);$$('.flow-exam-card-v5',stage).forEach(card=>{const i=Number(card.dataset.examIndex),rel=i-cursor;if(rel<-1.05||rel>4.3){if(card.style.display!=='none')card.style.display='none';if(card.hasAttribute('data-active'))card.removeAttribute('data-active');return}if(card.style.display!=='block')card.style.display='block';const rawActive=clamp(1-Math.abs(rel),0,1),active=smoothstep(rawActive),y=examY(rel),scale=rel<=1?1-.018*Math.max(0,rel):clamp(.982-(rel-1)*.015,.92,.982),opacity=rel<0?clamp(1+rel,0,1):rel<=3?1:clamp(1-(rel-3)*.55,.28,1),isActive=rel>=-.5&&rel<.5;setStyleIfChanged(card,'--flow-active',active.toFixed(3));setStyleIfChanged(card,'--flow-y',`${y.toFixed(2)}px`);setStyleIfChanged(card,'--flow-scale',scale.toFixed(3));setStyleIfChanged(card,'--flow-opacity',opacity.toFixed(3));setStyleIfChanged(card,'--flow-sat',String(clamp(1-(Math.max(0,rel-1)*.035),.86,1)));setStyleIfChanged(card,'--flow-detail-y',`${((1-active)*4).toFixed(2)}px`);if(isActive&&!card.hasAttribute('data-active'))card.setAttribute('data-active','true');else if(!isActive&&card.hasAttribute('data-active'))card.removeAttribute('data-active')});if(examState.interacted&&index>=examState.items.length-4&&!examState.exhausted)void loadMoreExams()
 }
 function renderExamDeck(preserve=false){
-  const card=$('#todayView .upcoming-card');if(!card)return false;card.dataset.flowExamDeck='v5';const old=$('#flowExamFeedV3');if(old)old.style.display='none';const nextItems=collectExams(),signature=nextItems.map(item=>`${item.date}:${item.name}:${item.detail||''}`).join('|');examState.items=nextItems;let deck=$('#flowExamDeckV5'),saved=preserve&&deck?deck.scrollTop:0;if(!deck){deck=document.createElement('div');deck.id='flowExamDeckV5';deck.setAttribute('aria-label','다가오는 시험');(old||$('#eventList',card))?.after(deck)}else if(deck.dataset.flowExamSignature===signature){if(preserve&&Math.abs(deck.scrollTop-saved)>.5)deck.scrollTop=saved;updateExamStage();return true}const cards=examState.items.map(examCard).join(''),snaps=examState.items.map((_,i)=>`<div class="flow-exam-snap-v5" data-snap-index="${i}"></div>`).join('');deck.innerHTML=`<div class="flow-exam-stage-v5">${cards}</div><div class="flow-exam-runway-v5">${snaps}<div style="height:252px"></div></div>`;deck.dataset.flowExamSignature=signature;deck.scrollTop=saved;deck.onscroll=()=>{if(examState.frame)return;examState.frame=requestAnimationFrame(()=>{examState.frame=0;updateExamStage()})};if(deck.dataset.flowExamIntentBound!=='true'){deck.dataset.flowExamIntentBound='true';const arm=()=>{examState.interacted=true};deck.addEventListener('wheel',arm,{passive:true});deck.addEventListener('pointerdown',arm,{passive:true});deck.addEventListener('touchstart',arm,{passive:true});deck.addEventListener('keydown',event=>{if(['ArrowDown','PageDown','End',' '].includes(event.key))arm()})}updateExamStage();return true
+  const card=$('#todayView .upcoming-card');if(!card)return false;card.dataset.flowExamDeck='v5';const old=$('#flowExamFeedV3');if(old)old.style.display='none';const nextItems=collectExams(),signature=nextItems.map(item=>`${item.date}:${item.name}:${item.detail||''}`).join('|');examState.items=nextItems;let deck=$('#flowExamDeckV5'),saved=preserve&&deck?deck.scrollTop:0;if(!deck){deck=document.createElement('div');deck.id='flowExamDeckV5';deck.setAttribute('aria-label','다가오는 시험');(old||$('#eventList',card))?.after(deck)}if(deck.dataset.flowExamCount!==String(examState.items.length))deck.dataset.flowExamCount=String(examState.items.length);if(deck.dataset.flowExamSignature===signature){if(preserve&&Math.abs(deck.scrollTop-saved)>.5)deck.scrollTop=saved;updateExamStage();return true}const cards=examState.items.length?examState.items.map(examCard).join(''):'<p class="flow-exam-empty-v5">예정된 시험이 아직 없습니다.</p>',snaps=examState.items.map((_,i)=>`<div class="flow-exam-snap-v5" data-snap-index="${i}"></div>`).join('');deck.innerHTML=`<div class="flow-exam-stage-v5">${cards}</div><div class="flow-exam-runway-v5">${snaps}<div style="height:252px"></div></div>`;deck.dataset.flowExamSignature=signature;deck.scrollTop=saved;deck.onscroll=()=>{if(examState.frame)return;examState.frame=requestAnimationFrame(()=>{examState.frame=0;updateExamStage()})};if(deck.dataset.flowExamIntentBound!=='true'){deck.dataset.flowExamIntentBound='true';const arm=()=>{examState.interacted=true};deck.addEventListener('wheel',arm,{passive:true});deck.addEventListener('pointerdown',arm,{passive:true});deck.addEventListener('touchstart',arm,{passive:true});deck.addEventListener('keydown',event=>{if(['ArrowDown','PageDown','End',' '].includes(event.key))arm()})}updateExamStage();requestAnimationFrame(updateExamStage);return true
 }
-function bindExamDeck(){if(!examState.cursor)resetExamHorizon();renderExamDeck();[120,420,900,1600].forEach(delay=>setTimeout(()=>renderExamDeck(true),delay));document.addEventListener('change',event=>{if(event.target.matches?.('#datePicker'))setTimeout(()=>renderExamDeck(true),120)});document.addEventListener('click',event=>{if(event.target.closest?.('[data-view="today"]'))setTimeout(()=>renderExamDeck(true),120)})}
+async function prefillExamPreview(){
+  const p=profile(),identity=p?.school?.schoolCode+':'+p?.grade+':'+p?.className;
+  if(!p?.school?.officeCode||!p?.school?.schoolCode||examState.prefillId===identity)return;
+  examState.prefillId=identity;
+  // Populate first fold without requiring a gesture; cap background requests.
+  let months=0;
+  while(months<4&&!examState.exhausted&&collectExams().length<4){
+    if(examState.loading)break;
+    const target=new Date(examState.cursor);
+    examState.cursor=new Date(target.getFullYear(),target.getMonth()+1,1,12);
+    if(examState.cursor>examState.horizon)examState.exhausted=true;
+    examState.loading=true;
+    try{examState.remote.push(...await fetchExamMonth(target));}catch{}finally{examState.loading=false}
+    months++;renderExamDeck(true);
+  }
+}
+function bindExamDeck(){if(!examState.cursor)resetExamHorizon();renderExamDeck();setTimeout(()=>void prefillExamPreview(),400);[120,420,900,1600].forEach(delay=>setTimeout(()=>renderExamDeck(true),delay));document.addEventListener('change',event=>{if(event.target.matches?.('#datePicker'))setTimeout(()=>renderExamDeck(true),120)});document.addEventListener('click',event=>{if(event.target.closest?.('[data-view="today"]'))setTimeout(()=>renderExamDeck(true),120)})}
 
 const ambientPalettes={dawn:['#ffe2c2','#e8ecfb'],day:['#fff0b8','#edf2f4'],golden:['#ffd39a','#e9def6'],evening:['#e3cef4','#dce6f8'],night:['#cfc3f2','#d9e2f7']};
 function syncAmbientVisibility(){
