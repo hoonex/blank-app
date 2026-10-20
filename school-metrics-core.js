@@ -220,7 +220,7 @@ async function recoverSchoolLogo({ force = false } = {}) {
   const cacheKey = `${SCHOOL_LOGO_CACHE_PREFIX}${school.schoolCode}`;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
+    if (cached?.source === 'kakao-image-official' && cached?.dataUrl?.startsWith('data:image/') && Date.now() - Number(cached.savedAt || 0) < 14 * 86400000) {
       return applySchoolLogo(cached.dataUrl, cached.source || 'cached-logo-proxy');
     }
     if (!force && cached?.missAt && Date.now() - Number(cached.missAt || 0) < SCHOOL_LOGO_MISS_TTL) return false;
