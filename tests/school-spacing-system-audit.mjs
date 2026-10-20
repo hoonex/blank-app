@@ -115,6 +115,19 @@ for(const c of CASES){
     await page.addInitScript(school=>{localStorage.clear();localStorage.setItem('flow-school-profile-v3',JSON.stringify({school,grade:2,className:'6'}));localStorage.setItem('flow-school-theme-v3','light');localStorage.setItem('flow-school-transit-lab-v1','off')},SCHOOL);
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.locator('#timetable .period-button').first().waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSpacingSystem==='v1'&&document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolContentRatio==='ready');await page.waitForTimeout(100);
     row.states.today=await state(page,'today');const tokens=verifyToday(c,row.states.today);const todayLeft=row.states.today.today.boxes.tt.left;await page.screenshot({path:`${OUT}/${c.name}-today.png`,fullPage:false,animations:'disabled'});
+    // A classic non-overlay scrollbar consumes layout width but not 100vw.
+    // Explicitly reserve its gutter to cover Windows desktop/tablet Chrome.
+    if(c.width>=521&&c.width<=1180){
+      row.classicScrollbar=await page.evaluate(()=>{
+        document.documentElement.style.scrollbarGutter='stable';
+        const doc=document.documentElement,header=document.querySelector('#dashboard .mobile-topbar');
+        const rect=header.getBoundingClientRect();
+        return {client:doc.clientWidth,scroll:doc.scrollWidth,usableRight:doc.getBoundingClientRect().right,left:rect.left,right:rect.right};
+      });
+      const x=row.classicScrollbar;
+      assert(x.scroll<=x.client+2&&x.left>=-1&&x.right<=x.usableRight+1,`${c.name}: classic scrollbar topbar overflow ${JSON.stringify(x)}`);
+      await page.evaluate(()=>{document.documentElement.style.scrollbarGutter=''});
+    }
     await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await state(page,'schedule');verifySchedule(c,row.states.schedule,tokens,todayLeft);await page.screenshot({path:`${OUT}/${c.name}-schedule.png`,fullPage:false,animations:'disabled'});
     await clickVisible(page,'[data-view="school"]');await page.locator('#schoolView:not(.hidden)').waitFor();await page.locator('#schoolInfoGrid .info-tile').first().waitFor();row.states.school=await state(page,'school');verifySchool(c,row.states.school,tokens,todayLeft);
     await clickVisible(page,'#settingsBtn,#mobileSettingsBtn');await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();row.states.settings=await state(page,'settings');verifySettings(c,row.states.settings,tokens);row.pass=true;
