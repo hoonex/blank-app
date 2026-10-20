@@ -128,9 +128,36 @@ for(const c of CASES){
       assert(x.scroll<=x.client+2&&x.left>=-1&&x.right<=x.usableRight+1,`${c.name}: classic scrollbar topbar overflow ${JSON.stringify(x)}`);
       await page.evaluate(()=>{document.documentElement.style.scrollbarGutter=''});
     }
-    await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await state(page,'schedule');verifySchedule(c,row.states.schedule,tokens,todayLeft);await page.screenshot({path:`${OUT}/${c.name}-schedule.png`,fullPage:false,animations:'disabled'});
+    await clickVisible(page,'[data-view="schedule"]');await page.locator('#scheduleView:not(.hidden)').waitFor();row.states.schedule=await state(page,'schedule');verifySchedule(c,row.states.schedule,tokens,todayLeft);
+    if(c.height>c.width&&c.width<=900){
+      row.compactSchedule=await page.evaluate(()=>{
+        const rect=s=>document.querySelector(s)?.getBoundingClientRect();
+        const header=rect('#scheduleView>.view-header'),calendar=rect('#scheduleView .calendar-card'),days=[...document.querySelectorAll('#calendarGrid .calendar-day')];
+        return {headerHeight:header?.height,calendarHeight:calendar?.height,days:days.length,minDayHeight:Math.min(...days.map(n=>n.getBoundingClientRect().height))};
+      });
+      const compact=row.compactSchedule;
+      assert(compact.headerHeight<=80&&compact.calendarHeight<=(c.width<=520?420:480)&&compact.days>=35&&compact.minDayHeight>=43, `${c.name}: oversized or inaccessible calendar ${JSON.stringify(compact)}`);
+    }
+    await page.screenshot({path:`${OUT}/${c.name}-schedule.png`,fullPage:false,animations:'disabled'});
     await clickVisible(page,'[data-view="school"]');await page.locator('#schoolView:not(.hidden)').waitFor();await page.locator('#schoolInfoGrid .info-tile').first().waitFor();row.states.school=await state(page,'school');verifySchool(c,row.states.school,tokens,todayLeft);
-    await clickVisible(page,'#settingsBtn,#mobileSettingsBtn');await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();row.states.settings=await state(page,'settings');verifySettings(c,row.states.settings,tokens);row.pass=true;
+    if(c.height>c.width&&c.width<=900){
+      const profileHeight=await page.locator('#schoolView .profile-hero').evaluate(node=>node.getBoundingClientRect().height);
+      row.profileHeight=profileHeight;
+      assert(profileHeight<=190,`${c.name}: profile hero monopolizes the first fold (${profileHeight}px)`);
+    }
+    await page.screenshot({path:`${OUT}/${c.name}-school.png`,fullPage:false,animations:'disabled'});
+    await clickVisible(page,'#settingsBtn,#mobileSettingsBtn');await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();row.states.settings=await state(page,'settings');verifySettings(c,row.states.settings,tokens);
+    row.settingsGrouping=await page.evaluate(()=>{
+      const cards=[...document.querySelectorAll('#flowSchoolSettingsView .flow-settings-card')],first=cards[0],second=cards[1],fields=document.querySelector('#flowSchoolSettingsView .flow-settings-fields:not(.one)');
+      const f=first?.getBoundingClientRect(),s=second?.getBoundingClientRect(),sty=first&&getComputedStyle(first);
+      const separated=f&&s?(Math.min(f.right,s.right)-Math.max(f.left,s.left)>8?s.top-f.bottom:Math.max(s.left-f.right,f.left-s.right)):0;
+      return {count:cards.length,gap:separated,border:sty?.borderTopWidth,shadow:sty?.boxShadow,accent:first&&getComputedStyle(first,'::before').backgroundColor,fieldColumns:fields&&getComputedStyle(fields).gridTemplateColumns.split(' ').length};
+    });
+    const grouping=row.settingsGrouping;
+    assert(grouping.count>=5&&grouping.gap>=8&&Number.parseFloat(grouping.border)>=1&&grouping.shadow!=='none'&&grouping.accent!=='rgba(0, 0, 0, 0)',`${c.name}: settings sections lack separation ${JSON.stringify(grouping)}`);
+    if(c.width<=520)assert(grouping.fieldColumns===2,`${c.name}: bell fields should use a compact two-column row ${JSON.stringify(grouping)}`);
+    await page.screenshot({path:`${OUT}/${c.name}-settings.png`,fullPage:false,animations:'disabled'});
+    row.pass=true;
   }catch(error){row.pass=false;row.error=error?.stack||String(error);report.failures.push({case:c.name,error:row.error});console.error(`${c.name}: FAIL\n${row.error}`)}finally{report.cases.push(row);await context.close()}
 }
 await writeFile(`${OUT}/school-spacing-system-report.json`,JSON.stringify(report,null,2));await browser.close();if(report.failures.length)throw new Error(`School spacing system found ${report.failures.length} failure(s): ${JSON.stringify(report.failures.map(x=>({case:x.case,error:x.error.split('\n')[0]})))}`);console.log(`School spacing system PASS: ${CASES.length} viewports`);
