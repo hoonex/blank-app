@@ -6,6 +6,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import io.github.hoonex.flow.data.CourseTime
@@ -37,8 +38,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @RunWith(AndroidJUnit4::class)
 class FlowGalaxyPhoneVisualTest {
@@ -56,7 +55,7 @@ class FlowGalaxyPhoneVisualTest {
             mkdirs()
         }
         clearState()
-        device.setOrientationNatural()
+        device.setNaturalPortraitAndWait()
 
         assertEquals("Galaxy profile width override missing", 1080, device.displayWidth)
         assertTrue(
@@ -76,7 +75,7 @@ class FlowGalaxyPhoneVisualTest {
     @After
     fun restore() {
         clearState()
-        runCatching { device.setOrientationNatural() }
+        runCatching { device.setNaturalPortraitAndWait() }
     }
 
     @Test
@@ -91,19 +90,50 @@ class FlowGalaxyPhoneVisualTest {
         FlowModeStore(context).save(FlowMode.UNIVERSITY)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동대학교")
-            assertTrue("live-day gap missing", device.wait(Until.hasObject(By.textContains("공강")), 5_000))
+            assertTrue("live-day task missing", device.wait(Until.hasObject(By.textContains("오늘 제출할 과제")), 5_000))
             waitForText("오늘 제출할 과제")
             capture("23-galaxy-s25-university-home")
+            scrollUntilText("오늘 할 일")
+            val universityPlannerLink = device.wait(Until.findObject(By.desc("오늘 제출할 과제 플래너에서 열기")), 5_000)
+            assertNotNull("university live-day planner link missing", universityPlannerLink)
+            universityPlannerLink!!.click()
+            waitForText("플래너")
+            device.pressBack()
+            waitForText("정동대학교")
+            scrollUntilText("오늘 할 일")
+            val universityComplete = device.wait(Until.findObject(By.desc("오늘 제출할 과제 완료")), 5_000)
+            assertNotNull("university live-day completion action missing", universityComplete)
+            universityComplete!!.click()
+            assertTrue("university task did not leave live day", device.wait(Until.gone(By.desc("오늘 제출할 과제 완료")), 5_000))
+            assertTrue("university task completion opened planner", !device.hasObject(By.text("플래너")))
+            assertTrue("university task completion was not persisted", FlowPlannerStore(context).load().first { it.id == "galaxy-integrated-task" }.done)
             clickTextAndWaitForText("시간표", "시간표 다시 가져오기")
             scrollUntilText("시간표 다시 가져오기")
             assertAboveBottomNavigation("시간표 다시 가져오기", "시간표")
         }
 
         seedRepresentativeSchool()
+        seedSchoolDayTask()
         FlowModeStore(context).save(FlowMode.SCHOOL)
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForText("정동고등학교")
+            waitForText("국어")
+            waitForText("현미밥")
             capture("24-galaxy-s25-school-today")
+            scrollUntilText("오늘 학교 할 일")
+            val schoolPlannerLink = device.wait(Until.findObject(By.desc("오늘 학교 할 일 플래너에서 열기")), 5_000)
+            assertNotNull("school live-day planner link missing", schoolPlannerLink)
+            schoolPlannerLink!!.click()
+            waitForText("플래너")
+            device.pressBack()
+            waitForText("정동고등학교")
+            scrollUntilText("오늘 학교 할 일")
+            val schoolComplete = device.wait(Until.findObject(By.desc("오늘 학교 할 일 완료")), 5_000)
+            assertNotNull("school live-day completion action missing", schoolComplete)
+            schoolComplete!!.click()
+            assertTrue("school task did not leave live day", device.wait(Until.gone(By.desc("오늘 학교 할 일 완료")), 5_000))
+            assertTrue("school task completion opened planner", !device.hasObject(By.text("플래너")))
+            assertTrue("school task completion was not persisted", FlowPlannerStore(context).load().first { it.id == "galaxy-school-task" }.done)
             scrollUntilText("데이터 새로고침")
             assertAboveBottomNavigation("데이터 새로고침", "오늘")
             clickTextAndWaitForText("설정", "데이터와 모드")
@@ -135,7 +165,7 @@ class FlowGalaxyPhoneVisualTest {
     }
 
     private fun seedRepresentativeSchool() {
-        val today = LocalDate.now()
+        val today = flowAcademicNow().toLocalDate()
         val todayRaw = schoolDate8(today)
         val tomorrowRaw = schoolDate8(today.plusDays(1))
         val school = FlowSchool(
@@ -229,13 +259,15 @@ class FlowGalaxyPhoneVisualTest {
 
     private fun seedIntegratedDayTask() {
         val now = flowAcademicNow()
+        val nowMinute = now.hour * 60 + now.minute
+        val liveDayDueMinute = if (nowMinute < 780) maxOf(630, nowMinute).coerceAtMost(779) else 1439
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
                     id = "galaxy-integrated-task",
                     title = "오늘 제출할 과제",
                     note = "수업과 함께 보이는 Flow 일정",
-                    dueAt = now.toLocalDate().atTime(11, 30).toString(),
+                    dueAt = now.toLocalDate().atTime(liveDayDueMinute / 60, liveDayDueMinute % 60).toString(),
                     kind = FlowTaskKind.ASSIGNMENT,
                     scope = FlowTaskScope.FLOW
                 )
@@ -243,8 +275,24 @@ class FlowGalaxyPhoneVisualTest {
         )
     }
 
+    private fun seedSchoolDayTask() {
+        val now = flowAcademicNow()
+        FlowPlannerStore(context).save(
+            listOf(
+                FlowTask(
+                    id = "galaxy-school-task",
+                    title = "오늘 학교 할 일",
+                    note = "학교 홈에서 바로 완료",
+                    dueAt = now.toLocalDate().atTime(16, 0).toString(),
+                    kind = FlowTaskKind.TODO,
+                    scope = FlowTaskScope.SCHOOL
+                )
+            )
+        )
+    }
+
     private fun seedPlanner() {
-        val now = LocalDateTime.now()
+        val now = flowAcademicNow()
         FlowPlannerStore(context).save(
             listOf(
                 FlowTask(
@@ -299,13 +347,20 @@ class FlowGalaxyPhoneVisualTest {
         val startY = (device.displayHeight * 0.70f).toInt()
         val endY = (device.displayHeight * 0.24f).toInt()
         val safeBottom = (device.displayHeight * 0.78f).toInt()
-        repeat(12) {
+        repeat(14) {
             val node = device.findObject(selector)
             if (node != null && node.visibleBounds.centerY() in 1 until safeBottom) {
                 device.waitForIdle()
                 return
             }
-            device.swipe(x, startY, x, endY, 28)
+            val scrollable = device.findObjects(By.scrollable(true))
+                .maxByOrNull { it.visibleBounds.height() }
+            val scrolled = scrollable?.let {
+                runCatching { it.scroll(Direction.DOWN, 0.85f) }.getOrDefault(false)
+            } ?: false
+            if (!scrolled) {
+                device.swipe(x, startY, x, endY, 28)
+            }
             device.waitForIdle()
         }
         val node = device.findObject(selector)

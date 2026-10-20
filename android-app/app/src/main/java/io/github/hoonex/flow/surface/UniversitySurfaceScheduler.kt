@@ -1,12 +1,14 @@
 package io.github.hoonex.flow.surface
 
 import io.github.hoonex.flow.data.flowAcademicNow
+import io.github.hoonex.flow.data.toAcademicEpochMillis
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.github.hoonex.flow.data.UniversityStore
+import io.github.hoonex.flow.data.nextAcademicMidnight
 import io.github.hoonex.flow.data.nextBoundary
 import io.github.hoonex.flow.notification.UniversityNotification
 import io.github.hoonex.flow.widget.UniversityWidgets
@@ -15,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 object UniversitySurfaceScheduler {
     private const val REQUEST_CODE = 4102
@@ -29,12 +30,10 @@ object UniversitySurfaceScheduler {
             return
         }
 
-        val boundary = UniversityStore(appContext).loadTimetable()?.nextBoundary(now)
-        if (boundary == null) {
-            alarmManager.cancel(pendingIntent)
-            return
-        }
-        val triggerAt = boundary.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val classBoundary = UniversityStore(appContext).loadTimetable()?.nextBoundary(now)
+        val midnightBoundary = nextAcademicMidnight(now)
+        val boundary = listOfNotNull(classBoundary, midnightBoundary).minOrNull() ?: midnightBoundary
+        val triggerAt = boundary.toAcademicEpochMillis()
         alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     }
 
