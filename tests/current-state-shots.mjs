@@ -51,20 +51,24 @@ function assertLayout(label,state){
 async function schoolProfileGeometry(page,label){
   const geometry=await page.evaluate(()=>{
     const grid=document.querySelector('#schoolInfoGrid');
-    const tiles=[...grid?.querySelectorAll(':scope > .info-tile')||[]];
-    const rects=tiles.map(tile=>{const r=tile.getBoundingClientRect();return{top:r.top,left:r.left,right:r.right,width:r.width,label:tile.querySelector('span')?.textContent?.trim()||''}});
+    const groups=[...grid?.querySelectorAll(':scope > .info-group')||[]];
+    const tiles=[...grid?.querySelectorAll('.info-tile')||[]];
+    const r=node=>{const x=node.getBoundingClientRect();return{top:x.top,left:x.left,right:x.right,width:x.width}};
+    const rects=groups.map(group=>({...r(group),label:group.querySelector('h3')?.textContent?.trim()||''}));
+    const fields=tiles.map(tile=>({...r(tile),label:tile.querySelector('span')?.textContent?.trim()||''}));
     const columns=getComputedStyle(grid).gridTemplateColumns.split(/\s+/).filter(Boolean).length;
-    return{columns,count:tiles.length,rects};
+    return{columns,count:tiles.length,groupCount:groups.length,rects,fields};
   });
-  if(geometry.count!==13)throw new Error(`${label} expected 13 School profile tiles, got ${geometry.count}`);
-  if(geometry.columns!==12)throw new Error(`${label} expected 12 desktop profile tracks, got ${geometry.columns}`);
-  const lastFive=geometry.rects.slice(-5);
-  const rowSpread=Math.max(...lastFive.map(r=>r.top))-Math.min(...lastFive.map(r=>r.top));
-  if(rowSpread>2)throw new Error(`${label} final five School profile tiles are not on one row: ${JSON.stringify(lastFive)}`);
-  if(lastFive.at(-1)?.label!=='계열')throw new Error(`${label} final School profile tile is not 계열: ${JSON.stringify(lastFive)}`);
+  if(geometry.count!==13||geometry.groupCount!==2)
+    throw new Error(label+' expected 13 NEIS fields in two groups: '+JSON.stringify(geometry));
+  if(geometry.columns!==2)
+    throw new Error(label+' expected two desktop School overview columns: '+JSON.stringify(geometry));
+  if(geometry.rects[1].left<=geometry.rects[0].right+6||Math.abs(geometry.rects[1].top-geometry.rects[0].top)>4)
+    throw new Error(label+' School overview groups are not side-by-side: '+JSON.stringify(geometry));
+  if(!geometry.fields.some(field=>field.label==='주소')||!geometry.fields.some(field=>field.label==='계열'))
+    throw new Error(label+' School profile lost its canonical address/track data');
   return geometry;
 }
-
 async function shot(page,path,fullPage){
   await page.screenshot({path:`${OUT}/${path}`,fullPage,animations:'disabled'});
 }
