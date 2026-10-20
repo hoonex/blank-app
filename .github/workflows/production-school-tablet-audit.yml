@@ -54,10 +54,10 @@ jobs:
           node --check school-today-topbar.js
           node --check tests/school-ambient-tablet-shell-audit.mjs
           node --check tests/school-desktop-tablet-redesign-audit.mjs
-          grep -q 'WIDE_TOUCH_TABLET' school-tablet-rotation-contract.js
+          grep -q 'WORKSPACE_QUERY' school-tablet-rotation-contract.js
           grep -q 'flowSchoolLayout' school-tablet-rotation-contract.js
-          grep -q 'maxTouchPoints' school-tablet-rotation-contract.js
-          grep -q '1536px' school-tablet-rotation-contract.js
+          grep -q 'flowSchoolOrientation' school-tablet-rotation-contract.js
+          grep -q 'flowSchoolComposition' school-tablet-rotation-contract.js
           grep -q 'flowSchoolDesktopTabletUi' school-desktop-tablet-redesign.js
           grep -q 'assertDateRailDirect' tests/school-ambient-tablet-shell-audit.mjs
           grep -q 'DOMMatrixReadOnly' tests/school-ambient-tablet-shell-audit.mjs
