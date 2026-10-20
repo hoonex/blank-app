@@ -69,22 +69,27 @@ async function inspect(page,label){
 }
 function assertCompact(name,state,{landscape}){
   if(state.topbarMode!=='ready'||state.tabletMode!=='compact')throw new Error(`${name}: compact state lost ${JSON.stringify({topbarMode:state.topbarMode,tabletMode:state.tabletMode,viewport:state.viewport})}`);
-  if(!state.pointerCoarse)throw new Error(`${name}: coarse touch pointer missing ${JSON.stringify(state.viewport)}`);
-  if(state.orientationLandscape!==landscape)throw new Error(`${name}: orientation mismatch ${JSON.stringify(state.viewport)}`);
-  if(!state.header.visible||!state.dock.visible||!state.school.visible)throw new Error(`${name}: top shell incomplete ${JSON.stringify({header:state.header,dock:state.dock,school:state.school})}`);
-  if(state.hero.visible||(state.hero.rect?.height||0)>1.5)throw new Error(`${name}: legacy School hero returned ${JSON.stringify(state.hero)}`);
-  if(state.days.length!==5||state.days.filter(day=>day.active==='true').length!==1||state.days.some(day=>!day.text))throw new Error(`${name}: five-day date rail broken ${JSON.stringify(state.days)}`);
-  if(!state.school.text.includes('정동고등학교')||!state.school.text.includes('2학년 6반'))throw new Error(`${name}: School identity missing ${JSON.stringify(state.school)}`);
-  if(state.viewport.scrollWidth>state.viewport.clientWidth+2)throw new Error(`${name}: horizontal overflow ${JSON.stringify(state.viewport)}`);
+  if(!state.pointerCoarse)throw new Error(`${name}: coarse touch pointer missing`);
+  if(state.orientationLandscape!==landscape)throw new Error(`${name}: orientation mismatch`);
+  if(!state.header.visible||!state.dock.visible||!state.school.visible)throw new Error(`${name}: compact header/date controls missing`);
+  if(state.hero.visible||(state.hero.rect?.height||0)>1.5)throw new Error(`${name}: compact legacy hero returned`);
+  if(state.days.length!==5||state.days.filter(day=>day.active==='true').length!==1||state.days.some(day=>!day.text))throw new Error(`${name}: five-day rail broken`);
+  if(!state.school.text.includes('정동고등학교')||!state.school.text.includes('2학년 6반'))throw new Error(`${name}: School identity missing`);
+  if(state.viewport.scrollWidth>state.viewport.clientWidth+2)throw new Error(`${name}: horizontal overflow`);
   if(landscape){
-    if(state.sidebar.visible)throw new Error(`${name}: desktop sidebar returned ${JSON.stringify(state.sidebar)}`);
-    if((state.header.rect?.height||999)>72)throw new Error(`${name}: topbar too tall ${JSON.stringify(state.header)}`);
-    if(!state.nav.visible||state.nav.position!=='fixed')throw new Error(`${name}: bottom nav not fixed/visible ${JSON.stringify(state.nav)}`);
-    if((state.nav.rect?.bottom||0)>state.viewport.height+1||(state.nav.rect?.bottom||0)<state.viewport.height-28)throw new Error(`${name}: bottom nav not anchored ${JSON.stringify({nav:state.nav.rect,viewport:state.viewport})}`);
-    if(state.nav.radius<(state.nav.rect?.height||0)/2-2||state.nav.lensRadius<20)throw new Error(`${name}: bottom nav lost pill curvature ${JSON.stringify({radius:state.nav.radius,lensRadius:state.nav.lensRadius,height:state.nav.rect?.height})}`);
-    if(state.nav.items.length!==4||state.nav.items.some(item=>item.view==='week'||item.view==='transit')||state.nav.items.filter(item=>item.settings).length!==1)throw new Error(`${name}: destination nav changed ${JSON.stringify(state.nav.items)}`);
-    if(state.nav.items.some(item=>(item.rect?.width||0)<44||(item.rect?.height||0)<44))throw new Error(`${name}: nav target undersized ${JSON.stringify(state.nav.items)}`);
+    if(state.sidebar.visible)throw new Error(`${name}: desktop sidebar returned before workspace capacity`);
+    if((state.header.rect?.height||999)>72)throw new Error(`${name}: topbar too tall`);
+    if(!state.nav.visible||state.nav.position!=='fixed')throw new Error(`${name}: fixed compact nav missing`);
+    if((state.nav.rect?.bottom||0)>state.viewport.height+1||(state.nav.rect?.bottom||0)<state.viewport.height-28)throw new Error(`${name}: bottom nav not anchored`);
+    if(state.nav.radius<(state.nav.rect?.height||0)/2-2||state.nav.lensRadius<20)throw new Error(`${name}: bottom nav curvature broken`);
+    if(state.nav.items.length!==4||state.nav.items.some(item=>item.view==='week'||item.view==='transit')||state.nav.items.filter(item=>item.settings).length!==1)throw new Error(`${name}: destinations changed`);
+    if(state.nav.items.some(item=>(item.rect?.width||0)<44||(item.rect?.height||0)<44))throw new Error(`${name}: nav hit targets undersized`);
   }
+}
+function assertWide(name,state){
+  if(state.tabletMode!=='wide'||state.topbarMode!=='wide'||!state.sidebar.visible||state.header.visible||state.nav.visible||!state.hero.visible)
+    throw new Error(`${name}: 1181px+ roomy landscape did not become workspace ${JSON.stringify(state)}`);
+  if(state.viewport.scrollWidth>state.viewport.clientWidth+2)throw new Error(`${name}: workspace horizontal overflow`);
 }
 
 for(const glassMode of ['standard','optical']){
@@ -107,10 +112,10 @@ for(const glassMode of ['standard','optical']){
       assertCompact(`${glassMode}/${testCase.id}/portrait-before`,portraitBefore,{landscape:false});
 
       await page.setViewportSize(testCase.landscape);
-      await page.waitForFunction(({width,height})=>innerWidth===width&&innerHeight===height&&matchMedia('(orientation:landscape)').matches&&document.documentElement.dataset.flowSchoolTabletRotation==='compact'&&document.documentElement.dataset.flowTodayTopbar==='ready',testCase.landscape);
+      await page.waitForFunction(({width,height})=>innerWidth===width&&innerHeight===height&&matchMedia('(orientation:landscape)').matches&&document.documentElement.dataset.flowSchoolTabletRotation===(width>=1181&&height>=681?'wide':'compact')&&document.documentElement.dataset.flowTodayTopbar===(width>=1181&&height>=681?'wide':'ready'),testCase.landscape);
       await page.waitForTimeout(220);
       const landscape=await inspect(page,'landscape');
-      assertCompact(`${glassMode}/${testCase.id}/landscape`,landscape,{landscape:true});
+      if(testCase.landscape.width>=1181&&testCase.landscape.height>=681)assertWide(`${glassMode}/${testCase.id}/landscape`,landscape);else assertCompact(`${glassMode}/${testCase.id}/landscape`,landscape,{landscape:true});
       await page.screenshot({path:`${OUT}/${glassMode}-${testCase.id}-landscape.png`,fullPage:false});
 
       await page.setViewportSize(testCase.portrait);
@@ -132,4 +137,4 @@ for(const glassMode of ['standard','optical']){
 await browser.close();
 await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
 if(report.failures.length){console.error(report.failures.join('\n'));process.exit(1)}
-console.log(JSON.stringify({ok:true,cases:report.cases.map(item=>`${item.glassMode}:${item.id}`),contract:'compact School shell survives portrait-landscape-portrait rotation across 1024x768 through the 1366x900 touch-tablet boundary'},null,2));
+console.log(JSON.stringify({ok:true,cases:report.cases.map(item=>`${item.glassMode}:${item.id}`),contract:'School shell follows orientation and available room through portrait-landscape-portrait transitions, independent of touch type'},null,2));
