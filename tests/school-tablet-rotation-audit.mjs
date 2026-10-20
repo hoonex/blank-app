@@ -104,8 +104,8 @@ for(const glassMode of ['standard','optical']){
     assertCommon(`${glassMode}/portrait-before`,portraitBefore,{landscape:false});
     await page.screenshot({path:`${OUT}/${glassMode}-portrait-before.png`,fullPage:false});
 
-    await page.setViewportSize({width:1280,height:800});
-    await page.waitForFunction(()=>innerWidth===1280&&innerHeight===800&&matchMedia('(orientation:landscape)').matches&&document.documentElement.dataset.flowSchoolTabletRotation==='compact'&&document.documentElement.dataset.flowTodayTopbar==='ready');
+    await page.setViewportSize({width:1180,height:800});
+    await page.waitForFunction(()=>innerWidth===1180&&innerHeight===800&&matchMedia('(orientation:landscape)').matches&&document.documentElement.dataset.flowSchoolTabletRotation==='compact'&&document.documentElement.dataset.flowTodayTopbar==='ready');
     await page.waitForTimeout(260);
     const landscape=await inspect(page,'landscape');
     assertLandscape(`${glassMode}/landscape`,landscape);
@@ -131,4 +131,4 @@ for(const glassMode of ['standard','optical']){
 await browser.close();
 await writeFile(`${OUT}/report.json`,JSON.stringify(report,null,2));
 if(report.failures.length){console.error(report.failures.join('\n'));process.exit(1)}
-console.log(JSON.stringify({ok:true,cases:report.cases.map(item=>item.glassMode),contract:'800x1280 -> 1280x800 -> 800x1280 keeps the compact top date rail, hides the legacy hero, and preserves a true pill bottom nav'},null,2));
+console.log(JSON.stringify({ok:true,cases:report.cases.map(item=>item.glassMode),contract:'800x1280 -> 1180x800 -> 800x1280 keeps the compact top date rail, hides the legacy hero, and preserves a true pill bottom nav'},null,2));
