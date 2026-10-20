@@ -216,6 +216,44 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #flowSchoo
  html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group .info-tile{min-height:0!important;height:auto!important;padding:9px 0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
  html[data-flow-school-ui="v2"] body #dashboard #schoolView #schoolInfoGrid .info-group .info-tile strong{font-size:.85rem!important}
 }
+
+/* Wide-touch landscape had a portrait-sized hero, leaving school facts under
+   the floating navigation. Keep the identity readable while revealing facts. */
+@media (orientation:landscape) and (min-width:700px) and (max-width:1180px) and (max-height:820px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView>.view-header{
+    min-height:72px!important;
+    height:auto!important;
+    padding:10px 16px!important;
+    justify-content:center!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView>.view-header p{display:none!important}
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView>.view-header h1{
+    font-size:clamp(1.35rem,3vw,1.7rem)!important;
+    line-height:1.2!important;
+    margin:0!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-hero,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    min-height:158px!important;
+    height:auto!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    padding:18px 22px!important;
+  }
+}
+@media (orientation:landscape) and (min-width:700px) and (max-width:900px) and (max-height:520px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-hero,
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    min-height:126px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content{
+    padding:10px 20px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard:not(.hidden) #schoolView#schoolView .profile-content h2{
+    font-size:1.45rem!important;
+  }
+}
+
 /* Secondary destinations: match Today's compact, readable card rhythm.
    Keep all dates/controls intact; only the unused vertical chrome is reduced. */
 @media (orientation:portrait) and (max-width:900px){
