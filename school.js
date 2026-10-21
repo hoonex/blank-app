@@ -1,3 +1,5 @@
+import {SCHOOL_RESOURCE_KINDS,createSchoolResourceCache} from './school-data-store.mjs';
+
 const EDGE = 'https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data';
 const PROFILE_KEY = 'flow-school-profile-v3';
 const OLD_PROFILE_KEY = 'flow-school-profile-v2';
@@ -7,10 +9,6 @@ const ALLERGY_KEY = 'flow-school-allergies-v1';
 const BELL_KEY = 'flow-school-bell-v1';
 const MEDIA_PREFIX = 'flow-school-media-v1:';
 const CACHE_PREFIX = 'flow-school-cache-v4:';
-// School dashboard bundles timetable, meals, and events in one API response.
-// They change infrequently; revalidate at most twice a day while a tab stays open.
-// New dates and a deliberate Today refresh still fetch immediately.
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const AUTO_REFRESH_RETRY_MS = 2 * 60 * 1000;
 const RANK_TOTAL_KEY = 'flow-school-rank-total-v1';
 const $ = (s) => document.querySelector(s);
@@ -65,6 +63,7 @@ let lastAutoRefreshAt = 0;
 let toastTimer = null;
 let installPrompt = null;
 const memoryCache = new Map();
+const resourceCache = createSchoolResourceCache(localStorage);
 const themeMedia = matchMedia('(prefers-color-scheme: dark)');
 
 function readJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}}
@@ -113,8 +112,8 @@ function cycleTheme(){const order=['light','system','dark'];applyTheme(order[(or
 themeMedia.addEventListener?.('change',()=>{if(currentTheme()==='system')applyTheme('system')});
 
 async function api(params,signal){
-  const url=new URL(EDGE);Object.entries(params).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=='')url.searchParams.set(k,String(v))});
-  const response=await fetch(url,{signal});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'데이터를 불러오지 못했습니다.');return body;
+  const url=new URL(EDGE);Object.entries(params).forEach(([k,v])=>{if(k!=='forceRefresh'&&v!==undefined&&v!==null&&v!=='')url.searchParams.set(k,String(v))});
+  const response=await fetch(url,{signal,cache:params.forceRefresh?'no-store':'default'});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'데이터를 불러오지 못했습니다.');return body;
 }
 
 function renderIdentity(){
@@ -157,30 +156,114 @@ async function loadClassChoices(){
 }
 function saveSetup(){
   if(!selectedSetupSchool)return;const gradeValue=Number($('#gradeRow [data-grade].active')?.dataset.grade||1);const className=$('#classRow [data-class].active')?.dataset.class||$('#classInput').value.trim()||'1';
-  profile={school:selectedSetupSchool,grade:gradeValue,className};writeJson(PROFILE_KEY,profile);localStorage.removeItem(OLD_PROFILE_KEY);closeDialog($('#setupDialog'));selectedDate=noon(new Date());data=null;dataKey='';memoryCache.clear();currentView='today';showDashboard();loadDashboard();loadMedia();
+  profile={school:selectedSetupSchool,grade:gradeValue,className};writeJson(PROFILE_KEY,profile);localStorage.removeItem(OLD_PROFILE_KEY);closeDialog($('#setupDialog'));selectedDate=noon(new Date());data=null;dataKey='';memoryCache.clear();resourceCache.clearMemory();dashboardAbort?.abort();dashboardLoadingKey='';currentView='today';showDashboard();loadDashboard();loadMedia();
 }
 function openSwitch(){if(!profile)return;$('#currentSchoolMeta').textContent=`${profile.school.name} · ${profile.grade}학년 ${profile.className}반`;$('#switchSearch').value='';$('#switchResults').classList.add('hidden');openDialog('#switchDialog');setTimeout(()=>$('#switchSearch')?.focus(),80)}
 function reselectClass(){if(!profile)return;selectedSetupSchool=profile.school;closeDialog($('#switchDialog'));chooseSchool(profile.school)}
-function clearProfile(){localStorage.removeItem(PROFILE_KEY);localStorage.removeItem(OLD_PROFILE_KEY);profile=null;data=null;dataKey='';memoryCache.clear();closeDialog($('#switchDialog'));showLanding()}
+function clearProfile(){localStorage.removeItem(PROFILE_KEY);localStorage.removeItem(OLD_PROFILE_KEY);profile=null;data=null;dataKey='';memoryCache.clear();resourceCache.clearMemory();dashboardAbort?.abort();dashboardLoadingKey='';closeDialog($('#switchDialog'));showLanding()}
 
+// Legacy dashboard cache remains readable so a version upgrade does not discard
+// previously fetched offline data. New requests use independent resource scopes.
 function saveCache(key,payload){const entry={at:Date.now(),payload};memoryCache.set(key,entry);try{writeJson(cacheStorageKey(key),entry)}catch{}}
 function loadCache(key,{allowStale=false}={}){
   const entry=memoryCache.get(key)||readJson(cacheStorageKey(key),null);
   if(!entry?.payload)return null;
-  if(!allowStale&&(!Number.isFinite(entry.at)||Date.now()-entry.at>=CACHE_TTL_MS||entry.at>Date.now()))return null;
+  if(!allowStale&&(!Number.isFinite(entry.at)||Date.now()-entry.at>=12*60*60*1000||entry.at>Date.now()))return null;
   memoryCache.set(key,entry);
   return entry.payload;
 }
-async function loadDashboard({force=false}={}){
-  if(!profile)return;const key=queryKey();if(!force){if(dashboardLoadingKey===key)return;const cached=loadCache(key);if(cached){data=cached;dataKey=key;$('#errorBox')?.classList.add('hidden');renderActiveView();return}}
-  dashboardAbort?.abort();dashboardAbort=new AbortController();const controller=dashboardAbort;dashboardLoadingKey=key;loading(true);$('#errorBox')?.classList.add('hidden');
-  try{
-    const result=await api({action:'dashboard',office:profile.school.officeCode,school:profile.school.schoolCode,grade:profile.grade,class:profile.className,kind:profile.school.kind,date:ymd(selectedDate)},controller.signal);
-    data=result;dataKey=key;if(data.school){profile.school={...profile.school,...data.school};writeJson(PROFILE_KEY,profile)}saveCache(key,data);renderActiveView();
-  }catch(error){if(error.name==='AbortError')return;const cached=loadCache(key,{allowStale:true});data=cached||{school:profile.school,timetable:[],meals:[],events:[]};dataKey=key;renderActiveView();if($('#errorBox')){$('#errorBox').textContent=cached?'새 데이터를 불러오지 못해 마지막 저장 정보를 표시합니다.':(error.message||'학교 정보를 불러오지 못했습니다.');$('#errorBox').classList.remove('hidden')}}finally{if(dashboardAbort===controller){dashboardLoadingKey='';loading(false)}}
+function seedResourcesFromBundle(bundle,date,at=Date.now(),{onlyMissing=false}={}){
+  const parts={
+    school:{school:bundle.school??profile.school},
+    timetable:{timetable:bundle.timetable||[]},
+    meals:{meals:bundle.meals||[]},
+    events:{events:bundle.events||[],scheduleMeta:bundle.scheduleMeta||{mode:'month',count:(bundle.events||[]).length}},
+  };
+  for(const kind of SCHOOL_RESOURCE_KINDS){
+    if(onlyMissing&&resourceCache.record(profile,kind,date))continue;
+    resourceCache.put(profile,kind,date,parts[kind],at);
+  }
 }
-function ensureDataFor(date,{force=false}={}){selectedDate=noon(date);const key=queryKey();if(!force&&data&&dataKey===key){renderActiveView();return}loadDashboard({force})}
-
+function migrateLegacyBundle(date){
+  const legacy=readJson(cacheStorageKey(queryKey(date)),null);
+  if(!legacy?.payload||!Number.isFinite(legacy.at))return;
+  const payload=legacy.payload;
+  // Only promote complete historical bundles; do not turn missing test/NEIS data into empty resources.
+  if(!Array.isArray(payload.timetable)||!Array.isArray(payload.meals)||!Array.isArray(payload.events))return;
+  seedResourcesFromBundle(payload,date,legacy.at,{onlyMissing:true});
+}
+function missingResources(date=selectedDate){
+  migrateLegacyBundle(date);
+  return SCHOOL_RESOURCE_KINDS.filter(kind=>!resourceCache.isFresh(profile,kind,date));
+}
+function composeDashboard(date=selectedDate,{allowStale=false}={}){
+  migrateLegacyBundle(date);
+  const parts=Object.fromEntries(SCHOOL_RESOURCE_KINDS.map(kind=>[kind,resourceCache.get(profile,kind,date,{allowStale})]));
+  if(!SCHOOL_RESOURCE_KINDS.every(kind=>parts[kind]))return null;
+  const from=weekStart(date),to=new Date(from);to.setDate(from.getDate()+4);
+  return {
+    school:parts.school.school??profile.school,selected:ymd(date),from:ymd(from),to:ymd(to),
+    timetable:parts.timetable.timetable,meals:parts.meals.meals,events:parts.events.events,
+    scheduleMeta:parts.events.scheduleMeta||{mode:'month',count:parts.events.events.length},
+  };
+}
+async function loadDashboard({force=false}={}){
+  if(!profile)return;
+  const key=queryKey(),date=noon(selectedDate);
+  if(!force&&dashboardLoadingKey===key)return;
+  const missing=force?[...SCHOOL_RESOURCE_KINDS]:missingResources(date);
+  if(!missing.length&&!force){
+    const cached=composeDashboard(date);
+    if(cached){data=cached;dataKey=key;$('#errorBox')?.classList.add('hidden');renderActiveView();return}
+  }
+  dashboardAbort?.abort();dashboardAbort=new AbortController();
+  const controller=dashboardAbort;dashboardLoadingKey=key;loading(true);
+  $('#errorBox')?.classList.add('hidden');
+  const query={office:profile.school.officeCode,school:profile.school.schoolCode,grade:profile.grade,class:profile.className,kind:profile.school.kind,date:ymd(date)};
+  try{
+    // Support old server revisions/fixture APIs by falling back once to the
+    // existing aggregate endpoint. No individual response is committed until validated.
+    let results;
+    try{
+      results=await Promise.all(missing.map(async kind=>{
+        const action=kind==='school'?'school-info':kind;
+        const response=await api({action,...query,forceRefresh:force},controller.signal);
+        if(!response||!(kind==='school'?Object.prototype.hasOwnProperty.call(response,'school'):Array.isArray(response[kind==='timetable'?'timetable':kind])))throw new Error('독립 데이터 API를 사용할 수 없습니다.');
+        return [kind,response];
+      }));
+    }catch(error){
+      if(controller.signal.aborted)throw error;
+      const bundle=await api({action:'dashboard',...query,forceRefresh:force},controller.signal);
+      if(!Array.isArray(bundle.timetable)||!Array.isArray(bundle.meals)||!Array.isArray(bundle.events))throw new Error('학교 데이터 형식이 올바르지 않습니다.');
+      if(controller.signal.aborted)return;
+      seedResourcesFromBundle(bundle,date);saveCache(key,bundle);
+      results=[];
+    }
+    if(controller.signal.aborted||key!==queryKey())return;
+    for(const [kind,payload] of results)resourceCache.put(profile,kind,date,payload);
+    const next=composeDashboard(date,{allowStale:true});
+    if(!next)throw new Error('학교 데이터가 누락되었습니다.');
+    data=next;dataKey=key;
+    if(data.school){profile.school={...profile.school,...data.school};writeJson(PROFILE_KEY,profile)}
+    renderActiveView();
+  }catch(error){
+    if(error?.name==='AbortError'||controller.signal.aborted||key!==queryKey())return;
+    const cached=composeDashboard(date,{allowStale:true})||loadCache(key,{allowStale:true});
+    data=cached||{school:profile.school,timetable:[],meals:[],events:[]};dataKey=key;renderActiveView();
+    if($('#errorBox')){
+      $('#errorBox').textContent=cached?'새 데이터를 불러오지 못해 마지막 저장 정보를 표시합니다.':(error.message||'학교 정보를 불러오지 못했습니다.');
+      $('#errorBox').classList.remove('hidden');
+    }
+  }finally{
+    if(dashboardAbort===controller){dashboardLoadingKey='';loading(false)}
+  }
+}
+function ensureDataFor(date,{force=false}={}){
+  selectedDate=noon(date);
+  const key=queryKey();
+  if(!force&&data&&dataKey===key&&!missingResources(selectedDate).length){renderActiveView();return}
+  loadDashboard({force});
+}
 function refreshDashboardIfStale(){
   if(!profile||document.visibilityState==='hidden')return;
   const now=new Date(),today=ymd(now);
@@ -191,7 +274,7 @@ function refreshDashboardIfStale(){
   }
   if(ymd(selectedDate)!==today)return;
   const key=queryKey();
-  if(dashboardLoadingKey===key||(dataKey===key&&loadCache(key)))return;
+  if(dashboardLoadingKey===key||!missingResources(selectedDate).length)return;
   if(lastAutoRefreshKey===key&&Date.now()-lastAutoRefreshAt<AUTO_REFRESH_RETRY_MS)return;
   lastAutoRefreshKey=key;lastAutoRefreshAt=Date.now();loadDashboard();
 }

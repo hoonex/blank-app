@@ -161,6 +161,34 @@ Deno.serve(async(req)=>{
         return reply({place:null,provider:"kakao",upstreamError},200,{"Cache-Control":"no-store"});
       }
     }
+    // Fine-grained reads avoid refetching four NEIS datasets when only one is stale.
+    // Keep the legacy dashboard action below for existing clients and old PWA shells.
+    if(["school-info","timetable","meals","events"].includes(action)){
+      const office=u.searchParams.get("office")||"", code=u.searchParams.get("school")||"";
+      const grade=u.searchParams.get("grade")||"", cls=u.searchParams.get("class")||"";
+      const kind=u.searchParams.get("kind")||"고등학교";
+      if(!office||!code)return reply({error:"학교 정보가 필요합니다."},400);
+      const common={ATPT_OFCDC_SC_CODE:office,SD_SCHUL_CODE:code};
+      if(action==="school-info"){
+        const info=await call("schoolInfo",common);
+        return reply({school:info[0]?school(info[0]):null},200,{"Cache-Control":"public, max-age=86400"});
+      }
+      const d=baseDate(u.searchParams.get("date")), [from,to]=week(d);
+      if(action==="timetable"){
+        if(!grade||!cls)return reply({error:"학년과 반 정보가 필요합니다."},400);
+        const list=await call(endpoint(kind),{...common,GRADE:grade,CLASS_NM:cls,TI_FROM_YMD:date8(from),TI_TO_YMD:date8(to)});
+        return reply({from:date8(from),to:date8(to),timetable:list.map((r:any)=>({date:clean(r.ALL_TI_YMD),period:+r.PERIO,subject:clean(r.ITRT_CNTNT),grade:clean(r.GRADE),className:clean(r.CLASS_NM)}))},200,{"Cache-Control":"public, max-age=300"});
+      }
+      if(action==="meals"){
+        const mealFrom=new Date(from);mealFrom.setDate(mealFrom.getDate()-2);
+        const mealTo=new Date(to);mealTo.setDate(mealTo.getDate()+9);
+        const list=await call("mealServiceDietInfo",{...common,MLSV_FROM_YMD:date8(mealFrom),MLSV_TO_YMD:date8(mealTo)});
+        return reply({meals:list.map((r:any)=>({date:clean(r.MLSV_YMD),type:clean(r.MMEAL_SC_NM),dishes:String(r.DDISH_NM||"").split("<br/>").map((x:string)=>x.trim()).filter(Boolean),calories:clean(r.CAL_INFO),nutrition:String(r.NTR_INFO||""),origin:String(r.ORPLC_INFO||""),people:clean(r.MLSV_FGR)}))},200,{"Cache-Control":"public, max-age=1800"});
+      }
+      const ms=new Date(d.getFullYear(),d.getMonth(),1,12),me=new Date(d.getFullYear(),d.getMonth()+1,0,12);
+      const schedule=await scheduleForMonth(common,ms,me);
+      return reply({events:schedule.list.map(scheduleEvent),scheduleMeta:{mode:schedule.mode,count:schedule.list.length}},200,{"Cache-Control":"public, max-age=1800"});
+    }
     if(action==="dashboard"){
       const office=u.searchParams.get("office")||"", code=u.searchParams.get("school")||"", grade=u.searchParams.get("grade")||"", cls=u.searchParams.get("class")||"", kind=u.searchParams.get("kind")||"고등학교";
       if(!office||!code||!grade||!cls)return reply({error:"학교/학년/반 정보가 필요합니다."},400);
