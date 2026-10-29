@@ -120,7 +120,11 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .flow-adf
 
 /* Schedule: the calendar itself is the title; no duplicate hero. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView>.view-header{
-  display:none!important;
+  display:flex!important;
+  align-items:center!important;
+  padding:6px 2px 13px!important;
+  min-height:46px!important;
+  margin:0!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout{
   display:grid!important;
@@ -166,7 +170,11 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .sched
 
 /* School: compact identity, utility actions and accessible metadata. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView>.view-header{
-  display:none!important;
+  display:flex!important;
+  align-items:center!important;
+  padding:6px 2px 13px!important;
+  min-height:46px!important;
+  margin:0!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-hero{
   min-height:144px!important;
@@ -222,7 +230,10 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-
 
 /* Settings: use the existing real controls; no fake palette or decorative switches. */
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView>.flow-settings-header{
-  display:none!important;
+  display:block!important;
+  min-height:46px!important;
+  padding:6px 2px 13px!important;
+  margin:0!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
   width:100%!important;max-width:none!important;
@@ -415,4 +426,19 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
   html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
     display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-auto-rows:auto!important;align-content:start!important;
   }
+}
+/* Restored semantic destination titles keep scroll/keyboard orientation.
+   Keep them compact rather than reinstating oversized hero headlines. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(#scheduleView>.view-header,#schoolView>.view-header,#flowSchoolSettingsView>.flow-settings-header) h1{
+  margin:0!important;font-size:clamp(1.05rem,1.35vw,1.23rem)!important;
+  letter-spacing:-.045em!important;line-height:1.24!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(#scheduleView>.view-header,#schoolView>.view-header,#flowSchoolSettingsView>.flow-settings-header) p{
+  display:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+  box-shadow:var(--flow-ref-shadow),inset 0 1px 0 rgba(255,255,255,.74)!important;
+}
+html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+  box-shadow:0 10px 26px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.09)!important;
 }
