@@ -1,0 +1,49 @@
+name: Flow reference four-tab responsive audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  school-reference-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Validate source and entry wiring
+        run: |
+          node --check school-metrics.js
+          node --check tests/flow-reference-composition-audit.mjs
+          test -s school-reference-composition.css
+          grep -q 'school-reference-composition.css' school-metrics.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install chromium
+      - name: Start Flow fixture server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/flow-reference-server.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep .3
+          done
+          cat /tmp/flow-reference-server.log
+          exit 1
+      - name: Check Today, Schedule, School, Settings in six viewports
+        env:
+          FLOW_BASE_URL: http://127.0.0.1:4173
+        run: node tests/flow-reference-composition-audit.mjs
+      - name: Upload responsive screenshots and measurements
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-reference-matrix
+          path: flow-reference-audit
+          if-no-files-found: ignore
