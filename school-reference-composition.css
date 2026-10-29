@@ -442,3 +442,10 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-c
 html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
   box-shadow:0 10px 26px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.09)!important;
 }
+
+/* Tiny phones: reserve enough width for Settings inputs without viewport overflow. */
+@media(max-width:360px){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
+    width:calc(100% - 8px)!important;
+  }
+}
