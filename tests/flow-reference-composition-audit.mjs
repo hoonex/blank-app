@@ -83,7 +83,7 @@ for(const c of CASES){
   page.setDefaultTimeout(12000);const errors=[];page.on('pageerror',error=>errors.push(String(error)));
   try{
     await setup(page);
-    await page.goto(BASE+'/home',{waitUntil:'domcontentloaded'});
+    await page.goto(BASE+'/',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurface==='ready');
     await page.waitForFunction(()=>!!document.querySelector('link[data-flow-school-reference-composition]')?.sheet);
     const desktop=width>=1181&&height>=681;
