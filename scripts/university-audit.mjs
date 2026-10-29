@@ -38,6 +38,8 @@ if (landingTheme.brand !== 'Flow' || landingTheme.brandMode !== 'University' || 
 if (landingTheme.modeHref !== '/' || landingTheme.themeControls !== 1) throw new Error(`University mode/theme controls are incomplete: ${JSON.stringify(landingTheme)}`);
 if (landingTheme.scrollWidth > landingTheme.bodyWidth + 2 || !landingTheme.card || landingTheme.card.right > landingTheme.bodyWidth + 1) throw new Error(`University landing overflows mobile: ${JSON.stringify(landingTheme)}`);
 await page.screenshot({ path: 'university-audit/mobile-landing.png', fullPage: true });
+// Compare both School and University only after each has settled its optional fonts.
+await page.evaluate(()=>document.fonts?.ready);
 const mobileUniversityGeometry=await page.evaluate(()=>{const rect=(el)=>{const r=el?.getBoundingClientRect();return r?{left:r.left,top:r.top,width:r.width,height:r.height}:null};const h1=document.querySelector('.setup-copy h1');return{header:rect(document.querySelector('.setup-header')),main:rect(document.querySelector('.setup-main')),h1:rect(h1),card:rect(document.querySelector('.search-card')),field:rect(document.querySelector('.search-field')),copy:rect(document.querySelector('.setup-copy')),h1Font:parseFloat(getComputedStyle(h1).fontSize),h1Line:parseFloat(getComputedStyle(h1).lineHeight)}});
 const mobileSchoolPage=await context.newPage();
 await mobileSchoolPage.goto(`${base}/`,{waitUntil:'domcontentloaded'});
