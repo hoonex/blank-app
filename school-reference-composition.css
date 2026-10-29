@@ -11,7 +11,7 @@ html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
 }
 html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden){
   width:calc(100% - clamp(28px,3vw,64px))!important;
-  grid-template-columns:186px minmax(0,1fr)!important;
+  grid-template-columns:206px minmax(0,1fr)!important;
   gap:clamp(14px,1.8vw,28px)!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .product-main{
@@ -256,6 +256,36 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
   border-color:var(--accent)!important;color:var(--accent)!important;
 }
 
+/* Desktop keeps its compact useful date context, not the old 240px hero. */
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #schoolHero{
+    display:block!important;
+    min-height:88px!important;height:88px!important;
+    margin:0 0 14px!important;
+    background:linear-gradient(115deg,color-mix(in srgb,var(--surface) 85%,#cddfff),color-mix(in srgb,var(--surface) 89%,#ffe8c9))!important;
+    overflow:hidden!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-content{
+    min-height:88px!important;height:88px!important;padding:12px 18px!important;
+    align-items:center!important;color:var(--text)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-image,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-shade{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-copy h1{
+    font-size:clamp(1.05rem,1.6vw,1.42rem)!important;margin:1px 0!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-copy p{
+    color:var(--muted)!important;font-size:.65rem!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-content .school-badge{
+    width:42px!important;height:42px!important;border-radius:12px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .hero-right{
+    flex-direction:row!important;align-items:center!important;
+  }
+}
 /* A floating dock never obscures the last control. */
 @media(max-width:1180px){
   html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
