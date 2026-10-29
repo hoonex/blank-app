@@ -49,6 +49,7 @@ async function getState(page,view){
       panel:rect(q(selector)),visible:vis(q(selector)),
       heroVisible:vis(q('#schoolView .profile-hero')),
       headerVisible:vis(q(selector+' > .view-header'))||vis(q(selector+' > .flow-settings-header')),
+      header:rect(q(selector+' > .view-header')||q(selector+' > .flow-settings-header')),
       calendar:rect(q('#scheduleView .calendar-card')),
       eventList:rect(q('#scheduleView .schedule-layout>.content-card:last-child')),
       timetable:rect(q('#todayView .timetable-card')),meal:rect(q('#todayView .meal-card')),
@@ -63,7 +64,7 @@ function verify(c,view,s){
   if(s.ready!=='ready'||!s.refLoaded||!s.visible)throw new Error(name+' '+view+': not ready '+JSON.stringify(s));
   if(s.viewport.scrollWidth>s.viewport.clientWidth+2)throw new Error(name+' '+view+': horizontal overflow '+JSON.stringify(s.viewport));
   if(s.panel?.width<Math.min(280,w-30))throw new Error(name+' '+view+': collapsed content '+JSON.stringify(s.panel));
-  if(['schedule','school','settings'].includes(view)&&s.headerVisible)throw new Error(name+' '+view+': duplicate giant title visible');
+  if(['schedule','school','settings'].includes(view)&&(!s.headerVisible||!s.header||s.header.height>90))throw new Error(name+' '+view+': compact destination header missing or oversized '+JSON.stringify(s.header));
   if(view==='today'&&s.timetable&&s.meal&&w>=960&&w>h&&s.meal.left<=s.timetable.left+120)throw new Error(name+': timetable and meal not two-column');
   if(view==='schedule'&&s.calendar&&s.eventList&&w>=960&&w>h&&s.eventList.left<=s.calendar.left+120)throw new Error(name+': calendar and events not two-column');
   if(view==='school'&&(!s.heroVisible||s.actions<2||!s.infoCards.length))throw new Error(name+': school data or actions missing');
