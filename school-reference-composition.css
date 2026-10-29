@@ -449,3 +449,14 @@ html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:not(.hidden) #
     width:calc(100% - 8px)!important;
   }
 }
+
+/* Wide portrait tablets retain a one-column calendar/events layout with a
+   genuine section gap, not the older block-flow layout that collapses it. */
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) #scheduleView .schedule-layout{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:var(--flow-school-section-gap)!important;
+    align-items:start!important;
+  }
+}
