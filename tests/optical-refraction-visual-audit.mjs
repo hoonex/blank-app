@@ -67,6 +67,10 @@ if(state.hasStickyChrome)throw new Error(`Sticky School chrome leaked into the b
 if(Math.max(state.initialAlignment.x,state.initialAlignment.y)>2)throw new Error(`Counter-positioned source copy is not aligned at rest: ${JSON.stringify(state)}`);
 if(Math.max(state.movedAlignment.x,state.movedAlignment.y)>2)throw new Error(`Counter-positioned source copy drifted while the lens moved: ${JSON.stringify(state)}`);
 if(state.root.scrollWidth>state.root.clientWidth+3)throw new Error(`Optical calibration overflowed: ${JSON.stringify(state)}`);
+/* The calibration deliberately moves the real lens above. Let its 220ms
+ * geometry-follow period finish before making paired pixel measurements;
+ * otherwise scene motion appears as uniform displacement in the center. */
+await page.waitForTimeout(420);
 const clip={x:Math.max(0,state.lensRect.left),y:Math.max(0,state.lensRect.top),width:Math.min(390,state.lensRect.width),height:Math.min(844,state.lensRect.height)};
 /* Real nav labels sit above the optical sample. Their correct placement must not
    change a displacement-only pixel metric, so hide only those foreground
