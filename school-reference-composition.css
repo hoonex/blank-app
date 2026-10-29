@@ -515,3 +515,14 @@ html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:not(.hidden) #
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
   }
 }
+
+/* Touch landscape keeps the horizontal School utility action strip. */
+@media(min-width:901px) and (max-width:1180px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions{
+    display:flex!important;flex-wrap:wrap!important;align-items:stretch!important;
+    gap:var(--flow-school-section-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions>.action-link{
+    flex:1 1 155px!important;min-width:0!important;
+  }
+}
