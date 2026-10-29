@@ -1,0 +1,528 @@
+/* Flow School reference composition • 2026-10-29
+   Presentation-only: no replaced data source, control, router or event handler.
+   A single responsive layer that retains the existing School content contract. */
+html[data-flow-school-ui="v2"]{
+  --flow-ref-radius:22px;
+  --flow-ref-border:color-mix(in srgb,var(--text) 7%,transparent);
+  --flow-ref-shadow:0 10px 28px rgba(36,61,106,.07);
+}
+html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
+  max-width:none!important;
+}
+html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard.product-shell:not(.hidden){
+  width:calc(100% - clamp(28px,3vw,64px))!important;
+  grid-template-columns:206px minmax(0,1fr)!important;
+  gap:clamp(14px,1.8vw,28px)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .product-main{
+  min-width:0!important;
+  max-width:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(#todayView,#scheduleView,#schoolView,#flowSchoolSettingsView){
+  min-width:0!important;
+  max-width:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(.content-card,.status-card,.info-group,.flow-settings-card,.profile-hero){
+  border:1px solid var(--flow-ref-border)!important;
+  border-radius:var(--flow-ref-radius)!important;
+  box-shadow:var(--flow-ref-shadow)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(.neo-button,.meal-tab,.day-chip,.flow-settings-action,.flow-settings-segment button){
+  transition:background-color .2s ease,color .2s ease,border-color .2s ease,transform .2s cubic-bezier(.2,.8,.2,1)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(button,a,input):focus-visible{
+  outline:3px solid color-mix(in srgb,var(--accent) 56%,transparent)!important;
+  outline-offset:3px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(button,.flow-settings-action):active{
+  transform:scale(.985);
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .section-kicker{
+  display:none!important;
+}
+
+/* Today: time and the next action, not a giant duplicate page title. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView #schoolHero{
+  display:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-control-gap)!important;
+  margin:0 0 clamp(12px,1.6vw,20px)!important;
+  align-items:stretch!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+  position:relative!important;
+  isolation:isolate;
+  overflow:hidden!important;
+  border:0!important;
+  min-height:112px!important;
+  padding:clamp(15px,1.9vw,23px)!important;
+  border-radius:22px!important;
+  background:color-mix(in srgb,var(--surface) 94%,#e7efff)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .clock-card{
+  background:linear-gradient(115deg,color-mix(in srgb,var(--surface) 85%,#d4e8ff),color-mix(in srgb,var(--surface) 88%,#f8ddba))!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .clock-card::after{
+  content:"";position:absolute;z-index:-1;right:8%;top:14%;width:64px;height:64px;
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.95),#f7c777 60%,rgba(255,171,106,.62));
+  box-shadow:0 0 48px 12px rgba(252,210,151,.35);
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .clock-card :is(.status-label,strong,p,.progress-track){
+  position:relative;z-index:1;max-width:calc(100% - 68px);
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-label{
+  font-size:.69rem!important;font-weight:750!important;letter-spacing:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card strong{
+  font-size:clamp(.98rem,1.45vw,1.23rem)!important;margin-top:9px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card p{
+  font-size:.68rem!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
+  align-items:start!important;
+  gap:var(--flow-school-section-gap)!important;
+  height:auto!important;min-height:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.timetable-card{
+  grid-column:auto!important;grid-row:auto!important;width:100%!important;min-width:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+  display:flex!important;flex-direction:column!important;grid-column:auto!important;grid-row:auto!important;
+  gap:var(--flow-school-section-gap)!important;min-width:0!important;width:100%!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) #todayView .right-stack>:is(.meal-card,.upcoming-card){
+  height:auto!important;min-height:0!important;width:100%!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .content-card{
+  padding:var(--flow-school-card-pad)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .card-heading h2{
+  font-size:clamp(.99rem,1.45vw,1.2rem)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .period-button{
+  min-height:54px!important;border-radius:14px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .period-button.flow-period-current{
+  border-left:3px solid var(--accent)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView :is(.upcoming-card,.meal-card) .card-heading{
+  flex-wrap:wrap!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .flow-adfit-rail--school-top{
+  max-width:100%!important;
+}
+
+/* Schedule: the calendar itself is the title; no duplicate hero. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView>.view-header{
+  display:flex!important;
+  align-items:center!important;
+  padding:6px 2px 13px!important;
+  min-height:46px!important;
+  margin:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.35fr) minmax(280px,.84fr)!important;
+  gap:var(--flow-school-section-gap)!important;
+  align-items:start!important;
+  width:100%!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout>.content-card{
+  min-width:0!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:clamp(14px,1.8vw,25px)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-head strong{
+  font-size:clamp(.99rem,1.5vw,1.2rem)!important;letter-spacing:-.035em!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-day{
+  min-height:clamp(42px,6.3vh,73px)!important;
+  padding:clamp(5px,.8vw,11px)!important;
+  border-radius:13px!important;
+  transition:background .2s ease,transform .18s ease!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-day.selected{
+  color:var(--accent)!important;
+  background:color-mix(in srgb,var(--accent) 13%,var(--surface))!important;
+  outline:2px solid color-mix(in srgb,var(--accent) 24%,transparent)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-day.today:not(.selected){
+  background:var(--surface-2)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-list{
+  max-width:none!important;min-height:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-row{
+  padding:13px!important;border-radius:13px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-row.selected-event{
+  transform:none!important;
+  border-left:3px solid var(--accent)!important;
+}
+
+/* School: compact identity, utility actions and accessible metadata. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView>.view-header{
+  display:flex!important;
+  align-items:center!important;
+  padding:6px 2px 13px!important;
+  min-height:46px!important;
+  margin:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-hero{
+  min-height:144px!important;
+  height:auto!important;
+  margin-bottom:var(--flow-school-section-gap)!important;
+  overflow:hidden!important;
+  border-radius:22px!important;
+  background:linear-gradient(110deg,#afc9e6,#d7e9e7)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-content{
+  min-height:144px!important;
+  height:auto!important;
+  padding:clamp(16px,2.1vw,25px)!important;
+  align-items:center!important;
+  color:#fff!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-content h2{
+  margin:5px 0!important;
+  font-size:clamp(1.35rem,2.5vw,2.2rem)!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-content .school-badge{
+  width:64px!important;height:64px!important;min-width:64px!important;border-radius:17px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-section-gap)!important;
+  align-items:start!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid>.info-group{
+  min-width:0!important;width:100%!important;
+  padding:clamp(16px,1.5vw,22px)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid .info-group-fields{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:0 14px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid .info-tile strong{
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin-top:clamp(12px,1.6vw,20px)!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions .action-link{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  min-height:44px!important;text-align:center!important;min-width:0!important;
+  white-space:normal!important;line-height:1.3!important;
+}
+
+/* Settings: use the existing real controls; no fake palette or decorative switches. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView>.flow-settings-header{
+  display:block!important;
+  min-height:46px!important;
+  padding:6px 2px 13px!important;
+  margin:0!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
+  width:100%!important;max-width:none!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-section-gap)!important;
+  align-items:start!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-card{
+  width:100%!important;height:auto!important;min-height:0!important;
+  grid-column:auto!important;grid-row:auto!important;
+  padding:clamp(17px,1.9vw,25px)!important;
+  border-radius:22px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-card h2{
+  font-size:1.05rem!important;letter-spacing:-.04em!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-card>p{
+  font-size:.73rem!important;line-height:1.55!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-save{
+  grid-column:1/-1!important;grid-row:auto!important;
+  margin:0!important;min-height:52px!important;
+  background:#1c273a!important;color:white!important;
+  border-radius:16px!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView :is(input,button){
+  max-width:100%;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-segment button.active{
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface))!important;
+  border-color:var(--accent)!important;color:var(--accent)!important;
+}
+
+/* Desktop keeps its compact useful date context, not the old 240px hero. */
+@media(min-width:1181px) and (min-height:681px){
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView #schoolHero{
+    display:block!important;
+    min-height:88px!important;height:88px!important;
+    margin:0 0 14px!important;
+    background:linear-gradient(115deg,color-mix(in srgb,var(--surface) 85%,#cddfff),color-mix(in srgb,var(--surface) 89%,#ffe8c9))!important;
+    overflow:hidden!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-content{
+    min-height:88px!important;height:88px!important;padding:12px 18px!important;
+    align-items:center!important;color:var(--text)!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-image,
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-shade{
+    display:none!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-copy h1{
+    font-size:clamp(1.05rem,1.6vw,1.42rem)!important;margin:1px 0!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-copy p{
+    color:var(--muted)!important;font-size:.65rem!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .school-hero-content .school-badge{
+    width:42px!important;height:42px!important;border-radius:12px!important;
+  }
+  html[data-flow-school-ui="v2"][data-flow-school-layout="desktop"] body #dashboard:not(.hidden) #todayView .hero-right{
+    flex-direction:row!important;align-items:center!important;
+  }
+}
+/* A floating dock never obscures the last control. */
+@media(max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
+    width:calc(100% - 24px)!important;max-width:none!important;
+    margin-inline:auto!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .product-main{
+    padding-bottom:calc(116px + env(safe-area-inset-bottom))!important;
+  }
+  /* Preserve native/optical refraction nav positioning and hit target geometry. */
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav .mobile-tab{
+    min-width:0!important;min-height:46px!important;border-radius:999px!important;
+    font-weight:750!important;
+  }
+}
+@media(min-width:700px) and (max-width:1180px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView{
+    padding-inline:0!important;
+  }
+}
+@media(max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+@media(max-width:699px){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+    min-height:92px!important;padding:13px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .clock-card::after{
+    width:38px;height:38px;right:9%;top:16%;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .clock-card :is(.status-label,strong,p,.progress-track){
+    max-width:none;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card strong{
+    font-size:.83rem!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .period-button{
+    min-height:48px!important;
+    height:auto!important;
+    padding-block:5px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-day{
+    min-height:45px!important;padding:5px!important;
+  }
+}
+@media(max-width:420px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid .info-group-fields{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+@media(max-height:520px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .calendar-day{
+    min-height:36px!important;padding:4px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-content,
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .profile-hero{
+    min-height:118px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+    min-height:84px!important;padding:13px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
+    bottom:calc(4px + env(safe-area-inset-bottom))!important;min-height:48px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav .mobile-tab{
+    min-height:40px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(.neo-button,.meal-tab,.day-chip,.flow-settings-action,.flow-settings-segment button,.calendar-day){
+    transition:none!important;
+  }
+}
+
+/* Preserve the independently readable, equal-width two-card mobile status rail. */
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:12px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+    border:0!important;
+    border-left:0!important;
+    min-width:0!important;
+  }
+}
+/* Five-item scroll deck retains a visible rear peek, including narrow phones. */
+@media(max-width:620px){
+  html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5:not([data-flow-exam-count="0"]):not([data-flow-exam-count="1"]):not([data-flow-exam-count="2"]):not([data-flow-exam-count="3"]){
+    --flow-exam-view-height:384px;
+  }
+}
+
+/* Preserve the tested tablet-portrait content ratio while retaining two columns. */
+@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
+  }
+}
+
+/* Tablet portrait utility stack is a single grid column, not flex (layout contract). */
+@media(min-width:700px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-auto-rows:auto!important;align-content:start!important;
+  }
+}
+/* Restored semantic destination titles keep scroll/keyboard orientation.
+   Keep them compact rather than reinstating oversized hero headlines. */
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(#scheduleView>.view-header,#schoolView>.view-header,#flowSchoolSettingsView>.flow-settings-header) h1{
+  margin:0!important;font-size:clamp(1.05rem,1.35vw,1.23rem)!important;
+  letter-spacing:-.045em!important;line-height:1.24!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(#scheduleView>.view-header,#schoolView>.view-header,#flowSchoolSettingsView>.flow-settings-header) p{
+  display:none!important;
+}
+html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+  box-shadow:var(--flow-ref-shadow),inset 0 1px 0 rgba(255,255,255,.74)!important;
+}
+html[data-flow-school-ui="v2"][data-theme="dark"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+  box-shadow:0 10px 26px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.09)!important;
+}
+
+/* Tiny phones: reserve enough width for Settings inputs without viewport overflow. */
+@media(max-width:360px){
+  html[data-flow-school-ui="v2"] body #dashboard.product-shell:not(.hidden){
+    width:calc(100% - 8px)!important;
+  }
+}
+
+/* Wide touch portrait is a document-flow stack (not a two-panel grid).
+   Its calendar owns the section gap to preserve the existing touch contract. */
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) #scheduleView .schedule-layout{
+    display:block!important;
+    grid-template-columns:none!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) #scheduleView .schedule-layout>.content-card:first-child{
+    margin-bottom:var(--flow-school-section-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) #scheduleView .calendar-day{
+    min-height:64px!important;
+  }
+}
+
+/* Reuse the existing School Settings distribution contract exactly.
+   Compact touch screens retain one readable column; desktop uses the
+   six-track 2+2+2 composition that keeps every panel in view. */
+@media(max-width:1099px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card{
+    grid-column:1/-1!important;grid-row:auto!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-save{
+    grid-column:1/-1!important;grid-row:auto!important;
+  }
+}
+@media(min-width:1100px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack{
+    display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;
+    align-items:stretch!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card:nth-child(1){
+    grid-column:1/span 3!important;grid-row:1!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card:nth-child(2){
+    grid-column:4/-1!important;grid-row:1!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card:nth-child(3){
+    grid-column:1/span 3!important;grid-row:2!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card:nth-child(4){
+    grid-column:4/-1!important;grid-row:2!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-card:nth-child(5){
+    grid-column:1/span 2!important;grid-row:3!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-save~.flow-settings-card{
+    grid-column:3/-1!important;grid-row:3!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsView .flow-settings-stack>.flow-settings-save{
+    grid-column:1/-1!important;grid-row:4!important;
+  }
+}
+
+/* Portrait tablets keep school utilities within two comfortable touch columns. */
+@media(min-width:901px) and (max-width:1024px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
+/* Touch landscape keeps the horizontal School utility action strip. */
+@media(min-width:901px) and (max-width:1180px) and (orientation:landscape){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions{
+    display:flex!important;flex-wrap:wrap!important;align-items:stretch!important;
+    gap:var(--flow-school-section-gap)!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView .school-actions>.action-link{
+    flex:1 1 155px!important;min-width:0!important;
+  }
+}

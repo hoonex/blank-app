@@ -51,9 +51,9 @@ for(const glassMode of ['standard','optical']){
     await page.goto(BASE,{waitUntil:'domcontentloaded'});await page.locator('#dashboard:not(.hidden)').waitFor();await page.waitForFunction(()=>document.documentElement.dataset.flowSchoolSurface==='ready'&&document.documentElement.dataset.flowSchoolRuntimeV6==='ready');await page.waitForFunction(()=>document.querySelector('#bottomNav')?.children.length>=5&&document.querySelector('#bottomNav>[data-view="transit"]'));await page.waitForTimeout(120);
 
     const today=await inspect(page,'#todayView .status-grid');validate(`${glassMode}/today`,today);await page.screenshot({path:`${OUT}/${glassMode}-today.png`,fullPage:false});
-    await page.locator('#bottomNav>[data-view="schedule"]').click();await page.locator('#scheduleView:not(.hidden)').waitFor();const schedule=await inspect(page,'#scheduleView>.view-header');validate(`${glassMode}/schedule`,schedule);
-    await page.locator('#bottomNav>[data-view="school"]').click();await page.locator('#schoolView:not(.hidden)').waitFor();const school=await inspect(page,'#schoolView>.view-header');validate(`${glassMode}/school`,school);
-    await page.locator('#mobileSettingsBtn').click();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();const settings=await inspect(page,'#flowSchoolSettingsView .flow-settings-header');validate(`${glassMode}/settings`,settings);await page.screenshot({path:`${OUT}/${glassMode}-settings.png`,fullPage:false});
+    await page.locator('#bottomNav>[data-view="schedule"]').click();await page.locator('#scheduleView:not(.hidden)').waitFor();const schedule=await inspect(page,'#scheduleView .calendar-card');validate(`${glassMode}/schedule`,schedule);
+    await page.locator('#bottomNav>[data-view="school"]').click();await page.locator('#schoolView:not(.hidden)').waitFor();const school=await inspect(page,'#schoolView .profile-hero');validate(`${glassMode}/school`,school);
+    await page.locator('#mobileSettingsBtn').click();await page.locator('#flowSchoolSettingsView:not(.hidden)').waitFor();const settings=await inspect(page,'#flowSchoolSettingsView .flow-settings-card');validate(`${glassMode}/settings`,settings);await page.screenshot({path:`${OUT}/${glassMode}-settings.png`,fullPage:false});
 
     if(glassMode==='optical'&&settings.glassMode!=='optical')throw new Error(`optical mode did not stay active: ${JSON.stringify(settings)}`);
     if(consoleErrors.length||pageErrors.length)throw new Error(`${glassMode}: browser errors ${JSON.stringify({consoleErrors,pageErrors})}`);

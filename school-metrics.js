@@ -184,6 +184,20 @@ async function bootCriticalSchoolSurface(){
   await import('./school-toolbar-grouping.js');
   await import('./school-desktop-tablet-redesign.js');
 
+  /* Apply the reviewed four-tab reference composition after the layout owners
+     finish. The boot gate remains active until the CSS has loaded, avoiding
+     a transient flash of the previous geometry. A missing optional layer
+     falls back to the existing tested layout instead of breaking School. */
+  await new Promise(resolve=>{
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/school-reference-composition.css?v=20261029-1';
+    link.dataset.flowSchoolReferenceComposition='true';
+    link.onload=resolve;
+    link.onerror=()=>{console.warn('[Flow] Reference composition unavailable; using stable layout');resolve()};
+    document.head.append(link);
+  });
+
   /* The responsive content contract intentionally owns the final content ratios.
      Re-append the navigation contract after the desktop/tablet compositor so its
      wide Today intrinsic row sizing cannot be overwritten by the shell layer. */

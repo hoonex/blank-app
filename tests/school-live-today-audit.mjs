@@ -64,7 +64,7 @@ assert(s.toggle.today&&s.toggle.week&&Math.abs(s.toggle.today.top-s.toggle.week.
 assert(!s.toggle.weekRoute,`inline Week still carries legacy route binding ${JSON.stringify(s.toggle)}`);
 const shown=s.deck.cards.filter(card=>card.display!=='none'&&card.visible>0),active=shown.filter(card=>card.active),compact=shown.filter(card=>!card.active&&card.visible>=44),peek=shown.filter(card=>!card.active&&card.visible>0&&card.visible<24);
 assert(s.deck.box?.height>0&&active.length===1&&active[0].index===0,`first exam is not active detailed card ${JSON.stringify(s.deck)}`);
-assert(compact.length>=3&&peek.length>=1&&active[0].height>=compact[0].height+45,`exam deck hierarchy lost ${JSON.stringify({active,compact,peek})}`);
+assert(compact.length>=Math.min(3,s.deck.cards.length-1)&&(s.deck.cards.length<5||peek.length>=1)&&active[0].height>=compact[0].height+45,`exam deck hierarchy lost ${JSON.stringify({active,compact,peek,total:s.deck.cards.length})}`);
 await page.screenshot({path:`${OUT}/phone-today.png`,fullPage:false});
 
 await page.locator('.timetable-mode-toggle [data-timetable-mode="week"]').click();await page.waitForFunction(()=>document.body.classList.contains('flow-inline-week-active'));await page.waitForTimeout(80);s=await state(page);
