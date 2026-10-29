@@ -46,8 +46,8 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView #schoolHe
   display:none!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
-  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)!important;
-  gap:clamp(10px,1.4vw,18px)!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:var(--flow-school-control-gap)!important;
   margin:0 0 clamp(12px,1.6vw,20px)!important;
   align-items:stretch!important;
 }
@@ -84,9 +84,9 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-c
 }
 html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
   display:grid!important;
-  grid-template-columns:minmax(0,1.32fr) minmax(300px,.87fr)!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
   align-items:start!important;
-  gap:clamp(12px,1.7vw,22px)!important;
+  gap:var(--flow-school-section-gap)!important;
   height:auto!important;min-height:0!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.timetable-card{
@@ -100,7 +100,7 @@ html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidd
   height:auto!important;min-height:0!important;width:100%!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .content-card{
-  padding:clamp(15px,1.6vw,23px)!important;
+  padding:var(--flow-school-card-pad)!important;
 }
 html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .card-heading h2{
   font-size:clamp(.99rem,1.45vw,1.2rem)!important;
@@ -296,16 +296,7 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) .product-main{
     padding-bottom:calc(116px + env(safe-area-inset-bottom))!important;
   }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav.mobile-bottom-nav{
-    width:min(560px,calc(100vw - 24px))!important;
-    max-width:none!important;
-    left:50%!important;right:auto!important;
-    transform:translateX(-50%)!important;
-    bottom:calc(10px + env(safe-area-inset-bottom))!important;
-    padding:5px!important;
-    border-radius:999px!important;
-    box-shadow:0 10px 32px rgba(33,49,84,.14)!important;
-  }
+  /* Preserve native/optical refraction nav positioning and hit target geometry. */
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #bottomNav .mobile-tab{
     min-width:0!important;min-height:46px!important;border-radius:999px!important;
     font-weight:750!important;
@@ -332,7 +323,7 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
     grid-template-columns:minmax(0,1fr)!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:9px!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
     min-height:92px!important;padding:13px!important;
@@ -397,7 +388,7 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
 @media(max-width:520px){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
     grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:10px!important;
+    gap:12px!important;
   }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
     border:0!important;
@@ -416,5 +407,12 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
 @media(min-width:700px) and (max-width:900px) and (orientation:portrait){
   html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
     grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
+  }
+}
+
+/* Tablet portrait utility stack is a single grid column, not flex (layout contract). */
+@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid>.right-stack{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-auto-rows:auto!important;align-content:start!important;
   }
 }
