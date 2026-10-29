@@ -411,3 +411,10 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
     --flow-exam-view-height:384px;
   }
 }
+
+/* Preserve the tested tablet-portrait content ratio while retaining two columns. */
+@media(min-width:700px) and (max-width:900px) and (orientation:portrait){
+  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid{
+    grid-template-columns:minmax(0,1.42fr) minmax(0,.72fr)!important;
+  }
+}
