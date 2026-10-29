@@ -55,6 +55,7 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-c
   position:relative!important;
   isolation:isolate;
   overflow:hidden!important;
+  border:0!important;
   min-height:112px!important;
   padding:clamp(15px,1.9vw,23px)!important;
   border-radius:22px!important;
@@ -318,7 +319,6 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
   }
 }
 @media(max-width:900px) and (orientation:portrait){
-  html[data-flow-school-ui="v2"] body #dashboard#dashboard.product-shell:not(.hidden) main.product-main #todayView.view:not(.hidden)>.today-grid,
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #scheduleView .schedule-layout{
     grid-template-columns:minmax(0,1fr)!important;
   }
@@ -346,6 +346,11 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card strong{
     font-size:.83rem!important;
   }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .period-button{
+    min-height:48px!important;
+    height:auto!important;
+    padding-block:5px!important;
+  }
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid{
     grid-template-columns:minmax(0,1fr)!important;
   }
@@ -361,9 +366,6 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
 }
 @media(max-width:420px){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #schoolView #schoolInfoGrid .info-group-fields{
-    grid-template-columns:minmax(0,1fr)!important;
-  }
-  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
     grid-template-columns:minmax(0,1fr)!important;
   }
 }
@@ -388,5 +390,24 @@ html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #flowSchoolSettingsV
 @media(prefers-reduced-motion:reduce){
   html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) :is(.neo-button,.meal-tab,.day-chip,.flow-settings-action,.flow-settings-segment button,.calendar-day){
     transition:none!important;
+  }
+}
+
+/* Preserve the independently readable, equal-width two-card mobile status rail. */
+@media(max-width:520px){
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  html[data-flow-school-ui="v2"] body #dashboard:not(.hidden) #todayView .status-card:not(.flow-home-noise){
+    border:0!important;
+    border-left:0!important;
+    min-width:0!important;
+  }
+}
+/* Five-item scroll deck retains a visible rear peek, including narrow phones. */
+@media(max-width:620px){
+  html[data-flow-school-ui="v2"] body #todayView #flowExamDeckV5:not([data-flow-exam-count="0"]):not([data-flow-exam-count="1"]):not([data-flow-exam-count="2"]):not([data-flow-exam-count="3"]){
+    --flow-exam-view-height:384px;
   }
 }
