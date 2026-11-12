@@ -253,7 +253,7 @@ fn App() -> impl IntoView {
                         <span class="school-meta">{move ||profile.get().map(|p|
                             format!("{} / {}학년 {}반",p.school.name,p.grade,p.class_name)
                         ).unwrap_or_default()}</span>
-                        <a href="/" title="기존 Flow 이용하기">"이전 버전 ↗"</a>
+                        <a href="/legacy" title="기존 Flow 이용하기">"이전 버전 ↗"</a>
                     </div>
                 </header>
                 <main class="flow-main" id="content">
@@ -629,7 +629,7 @@ fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
                     <div><small>"학급"</small><strong>{move ||profile.get().map(|p|format!("{}학년 {}반",p.grade,p.class_name)).unwrap_or_default()}</strong></div>
                     <div><small>"전화번호"</small><strong>{move ||profile.get().map(|p|p.school.phone).unwrap_or_default()}</strong></div>
                 </div>
-                <div class="school-actions"><a href="/" class="button-strong">"기존 Flow ↗"</a>
+                <div class="school-actions"><a href="/legacy" class="button-strong">"기존 Flow ↗"</a>
                     <a href="https://www.schoolinfo.go.kr/Main.do" target="_blank" rel="noopener noreferrer">"학교알리미 ↗"</a></div>
             </section>
         </div>
@@ -654,9 +654,9 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
                         profile.set(None);
                     }>"다시 선택 ↗"</button></div>
                 <div class="setting-row"><div><strong>"전체 기능"</strong><small>"아직 이식되지 않은 메뉴는 기존 서비스에서 사용할 수 있습니다."</small></div>
-                    <a href="/" class="setting-toggle">"기존 Flow ↗"</a></div>
+                    <a href="/legacy" class="setting-toggle">"기존 Flow ↗"</a></div>
             </section>
-            <p class="note">"새 버전 미리보기입니다. 기존 Flow는 그대로 이용할 수 있습니다."</p>
+            <p class="note">"이전 화면은 ‘이전 버전’ 메뉴에서 열 수 있습니다. 일부 기능은 아직 기존 화면에서 제공합니다."</p>
         </div>
     }
 }
