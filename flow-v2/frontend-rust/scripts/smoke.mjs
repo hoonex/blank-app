@@ -155,6 +155,61 @@ for (const [width,height] of sizes) {
     const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
     if(overflow)throw Error("Horizontal overflow detected");
     if(errors.length)throw Error("JS errors: "+errors.join("; "));
+    // Touch-only regression: the drag thumb follows a finger, and a horizontal
+    // page gesture changes a tab without replacing vertical scroll.
+    if(width===390){
+      const cdp=await page.context().newCDPSession(page);
+      await cdp.send("Emulation.setTouchEmulationEnabled",{enabled:true,maxTouchPoints:1});
+      async function touchSlide(x1,y1,x2,y2){
+        const id=7;
+        await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:x1,y:y1,id}]});
+        for(let n=1;n<=6;n++){
+          const p=n/6;
+          await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{
+            x:x1+(x2-x1)*p,y:y1+(y2-y1)*p,id
+          }]});
+        }
+        await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
+        await page.waitForTimeout(80);
+      }
+      // Settings was active after theme test. Drag the nav indicator to Schedule.
+      let navRect=await page.locator(".mobile-bottom").boundingBox();
+      await touchSlide(navRect.x+navRect.width*.875,navRect.y+navRect.height*.5,
+                      navRect.x+navRect.width*.375,navRect.y+navRect.height*.5);
+      if((await page.locator(".mobile-bottom button.active").innerText())!=="일정")
+        throw Error("Finger drag of bottom navigation failed");
+      if(await page.locator(".mobile-bottom").getAttribute("data-dragging")!=="false")
+        throw Error("Navigation thumb remains in dragging state");
+      // Swipe horizontally on the actual schedule page, not a control.
+      const scene=await page.locator(".scene-head").boundingBox();
+      const sy=scene.y+Math.min(scene.height*.6,45);
+      await touchSlide(325,sy,75,sy+3);
+      if((await page.locator(".mobile-bottom button.active").innerText())!=="학교")
+        throw Error("Page swipe did not navigate to the adjacent tab");
+      navRect=await page.locator(".mobile-bottom").boundingBox();
+      await touchSlide(navRect.x+navRect.width*.625,navRect.y+navRect.height*.5,
+                      navRect.x+navRect.width*.125,navRect.y+navRect.height*.5);
+      if((await page.locator(".mobile-bottom button.active").innerText())!=="오늘")
+        throw Error("Cannot drag back to Today");
+      // The Day/Week pill also accepts physical dragging.
+      const toggle=await page.locator(".switch-track").boundingBox();
+      await touchSlide(toggle.x+toggle.width*.25,toggle.y+toggle.height*.5,
+                      toggle.x+toggle.width*.75,toggle.y+toggle.height*.5);
+      if(!(await page.locator(".week-sheet").isVisible()))
+        throw Error("Day/Week segmented drag did not switch to Week");
+      if(await page.locator(".switch-track").getAttribute("data-dragging")!=="false")
+        throw Error("Segmented control never released drag");
+      const tap=await page.locator(".mobile-bottom button").first().evaluate(el=>
+        getComputedStyle(el).getPropertyValue("-webkit-tap-highlight-color"));
+      if(!/rgba?\(0, 0, 0, 0\)|transparent/.test(tap))
+        throw Error("Mobile tap flash is still visible: "+tap);
+      const suppress=await page.locator(".flow-shell").evaluate(el=>{
+        const event=new MouseEvent("contextmenu",{bubbles:true,cancelable:true});
+        el.dispatchEvent(event);return event.defaultPrevented;
+      });
+      if(!suppress)throw Error("Mobile long press still opens native context menu");
+      await cdp.detach();
+    }
     await page.emulateMedia({ reducedMotion:"reduce" });
     const duration=await page.locator(".scene").evaluate(el=>getComputedStyle(el).animationDuration);
     if(parseFloat(duration)>0.01)throw Error("Reduced motion ignored: "+duration);
