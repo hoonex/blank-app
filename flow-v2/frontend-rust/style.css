@@ -108,7 +108,9 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .day-strip button small{font-size:12px;font-weight:690}
 .day-strip button strong{font-size:20px;line-height:1.05;font-weight:810;font-variant-numeric:tabular-nums}
 .day-strip button.active{background:var(--accent);color:#171917;scale:1}
-.day-strip button:not(.active):hover{background:#292d29;color:#f5f6ee}
+@media(hover:hover) and (pointer:fine){
+ .day-strip button:not(.active):hover{background:#292d29;color:#f5f6ee}
+}
 .day-strip button:active{scale:.94}
 @keyframes date-rail-enter{
   from{opacity:.55;transform:translate3d(calc(var(--day-dir,1) * 22px + var(--day-drag-x,0px)),0,0)}
@@ -382,7 +384,19 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-core{min-height:119px}
 }
 @media(max-width:870px){
- .flow-shell{padding-bottom:calc(148px + env(safe-area-inset-bottom))}
+ /* The bottom dock has its own grid row, never floats over school content.
+    100dvh responds to Android's address bar without JS viewport listeners. */
+ .flow-shell{
+   height:100dvh;min-height:0;padding:0;
+   display:flex;flex-direction:column;overflow:hidden;
+ }
+ .global-header{flex:0 0 auto}
+ .flow-main{
+   flex:1 1 auto;min-height:0;width:100%;
+   overflow-y:auto;overflow-x:hidden;
+   -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+   scrollbar-width:thin;
+ }
  .global-header{height:58px;padding:0 23px}
  .rail-navigation,.global-meta{display:none}
  .brand-wrap{min-width:0}
@@ -398,9 +412,10 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .mobile-bottom{
    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
    --nav-gap:4px;gap:var(--nav-gap);isolation:isolate;
-   position:fixed;z-index:80;left:0;right:0;margin-inline:auto;
+   position:relative;z-index:80;left:auto;right:auto;
+   flex:0 0 60px;margin:7px auto calc(26px + env(safe-area-inset-bottom));
    width:calc(100% - 30px);max-width:440px;transform:none;
-   height:60px;bottom:calc(34px + env(safe-area-inset-bottom));padding:5px;
+   height:60px;bottom:auto;padding:5px;
    overflow:hidden;box-sizing:border-box;
    background:var(--night);border-radius:var(--radius-control);
    box-shadow:0 12px 35px rgba(0,0,0,.2),0 0 0 7px var(--paper)
@@ -523,7 +538,10 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .day-strip button{min-height:38px;flex-direction:row;gap:5px}
  .today-layout{padding-top:13px}
  .class-row{min-height:41px}
- .mobile-bottom{height:47px;bottom:calc(17px + env(safe-area-inset-bottom))}
+ .mobile-bottom{
+   height:47px;flex-basis:47px;
+   margin-top:5px;margin-bottom:calc(15px + env(safe-area-inset-bottom))
+ }
  .scene-head{margin-top:4px;min-height:60px}
  .scene-head h1{font-size:37px}
 }
@@ -545,3 +563,10 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
 :where(.mobile-bottom button,.switch-track button,.day-strip button){transform-origin:center;transition-timing-function:cubic-bezier(.18,.92,.3,1.18)}
 :where(.mobile-bottom button,.switch-track button,.date-actions button,.day-strip button):active{scale:.94}
 @media(max-width:590px){.meal-list{gap:12px 10px}.meal-list li{font-size:13px}}
+
+/* Input bars stay outside the scrollport: no page content can appear beneath
+   the OS gesture indicator or bottom dock even while Chrome resizes its UI. */
+@media(max-width:870px){
+ .flow-main>.scene,.flow-main>section{min-height:0}
+ .flow-main:focus-visible{outline:0}
+}
