@@ -1,0 +1,19 @@
+[package]
+name = "flow-school-edge"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+worker = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1

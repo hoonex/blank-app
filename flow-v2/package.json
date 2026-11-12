@@ -1,0 +1,10 @@
+{
+  "name": "flow-v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./app.js --target browser --outdir ./dist --entry-naming app.js",
+    "test": "bun test",
+    "check": "bun test && bun build ./app.js --target browser --outdir ./dist --entry-naming app.js"
+  }
+}
