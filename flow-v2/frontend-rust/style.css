@@ -256,15 +256,25 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   margin:20px auto 14px;display:flex;align-items:center;justify-content:space-between;gap:14px
 }
 .calendar-toolbar h2{font-size:clamp(24px,2.7vw,38px);font-weight:800;letter-spacing:-.07em;margin:0}
-.calendar-toolbar .date-actions button{background:var(--paper-low);color:var(--ink)}
-.calendar-toolbar .date-actions button:hover{background:var(--night);color:var(--night-text)}
-.calendar-toolbar .date-actions button:nth-child(2){width:auto;min-width:59px;padding:0 10px;white-space:nowrap}
+.month-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.month-actions button{display:grid;place-items:center;min-width:43px;height:43px;padding:0 14px;
+  background:var(--paper-low);color:var(--ink);border-radius:999px;
+  font-size:17px;line-height:1;font-weight:730;
+  transition:background .18s,color .18s,scale .19s cubic-bezier(.2,.9,.25,1)}
+.month-actions button.month-reset{font-size:12px;white-space:nowrap;min-width:72px}
+.month-actions button:active{scale:.92;background:var(--accent);color:#171917}
+@media(hover:hover) and (pointer:fine){
+ .month-actions button:hover{background:color-mix(in srgb,var(--accent) 23%,var(--paper-low));color:var(--ink)}
+}
 .calendar-layout{
   max-width:1408px;width:calc(100% - clamp(36px,8vw,128px));
   margin:0 auto;padding:0 0 80px;display:grid;
   grid-template-columns:minmax(0,1.45fr) minmax(240px,.6fr);gap:clamp(24px,4vw,56px);align-items:start
 }
-.calendar-sheet{min-width:0;padding:4px 0}
+.calendar-sheet{min-width:0;padding:4px 0;touch-action:pan-y pinch-zoom;
+  transform:translate3d(var(--month-drag,0px),0,0);
+  transition:transform .19s cubic-bezier(.2,1,.24,1);
+  overscroll-behavior-x:contain}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .weekday{min-height:38px;display:grid;place-items:center;color:var(--muted);font-weight:740;font-size:12px}
 .calendar-grid button{
@@ -274,7 +284,9 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   transition:background .22s,transform .24s var(--ease)
 }
 .calendar-grid button.out-month{opacity:.3}
-.calendar-grid button:hover:not(.selected){background:var(--paper-low);transform:scale(1.02)}
+@media(hover:hover) and (pointer:fine){
+ .calendar-grid button:hover:not(.selected){background:var(--paper-low);transform:scale(1.02)}
+}
 .calendar-grid button:active{transform:scale(.96)}
 .calendar-num{display:grid;place-items:center;border-radius:var(--radius-control);
   height:34px;width:34px;flex:none;font-size:15px;font-weight:730;font-variant-numeric:tabular-nums;
@@ -314,7 +326,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .button-strong{display:inline-flex;align-items:center;justify-content:center;
   padding:13px 22px;border-radius:var(--radius-control);background:var(--accent);color:#171917;font-size:13px;font-weight:760;
   transition:transform .25s var(--ease),background .25s}
-.button-strong:hover{transform:translateY(-2px);background:#e4ff9d}
+.button-strong:hover{transform:translateY(-2px);background:var(--accent)}
 .button-strong:active{transform:scale(.95)}
 .settings-sheet{padding-top:15px}
 .setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:105px;padding:20px 0;border-radius:var(--radius-item)}
@@ -342,7 +354,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
 .onboarding-title .brand-lockup small{font-size:11px;letter-spacing:.06em;color:var(--muted);align-self:center}
 .onboarding-title .eyebrow,.setup-sheet>.eyebrow{display:block;font-size:12px;font-weight:720;color:var(--muted);margin:35px 0 10px}
 .onboarding-title h1{font-size:clamp(48px,5.8vw,86px);font-weight:820;letter-spacing:-.09em;line-height:1.12;margin:0 0 20px}
-.onboarding-title h1 em{display:block;font-style:normal;color:#88a600}
+.onboarding-title h1 em{display:block;font-style:normal;color:var(--accent)}
 .onboarding-title p{font-size:14px;line-height:1.8;color:var(--muted);max-width:430px}
 .setup-sheet{background:var(--surface);border-radius:var(--radius-panel);padding:clamp(24px,3vw,38px)}
 .setup-sheet>.eyebrow{margin:0 0 6px}
@@ -386,8 +398,10 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
 @media(max-width:870px){
  /* The bottom dock has its own grid row, never floats over school content.
     100dvh responds to Android's address bar without JS viewport listeners. */
+ /* Float the dock inside the 100dvh shell; the content scrollport reserves
+    breathing room at its end rather than making a fake fixed footer row. */
  .flow-shell{
-   height:100dvh;min-height:0;padding:0;
+   height:100dvh;min-height:0;padding:0;position:relative;
    display:flex;flex-direction:column;overflow:hidden;
  }
  .global-header{flex:0 0 auto}
@@ -395,9 +409,13 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
    flex:1 1 auto;min-height:0;width:100%;
    overflow-y:auto;overflow-x:hidden;
    -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
-   scrollbar-width:thin;
+   padding-bottom:110px;scrollbar-width:thin;
  }
- .global-header{height:58px;padding:0 23px;width:100%;margin:0 auto}
+ .global-header{height:60px;padding:0 23px;width:100%;margin:0 auto;min-height:60px;overflow:visible}
+ .brand-wrap{align-items:center;height:100%;gap:8px}
+ .brand-lockup{align-items:center;line-height:1.18;overflow:visible}
+ .brand-lockup strong{line-height:1.15;padding-top:2px}
+ .brand-edition{align-self:center}
  .rail-navigation,.global-meta{display:none}
  .brand-wrap{min-width:0}
  .brand-lockup strong{font-size:30px}
@@ -412,13 +430,12 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .mobile-bottom{
    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
    --nav-gap:4px;gap:var(--nav-gap);isolation:isolate;
-   position:relative;z-index:80;left:auto;right:auto;
-   flex:0 0 60px;margin:7px auto calc(26px + env(safe-area-inset-bottom));
-   width:calc(100% - 30px);max-width:440px;transform:none;
-   height:60px;bottom:auto;padding:5px;
-   overflow:hidden;box-sizing:border-box;
+   position:absolute;z-index:80;left:50%;right:auto;
+   flex:none;margin:0;width:calc(100% - 30px);max-width:440px;
+   transform:translateX(-50%);height:58px;bottom:calc(5px + env(safe-area-inset-bottom));
+   padding:5px;overflow:hidden;box-sizing:border-box;
    background:var(--night);border-radius:var(--radius-control);
-   box-shadow:0 12px 35px rgba(0,0,0,.2),0 0 0 7px var(--paper)
+   box-shadow:0 10px 28px rgba(0,0,0,.22)
  }
  .mobile-bottom button{position:relative;z-index:2;border-radius:var(--radius-control);
    font-size:12px;font-weight:720;color:#b2b6ac;transition:color .25s,transform .2s}
@@ -450,7 +467,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .calendar-grid button{min-height:72px}
 }
 @media(max-width:590px){
- .global-header{height:53px;padding:0 17px}
+ .global-header{height:58px;min-height:58px;padding:0 17px}
  .brand-lockup strong{font-size:27px}
  .today-heading,.today-layout,.scene-head,.calendar-toolbar,.calendar-layout,.school-sheet,.settings-sheet,.note{width:calc(100% - 28px)}
  .today-heading{margin-top:6px;padding:16px 17px;border-radius:25px}
@@ -492,14 +509,16 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .week-grid-header button strong{font-size:12px}
  .week-period,.week-period-title{font-size:10px}
  .week-cell{min-height:52px;padding:6px 2px;font-size:10.5px;line-height:1.2;border-radius:9px}
- .scene-head{min-height:90px;margin-top:15px;padding:8px 0}
- .scene-head h1{font-size:52px}
- .calendar-toolbar{margin:12px auto}
+ .scene-head{min-height:72px;margin-top:4px;padding:4px 0}
+ .scene-head h1{font-size:46px}
+ .calendar-toolbar{margin:7px auto 9px}
  .calendar-toolbar h2{font-size:25px}
  .calendar-layout{gap:10px}
  .calendar-grid{gap:1px}
  .weekday{min-height:32px;font-size:11px}
- .calendar-grid button{min-height:61px;padding:6px 2px;gap:3px;border-radius:12px}
+ .calendar-grid button{min-height:56px;padding:6px 2px;gap:3px;border-radius:12px}
+ .month-actions .month-chevron{display:none}
+ .month-actions .month-reset{height:38px}
  .calendar-num{width:31px;height:31px;font-size:13px}
  .calendar-event-text{
    display:block;width:6px;height:6px;flex:none;margin-top:2px;
@@ -538,10 +557,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .day-strip button{min-height:38px;flex-direction:row;gap:5px}
  .today-layout{padding-top:13px}
  .class-row{min-height:41px}
- .mobile-bottom{
-   height:47px;flex-basis:47px;
-   margin-top:5px;margin-bottom:calc(15px + env(safe-area-inset-bottom))
- }
+ .mobile-bottom{height:46px;bottom:calc(4px + env(safe-area-inset-bottom))}
  .scene-head{margin-top:4px;min-height:60px}
  .scene-head h1{font-size:37px}
 }
@@ -569,4 +585,65 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
 @media(max-width:870px){
  .flow-main>.scene,.flow-main>section{min-height:0}
  .flow-main:focus-visible{outline:0}
+}
+
+
+/* Actual Daegu bus information, not an external link or invented ETA. */
+.bus-panel{max-width:1408px;width:calc(100% - clamp(36px,8vw,128px));
+  margin:18px auto 0;padding:clamp(20px,3vw,34px);
+  background:var(--surface);border-radius:var(--radius-panel);min-width:0}
+.bus-title{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:19px}
+.bus-title h2{font-size:clamp(29px,3.6vw,43px);font-weight:800;letter-spacing:-.06em;line-height:1.15;margin:3px 0 0}
+.bus-source{font-size:11px;color:var(--muted);font-weight:680;white-space:nowrap}
+.bus-search{display:flex;gap:6px;align-items:center;background:var(--paper-low);
+  padding:6px;border-radius:999px}
+.bus-search input{appearance:none;border:0;outline:0;background:transparent;
+  flex:1;min-width:0;padding:10px 13px;color:var(--ink);font-size:14px;
+  user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
+.bus-search input::placeholder{color:var(--muted)}
+.bus-search button,.bus-refresh{min-height:41px;padding:8px 18px;border-radius:999px;
+  background:var(--night);color:var(--night-text);font-weight:740;font-size:12px;
+  white-space:nowrap;transition:scale .18s,background .18s}
+.bus-search button:active,.bus-refresh:active{scale:.95}
+.bus-results{display:grid;gap:4px;margin-top:12px;max-height:260px;overflow:auto}
+.bus-stop-option{display:flex;justify-content:space-between;align-items:center;
+  text-align:left;gap:12px;padding:12px 16px;border-radius:var(--radius-item);background:var(--paper-low)}
+.bus-stop-option strong{font-size:14px;overflow-wrap:anywhere}
+.bus-stop-option span{font-size:11px;color:var(--muted);white-space:nowrap}
+.bus-stop-option:active{background:var(--accent);color:#171917}
+@media(hover:hover) and (pointer:fine){.bus-stop-option:hover{background:color-mix(in srgb,var(--accent) 25%,var(--paper-low))}}
+.bus-empty{font-size:13px;color:var(--muted);padding:20px 0;margin:0}
+.bus-message{margin:12px 0;font-size:12px;line-height:1.5;color:var(--muted)}
+.bus-selected{margin-top:18px;background:var(--night);border-radius:24px;color:var(--night-text);
+  padding:clamp(17px,3vw,26px);min-width:0}
+.bus-selected-heading{display:flex;align-items:center;justify-content:space-between;gap:13px}
+.bus-stop-name{display:grid;gap:5px;min-width:0}
+.bus-stop-name strong{font-size:clamp(21px,3vw,29px);font-weight:790;letter-spacing:-.045em;overflow-wrap:anywhere}
+.bus-stop-name>span,.bus-meta{font-size:11px;color:#adb1a6}
+.bus-selected .bus-refresh{background:var(--accent);color:#171917}
+.bus-meta{display:flex;flex-wrap:wrap;gap:5px 17px;margin:13px 0 7px}
+.bus-selected .bus-message,.bus-selected .bus-empty{color:#c7c8bd}
+.bus-arrivals{display:grid;gap:3px;margin-top:13px}
+.bus-arrival{display:flex;align-items:center;gap:16px;padding:12px 14px;border-radius:15px;
+  background:rgba(255,255,255,.065);min-width:0}
+.bus-route{font-size:19px;font-weight:830;letter-spacing:-.03em;min-width:62px}
+.bus-arrival-info{display:grid;gap:3px;min-width:0}
+.bus-arrival-info>strong{font-size:13px;font-weight:740}
+.bus-arrival-info>span,.bus-arrival-info>small{font-size:11px;color:#c3c4b7}
+.bus-footnote{margin:14px 0 0;font-size:11px;color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:870px){
+ .bus-panel{width:calc(100% - 40px);margin-top:12px}
+ .flow-main>.scene{padding-bottom:100px}
+}
+@media(max-width:590px){
+ .bus-panel{width:calc(100% - 28px);padding:19px;border-radius:25px}
+ .bus-source{display:none}
+ .bus-search input{font-size:13px;padding:9px 8px}
+ .bus-search button{padding:8px 15px}
+ .bus-stop-option{align-items:flex-start;flex-direction:column;gap:3px}
+ .bus-stop-option span{white-space:normal}
+ .bus-selected{border-radius:21px}
+ .bus-arrival{gap:12px;padding:11px}
 }
