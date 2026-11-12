@@ -199,4 +199,17 @@ dialog::backdrop { background:rgb(9 17 29 / 48%); backdrop-filter:blur(3px); }
   .setting-row { align-items:flex-start; flex-direction:column; }
   .heading-actions { width:100%; justify-content:space-between; }
 }
+@media (orientation:landscape) and (max-height:500px) and (max-width:900px) {
+  .topbar { height:46px; padding:0 16px; }
+  .main { padding:12px 16px calc(60px + env(safe-area-inset-bottom)); }
+  .page-heading { align-items:center; margin-bottom:12px; gap:8px; }
+  .page-heading h1 { font-size:23px; margin:0; }
+  .page-heading .eyebrow,.page-heading .page-subtitle { display:none; }
+  .heading-actions { width:auto; justify-content:flex-end; gap:5px; }
+  .heading-actions .btn { min-height:32px; padding:5px 9px; }
+  .heading-actions input.btn { width:130px; }
+  .stat-row { display:none; }
+  .bottom-nav { padding:4px 5px calc(4px + env(safe-area-inset-bottom)); }
+  .bottom-nav .nav-button { min-height:34px; }
+}
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
