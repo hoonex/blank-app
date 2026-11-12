@@ -49,3 +49,8 @@ Production was already deployed via the pinned Cloudflare bridge `flow-v2/deploy
 - Calendar now filters school events by the student's grade, consistently with Today.
 - Today/lesson/meal labels refer to the selected date, not always 'today'.
 - Keep Monograph V3 geometry: 28px panels, 16px row hover states, 999px controls, no visible borders. A 350ms local reveal is the only new motion; reduced-motion remains respected.
+
+## V4 small-screen final visual adjustment
+
+- On narrow screens, each calendar day with an event uses one 6px round, ink-colored **data marker** in place of microscopic clipped event labels. The event name stays present in the document for assistive technology and is readable at full size in the existing selected-day panel; blank days have no visible marker.
+- Narrow calendar-to-detail spacing is 10px, preventing the floating bottom navigation from visually colliding with the lower edge of the selected-day surface. No new card or decoration was introduced.

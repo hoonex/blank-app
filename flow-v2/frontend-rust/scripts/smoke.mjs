@@ -116,6 +116,15 @@ for (const [width,height] of sizes) {
     await page.waitForTimeout(300);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
+    if(width===390){
+      const summary=await page.locator(".calendar-event-text").filter({hasText:"시험 일정"}).first();
+      const dot=await summary.evaluate(el=>{
+        const cs=getComputedStyle(el);return {width:el.getBoundingClientRect().width,
+          height:el.getBoundingClientRect().height,bg:cs.backgroundColor, fontSize:cs.fontSize};
+      });
+      if(dot.width>9||dot.height>9||parseFloat(dot.fontSize)>1)
+        throw Error("Small-screen calendar event marker should be a restrained dot: "+JSON.stringify(dot));
+    }
     const initialDate=await page.locator(".picked-date h2").innerText();
     const alternative=page.locator(".calendar-grid button:not(.selected):not(.out-month)").first();
     const day=(await alternative.locator(".calendar-num").innerText()).trim();
