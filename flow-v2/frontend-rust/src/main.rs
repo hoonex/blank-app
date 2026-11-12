@@ -531,7 +531,7 @@ fn Today(
                                 (date_touch.get_untracked(),touch_end(&ev)){
                                 let dx=ex-sx;
                                 let dy=ey-sy;
-                                if dx.abs()>=42 && dx.abs() > dy.abs()*1.35 {
+                                if dx.abs()>=42 && dx.abs()*100 > dy.abs()*135 {
                                     let direction=if dx<0 {1} else {-1};
                                     date_direction.set(direction);
                                     date_last_swipe.set(js_sys::Date::now());
