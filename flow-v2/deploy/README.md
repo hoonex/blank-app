@@ -29,3 +29,10 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Final small-screen design: event labels below day numerals become compact high-contrast 6px status dots, while the selected-day panel displays the event's full name; detail-to-calendar gap reduced to 10px to keep the floating dock clear.
 - Production deploy sequence: verify GitHub static files, run Rust browser smoke on six viewports, publish preview Worker, verify preview SSR-equivalent hydration and legacy path, then update `blank-app` Worker.
 - Previous release available for rollback: `ad02e0f5001f731590f1e8700b7d61a697e0f0bd`.
+
+## Verified final production Worker version
+
+- Cloudflare deployed version: `b217a752-5ab8-4f29-8b3a-c9a10fd22703` on `blank-app.agfvrd.workers.dev`.
+- Prior intact live Monograph V4 version (rollback target): `f26cd9af-baa9-4653-9c95-d5b26c21b6e8`. Earlier production Monograph V3: `eccc4d87-b287-4d10-9654-58dee546c599`.
+- Cloudflare Browser Rendering verified final root `/` contains `style-a5b5c26dabd3c61b.css`, `flow-school-web-80fe49608c9f505a.js`, mounted WASM, and rendered onboarding. Legacy, Transit, University and Admin all responded HTTP 200.
+- Rust CI passed run `43218336207` on source `2a7ff123d2d57484979a0fed0847db4e684f37aa`, and static publish run `43218325272` succeeded.

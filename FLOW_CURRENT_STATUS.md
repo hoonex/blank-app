@@ -1,5 +1,7 @@
 # Flow Current Status
 
+> **Production status — 2026-11-12 KST:** The canonical Cloudflare Worker `blank-app` currently serves **rounded Rust Monograph V4** at `/` (verified by Cloudflare Browser Rendering: WASM mounted and CSS loaded). Worker version `b217a752-5ab8-4f29-8b3a-c9a10fd22703`, immutable Rust bundle pin `314bd256ae5e8f705a46b76509c92e14a2559184`. Original School `/legacy`, Transit `/transit`, University `/university`, and Admin `/admin` respond 200 with original JS/CSS retained. Deployment source lives in `flow-v2/deploy/cloudflare-bridge.mjs`. Feature PR #273 remains **draft/unmerged**; legacy-only features remain on `/legacy`. The September 2026 baseline below is historical and does not describe the current Worker source or route priority.
+
 Updated: 2026-09-07 (KST)
 
 This file describes the current operational baseline. Historical implementation notes belong in `FLOW_PROJECT_HISTORY.md`; GitHub `main`, deployed Cloudflare health checks, and current CI remain the source of truth when they disagree with prose.
