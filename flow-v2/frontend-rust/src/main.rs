@@ -198,12 +198,24 @@ fn App() -> impl IntoView {
     let error = RwSignal::new(String::new());
     let busy = RwSignal::new(false);
     let serial = RwSignal::new(0u64);
+    let loaded_period = RwSignal::new(String::new());
     let dark = RwSignal::new(stored::<bool>(THEME_KEY).unwrap_or(false));
     apply_theme(dark.get_untracked());
 
     Effect::new(move |_| {
         if let Some(saved) = profile.get() {
-            load_data(saved, date.get(), dashboard, error, busy, serial);
+            let day = date.get();
+            // NEIS weekly timetable + monthly events: don't refetch on every
+            // date tap in the same school/week/month. The view stays reactive.
+            let key = format!("{}:{}:{}:{}:{}", saved.school.school_code,
+                saved.grade, saved.class_name, ymd(monday(day)),
+                day.format("%Y%m"));
+            if loaded_period.get_untracked() != key {
+                loaded_period.set(key);
+                load_data(saved, day, dashboard, error, busy, serial);
+            }
+        } else {
+            loaded_period.set(String::new());
         }
     });
 
@@ -463,8 +475,16 @@ fn Schedule(data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>, busy:RwS
                     {["일","월","화","수","목","금","토"].into_iter().map(|d|view!{<span class="weekday">{d}</span>}).collect_view()}
                     {move ||{
                         let first=date.get().with_day(1).unwrap();
-                        let begin=first-Duration::days(first.weekday().num_days_from_sunday() as i64);
-                        (0..42).map(move |offset|{
+                        let offset=first.weekday().num_days_from_sunday() as i64;
+                        let begin=first-Duration::days(offset);
+                        let next=if first.month()==12 {
+                            NaiveDate::from_ymd_opt(first.year()+1,1,1).unwrap()
+                        } else {
+                            NaiveDate::from_ymd_opt(first.year(),first.month()+1,1).unwrap()
+                        };
+                        // Show exactly the weeks required by the visible month.
+                        let cell_count=((offset+(next-first).num_days()+6)/7)*7;
+                        (0..cell_count).map(move |offset|{
                             let day=begin+Duration::days(offset);
                             let count=events().iter().filter(|e|e.date==ymd(day)).count();
                             view!{<button class:out-month=move ||day.month()!=date.get().month()

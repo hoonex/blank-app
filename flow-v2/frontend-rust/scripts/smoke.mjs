@@ -21,7 +21,9 @@ async function settleMotion(page) {
   });
 }
 for (const [width,height] of sizes) {
-  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  const options = { viewport: { width, height }, deviceScaleFactor: 1 };
+  if (width === 390) options.recordVideo = { dir:shots, size:{ width,height } };
+  const page = await browser.newPage(options);
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   const fixture = {
@@ -70,6 +72,7 @@ for (const [width,height] of sizes) {
     await page.screenshot({path:shots+"/failed-"+width+"x"+height+".png",fullPage:true}).catch(()=>{});
   }
   await page.close();
+  if(width===390) await page.video()?.saveAs(shots+"/motion-390x844.webm");
 }
 await browser.close();
 if(failures) process.exit(1);
