@@ -15,3 +15,10 @@ Emergency rollback: previous Cloudflare Worker version `5525fd47-f635-463f-82b3-
 ## Monograph V3 update — 2026-11-12
 
 The new V3 frontend uses a single rounded shape language: 28px major surfaces, 16px item hover shapes and pill controls. Removed giant F ornament, fake timetable arrows, repeating technical indices and overly long intro wipe. Rust UI automated checks passed for mobile portrait, landscape, tablet and desktop. The pinned standalone GitHub Actions static release is `flow-v2-monograph-v3-20261112` at `516f2ca51236ba1f3794eaa441bdea64713004d4`. Retain the previous Cloudflare Worker versions as rollback options.
+
+## V4 visual refinement — ad02e0f5001f731590f1e8700b7d61a697e0f0bd
+
+- Published GitHub Actions release branch `flow-v2-monograph-v4-624aec2f265c`; immutable commit `ad02e0f5001f731590f1e8700b7d61a697e0f0bd` with verified `index.html`, `*.wasm`, `*.js` and `*.css`.
+- Rounded monograph language preserved, no new ornamental cards. Date selection changes the existing contextual event sheet. Current day now uses time-correct labels; calendar event filtering matches the student's grade.
+- Browser smoke passed on 390x844, 844x390, 768x1024, 1024x768, 1366x768 and 1920x1080; includes clicked date detail, theme, mask transition, keyboard/ARIA controls, reduced-motion, horizontal overflow.
+- Prior live V3 static pin `516f2ca51236ba1f3794eaa441bdea64713004d4` retained in public release history. Deployment bridge now references the new pin and can be rolled back to previous Worker version if necessary.
