@@ -161,20 +161,25 @@ async fn dashboard(env:&Env,m:&HashMap<String,String>)->Result<Value,String>{
     let tt_from=date8(monday);let tt_to=date8(friday);
     let meal_from=date8(meal_start);let meal_to=date8(meal_end);
     let start=date8(month_start);let end=date8(month_end);
+    // The futures in join! borrow their parameter arrays. Bind arrays first so
+    // they outlive the asynchronous calls (E0716).
+    let timetable_params=[
+        ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
+        ("GRADE",grade),("CLASS_NM",class),("TI_FROM_YMD",tt_from.as_str()),("TI_TO_YMD",tt_to.as_str())
+    ];
+    let meal_params=[
+        ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
+        ("MLSV_FROM_YMD",meal_from.as_str()),("MLSV_TO_YMD",meal_to.as_str())
+    ];
+    let schedule_params=[
+        ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
+        ("AA_FROM_YMD",start.as_str()),("AA_TO_YMD",end.as_str())
+    ];
     let (s,t,me,ev)=futures::join!(
         neis(env,"schoolInfo",&common),
-        neis(env,timetable_endpoint(kind),&[
-            ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
-            ("GRADE",grade),("CLASS_NM",class),("TI_FROM_YMD",&tt_from),("TI_TO_YMD",&tt_to)
-        ]),
-        neis(env,"mealServiceDietInfo",&[
-            ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
-            ("MLSV_FROM_YMD",&meal_from),("MLSV_TO_YMD",&meal_to)
-        ]),
-        neis(env,"SchoolSchedule",&[
-            ("ATPT_OFCDC_SC_CODE",office),("SD_SCHUL_CODE",school),
-            ("AA_FROM_YMD",&start),("AA_TO_YMD",&end)
-        ])
+        neis(env,timetable_endpoint(kind),&timetable_params),
+        neis(env,"mealServiceDietInfo",&meal_params),
+        neis(env,"SchoolSchedule",&schedule_params)
     );
     let schools=s?;
     let timetable=t?;
