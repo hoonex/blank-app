@@ -1,6 +1,6 @@
 # Flow Current Status
 
-> **Production status — 2026-11-12 KST:** The canonical Cloudflare Worker `blank-app` currently serves **rounded Rust Monograph V4** at `/` (verified by Cloudflare Browser Rendering: WASM mounted and CSS loaded). Worker version `b217a752-5ab8-4f29-8b3a-c9a10fd22703`, immutable Rust bundle pin `314bd256ae5e8f705a46b76509c92e14a2559184`. Original School `/legacy`, Transit `/transit`, University `/university`, and Admin `/admin` respond 200 with original JS/CSS retained. Deployment source lives in `flow-v2/deploy/cloudflare-bridge.mjs`. Feature PR #273 remains **draft/unmerged**; legacy-only features remain on `/legacy`. The September 2026 baseline below is historical and does not describe the current Worker source or route priority.
+> **Production status — 2026-11-12 KST:** New Flow Rust Monograph V5 release `ee45530dd9ba94318bbf12678218f29701b0c8ed` has passed six-viewport Chromium and actual touch swipe tests. The static release is pinned in `flow-v2/deploy/cloudflare-bridge.mjs`; the same canonical hostname `https://blank-app.agfvrd.workers.dev/` remains the rollout target. Former V4 rollback Worker version: `b217a752-5ab8-4f29-8b3a-c9a10fd22703`. `/legacy`, `/transit`, `/university`, and `/admin` preserve the original UIs. PR #273 stays draft; server-side Rust NEIS API and feature parity remain incomplete.
 
 Updated: 2026-09-07 (KST)
 

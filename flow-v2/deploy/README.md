@@ -36,3 +36,13 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Prior intact live Monograph V4 version (rollback target): `f26cd9af-baa9-4653-9c95-d5b26c21b6e8`. Earlier production Monograph V3: `eccc4d87-b287-4d10-9654-58dee546c599`.
 - Cloudflare Browser Rendering verified final root `/` contains `style-a5b5c26dabd3c61b.css`, `flow-school-web-80fe49608c9f505a.js`, mounted WASM, and rendered onboarding. Legacy, Transit, University and Admin all responded HTTP 200.
 - Rust CI passed run `43218336207` on source `2a7ff123d2d57484979a0fed0847db4e684f37aa`, and static publish run `43218325272` succeeded.
+
+## V5 swipe / touch / portal release — 2026-11-12 KST
+
+- Built release SHA `ee45530dd9ba94318bbf12678218f29701b0c8ed` from source `e7a06bfa6492cf368ab84e6362382216bd2fe09e`, published branch `flow-v2-monograph-v4-e7a06bfa6492`, with exactly one WASM (`flow-school-web-e928c418a6091364_bg.wasm`), JS (`flow-school-web-42b5c0ff67a86d3c.js`), CSS (`style-10b39c7dee145566.css`) and `index.html`.
+- CI `Flow V2 Rust web` run `43242013684`: compile, release, mobile swipe CDP Chromium, six responsive screenshots, reduced motion, dark mode and layout tests **success**. Static publish run `43241801705`: success.
+- Live preview Worker `flow-v2-kinetic-preview` version `d8c3979a-d053-42e5-a7fb-e507806f4dcc` verified actual mounted WASM, new JS/CSS and `/`, `/legacy`, `/transit`, `/university`, `/admin` all HTTP 200.
+- Original hostname `https://blank-app.agfvrd.workers.dev/` retained. UI gesture logic implemented directly in Leptos Rust using browser TouchEvent, no JavaScript gesture framework.
+- Original school/university/admin assets remain pinned at old release `b1ac095b47baa0c09430559bf127e7c873fa9263`, preserving old routes and data integrations. `/legacy` remains the real previous school front end, not a static screenshot.
+- Daegu city-run bus information `https://businfo.daegu.go.kr/` is the authoritative arrival link in Today and Settings; old transit remains `/transit`. Do not display invented ETA or draw unverified bus route geometries. Public API keys (if added later) must be stored as Worker secrets.
+- Rollback if needed to prior verified Cloudflare Worker `b217a752-5ab8-4f29-8b3a-c9a10fd22703` (V4).
