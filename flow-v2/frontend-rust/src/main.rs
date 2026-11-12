@@ -298,13 +298,13 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
         <div class="onboarding">
             <div class="onboarding-title">
                 <div class="brand-lockup"><strong>"flow"</strong><span class="brand-accent" aria-hidden="true">"."</span><small>"School"</small></div>
-                <span class="eyebrow">"YOUR DAY, IN FLOW"</span>
+                <span class="eyebrow">"학교 생활을 간단하게"</span>
                 <h1>"학교 생활을" <em>"새로운 흐름으로."</em></h1>
                 <p>"시간표와 급식, 학사일정까지. 정보를 찾는 시간을 줄이고 오늘에 집중하세요."</p>
-                <div class="onboarding-footer">"Made for school days. Built with Rust."</div>
+                <div class="onboarding-footer">"Flow School · 새 버전 미리보기"</div>
             </div>
             <section class="setup-sheet">
-                <span class="eyebrow">"01 — SETUP"</span>
+                <span class="eyebrow">"시작하기"</span>
                 <h2>"내 학교 연결하기"</h2>
                 <p>"기존 Flow에서 선택한 정보는 그대로 사용할 수 있어요."</p>
                 <label for="school-search">"학교 이름"</label>
@@ -578,11 +578,11 @@ fn Schedule(data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>,
 fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
     view! {
         <div class="scene" data-scene="school">
-            <div class="scene-head"><div><span class="eyebrow">"03 / SCHOOL"</span>
+            <div class="scene-head"><div><span class="eyebrow">"내 학교"</span>
                 <h1>"학교 정보"<span class="heading-period">"."</span></h1></div>
 </div>
             <section class="content-sheet school-sheet">
-                <span class="eyebrow">"MY SCHOOL"</span>
+                <span class="eyebrow">"학교 정보"</span>
                 <h2>{move ||profile.get().map(|p|p.school.name).unwrap_or_default()}</h2>
                 <p>{move ||profile.get().map(|p|p.school.address).unwrap_or_default()}</p>
                 <div class="school-details">
@@ -601,7 +601,7 @@ fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
 fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoView {
     view!{
         <div class="scene" data-scene="settings">
-            <div class="scene-head"><div><span class="eyebrow">"04 / PREFERENCES"</span>
+            <div class="scene-head"><div><span class="eyebrow">"화면과 정보 관리"</span>
                 <h1>"설정"<span class="heading-period">"."</span></h1></div>
 </div>
             <section class="content-sheet settings-sheet">
@@ -617,7 +617,7 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
                 <div class="setting-row"><div><strong>"전체 기능"</strong><small>"아직 이식되지 않은 메뉴는 기존 서비스에서 사용할 수 있습니다."</small></div>
                     <a href="/" class="setting-toggle">"기존 Flow ↗"</a></div>
             </section>
-            <p class="note">"이 화면은 Rust WebAssembly 미리보기입니다. 기존 배포 환경은 변경하지 않았습니다."</p>
+            <p class="note">"새 버전 미리보기입니다. 기존 Flow는 그대로 이용할 수 있습니다."</p>
         </div>
     }
 }
