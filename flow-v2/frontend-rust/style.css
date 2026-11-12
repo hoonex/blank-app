@@ -28,7 +28,7 @@ button:disabled{opacity:.45;cursor:default}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 a{color:inherit;text-decoration:none}
 ::selection{background:var(--accent);color:#171917}
-.flow-shell{min-height:100dvh;--portal-y:53px}
+.flow-shell{min-height:100dvh}
 /* No native long-press text selection or Samsung/Chromium blue tap flash on app chrome. */
 html,body,button,a{-webkit-tap-highlight-color:transparent}
 .flow-shell,.onboarding{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -36,7 +36,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   -webkit-user-select:text;user-select:text;-webkit-touch-callout:default
 }
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-.mobile-bottom,.switch-track{touch-action:pan-y;overscroll-behavior-x:contain}
+.mobile-bottom,.switch-track,.day-carousel{touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain}
 .flow-main{touch-action:pan-y}
 .global-header{
   height:72px;padding:0 clamp(20px,4.1vw,64px);
@@ -61,7 +61,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .global-meta a{font-size:11px;font-weight:760;transition:color .2s}
 .global-meta a:hover{color:var(--ink)}
 .flow-main{min-width:0}
-.scene{animation:scene-reveal .6s var(--ease) both;min-width:0;transform-origin:center top}
+.scene{animation:scene-reveal .36s cubic-bezier(.2,.85,.2,1) both;min-width:0;transform-origin:center top}
 .today-heading{
   position:relative;isolation:isolate;overflow:hidden;
   background:var(--night);color:var(--night-text);
@@ -83,46 +83,37 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   animation:digit-in .56s var(--snap) both
 }
 .hero-weekday{font-size:clamp(18px,2.3vw,27px);font-weight:750;letter-spacing:-.04em;color:var(--accent)}
-.hero-bottom{display:flex;align-items:center;gap:clamp(12px,2vw,28px);justify-content:space-between}
+/* One tactile five-day carousel. Vertical scroll stays native; horizontal
+   motion changes the selected day, without three separate paging buttons. */
+.hero-bottom{display:block;width:100%;min-width:0}
+.day-carousel{
+  width:100%;max-width:650px;position:relative;overflow:hidden;
+  touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain;
+  -webkit-user-select:none;user-select:none;
+}
 .day-strip{
-  --day-gap:4px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
-  gap:var(--day-gap);width:100%;max-width:535px;isolation:isolate;position:relative
+  --day-gap:7px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:var(--day-gap);width:100%;position:relative;
+  transform:translate3d(var(--day-drag-x,0px),0,0);
+  animation:date-rail-enter .3s cubic-bezier(.2,.85,.2,1) both;
+  will-change:transform;
 }
 .day-strip button{
-  position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  min-height:57px;padding:6px 2px;border-radius:16px;
-  color:#b6bcb0;transition:color .22s,transform .22s var(--ease)
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  position:relative;min-width:0;min-height:69px;padding:8px 3px;
+  border-radius:19px;background:transparent;color:#aeb5a9;
+  transition:background .24s,color .24s,scale .2s cubic-bezier(.2,1.6,.22,1);
+  -webkit-tap-highlight-color:transparent;
 }
-.day-strip button small{font-size:10px;font-weight:650}
-.day-strip button strong{font-size:18px;font-weight:790;font-variant-numeric:tabular-nums;line-height:1.1}
-.day-strip button.active{background:var(--accent);color:#171917}
-.day-strip button:not(.active):hover{color:#fff}
-.day-strip button:active{transform:scale(.91)}
-@supports selector(:has(*)){
- .day-strip::before{
-   content:"";pointer-events:none;position:absolute;z-index:1;inset:0 auto 0 0;
-   width:calc((100% - 6 * var(--day-gap))/7);
-   background:var(--accent);border-radius:16px;
-   transition:transform .43s cubic-bezier(.2,1.05,.26,1)
- }
- .day-strip button.active{background:transparent}
- .day-strip:has(>button:nth-child(1).active)::before{transform:translateX(0)}
- .day-strip:has(>button:nth-child(2).active)::before{transform:translateX(calc(100% + var(--day-gap)))}
- .day-strip:has(>button:nth-child(3).active)::before{transform:translateX(calc(200% + 2 * var(--day-gap)))}
- .day-strip:has(>button:nth-child(4).active)::before{transform:translateX(calc(300% + 3 * var(--day-gap)))}
- .day-strip:has(>button:nth-child(5).active)::before{transform:translateX(calc(400% + 4 * var(--day-gap)))}
- .day-strip:has(>button:nth-child(6).active)::before{transform:translateX(calc(500% + 5 * var(--day-gap)))}
- .day-strip:has(>button:nth-child(7).active)::before{transform:translateX(calc(600% + 6 * var(--day-gap)))}
+.day-strip button small{font-size:12px;font-weight:690}
+.day-strip button strong{font-size:20px;line-height:1.05;font-weight:810;font-variant-numeric:tabular-nums}
+.day-strip button.active{background:var(--accent);color:#171917;scale:1}
+.day-strip button:not(.active):hover{background:#292d29;color:#f5f6ee}
+.day-strip button:active{scale:.94}
+@keyframes date-rail-enter{
+  from{opacity:.55;transform:translate3d(calc(var(--day-dir,1) * 22px + var(--day-drag-x,0px)),0,0)}
+  to{opacity:1;transform:translate3d(var(--day-drag-x,0px),0,0)}
 }
-.date-actions{display:flex;gap:6px;align-items:center;flex:none}
-.date-actions button{
-  width:38px;height:38px;display:grid;place-items:center;padding:0;
-  border-radius:var(--radius-control);background:#363a33;color:var(--night-text);
-  font-size:15px;font-weight:740;transition:background .25s,color .25s,transform .2s var(--ease)
-}
-.date-actions button:hover{background:var(--accent);color:#171917}
-.date-actions button:active{transform:scale(.9)}
-.date-actions .today-reset{width:auto;min-width:54px;padding:0 14px;font-size:12px}
 .api-error{max-width:1360px;margin:16px auto 0;padding:12px 18px;border-radius:var(--radius-item);background:#ffddd4;color:#6b2921}
 .today-layout{
   max-width:1408px;margin:0 auto;
@@ -373,49 +364,25 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
 .two-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .two-fields label>*{margin-top:8px}
 .setup-complete{width:100%;margin-top:20px}
-.transition-layer{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}
-.transition-curtain{
-  position:absolute;inset:0;background:var(--night);color:var(--accent);
-  display:grid;place-items:center;
-  clip-path:circle(0 at var(--portal-x,50%) var(--portal-y,53px));
-  animation:route-portal .72s cubic-bezier(.72,.02,.16,1) both;
-  will-change:clip-path
-}
-.curtain-label{
-  font-size:clamp(64px,11.5vw,170px);font-weight:820;
-  letter-spacing:-.09em;line-height:1;white-space:nowrap;
-  animation:portal-label .72s cubic-bezier(.22,1,.36,1) both;
-  will-change:transform,opacity
-}
 .mobile-bottom{display:none}
+/* Direct, directional spatial entrance; no solid full-screen portal.
+   Content remains readable and interactive for the whole animation. */
 @keyframes scene-reveal{
-  from{opacity:.18;clip-path:inset(0 0 0 12% round 22px);transform:translate3d(calc(var(--travel-dir,1) * 26px),0,0)}
-  65%{opacity:1}
-  to{opacity:1;clip-path:inset(0 0 0 0 round 0px);transform:none}
+ from{opacity:.52;transform:translate3d(calc(var(--travel-dir,1) * 28px),0,0);
+      clip-path:inset(0 0 0 8% round 20px)}
+ to{opacity:1;transform:translate3d(0,0,0);clip-path:inset(0 0 0 0 round 0px)}
 }
 @keyframes digit-in{from{transform:translateY(105%) rotate(3deg)}to{transform:none}}
 @keyframes list-in{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
 @keyframes row-in{from{opacity:.05;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes panel-in{from{opacity:0;clip-path:inset(25% 0 0);transform:translateY(14px)}to{opacity:1;clip-path:inset(0);transform:none}}
-/* One dark 'lens' blooms from the destination tab, then peels upward.
-   No ornamental loader: every transition visually connects input and destination. */
-@keyframes route-portal{
-  0%{clip-path:circle(0 at var(--portal-x,50%) var(--portal-y,53px))}
-  43%,58%{clip-path:circle(160vmax at var(--portal-x,50%) var(--portal-y,53px))}
-  100%{clip-path:circle(0 at 50% -12%)}
-}
-@keyframes portal-label{
-  0%,20%{opacity:0;transform:translateY(36px) scale(.88)}
-  40%,59%{opacity:1;transform:translateY(0) scale(1)}
-  100%{opacity:0;transform:translateY(-23px) scale(1.05)}
-}
 @media(max-width:1020px){
  .global-meta .school-meta{display:none}
  .today-layout{grid-template-columns:minmax(0,1.1fr) minmax(260px,.8fr);gap:24px}
  .hero-core{min-height:119px}
 }
 @media(max-width:870px){
- .flow-shell{padding-bottom:calc(80px + env(safe-area-inset-bottom));--portal-y:calc(100% - 45px)}
+ .flow-shell{padding-bottom:calc(148px + env(safe-area-inset-bottom))}
  .global-header{height:58px;padding:0 23px}
  .rail-navigation,.global-meta{display:none}
  .brand-wrap{min-width:0}
@@ -431,12 +398,12 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .mobile-bottom{
    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
    --nav-gap:4px;gap:var(--nav-gap);isolation:isolate;
-   position:fixed;z-index:80;left:17px;right:17px;margin-inline:auto;
-   width:calc(100% - 34px);max-width:440px;transform:none;
-   height:63px;bottom:calc(13px + env(safe-area-inset-bottom));padding:5px;
-   contain:layout style;
+   position:fixed;z-index:80;left:0;right:0;margin-inline:auto;
+   width:calc(100% - 30px);max-width:440px;transform:none;
+   height:60px;bottom:calc(34px + env(safe-area-inset-bottom));padding:5px;
+   overflow:hidden;box-sizing:border-box;
    background:var(--night);border-radius:var(--radius-control);
-   box-shadow:0 12px 35px rgba(0,0,0,.18)
+   box-shadow:0 12px 35px rgba(0,0,0,.2),0 0 0 7px var(--paper)
  }
  .mobile-bottom button{position:relative;z-index:2;border-radius:var(--radius-control);
    font-size:12px;font-weight:720;color:#b2b6ac;transition:color .25s,transform .2s}
@@ -480,15 +447,11 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-numeral{font-size:clamp(57px,15.3vw,79px)}
  .hero-weekday{font-size:15px}
  .hero-date h1{gap:12px}
- .hero-bottom{gap:8px}
- .day-strip{--day-gap:2px}
- .day-strip button{min-height:48px;gap:1px;border-radius:13px}
- .day-strip button small{font-size:9px}
- .day-strip button strong{font-size:13px}
- .day-strip::before{border-radius:13px}
- .date-actions{gap:3px}
- .date-actions button{width:28px;height:32px;font-size:12px}
- .date-actions .today-reset{min-width:36px;font-size:10px;padding:0 7px}
+ .hero-bottom{margin-top:5px}
+ .day-strip{--day-gap:6px}
+ .day-strip button{min-height:62px;gap:3px;border-radius:17px}
+ .day-strip button small{font-size:11px}
+ .day-strip button strong{font-size:18px}
  .today-layout{padding:22px 0 54px;gap:28px}
  .module-heading{margin-bottom:11px}
  .module-kicker{font-size:11px}
@@ -557,10 +520,10 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-small{display:none}
  .hero-numeral{font-size:53px}
  .hero-weekday{font-size:13px}
- .day-strip button{min-height:37px;flex-direction:row;gap:4px}
+ .day-strip button{min-height:38px;flex-direction:row;gap:5px}
  .today-layout{padding-top:13px}
  .class-row{min-height:41px}
- .mobile-bottom{height:45px;bottom:6px}
+ .mobile-bottom{height:47px;bottom:calc(17px + env(safe-area-inset-bottom))}
  .scene-head{margin-top:4px;min-height:60px}
  .scene-head h1{font-size:37px}
 }
@@ -579,6 +542,6 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
 html[data-theme="dark"] .transit-caution{color:var(--muted)}
 
 /* Tactile feedback that respects hover, drag and reduced-motion. */
-:where(.mobile-bottom button,.switch-track button,.date-actions button,.day-strip button){transform-origin:center;transition-timing-function:cubic-bezier(.18,.92,.3,1.18)}
+:where(.mobile-bottom button,.switch-track button,.day-strip button){transform-origin:center;transition-timing-function:cubic-bezier(.18,.92,.3,1.18)}
 :where(.mobile-bottom button,.switch-track button,.date-actions button,.day-strip button):active{scale:.94}
 @media(max-width:590px){.meal-list{gap:12px 10px}.meal-list li{font-size:13px}}
