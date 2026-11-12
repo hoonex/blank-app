@@ -48,12 +48,12 @@ for (const [width,height] of sizes) {
     await page.goto(base,{waitUntil:"networkidle",timeout:30000});
     await page.locator(".today-heading h1").waitFor({state:"visible",timeout:20000});
     const h1 = await page.locator(".today-heading h1").innerText();
-    if(!h1.includes("월") || !h1.includes("일"))throw Error("Unexpected date heading "+h1);
+    if(!/\d{2}\.\d{2}/.test(h1))throw Error("Unexpected kinetic date heading "+h1);
     if(await page.locator(".day-strip button").count()!==7)throw Error("Seven-day selector missing");
     if(await page.locator(".class-row").count()!==7)throw Error("Fixture timetable not fully visible");
     if(width===390) {
       const bounds=await page.locator(".timetable-sheet").boundingBox();
-      if(!bounds || bounds.y>440)throw Error("Timetable not visible in mobile first fold: "+JSON.stringify(bounds));
+      if(!bounds || bounds.y>500)throw Error("Timetable not visible in mobile first fold: "+JSON.stringify(bounds));
     }
     await page.getByRole("button",{name:"주간",exact:true}).click();
     if(await page.locator(".week-lessons span").count()<5)throw Error("Week view lacks subject detail");
@@ -71,12 +71,23 @@ for (const [width,height] of sizes) {
     await targetDay.click();
     const after=await page.locator(".day-strip button.active").innerText();
     if(after!==(await targetDay.innerText()))throw Error("Date selector did not update");
-    if(oldActive!==after)await page.locator(".day-strip button").nth(3).click();
+    if(oldActive!==after)await page.locator(".today-reset").click();
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
-    const nav = width<=800 ? ".mobile-bottom button" : ".rail-navigation button";
+    const borderCount=await page.evaluate(()=>{
+      const targets=[...document.querySelectorAll(".today-heading,.class-row,.meal-sheet,.day-strip,.week-sheet")];
+      return targets.filter(node=>{
+        const style=getComputedStyle(node);
+        return [style.borderTopWidth,style.borderRightWidth,style.borderBottomWidth,style.borderLeftWidth].some(v=>parseFloat(v)>0);
+      }).length;
+    });
+    if(borderCount)throw Error("Visible structural borders detected: "+borderCount);
+    const nav = width<=870 ? ".mobile-bottom button" : ".rail-navigation button";
     await page.locator(nav).nth(1).click();
+    await page.locator(".transition-curtain").waitFor({state:"attached",timeout:3000});
+    await page.waitForTimeout(300);
+    if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
@@ -89,6 +100,9 @@ for (const [width,height] of sizes) {
     const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
     if(overflow)throw Error("Horizontal overflow detected");
     if(errors.length)throw Error("JS errors: "+errors.join("; "));
+    await page.emulateMedia({ reducedMotion:"reduce" });
+    const duration=await page.locator(".scene").evaluate(el=>getComputedStyle(el).animationDuration);
+    if(parseFloat(duration)>0.01)throw Error("Reduced motion ignored: "+duration);
     console.log("PASS "+width+"x"+height);
   }catch(e){
     failures++;
