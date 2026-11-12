@@ -415,3 +415,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{
  *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;
    transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+
+
+/* Signature motion: the selected day is a single traveling object, rather
+   than seven independent buttons flashing dark. Progressive enhancement;
+   ordinary .active background remains a fallback in browsers without :has(). */
+@supports selector(:has(*)){
+ .day-strip{--day-gap:5px;--day-pad:5px;position:relative;isolation:isolate}
+ .day-strip::before{
+   content:"";position:absolute;top:var(--day-pad);bottom:var(--day-pad);left:var(--day-pad);
+   width:calc((100% - var(--day-pad) - var(--day-pad) - var(--day-gap) - var(--day-gap) - var(--day-gap) - var(--day-gap) - var(--day-gap) - var(--day-gap)) / 7);
+   border-radius:10px;background:var(--dark);z-index:0;pointer-events:none;
+   transition:transform .33s cubic-bezier(.21,.9,.22,1);
+   will-change:transform
+ }
+ .day-strip button{z-index:1}
+ .day-strip button.active{background:transparent}
+ .day-strip:has(>button:nth-child(1).active)::before{transform:translateX(0)}
+ .day-strip:has(>button:nth-child(2).active)::before{transform:translateX(calc(100% + var(--day-gap)))}
+ .day-strip:has(>button:nth-child(3).active)::before{transform:translateX(calc(200% + var(--day-gap) + var(--day-gap)))}
+ .day-strip:has(>button:nth-child(4).active)::before{transform:translateX(calc(300% + var(--day-gap) + var(--day-gap) + var(--day-gap)))}
+ .day-strip:has(>button:nth-child(5).active)::before{transform:translateX(calc(400% + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap)))}
+ .day-strip:has(>button:nth-child(6).active)::before{transform:translateX(calc(500% + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap)))}
+ .day-strip:has(>button:nth-child(7).active)::before{transform:translateX(calc(600% + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap) + var(--day-gap)))}
+}
+@media(max-width:800px){
+ .day-strip{--day-gap:3px;--day-pad:4px}
+}

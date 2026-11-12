@@ -57,7 +57,17 @@ for (const [width,height] of sizes) {
     }
     await page.getByRole("button",{name:"주간",exact:true}).click();
     if(await page.locator(".week-lessons span").count()<5)throw Error("Week view lacks subject detail");
+    await settleMotion(page);
+    await page.screenshot({path:shots+"/week-"+width+"x"+height+".png",fullPage:true});
     await page.getByRole("button",{name:"하루",exact:true}).click();
+    const activeBefore=await page.locator(".day-strip button.active").count();
+    if(activeBefore!==1)throw Error("Date selector must have one active day");
+    const oldActive=await page.locator(".day-strip button.active").innerText();
+    const targetDay=page.locator(".day-strip button").nth(0);
+    await targetDay.click();
+    const after=await page.locator(".day-strip button.active").innerText();
+    if(after!==(await targetDay.innerText()))throw Error("Date selector did not update");
+    if(oldActive!==after)await page.locator(".day-strip button").nth(3).click();
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});

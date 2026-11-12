@@ -44,7 +44,7 @@ A student should answer three questions within one glance: "What classes do I ha
 - Screen entry: 320ms, translate 10px, opacity change; **not** a cinematic full-screen wipe.
 - Row entrance: 270ms with bounded stagger <= 150ms, primarily on list arrival, not on every hover.
 - Press response: 160–200ms, scaled to 0.93–0.95.
-- Selected day: immediate data update plus 220ms state/background change and 240ms accent indicator.
+- Selected day: immediate data update and a single moving dark selection plate (330ms, CSS :has progressive enhancement); accent underline tracks the chosen cell. Press interaction remains immediate.
 - Sidebar active: 230ms hairline grow. Tab switches should not block input.
 - Prefer transform and opacity, no full-page blur or canvas. Disable motion via prefers-reduced-motion.
 
@@ -56,3 +56,7 @@ A student should answer three questions within one glance: "What classes do I ha
 4. Long subject and school names wrap/clamp intentionally; 200% zoom remains navigable.
 5. Console errors zero. Reduced-motion must remove animations without hiding information.
 6. Keep original domain, current Cloudflare service, AdFit, school-data API, university, transit and admin untouched until explicit parity review.
+
+## Change note — selected date marker
+
+In Chromium and other modern :has-supporting browsers, the seven-day selector uses one moving highlight plate with fallback static selected states. No JavaScript animation loop, no canvas and no repeated DOM observers.
