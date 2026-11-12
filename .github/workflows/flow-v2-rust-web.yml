@@ -1,5 +1,11 @@
 name: Flow V2 Rust web
 on:
+  push:
+    branches:
+      - feat/flow-v2-rust-bun-redesign-20261112
+    paths:
+      - "flow-v2/frontend-rust/**"
+      - ".github/workflows/flow-v2-rust-web.yml"
   pull_request:
     paths:
       - "flow-v2/frontend-rust/**"
