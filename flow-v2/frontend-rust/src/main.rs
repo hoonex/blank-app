@@ -379,15 +379,6 @@ fn App() -> impl IntoView {
                             </button>
                         }).collect_view()}
                 </nav>
-                <div class="transition-layer" aria-hidden="true">
-                    <For each=move ||if page_motion.get()==0 {vec![]} else {vec![page_motion.get()]}
-                        key=|sequence|*sequence
-                        children=move |_|view!{
-                            <div class="transition-curtain">
-                                <span class="curtain-label">{move ||tab.get().label()}</span>
-                            </div>
-                        }/>
-                </div>
             </div>
         </Show>
     }
@@ -479,6 +470,10 @@ fn Today(
     profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>,error:RwSignal<String>
 )->impl IntoView{
     let week_mode=RwSignal::new(false);
+    let date_touch=RwSignal::<Option<(i32,i32)>>::new(None);
+    let date_drag=RwSignal::new(0.0f64);
+    let date_direction=RwSignal::new(1i32);
+    let date_last_swipe=RwSignal::new(0.0f64);
     let toggle_touch=RwSignal::<Option<(i32,i32)>>::new(None);
     let toggle_drag_x=RwSignal::<Option<f64>>::new(None);
     let toggle_preview=RwSignal::<Option<bool>>::new(None);
@@ -515,26 +510,65 @@ fn Today(
                     </div>
                     </div>
                 <div class="hero-bottom">
-                    <div class="day-strip" role="group" aria-label="날짜 선택">
-                        {move ||(0..7).map(|offset|{
-                            let day=monday(selected())+Duration::days(offset);
-                            view!{
-                                <button class:active=move ||date.get()==day
-                                    aria-pressed=move ||date.get()==day type="button"
-                                    on:click=move |_|date.set(day)>
-                                    <small>{day_letter(day)}</small>
-                                    <strong>{format!("{:02}",day.day())}</strong>
-                                </button>
+                    <div class="day-carousel" role="group" aria-label="날짜 선택. 좌우로 밀어서 하루 이동"
+                        style=move ||format!("--day-drag-x:{:.1}px;--day-dir:{}",date_drag.get(),date_direction.get())
+                        on:touchstart=move |ev|{
+                            date_touch.set(touch_start(&ev));
+                            date_drag.set(0.);
+                        }
+                        on:touchmove=move |ev|{
+                            if let (Some((sx,sy)),Some(point))=
+                                (date_touch.get_untracked(),ev.touches().item(0)){
+                                let dx=point.client_x()-sx;
+                                let dy=point.client_y()-sy;
+                                if dx.abs()>5 && dx.abs() > dy.abs()*2 {
+                                    date_drag.set((dx as f64 *.5).clamp(-65.,65.));
+                                }
                             }
-                        }).collect_view()}
-                    </div>
-                    <div class="date-actions">
-                        <button type="button" aria-label="이전 날" on:click=move |_|
-                            date.update(|d|*d-=Duration::days(1))>"←"</button>
-                        <button type="button" class="today-reset"
-                            on:click=move |_|date.set(today_local())>"오늘"</button>
-                        <button type="button" aria-label="다음 날" on:click=move |_|
-                            date.update(|d|*d+=Duration::days(1))>"→"</button>
+                        }
+                        on:touchend=move |ev|{
+                            if let (Some((sx,sy)),Some((ex,ey)))=
+                                (date_touch.get_untracked(),touch_end(&ev)){
+                                let dx=ex-sx;
+                                let dy=ey-sy;
+                                if dx.abs()>=42 && dx.abs() > dy.abs()*1.35 {
+                                    let direction=if dx<0 {1} else {-1};
+                                    date_direction.set(direction);
+                                    date_last_swipe.set(js_sys::Date::now());
+                                    date.update(|day|*day+=Duration::days(direction as i64));
+                                }
+                            }
+                            date_touch.set(None);
+                            date_drag.set(0.);
+                        }
+                        on:touchcancel=move |_|{
+                            date_touch.set(None);
+                            date_drag.set(0.);
+                        }>
+                        <For each=move ||vec![date.get()] key=|day|ymd(*day)
+                            children=move |center|{
+                                view!{
+                                    <div class="day-strip">
+                                        {(-2i64..=2).map(|offset|{
+                                            let day=center+Duration::days(offset);
+                                            view!{
+                                                <button type="button"
+                                                    class:active=move ||date.get()==day
+                                                    aria-pressed=move ||date.get()==day
+                                                    aria-label=format!("{}월 {}일 {}요일",day.month(),day.day(),day_letter(day))
+                                                    on:click=move |_|{
+                                                        if js_sys::Date::now()-date_last_swipe.get_untracked()<550. {return;}
+                                                        date_direction.set(if day>=date.get_untracked(){1}else{-1});
+                                                        date.set(day);
+                                                    }>
+                                                    <small>{day_letter(day)}</small>
+                                                    <strong>{format!("{:02}",day.day())}</strong>
+                                                </button>
+                                            }
+                                        }).collect_view()}
+                                    </div>
+                                }
+                            }/>
                     </div>
                 </div>
             </section>
