@@ -522,7 +522,7 @@ fn Today(
                                 let dx=point.client_x()-sx;
                                 let dy=point.client_y()-sy;
                                 if dx.abs()>5 && dx.abs() > dy.abs()*2 {
-                                    date_drag.set((dx as f64 *.5).clamp(-65.,65.));
+                                    date_drag.set((dx as f64 * 0.5).clamp(-65.,65.));
                                 }
                             }
                         }
