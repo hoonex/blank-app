@@ -29,6 +29,22 @@ jobs:
       - name: Build Rust frontend
         working-directory: flow-v2/frontend-rust
         run: trunk build --release --public-url /flow-v2/frontend-rust/dist/
+      - name: Serve Rust frontend
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          sleep 2
+      - name: Run Rust WASM browser checks and capture screenshots
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          node flow-v2/frontend-rust/scripts/smoke.mjs
+      - name: Upload rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-v2-rust-viewport-matrix
+          path: flow-v2/frontend-rust/screenshots/
+          if-no-files-found: ignore
       - name: Upload Rust frontend bundle
         uses: actions/upload-artifact@v7
         with:
