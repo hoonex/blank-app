@@ -84,3 +84,13 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - **Mobile scroll architecture**: `.flow-shell` uses a 100dvh flex column; only `.flow-main` scrolls. Bottom dock is a non-overlapping sibling flex row instead of a position:fixed overlay. It reserves an Android gesture-safe bottom gutter, and a content scroll no longer pushes the dock offscreen. Real Chrome device confirmation is still required.
 - Changed page entrance from full-screen portal overlay to 360ms directional masked view reveal. Removed sticky hover color on mobile and fixed brand header width and per-tab scroll reset. No extra data requests or new controls.
 - Prior production Worker version `d5d7e086-73fd-4c87-ad30-9036db5c2bbf` and old source pin `a4cfcfdabe3a21f7b02f4d400b5628d11fe68843` remain as rollback reference.
+
+## Production verification — live 2026-11-13 KST
+
+- Public URL unchanged: `https://blank-app.agfvrd.workers.dev/`.
+- Worker version `07054114-b7a9-4867-a39b-c1f880134371` deployed to `blank-app`, using the same bridge tested on `flow-v2-kinetic-preview`.
+- Rust source `a129568051c0e26de5c5780c0dcbfac43f85caaf`, static pin `6b4047e474e54e7edf2209876d1b5c704f80dc55`.
+- Final test `43255818992`: WASM typecheck, release build, six responsive viewport checks, real CDP touch swipe, tab drag, changed-screen scroll reset, dock at scroll end, viewport shrink, accessible date tap, reduced-motion passed.
+- Cloudflare Browser Rendering verified production root mounted WASM, correct CSS/JS and 200 responses for original `/legacy`, `/transit`, `/university`, `/admin`; no claim of entire old API feature parity.
+- Previous Worker version (immediate rollback target): `d5d7e086-73fd-4c87-ad30-9036db5c2bbf`.
+- Physical-device acceptance remains open: Samsung Chrome/Internet dynamic address bar and bottom Android system gesture inset. Report precise screenshot/device reproduction and reconcile before further motion redesign.
