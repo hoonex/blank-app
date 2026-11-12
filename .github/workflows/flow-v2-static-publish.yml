@@ -4,6 +4,7 @@ on:
     branches:
       - feat/flow-v2-rust-bun-redesign-20261112
     paths:
+      - 'flow-v2/frontend-rust/**'
       - .github/workflows/flow-v2-static-publish.yml
   workflow_dispatch:
 permissions:
@@ -46,14 +47,16 @@ jobs:
           cp -a flow-v2/frontend-rust/dist/. /tmp/flow-static-output/
           git worktree add --detach /tmp/flow-static
           cd /tmp/flow-static
-          git switch --orphan flow-v2-monograph-v3-20261112
+          RELEASE_BRANCH="flow-v2-monograph-v4-${GITHUB_SHA:0:12}"
+          git switch --orphan "$RELEASE_BRANCH"
           git rm --quiet -r -f . || true
           cp -a /tmp/flow-static-output/. .
           git add --all
-          git commit -m "build(flow-v2): publish Monograph V3 Rust bundle"
-          git push origin HEAD:refs/heads/flow-v2-monograph-v3-20261112
+          git commit -m "build(flow-v2): publish immutable rounded Rust bundle ${GITHUB_SHA:0:12}"
+          git push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
           echo "### Published source bundle" >> "$GITHUB_STEP_SUMMARY"
-          echo "Asset branch: flow-v2-monograph-v3-20261112" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source SHA: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Asset branch: ${RELEASE_BRANCH}" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: flow-v2-static-cloudflare-bundle
