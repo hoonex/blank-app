@@ -1,51 +1,78 @@
-const RELEASE="4edbec6ae36837aec3a581fb2f41d81efaba4d61";
-const BASE="https://raw.githubusercontent.com/hoonex/blank-app/"+RELEASE+"/";
-const V2="/flow-v2/frontend-rust/dist/";
-const SHELLS={"/university":"/university/index.html","/admin":"/admin/index.html"};
-function asType(p){
- if(p.endsWith(".wasm"))return"application/wasm";
- if(p.endsWith(".js"))return"text/javascript; charset=utf-8";
- if(p.endsWith(".css"))return"text/css; charset=utf-8";
- if(p.endsWith(".html"))return"text/html; charset=utf-8";
- return"application/octet-stream";
+/* Flow V2: Rust school as the front door, pinned legacy static fallback.
+   SHA-pinned sources avoid deploying credentials or unreviewed HEAD changes.
+   No static ASSETS binding: this intentionally avoids asset-first routing. */
+const V2_RELEASE="4edbec6ae36837aec3a581fb2f41d81efaba4d61";
+const LEGACY_RELEASE="b1ac095b47baa0c09430559bf127e7c873fa9263";
+const V2_BASE="https://raw.githubusercontent.com/hoonex/blank-app/"+V2_RELEASE+"/";
+const LEGACY_BASE="https://raw.githubusercontent.com/hoonex/blank-app/"+LEGACY_RELEASE+"/";
+const DIST="/flow-v2/frontend-rust/dist/";
+const FILE_EXT=/\.(?:js|mjs|css|html|htm|json|webmanifest|svg|png|jpg|jpeg|webp|avif|ico|gif|woff|woff2|ttf|otf|wasm|mp3|wav|ogg|xml|txt|pdf|map)$/i;
+function mime(path){
+  const name=path.toLowerCase().split(".").pop();
+  return ({
+    js:"text/javascript; charset=utf-8",mjs:"text/javascript; charset=utf-8",
+    css:"text/css; charset=utf-8",html:"text/html; charset=utf-8",
+    htm:"text/html; charset=utf-8",json:"application/json; charset=utf-8",
+    webmanifest:"application/manifest+json; charset=utf-8",
+    svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",
+    webp:"image/webp",avif:"image/avif",ico:"image/x-icon",gif:"image/gif",
+    woff:"font/woff",woff2:"font/woff2",ttf:"font/ttf",otf:"font/otf",
+    wasm:"application/wasm",mp3:"audio/mpeg",wav:"audio/wav",ogg:"audio/ogg",
+    xml:"application/xml",txt:"text/plain; charset=utf-8",pdf:"application/pdf",
+    map:"application/json; charset=utf-8"
+  })[name]||"application/octet-stream";
 }
-async function published(rel){
- let from;
- try{from=await fetch(BASE+rel,{cf:{cacheEverything:true,cacheTtl:300},headers:{accept:"*/*"}})}catch(e){
-  return new Response("Build origin unavailable",{status:502});
- }
- if(!from.ok)return new Response("Build asset unavailable "+from.status,{status:502});
- const hd=new Headers({"content-type":asType(rel),"x-flow-v2-release":RELEASE,
- "x-content-type-options":"nosniff",
- "cache-control":rel==="index.html"?"no-cache":"public,max-age=31536000,immutable"});
- return new Response(from.body,{status:200,headers:hd});
+async function proxy(rel,version,request){
+  if(!rel||rel.includes("..")||rel.startsWith("/"))return new Response("Not found",{status:404});
+  const isRust=version==="rust";
+  const source=isRust?V2_BASE:LEGACY_BASE;
+  let upstream;
+  try{
+    upstream=await fetch(source+rel,{
+      headers:{accept:"*/*"},
+      cf:{cacheEverything:true,cacheTtl:1800}
+    });
+  }catch(_){
+    return new Response("Asset origin temporarily unavailable",{status:502});
+  }
+  if(!upstream.ok)return new Response("Asset missing",{status:upstream.status===404?404:502});
+  const headers=new Headers();
+  headers.set("content-type",mime(rel));
+  headers.set("x-content-type-options","nosniff");
+  headers.set("x-flow-ui-release",V2_RELEASE.slice(0,12));
+  headers.set("cache-control",rel.endsWith(".html")?"no-store":"public,max-age=3600");
+  return new Response(request.method==="HEAD"?null:upstream.body,{status:200,headers});
 }
 export default {
- async fetch(req,env){
-  if(req.method!=="GET"&&req.method!=="HEAD")return env.ASSETS?env.ASSETS.fetch(req):new Response("Method Not Allowed",{status:405});
-  const url=new URL(req.url),path=url.pathname.replace(/\/+$/,"")||"/";
-  if(path==="/__flow_v2_status")return Response.json({release:RELEASE,source:"GitHub-built Rust WASM",mode:env.ASSETS?"production-bridge":"preview-bridge"});
-  if(path==="/__originprobe"){
-    const r=await fetch("https://raw.githubusercontent.com/hoonex/blank-app/main/wrangler.jsonc");
-    return Response.json({status:r.status,ok:r.ok});
+  async fetch(request){
+    if(request.method!=="GET"&&request.method!=="HEAD")return new Response("Method not allowed",{status:405});
+    const pathname=new URL(request.url).pathname;
+    const path=pathname.replace(/\/+$/,"")||"/";
+    if(path==="/__flow_v2_status"){
+      return Response.json({live:true,ui:"Rust/WASM",version:V2_RELEASE,legacy:LEGACY_RELEASE,mode:"origin-proxy"});
+    }
+    if(path==="/"||path==="/index.html"||path==="/v2"||path==="/home"||
+       path==="/week"||path==="/schedule"||path==="/school"){
+      return proxy("index.html","rust",request);
+    }
+    if(path.startsWith(DIST)){
+      return proxy(path.slice(DIST.length),"rust",request);
+    }
+    if(path==="/legacy"||path==="/legacy/index.html"||path==="/transit"||
+      /^\/legacy\/(?:home|week|schedule|school|settings|transit)$/.test(path)){
+      return proxy("index.html","legacy",request);
+    }
+    if(path.startsWith("/legacy/")){
+      const file=path.slice("/legacy/".length);
+      return proxy(FILE_EXT.test(file)?file:"index.html","legacy",request);
+    }
+    if(path==="/university"||path==="/university/index.html"||
+       /^\/university\/(?:timetable|campus|school|settings)$/.test(path)){
+      return proxy("university/index.html","legacy",request);
+    }
+    if(path==="/admin"||path==="/admin/index.html"||path==="/admin/login"){
+      return proxy("admin/index.html","legacy",request);
+    }
+    return proxy(path.slice(1),"legacy",request);
   }
-  if(path===V2+"index.html"||path==="/"||path==="/index.html"||path==="/v2"||path==="/home"||path==="/week"||path==="/schedule"||path==="/school")
-    return published("index.html");
-  if(path.startsWith(V2)){
-    const name=path.slice(V2.length);
-    if(!name||name.includes("/")||name.includes(".."))return new Response("Not found",{status:404});
-    return published(name);
-  }
-  if(!env.ASSETS)return new Response("Not found: preview includes Rust school only",{status:404});
-  if(path==="/legacy"||path==="/legacy/index.html"||path==="/transit"){
-    const x=new URL(req.url);x.pathname="/index.html";return env.ASSETS.fetch(new Request(x,req));
-  }
-  if(path==="/university"||path.startsWith("/university/")){
-    const x=new URL(req.url);x.pathname="/university/index.html";return env.ASSETS.fetch(new Request(x,req));
-  }
-  if(path==="/admin"||path.startsWith("/admin/")){
-    const x=new URL(req.url);x.pathname="/admin/index.html";return env.ASSETS.fetch(new Request(x,req));
-  }
-  return env.ASSETS.fetch(req);
- }
 };

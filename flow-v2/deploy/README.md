@@ -1,15 +1,13 @@
-# Flow V2 production bridge
+# Deployed Rust Flow bridge (user-authorized early rollout)
 
-This Worker entrypoint was actually released to the isolated Cloudflare test Worker first. It proxies ONLY a pinned public Github-hosted Rust Trunk build (`4edbec6ae36837aec3a581fb2f41d81efaba4d61`) through the same origin as `blank-app`, while retaining the production static `ASSETS` binding.
+Two immutable public-source pins:
+- Rust WASM, JS and CSS: `4edbec6ae36837aec3a581fb2f41d81efaba4d61` (`flow-v2-kinetic-static-prod-20261112`)
+- Legacy complete site: `b1ac095b47baa0c09430559bf127e7c873fa9263` (`main` as of 2026-10-20, verified same index.html byte count as prior production assets: 17899)
 
-- Production school routes: `/`, `/v2`, `/home`, `/week`, `/schedule`, `/school` -> built Rust UI.
-- Legacy school: `/legacy`; transit: `/transit` -> old `/index.html` through existing Cloudflare `ASSETS`.
-- `/university`, `/admin` -> old HTML shell via same existing `ASSETS` binding.
-- Static Rust files: `/flow-v2/frontend-rust/dist/*` -> immutable revision from `raw.githubusercontent.com` with JS/CSS/WASM MIME and cache headers.
-- Other static requests -> existing `ASSETS` untouched. `/sw.js` and `/manifest.webmanifest` continue from original assets for compatibility (old browser cache might require refresh).
-- Private keys: none. NEIS search & dashboard remain via existing Supabase Edge Function; Rust-native NEIS Worker remains a separate unconnected feature.
-- Current documented previous Cloudflare deployment (rollback): deployment `72116fd3-fa54-46d1-86c8-93d431f82068`, version `5525fd47-f635-463f-82b3-159945d79f16`.
+Origin proxy uses no Cloudflare Static Assets binding. Reason: existing `blank-app` Worker had `ASSETS` with `serve_directly: true`, and `keep_assets:true` preserved `run_worker_first:false`; the Worker only ran for unmatched routes while `/` silently served the old index. A prior attempt to upload with `assets.config.run_worker_first=true` plus `keep_assets=true` was accepted but version runtime still reported `raw_run_worker_first:false`. Replaced route handling with assetless Worker and SHA-pinned old content to avoid deleting essential legacy functionality.
 
-Cloudflare upload metadata: `main_module=worker.mjs`, `compatibility_date=2026-11-12`, `keep_assets=true`, `keep_bindings=['assets']`. **Never upload without the preservation fields**; doing so may detach historical production assets. Cloudflare version deployment rollback is the immediate recovery mechanism; restore GitHub source separately in PR if permanent.
+Routes: `/` (Rust), `/v2` (Rust), `/legacy` (old School), `/transit` (old school transit), `/university` (old University), `/admin` (old Admin), `/flow-v2/frontend-rust/dist/*` (Rust static). All other public assets are provided from pinned old source with MIME classification, same-origin responses and edge caching. `/sw.js` remains the exact old file; the old SW uses network-first fetch for navigations.
 
-Deployment caveats: This is explicit user-authorized early rollout, not a full feature-parity merge. Old school settings, subject overrides, comprehensive media and allergy flows remain in `/legacy`. Existing service worker cache can show stale shell until a browser refresh. The app will depend on pinned Github raw assets until Cloudflare-native assets are later uploaded.
+**Caveat**: Proxying GitHub raw means upstream availability is required on cache misses. It is a temporary deployment arrangement; later migrate all static files to Cloudflare's native asset upload path. This deployment is NOT the full Rust backend migration: Supabase is still used for school API. Keep the feature PR draft. Full subject edit, allergy, offline PWA and other legacy-specific controls remain through `/legacy`.
+
+Emergency rollback: previous Cloudflare Worker version `5525fd47-f635-463f-82b3-159945d79f16` or later intact-ASSETS version `19f5668c-3641-4eed-bcf6-57e5b4c8f170` through the Cloudflare deployments API. Do not merge or remove legacy source while unfinished.
