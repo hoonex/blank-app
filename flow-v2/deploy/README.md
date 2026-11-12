@@ -64,3 +64,14 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Prior deployed Rust asset pin: `ee45530dd9ba94318bbf12678218f29701b0c8ed`; use previous Cloudflare deployed version `60641088-6f68-48e4-9826-13cc4e49ccf8` for rollback if new deployment fails.
 - Actual Android dynamic browser chrome is not identical to Chromium viewport automation; further real-device touch behavior needs user verification.
 - Full 19-link design reference atlas and resume checklist: `flow-v2/DESIGN_REFERENCES_AND_RESUME.md`.
+
+## Verified deployed state (2026-11-13 KST)
+
+- Public URL (unchanged): https://blank-app.agfvrd.workers.dev/
+- Cloudflare Worker version: `d5d7e086-73fd-4c87-ad30-9036db5c2bbf`
+- Rust static pin: `a4cfcfdabe3a21f7b02f4d400b5628d11fe68843` (verified immutable source SHA)
+- CI: workflow `43248789531` passed all 6 browser viewports; earlier stale-selector failure was repaired, not suppressed.
+- Preview first, production second: new CSS/JS observed, WASM mounted. Legacy routes `/legacy`, `/transit`, `/university`, `/admin` all HTTP 200.
+- Rollback Worker version: `60641088-6f68-48e4-9826-13cc4e49ccf8`; rollback is a separate Cloudflare deployments action, not a GitHub PR revert.
+- Open issues: Real Android address bar resizing/scroll interaction still requires a physical-device check; incomplete original-feature parity and native Worker asset migration; original bus information needs its own accuracy/quotas review.
+- Reference and resumable-next-task file: `flow-v2/DESIGN_REFERENCES_AND_RESUME.md`.
