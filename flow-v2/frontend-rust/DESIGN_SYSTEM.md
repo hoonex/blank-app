@@ -65,3 +65,12 @@ Production was already deployed via the pinned Cloudflare bridge `flow-v2/deploy
 - **Transit reliability**: original arrival calculation UI is not represented as live truth. Quick link to officially operated https://businfo.daegu.go.kr/ and explicit old transit UI; future API integration should use stop-level polling and data freshness, not pretend accurate location or arrival. Daegu official Bus Information System public API offers free JSON stop arrival, with 1,000 dev calls/day and potentially empty off-hours responses.
 
 References: https://tympanus.net/codrops/hub/ and https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action and https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-tap-highlight-color
+
+## User-requested refinement — 2026-11-13
+
+- Replaced neon lime with matte terracotta `#D98570` (dark mode `#E5A492`), no extra accent shades.
+- Five-day timetable is a 5-column × 7–9-period **calendar matrix**, not five tall/stacked weekday lists. Period label runs down left; dates run across top; tap a day or a subject to select the date. Use real subjects only; show em dashes for missing entries. No fabricated schedule content.
+- Meal names are centered, bullet-free and arranged in balanced columns. No colored tags for untyped food categories.
+- Mobile bottom navigation has a fixed viewport anchor with left and right edge constraints, not `left:50%/translateX`. Verify top/scrolled and reduced-height viewport positioning in browser; smooth thumb must persist.
+- Motion references: Motion's [shared element/layout animation](https://motion.dev/docs/react-layout-animations), [Apple HIG tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [Material Shared Axis](https://developer.android.com/reference/com/google/android/material/transition/MaterialSharedAxis), [Things interactive transitions](https://culturedcode.com/things/features/), [Linear UI refresh](https://linear.app/now/behind-the-latest-design-refresh). Implementation remains Rust/Leptos + CSS; no animation library imported.
+- For subtlety: replaced expensive blur-based whole-scene entrance with directional, clipped geometric reveal; buttons respond to press rather than idle decoration.

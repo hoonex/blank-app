@@ -592,21 +592,55 @@ fn Today(
                         </div>
                     </div>
                     <Show when=move ||!week_mode.get() fallback=move ||view!{
-                        <div class="week-sheet">
-                            {move ||(0..5).map(|offset|{
-                                let day=monday(selected())+Duration::days(offset);
-                                let rows=data.get().as_ref().map(|d|today_lessons(d,day)).unwrap_or_default();
-                                view!{
-                                    <button type="button" class:today=move ||date.get()==day
-                                        on:click=move |_|{date.set(day);week_mode.set(false);}>
-                                        <span class="week-day">{format!("{} {:02}",day_letter(day),day.day())}</span>
-                                        <strong>{if rows.is_empty() {"—".to_owned()}else{format!("{}교시",rows.len())}}</strong>
-                                        <div class="week-lessons">
-                                            {rows.into_iter().map(|row|view!{<span>{row.subject}</span>}).collect_view()}
+                        <div class="week-grid" role="table" aria-label="월요일부터 금요일 주간 시간표">
+                            <div class="week-grid-row week-grid-header" role="row">
+                                <span class="week-period-title" role="columnheader">"교시"</span>
+                                {move || (0..5).map(|offset|{
+                                    let day=monday(selected())+Duration::days(offset);
+                                    view!{
+                                        <button type="button" role="columnheader"
+                                            class:today=move ||date.get()==day
+                                            aria-pressed=move ||date.get()==day
+                                            on:click=move |_|date.set(day)>
+                                            <span>{day_letter(day)}</span>
+                                            <strong>{format!("{:02}",day.day())}</strong>
+                                        </button>
+                                    }
+                                }).collect_view()}
+                            </div>
+                            {move ||{
+                                let first=monday(date.get());
+                                let rows=data.get().map(|d|d.timetable).unwrap_or_default();
+                                let max_period=rows.iter().filter(|item|{
+                                    NaiveDate::parse_from_str(&item.date,"%Y%m%d").ok()
+                                        .map(|d|monday(d)==first).unwrap_or(false)
+                                }).map(|item|item.period).max().unwrap_or(7).clamp(7,9);
+                                (1u8..=max_period).map(|period|{
+                                    let cells=(0..5).map(|offset|{
+                                        let day=first+Duration::days(offset);
+                                        let subject=rows.iter()
+                                            .find(|item|item.date==ymd(day)&&item.period==period)
+                                            .map(|item|item.subject.clone()).unwrap_or_default();
+                                        let empty=subject.is_empty();
+                                        view!{
+                                            <button type="button" class="week-cell"
+                                                class:today=move ||date.get()==day
+                                                class:empty=empty
+                                                aria-label=format!("{}요일 {}교시 {}",day_letter(day),period,
+                                                    if empty {"수업 없음".to_owned()}else{subject.clone()})
+                                                on:click=move |_|date.set(day)>
+                                                <span>{if empty {"—".to_owned()}else{subject}}</span>
+                                            </button>
+                                        }
+                                    }).collect_view();
+                                    view!{
+                                        <div class="week-grid-row" role="row">
+                                            <span class="week-period" role="rowheader">{format!("{:02}",period)}</span>
+                                            {cells}
                                         </div>
-                                    </button>
-                                }
-                            }).collect_view()}
+                                    }
+                                }).collect_view()
+                            }}
                         </div>
                     }>
                         <div class="class-rows">
