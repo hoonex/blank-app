@@ -239,9 +239,9 @@ pub fn BusInfo()->impl IntoView {
                                                         Some(0)=>"정류장 근처".to_string(),
                                                         _=>String::new()
                                                     }}</span>
-                                                    <Show when=move ||!bus.note.is_empty()>
+                                                    {if bus.note.is_empty(){None}else{Some(view!{
                                                         <small>{bus.note.clone()}</small>
-                                                    </Show>
+                                                    })}}
                                                 </div>
                                             </div>
                                         }
