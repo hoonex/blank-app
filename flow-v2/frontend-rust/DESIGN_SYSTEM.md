@@ -42,3 +42,10 @@
 
 ## Deployment ownership and limitations
 Production was already deployed via the pinned Cloudflare bridge `flow-v2/deploy/cloudflare-bridge.mjs`. This branch's V3 source is not published to production until a passing Rust Trunk build and responsive Chromium audit, then the immutable build pin and Worker are updated. User-authorized early rollout is not full school feature parity: original school tools remain at `/legacy`; University, Transit, Admin, legacy PWA remain intact. No direct edits on `main`.
+
+## V4 functional polish — selected calendar day (2026-11-12)
+
+- Date choice must change the **existing** dark event surface, not just a number highlight. Selected day has a clear MM.DD/weekday header. If an event exists on that date, show it; otherwise show the nearest future loaded event, or a truthful empty state. No additional cards or decorative illustrations.
+- Calendar now filters school events by the student's grade, consistently with Today.
+- Today/lesson/meal labels refer to the selected date, not always 'today'.
+- Keep Monograph V3 geometry: 28px panels, 16px row hover states, 999px controls, no visible borders. A 350ms local reveal is the only new motion; reduced-motion remains respected.

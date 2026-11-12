@@ -261,7 +261,7 @@ fn App() -> impl IntoView {
                         Tab::Today => view!{<Today data=dashboard date=date
                             profile=profile busy=busy error=error/>}.into_any(),
                         Tab::Schedule => view!{<Schedule data=dashboard date=date
-                            busy=busy error=error/>}.into_any(),
+                            profile=profile busy=busy error=error/>}.into_any(),
                         Tab::School => view!{<SchoolInfo profile=profile/>}.into_any(),
                         Tab::Settings => view!{<Settings dark=dark profile=profile/>}.into_any(),
                     }}
@@ -387,7 +387,7 @@ fn Today(
         <div class="scene" data-scene="today">
             <section class="today-heading">
                 <div class="hero-topline">
-                    <span class="hero-tag">"오늘의 학교생활"</span>
+                    <span class="hero-tag">{move ||if selected()==today_local() {"오늘의 학교생활"} else {"선택한 날짜"}}</span>
                     <span class="hero-school">{move ||profile.get().map(|p|
                         format!("{}　{}학년 {}반",p.school.name,p.grade,p.class_name)
                     ).unwrap_or_default()}</span>
@@ -438,7 +438,7 @@ fn Today(
                 <section class="timetable-sheet">
                     <div class="module-heading">
                         <div class="module-heading-copy">
-                            <span class="module-kicker">"오늘의 수업"</span>
+                            <span class="module-kicker">{move ||if selected()==today_local() {"오늘의 수업"} else {"이날의 수업"}}</span>
                             <h2>"시간표"<span class="module-count">{move ||
                                 if busy.get(){"··".to_owned()}else{format!("{:02}",lessons().len())}
                             }</span></h2>
@@ -487,7 +487,7 @@ fn Today(
                 <aside class="today-aside">
                     <section class="meal-sheet">
                         <div class="aside-top">
-                            <span>"오늘의 급식"</span>
+                            <span>{move ||if selected()==today_local() {"오늘의 급식"} else {"이날의 급식"}}</span>
                         </div>
                         <h2>"점심 메뉴"</h2>
                         <Show when=move ||meals().is_some()
@@ -514,10 +514,11 @@ fn Today(
 #[component]
 fn Schedule(
     data:RwSignal<Option<Dashboard>>,date:RwSignal<NaiveDate>,
-    busy:RwSignal<bool>,error:RwSignal<String>
+    profile:RwSignal<Option<Profile>>,busy:RwSignal<bool>,error:RwSignal<String>
 )->impl IntoView{
     let month=move ||date.get().format("%Y년 %m월").to_string();
-    let events=move ||data.get().map(|d|d.events).unwrap_or_default();
+    let events=move ||data.get().map(|d|choose_events(&d,
+        profile.get().map(|p|p.grade).unwrap_or(1))).unwrap_or_default();
     view!{
         <div class="scene" data-scene="calendar">
             <header class="scene-head">
@@ -583,22 +584,46 @@ fn Schedule(
                         }}
                     </div>
                 </section>
-                <section class="event-sheet">
-                    <div class="aside-top"><span>"학사일정"</span>
+                <section class="event-sheet" aria-label="선택한 날짜의 학사일정">
+                    <div class="aside-top">
+                        <span>"선택한 날짜"</span>
                         <span>{move ||if busy.get(){"불러오는 중".to_owned()}else{
                             let ym=date.get().format("%Y%m").to_string();
-                            format!("{}개의 일정",events().iter().filter(|e|e.date.starts_with(&ym)).count())
-                        }}</span></div>
-                    <h2>"이번 달"</h2>
-                    <div class="event-lines">
+                            format!("이번 달 {}건",events().iter().filter(|e|e.date.starts_with(&ym)).count())
+                        }}</span>
+                    </div>
+                    <div class="picked-date">
+                        <h2>{move ||format!("{:02}.{:02}",date.get().month(),date.get().day())}</h2>
+                        <span>{move ||format!("{}요일",day_letter(date.get()))}</span>
+                    </div>
+                    <div class="event-lines" aria-live="polite" aria-atomic="true">
                         {move ||{
-                            let ym=date.get().format("%Y%m").to_string();
-                            events().into_iter().filter(|e|e.date.starts_with(&ym))
-                                .map(|event|view!{
-                                    <div class="event-row">
-                                        <span>{event_date(&event.date)}</span><strong>{event.name}</strong>
+                            let chosen=ymd(date.get());
+                            let all=events();
+                            let matching=all.iter().filter(|e|e.date==chosen).cloned().collect::<Vec<_>>();
+                            if !matching.is_empty() {
+                                view!{
+                                    <div class="picked-event-group">
+                                        <span class="event-context">"이날 일정"</span>
+                                        {matching.into_iter().map(|event|view!{
+                                            <div class="event-row"><strong>{event.name}</strong></div>
+                                        }).collect_view()}
                                     </div>
-                                }).collect_view()
+                                }.into_any()
+                            }else if let Some(upcoming)=all.into_iter()
+                                .filter(|e|e.date>chosen).min_by(|a,b|a.date.cmp(&b.date)) {
+                                view!{
+                                    <div class="picked-event-group">
+                                        <span class="picked-empty">"이날 예정된 일정이 없어요."</span>
+                                        <div class="event-row">
+                                            <span class="event-context">"다음 일정 · " {event_date(&upcoming.date)}</span>
+                                            <strong>{upcoming.name}</strong>
+                                        </div>
+                                    </div>
+                                }.into_any()
+                            }else{
+                                view!{<p class="picked-empty">"예정된 학사일정이 없어요."</p>}.into_any()
+                            }
                         }}
                     </div>
                 </section>

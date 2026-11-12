@@ -116,6 +116,18 @@ for (const [width,height] of sizes) {
     await page.waitForTimeout(300);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
+    const initialDate=await page.locator(".picked-date h2").innerText();
+    const alternative=page.locator(".calendar-grid button:not(.selected):not(.out-month)").first();
+    const day=(await alternative.locator(".calendar-num").innerText()).trim();
+    await alternative.click();
+    const selectedDate=await page.locator(".picked-date h2").innerText();
+    if(selectedDate===initialDate||!selectedDate.endsWith(day))
+      throw Error("Calendar detail did not follow selection: "+initialDate+" -> "+selectedDate);
+    if(await page.locator(".calendar-grid button.selected").count()!==1)
+      throw Error("Calendar must show one selected date");
+    if(!(await page.locator(".event-lines").innerText()).trim())
+      throw Error("Calendar selection must give contextual event feedback");
+    await page.getByRole("button",{name:"이번 달",exact:true}).click();
     const monthControl=await page.getByRole("button",{name:"이번 달",exact:true}).evaluate(el=>{
       const r=el.getBoundingClientRect(),line=parseFloat(getComputedStyle(el).lineHeight);
       return {height:r.height,lineHeight:line,scrollHeight:el.scrollHeight,width:r.width};

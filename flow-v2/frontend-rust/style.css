@@ -248,14 +248,21 @@ a{color:inherit;text-decoration:none}
 .calendar-event-text{font-size:10px;color:var(--muted);line-height:1.28;overflow:hidden;max-width:100%;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .event-sheet{
-  min-width:0;min-height:250px;background:var(--night);color:var(--night-text);
+  min-width:0;min-height:260px;background:var(--night);color:var(--night-text);
   padding:clamp(23px,3vw,34px);border-radius:var(--radius-panel)
 }
-.event-sheet h2{font-size:clamp(27px,2.8vw,37px);letter-spacing:-.065em;line-height:1.15;margin:22px 0}
-.event-lines{display:grid;gap:16px}
-.event-row{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}
+.picked-date{display:flex;gap:15px;align-items:baseline;margin:15px 0 24px}
+.picked-date h2{font-size:clamp(46px,4.3vw,64px);font-variant-numeric:tabular-nums;
+  font-weight:840;letter-spacing:-.085em;line-height:1.03;margin:0}
+.picked-date>span{font-size:13px;font-weight:730;color:var(--lime);white-space:nowrap}
+.event-lines{display:grid;gap:15px;min-height:42px}
+.picked-event-group{display:grid;gap:12px;animation:selected-event-in .35s var(--ease) both}
+.event-context{display:inline-block;font-size:11px;font-weight:730;color:var(--lime)}
+.picked-empty{display:block;margin:0;color:#afb5a9;font-size:12px;line-height:1.65}
+.event-row{display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere}
 .event-row span{font-size:11px;color:#b1b7a9}
-.event-row strong{font-size:14px;font-weight:680}
+.event-row strong{font-size:clamp(17px,2vw,22px);line-height:1.25;letter-spacing:-.035em;font-weight:690}
+@keyframes selected-event-in{from{opacity:.35;transform:translateY(10px)}to{opacity:1;transform:none}}
 .school-sheet,.settings-sheet{
   max-width:1408px;width:calc(100% - clamp(36px,8vw,128px));margin:16px auto 0;
   padding:20px 0 75px
@@ -448,7 +455,8 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--lime);color:#1719
  .calendar-num{width:31px;height:31px;font-size:13px}
  .calendar-event-text{font-size:9px;line-height:1.23;-webkit-line-clamp:1}
  .event-sheet{border-radius:25px;min-height:195px}
- .event-sheet h2{margin:15px 0;font-size:28px}
+ .picked-date{margin:14px 0 17px}
+ .picked-date h2{font-size:44px}
  .school-sheet,.settings-sheet{padding:15px 0 50px}
  .school-details{grid-template-columns:1fr;gap:21px;margin:28px 0}
  .school-sheet h2{font-size:35px}
