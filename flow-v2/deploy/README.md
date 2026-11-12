@@ -55,3 +55,12 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Real browser on live root: WASM initialized, new style applied, blue-tap highlight reported transparent, `/`, `/legacy`, `/transit`, `/university`, `/admin` all HTTP 200; old School page's `#todayView` and school JS initialized through `/legacy`.
 - CDP touch-gesture test on source commit `e7a06bfa6492cf368ab84e6362382216bd2fe09e`, CI `43242013684` passed with six viewports. Static release `43241801705` succeeded.
 - No paid Kakao dependency added; the fallback bus link is the Daegu City official BIS, not a made-up ETA.
+
+## 2026-11-13: compact weekly matrix / coral / fixed dock
+
+- Rust source: `819f6b9574ed5d82507c9a6fd6b1fbf2706ab584`; immutable published static branch `flow-v2-monograph-v4-819f6b9574ed`, commit `a4cfcfdabe3a21f7b02f4d400b5628d11fe68843` (same built output as test-source `bc5827f5aeea`).
+- Muted terracotta `#D98570`, dark `#E5A492`. Five-day × 7–9-period timetable calendar, weekday selection, bullet-free centered meals, mobile tab dock anchored left/right rather than transform.
+- Responsive UI QA: full Chromium run `43248789531` passed at 390x844, 844x390, 768x1024, 1024x768, 1366x768, 1920x1080. Fixed obsolete smoke selector after visual layout migration; first failed run is recorded in Actions and not hidden.
+- Prior deployed Rust asset pin: `ee45530dd9ba94318bbf12678218f29701b0c8ed`; use previous Cloudflare deployed version `60641088-6f68-48e4-9826-13cc4e49ccf8` for rollback if new deployment fails.
+- Actual Android dynamic browser chrome is not identical to Chromium viewport automation; further real-device touch behavior needs user verification.
+- Full 19-link design reference atlas and resume checklist: `flow-v2/DESIGN_REFERENCES_AND_RESUME.md`.
