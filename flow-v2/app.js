@@ -81,7 +81,7 @@ function eventRows() {
 }
 function labelDateKey(value) {
   const d = fromKey(value);
-  return Number.isFinite(d.getTime()) ? koDate(d,{month:"numeric",day:"numeric"}) : "";
+  return Number.isFinite(d.getTime()) ? (d.getMonth()+1) + "." + d.getDate() : "";
 }
 function subjectEditorButton(row) {
   const label = displaySubject(state.profile,row);
@@ -175,7 +175,9 @@ function calendarCells() {
   const start = addDays(first,-first.getDay());
   const evs = eventRows();
   const weekdays = days.map(d => '<div class="calendar-weekday">'+d+'</div>').join("");
-  const cells = Array.from({length:42},(_,n) => {
+  const daysInMonth = new Date(first.getFullYear(),month+1,0).getDate();
+  const cellCount = Math.ceil((first.getDay()+daysInMonth)/7)*7;
+  const cells = Array.from({length:cellCount},(_,n) => {
     const date = addDays(start,n);
     const key = dateKey(date);
     const list = evs.filter(e => e.date === key);

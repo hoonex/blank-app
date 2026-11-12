@@ -37,6 +37,7 @@ for (const [width,height] of sizes) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   const file = out+"/today-"+width+"x"+height+".png";
   await page.screenshot({path:file,fullPage:true});
+  await page.screenshot({path:out+"/today-fold-"+width+"x"+height+".png",fullPage:false});
   if (overflow || pageErrors.length) {
     failed++;
     console.error(width+"x"+height+" overflow="+overflow+" errors="+pageErrors.join(";"));
@@ -44,6 +45,12 @@ for (const [width,height] of sizes) {
   await page.getByRole("button",{name:"일정",exact:true}).first().click();
   await page.locator(".calendar-grid").waitFor({timeout:5000});
   await page.screenshot({path:out+"/schedule-"+width+"x"+height+".png",fullPage:true});
+  await page.getByRole("button",{name:"학교",exact:true}).first().click();
+  await page.locator(".profile-lead").waitFor({timeout:5000});
+  await page.screenshot({path:out+"/school-"+width+"x"+height+".png",fullPage:false});
+  await page.getByRole("button",{name:"설정",exact:true}).first().click();
+  await page.locator(".setting-section").waitFor({timeout:5000});
+  await page.screenshot({path:out+"/settings-"+width+"x"+height+".png",fullPage:false});
   await page.close();
 }
 await browser.close();
