@@ -46,10 +46,20 @@ for (const [width,height] of sizes) {
   });
   try {
     await page.goto(base,{waitUntil:"networkidle",timeout:30000});
-    await page.locator(".scene-head h1").waitFor({state:"visible",timeout:20000});
-    const h1 = await page.locator(".scene-head h1").innerText();
-    if(!h1.includes("오늘의 흐름"))throw Error("Unexpected today title "+h1);
+    await page.locator(".today-heading h1").waitFor({state:"visible",timeout:20000});
+    const h1 = await page.locator(".today-heading h1").innerText();
+    if(!h1.includes("월") || !h1.includes("일"))throw Error("Unexpected date heading "+h1);
+    if(await page.locator(".day-strip button").count()!==7)throw Error("Seven-day selector missing");
+    if(await page.locator(".class-row").count()!==7)throw Error("Fixture timetable not fully visible");
+    if(width===390) {
+      const bounds=await page.locator(".timetable-sheet").boundingBox();
+      if(!bounds || bounds.y>440)throw Error("Timetable not visible in mobile first fold: "+JSON.stringify(bounds));
+    }
+    await page.getByRole("button",{name:"주간",exact:true}).click();
+    if(await page.locator(".week-lessons span").count()<5)throw Error("Week view lacks subject detail");
+    await page.getByRole("button",{name:"하루",exact:true}).click();
     await settleMotion(page);
+    await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
     const nav = width<=800 ? ".mobile-bottom button" : ".rail-navigation button";
     await page.locator(nav).nth(1).click();

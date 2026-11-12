@@ -225,7 +225,7 @@ fn App() -> impl IntoView {
         }>
             <div class="flow-shell" data-mode=move || tab.get().label()>
                 <aside class="flow-rail">
-                    <div class="brand-lockup"><span class="brand-mark">"F"</span><strong>"flow"</strong><small>"SCHOOL"</small></div>
+                    <div class="brand-lockup"><strong>"flow"</strong><span class="brand-accent" aria-hidden="true">"."</span><small>"School"</small></div>
                     <div class="rail-caption">"공부에 집중할 시간."</div>
                     <nav class="rail-navigation" aria-label="주 메뉴">
                         {[Tab::Today,Tab::Schedule,Tab::School,Tab::Settings].into_iter()
@@ -297,7 +297,7 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
     view!{
         <div class="onboarding">
             <div class="onboarding-title">
-                <div class="brand-lockup"><span class="brand-mark">"F"</span><strong>"flow"</strong><small>"SCHOOL"</small></div>
+                <div class="brand-lockup"><strong>"flow"</strong><span class="brand-accent" aria-hidden="true">"."</span><small>"School"</small></div>
                 <span class="eyebrow">"YOUR DAY, IN FLOW"</span>
                 <h1>"학교 생활을" <em>"새로운 흐름으로."</em></h1>
                 <p>"시간표와 급식, 학사일정까지. 정보를 찾는 시간을 줄이고 오늘에 집중하세요."</p>
@@ -355,7 +355,7 @@ fn Today(
     data: RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>,
     profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>, error:RwSignal<String>
 ) -> impl IntoView {
-    let view_mode = RwSignal::new(false);
+    let week_mode = RwSignal::new(false);
     let selected = move || date.get();
     let lessons = move || data.get().as_ref().map(|d|today_lessons(d,selected())).unwrap_or_default();
     let meals = move || data.get().as_ref().and_then(|d|today_meal(d,selected()));
@@ -363,147 +363,213 @@ fn Today(
         profile.get().map(|p|p.grade).unwrap_or(1)).into_iter().find(|e|e.date>=ymd(selected())));
     view! {
         <div class="scene" data-scene="today">
-            <div class="scene-head">
-                <div><span class="eyebrow">"01 / YOUR DAY"</span>
-                    <h1>"오늘의 흐름"<span class="heading-period">"."</span></h1>
-                    <p>{move || profile.get().map(|p|format!("{} · {}학년 {}반",p.school.name,p.grade,p.class_name)).unwrap_or_default()}</p>
+            <header class="today-heading">
+                <div class="heading-copy">
+                    <span class="context-line">"오늘" <span class="context-dot" aria-hidden="true"></span>
+                       {move || profile.get().map(|p|p.school.name).unwrap_or_default()}</span>
+                    <h1>{move || format!("{}월 {}일",selected().month(),selected().day())}
+                        <span class="weekday-title">{move ||format!("{}요일",day_letter(selected()))}</span></h1>
+                    <p>{move ||profile.get().map(|p|format!("{}학년 {}반",p.grade,p.class_name)).unwrap_or_default()}</p>
                 </div>
-                <span class="hero-counter">{move ||date.get().format("%m/%d").to_string()}</span>
-            </div>
-            <div class="date-toolbar">
-                <div class="date-label"><strong>{move ||format!("{}월 {}일",selected().month(),selected().day())}</strong>
-                    <small>{move || format!("{}요일",day_letter(selected()))}</small></div>
-                <div class="date-actions">
-                    <button title="이전 날" aria-label="이전 날" on:click=move |_|date.update(|d|*d-=Duration::days(1))>"←"</button>
-                    <button title="오늘로" on:click=move |_|date.set(today_local())>"오늘"</button>
-                    <button title="다음 날" aria-label="다음 날" on:click=move |_|date.update(|d|*d+=Duration::days(1))>"→"</button>
+                <div class="date-actions date-actions--main">
+                    <button type="button" title="이전 날" aria-label="이전 날"
+                        on:click=move |_|date.update(|d|*d-=Duration::days(1))>"←"</button>
+                    <button type="button" title="오늘로" on:click=move |_|date.set(today_local())>"오늘"</button>
+                    <button type="button" title="다음 날" aria-label="다음 날"
+                        on:click=move |_|date.update(|d|*d+=Duration::days(1))>"→"</button>
                 </div>
+            </header>
+            <div class="day-strip" role="group" aria-label="날짜 선택">
+                {move ||(0..7).map(|offset|{
+                    let day=monday(selected())+Duration::days(offset);
+                    view!{
+                        <button type="button" class:active=move ||date.get()==day
+                            aria-pressed=move ||date.get()==day
+                            on:click=move |_|date.set(day)>
+                            <span>{day_letter(day)}</span><strong>{format!("{:02}",day.day())}</strong>
+                            <span class="day-strip-mark" aria-hidden="true"></span>
+                        </button>
+                    }
+                }).collect_view()}
             </div>
             <Show when=move ||!error.get().is_empty()>
-              <p class="api-error" role="alert">{move ||error.get()}</p>
+                <div class="api-error" role="alert">{move ||error.get()}</div>
             </Show>
-            <div class="data-stats">
-                <div class="stat"><span>"TODAY / CLASSES"</span><strong>{move || if busy.get() {"…".into()} else {format!("{:02}",lessons().len())}}</strong><small>"오늘 수업"</small></div>
-                <div class="stat"><span>"MEAL / STATUS"</span><strong>{move || if meals().is_some() {"있음"} else {"—"}}</strong><small>"급식"</small></div>
-                <div class="stat"><span>"NEXT / EVENT"</span><strong class="stat-text">{move || next().map(|e|e.name).unwrap_or_else(||"예정 없음".into())}</strong>
-                     <small>{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</small></div>
+            <div class="day-summary" aria-label="선택 날짜 정보">
+                <div class="summary-piece">
+                    <span>"수업"</span><strong>{move ||if busy.get(){"확인 중".to_owned()}else{format!("{}교시",lessons().len())}}</strong>
+                </div>
+                <div class="summary-piece">
+                    <span>"급식"</span><strong>{move || if busy.get(){"확인 중"}else if meals().is_some(){"중식 정보 있음"}else{"정보 없음"}}</strong>
+                </div>
+                <div class="summary-piece summary-piece--event">
+                    <span>"다가오는 일정"</span>
+                    <strong>{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".to_owned())}</strong>
+                </div>
             </div>
-            <div class="content-columns">
-                <section class="content-sheet timetable-sheet">
-                    <div class="section-line"><span>"01"</span><h2>"시간표"</h2>
+            <div class="today-layout">
+                <section class="timetable-sheet">
+                    <div class="module-heading">
+                        <div class="module-heading-copy"><h2>"시간표"</h2>
+                            <span class="module-subtitle">{move || if busy.get(){"불러오는 중".to_owned()}else{format!("{}개 수업",lessons().len())}}</span></div>
                         <div class="switch-track" role="group" aria-label="시간표 보기">
-                            <button class:chosen=move || !view_mode.get()
-                              on:click=move |_|view_mode.set(false)>"오늘"</button>
-                            <button class:chosen=move || view_mode.get()
-                              on:click=move |_|view_mode.set(true)>"주간"</button></div>
+                            <button type="button" class:chosen=move ||!week_mode.get()
+                                aria-pressed=move ||!week_mode.get()
+                                on:click=move |_|week_mode.set(false)>"하루"</button>
+                            <button type="button" class:chosen=move ||week_mode.get()
+                                aria-pressed=move ||week_mode.get()
+                                on:click=move |_|week_mode.set(true)>"주간"</button>
+                        </div>
                     </div>
-                    <Show when=move ||!view_mode.get() fallback=move ||view!{
-                        <div class="week-sheet">
-                          {move ||(0..5).map(|offset| {
-                              let day=monday(selected())+Duration::days(offset);
-                              let rows=data.get().as_ref().map(|d|today_lessons(d,day)).unwrap_or_default();
-                              view!{<button class:today=move ||date.get()==day
-                                  on:click=move |_|date.set(day)>
-                                  <small>{day_letter(day)}</small><b>{format!("{:02}",rows.len())}</b>
-                                  <span>{rows.first().map(|r|r.subject.clone()).unwrap_or("—".into())}</span>
-                              </button>}
-                          }).collect_view()}
+                    <Show when=move ||!week_mode.get() fallback=move || view!{
+                        <div class="week-sheet" aria-label="이번 주 시간표">
+                            {move ||(0..5).map(|offset|{
+                                let day=monday(selected())+Duration::days(offset);
+                                let rows=data.get().as_ref().map(|d|today_lessons(d,day)).unwrap_or_default();
+                                view!{<button class:today=move ||date.get()==day
+                                   type="button" on:click=move |_|{date.set(day);week_mode.set(false);}>
+                                    <span class="week-day">{format!("{} {}",day_letter(day),day.day())}</span>
+                                    <strong>{format!("{}교시",rows.len())}</strong>
+                                    <div class="week-lessons">{rows.into_iter().map(|r|view!{
+                                        <span>{format!("{} {}",r.period,r.subject)}</span>
+                                    }).collect_view()}</div>
+                                </button>}
+                            }).collect_view()}
                         </div>
                     }>
-                        <div class="class-rows">
+                        <div class="class-rows" aria-live="polite">
                             <For each=lessons key=|l|format!("{}:{}",l.date,l.period)
                                 children=|l|view!{
                                     <div class="class-row">
                                         <span class="class-period">{format!("{:02}",l.period)}</span>
+                                        <span class="timeline-track" aria-hidden="true"><span></span></span>
                                         <strong>{l.subject}</strong>
-                                        <span class="row-line" aria-hidden="true"></span>
-                                        <span class="class-type">"수업"</span>
+                                        <span class="class-type">"교시"</span>
                                     </div>
                                 }/>
                         </div>
                     </Show>
                     <Show when=move ||lessons().is_empty() && !busy.get()>
-                        <p class="empty-note">"등록된 수업이 없습니다."</p>
+                        <p class="empty-note">"이 날에는 등록된 수업이 없어요."</p>
                     </Show>
                 </section>
-                <div class="content-aside">
-                    <section class="content-sheet meal-sheet">
-                        <div class="section-line"><span>"02"</span><h2>"오늘의 급식"</h2><small>"LUNCH"</small></div>
-                        <Show when=move ||meals().is_some() fallback=||view!{<p class="empty-note">"급식 정보가 없습니다."</p>}>
+                <aside class="today-aside">
+                    <section class="meal-sheet">
+                        <div class="module-heading"><div class="module-heading-copy">
+                            <h2>"급식"</h2><span class="module-subtitle">"선택한 날짜의 급식"</span>
+                        </div><span class="module-status">"중식"</span></div>
+                        <Show when=move ||meals().is_some()
+                            fallback=||view!{<p class="empty-note">"이 날짜에는 급식 정보가 없어요."</p>}>
                             <ul class="meal-list">
                                 <For each=move ||meals().map(|m|m.dishes).unwrap_or_default()
-                                    key=|dish|dish.clone() children=|dish|view!{<li>{dish}</li>}/>
+                                    key=|dish|dish.clone()
+                                    children=|dish|view!{<li>{dish}</li>}/>
                             </ul>
                             <div class="meal-foot">{move ||meals().map(|m|m.calories).unwrap_or_default()}</div>
                         </Show>
                     </section>
-                    <section class="content-sheet upcoming-sheet">
-                        <div class="section-line"><span>"03"</span><h2>"다음 일정"</h2></div>
-                        <div class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".into())}</div>
+                    <section class="upcoming-sheet">
+                        <div class="module-heading"><div class="module-heading-copy">
+                            <h2>"다가오는 일정"</h2><span class="module-subtitle">"학교 학사일정"</span>
+                        </div></div>
+                        <div class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".to_owned())}</div>
                         <p class="event-date">{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</p>
                     </section>
-                    <a class="transit-link" href="/transit"><span>"대구 교통 정보"</span><strong>"확인하기 ↗"</strong></a>
-                </div>
+                    <a class="transit-link" href="/transit">
+                        <span>"교통 정보"</span><strong>"열기" <span aria-hidden="true">"↗"</span></strong>
+                    </a>
+                </aside>
             </div>
         </div>
     }
 }
 
 #[component]
-fn Schedule(data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>, busy:RwSignal<bool>,error:RwSignal<String>) -> impl IntoView {
+fn Schedule(data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>,
+            busy:RwSignal<bool>,error:RwSignal<String>) -> impl IntoView {
     let month = move ||date.get().format("%Y년 %m월").to_string();
     let events = move ||data.get().map(|d|d.events).unwrap_or_default();
     view! {
         <div class="scene" data-scene="calendar">
-            <div class="scene-head"><div><span class="eyebrow">"02 / SCHEDULE"</span>
-                <h1>"학사일정"<span class="heading-period">"."</span></h1>
-                <p>"한 달의 흐름을 한눈에."</p></div>
-                <span class="hero-counter">{move ||date.get().format("%m").to_string()}</span></div>
+            <header class="simple-heading">
+                <div><span class="context-line">"학교 생활" <span class="context-dot" aria-hidden="true"></span> "학사 일정"</span>
+                    <h1>"학사일정"</h1><p>"학교에서 예정된 일정을 확인하세요."</p></div>
+            </header>
             <div class="calendar-toolbar">
-                <h2>{month}</h2><div class="date-actions">
-                  <button on:click=move |_|date.update(|d|{
-                      let (y,m)=(d.year(),d.month());*d=if m==1 {NaiveDate::from_ymd_opt(y-1,12,1).unwrap()}else{NaiveDate::from_ymd_opt(y,m-1,1).unwrap()};
-                  })> "←" </button>
-                  <button on:click=move |_|date.set(today_local())>"이번 달"</button>
-                  <button on:click=move |_|date.update(|d|{
-                      let (y,m)=(d.year(),d.month());*d=if m==12 {NaiveDate::from_ymd_opt(y+1,1,1).unwrap()}else{NaiveDate::from_ymd_opt(y,m+1,1).unwrap()};
-                  })> "→" </button></div>
-            </div>
-            <Show when=move ||!error.get().is_empty()><p role="alert" class="api-error">{move ||error.get()}</p></Show>
-            <section class="content-sheet calendar-sheet">
-                <div class="calendar-grid">
-                    {["일","월","화","수","목","금","토"].into_iter().map(|d|view!{<span class="weekday">{d}</span>}).collect_view()}
-                    {move ||{
-                        let first=date.get().with_day(1).unwrap();
-                        let offset=first.weekday().num_days_from_sunday() as i64;
-                        let begin=first-Duration::days(offset);
-                        let next=if first.month()==12 {
-                            NaiveDate::from_ymd_opt(first.year()+1,1,1).unwrap()
-                        } else {
-                            NaiveDate::from_ymd_opt(first.year(),first.month()+1,1).unwrap()
-                        };
-                        // Show exactly the weeks required by the visible month.
-                        let cell_count=((offset+(next-first).num_days()+6)/7)*7;
-                        (0..cell_count).map(move |offset|{
-                            let day=begin+Duration::days(offset);
-                            let count=events().iter().filter(|e|e.date==ymd(day)).count();
-                            view!{<button class:out-month=move ||day.month()!=date.get().month()
-                                    class:today=move ||day==today_local()
-                                    class:selected=move ||day==date.get()
-                                    on:click=move |_|date.set(day)>
-                                <span>{format!("{:02}",day.day())}</span>
-                                {if count>0 {format!("{}개 일정",count)} else {String::new()}}
-                            </button>}
-                        }).collect_view()
-                    }}
+                <h2>{month}</h2>
+                <div class="date-actions">
+                    <button type="button" aria-label="이전 달" on:click=move |_|date.update(|d|{
+                        let (y,m)=(d.year(),d.month());
+                        *d=if m==1 {NaiveDate::from_ymd_opt(y-1,12,1).unwrap()}
+                        else{NaiveDate::from_ymd_opt(y,m-1,1).unwrap()};
+                    })>"←"</button>
+                    <button type="button" on:click=move |_|date.set(today_local())>"이번 달"</button>
+                    <button type="button" aria-label="다음 달" on:click=move |_|date.update(|d|{
+                        let (y,m)=(d.year(),d.month());
+                        *d=if m==12 {NaiveDate::from_ymd_opt(y+1,1,1).unwrap()}
+                        else{NaiveDate::from_ymd_opt(y,m+1,1).unwrap()};
+                    })>"→"</button>
                 </div>
-            </section>
-            <section class="content-sheet event-sheet">
-                <div class="section-line"><span>"DETAIL"</span><h2>"표시된 일정"</h2>
-                    <small>{move ||if busy.get(){"불러오는 중".into()}else{format!("{}개",events().len())}}</small></div>
-                <div class="event-lines"><For each=events key=|e|format!("{}-{}",e.date,e.name)
-                    children=|e|view!{<div><span>{event_date(&e.date)}</span><strong>{e.name}</strong></div>}/></div>
-            </section>
+            </div>
+            <Show when=move ||!error.get().is_empty()>
+                <div role="alert" class="api-error">{move ||error.get()}</div>
+            </Show>
+            <div class="calendar-layout">
+                <section class="calendar-sheet" aria-label="월간 달력">
+                    <div class="calendar-grid">
+                        {["일","월","화","수","목","금","토"].into_iter().map(|d|view!{
+                            <span class="weekday">{d}</span>
+                        }).collect_view()}
+                        {move ||{
+                            let first=date.get().with_day(1).unwrap();
+                            let offset=first.weekday().num_days_from_sunday() as i64;
+                            let begin=first-Duration::days(offset);
+                            let next_month=if first.month()==12 {
+                                NaiveDate::from_ymd_opt(first.year()+1,1,1).unwrap()
+                            }else{
+                                NaiveDate::from_ymd_opt(first.year(),first.month()+1,1).unwrap()
+                            };
+                            let days=((offset+(next_month-first).num_days()+6)/7)*7;
+                            let month_events=events();
+                            (0..days).map(move |step|{
+                                let day=begin+Duration::days(step);
+                                let today_events=month_events.iter().filter(|e|e.date==ymd(day))
+                                    .map(|e|e.name.clone()).collect::<Vec<_>>();
+                                let title=today_events.first().cloned().unwrap_or_default();
+                                let count=today_events.len();
+                                view!{
+                                    <button type="button"
+                                        class:out-month=move ||day.month()!=date.get().month()
+                                        class:today=move ||day==today_local()
+                                        class:selected=move ||day==date.get()
+                                        aria-pressed=move ||day==date.get()
+                                        on:click=move |_|date.set(day)>
+                                        <span class="calendar-num">{format!("{:02}",day.day())}</span>
+                                        <span class="calendar-event-text">{title}</span>
+                                        {if count>1 {format!("+{}",count-1)} else {String::new()}}
+                                    </button>
+                                }
+                            }).collect_view()
+                        }}
+                    </div>
+                </section>
+                <section class="event-sheet">
+                    <div class="module-heading"><div class="module-heading-copy"><h2>"이번 달 일정"</h2>
+                        <span class="module-subtitle">{move ||if busy.get(){"불러오는 중".to_owned()}else{
+                            let ym=date.get().format("%Y%m").to_string();
+                            format!("{}개",events().iter().filter(|e|e.date.starts_with(&ym)).count())
+                        }}</span></div></div>
+                    <div class="event-lines">
+                        {move ||{
+                            let ym=date.get().format("%Y%m").to_string();
+                            events().into_iter().filter(|e|e.date.starts_with(&ym))
+                                .map(|e|view!{<div>
+                                    <span>{event_date(&e.date)}</span><strong>{e.name}</strong>
+                                </div>}).collect_view()
+                        }}
+                    </div>
+                </section>
+            </div>
         </div>
     }
 }
@@ -514,7 +580,7 @@ fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
         <div class="scene" data-scene="school">
             <div class="scene-head"><div><span class="eyebrow">"03 / SCHOOL"</span>
                 <h1>"학교 정보"<span class="heading-period">"."</span></h1></div>
-                <span class="hero-counter">"03"</span></div>
+</div>
             <section class="content-sheet school-sheet">
                 <span class="eyebrow">"MY SCHOOL"</span>
                 <h2>{move ||profile.get().map(|p|p.school.name).unwrap_or_default()}</h2>
@@ -537,7 +603,7 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
         <div class="scene" data-scene="settings">
             <div class="scene-head"><div><span class="eyebrow">"04 / PREFERENCES"</span>
                 <h1>"설정"<span class="heading-period">"."</span></h1></div>
-                <span class="hero-counter">"04"</span></div>
+</div>
             <section class="content-sheet settings-sheet">
                 <div class="setting-row"><div><strong>"테마"</strong><small>"밝은 화면 또는 어두운 화면"</small></div>
                     <button class="setting-toggle" aria-pressed=move ||dark.get()
