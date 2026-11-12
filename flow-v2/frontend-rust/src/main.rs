@@ -117,7 +117,11 @@ fn today_local() -> NaiveDate {
         .unwrap_or_else(|| NaiveDate::from_ymd_opt(2026, 1, 1).unwrap())
 }
 fn ymd(day: NaiveDate) -> String { day.format("%Y%m%d").to_string() }
-fn date_text(day: NaiveDate) -> String { day.format("%m.%d").to_string() }
+fn event_date(raw: &str) -> String {
+    NaiveDate::parse_from_str(raw,"%Y%m%d")
+        .map(|date|format!("{}월 {}일",date.month(),date.day()))
+        .unwrap_or_else(|_|raw.to_owned())
+}
 fn monday(day: NaiveDate) -> NaiveDate {
     day - Duration::days(day.weekday().num_days_from_monday() as i64)
 }
@@ -370,7 +374,7 @@ fn Today(
                 <div class="stat"><span>"TODAY / CLASSES"</span><strong>{move || if busy.get() {"…".into()} else {format!("{:02}",lessons().len())}}</strong><small>"오늘 수업"</small></div>
                 <div class="stat"><span>"MEAL / STATUS"</span><strong>{move || if meals().is_some() {"있음"} else {"—"}}</strong><small>"급식"</small></div>
                 <div class="stat"><span>"NEXT / EVENT"</span><strong class="stat-text">{move || next().map(|e|e.name).unwrap_or_else(||"예정 없음".into())}</strong>
-                     <small>{move ||next().map(|e|e.date).unwrap_or_default()}</small></div>
+                     <small>{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</small></div>
             </div>
             <div class="content-columns">
                 <section class="content-sheet timetable-sheet">
@@ -424,7 +428,7 @@ fn Today(
                     <section class="content-sheet upcoming-sheet">
                         <div class="section-line"><span>"03"</span><h2>"다음 일정"</h2></div>
                         <div class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".into())}</div>
-                        <p class="event-date">{move ||next().map(|e|e.date).unwrap_or_default()}</p>
+                        <p class="event-date">{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</p>
                     </section>
                     <a class="transit-link" href="/transit"><span>"대구 교통 정보"</span><strong>"확인하기 ↗"</strong></a>
                 </div>
@@ -478,7 +482,7 @@ fn Schedule(data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>, busy:RwS
                 <div class="section-line"><span>"DETAIL"</span><h2>"표시된 일정"</h2>
                     <small>{move ||if busy.get(){"불러오는 중".into()}else{format!("{}개",events().len())}}</small></div>
                 <div class="event-lines"><For each=events key=|e|format!("{}-{}",e.date,e.name)
-                    children=|e|view!{<div><span>{e.date}</span><strong>{e.name}</strong></div>}/></div>
+                    children=|e|view!{<div><span>{event_date(&e.date)}</span><strong>{e.name}</strong></div>}/></div>
             </section>
         </div>
     }

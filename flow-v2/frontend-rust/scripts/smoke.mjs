@@ -10,6 +10,16 @@ const sizes = [
   [390,844],[844,390],[768,1024],[1024,768],[1366,768],[1920,1080]
 ];
 let failures = 0;
+async function settleMotion(page) {
+  await page.evaluate(async () => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const active = document.getAnimations().filter(a => a.playState === "running");
+      if (!active.length) break;
+      await Promise.all(active.map(a => a.finished.catch(() => {})));
+    }
+  });
+}
 for (const [width,height] of sizes) {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   const errors = [];
@@ -37,15 +47,18 @@ for (const [width,height] of sizes) {
     await page.locator(".scene-head h1").waitFor({state:"visible",timeout:20000});
     const h1 = await page.locator(".scene-head h1").innerText();
     if(!h1.includes("오늘의 흐름"))throw Error("Unexpected today title "+h1);
+    await settleMotion(page);
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
     const nav = width<=800 ? ".mobile-bottom button" : ".rail-navigation button";
     await page.locator(nav).nth(1).click();
     await page.locator(".calendar-grid").waitFor();
+    await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
     await page.locator(".setting-toggle").first().click();
     if ((await page.locator("html").getAttribute("data-theme"))!=="dark")throw Error("Dark-mode toggle broken");
+    await settleMotion(page);
     await page.screenshot({path:shots+"/dark-"+width+"x"+height+".png",fullPage:true});
     const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
     if(overflow)throw Error("Horizontal overflow detected");
