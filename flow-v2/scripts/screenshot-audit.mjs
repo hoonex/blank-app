@@ -49,7 +49,7 @@ for (const [width,height] of sizes) {
   await page.locator(".profile-lead").waitFor({timeout:5000});
   await page.screenshot({path:out+"/school-"+width+"x"+height+".png",fullPage:false});
   await page.getByRole("button",{name:"설정",exact:true}).first().click();
-  await page.locator(".setting-section").waitFor({timeout:5000});
+  await page.locator(".setting-section").first().waitFor({timeout:5000});
   await page.screenshot({path:out+"/settings-"+width+"x"+height+".png",fullPage:false});
   await page.close();
 }

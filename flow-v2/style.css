@@ -46,7 +46,7 @@ a,button { touch-action:manipulation; }
 .sidebar-footer a { text-underline-offset:3px; }
 .topbar { display:none; }
 .main { margin-left:var(--nav-width); padding:43px clamp(22px,4vw,72px) 80px; }
-.main-inner { width:min(100%,1220px); margin:0 auto; }
+.main-inner { width:min(100%,1480px); margin:0 auto; }
 .page-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:end; gap:12px; margin-bottom:25px; }
 .eyebrow { font-size:11px; letter-spacing:.07em; color:var(--muted); font-weight:750; }
 .page-heading h1 { font-size:clamp(25px,2.9vw,38px); letter-spacing:-.065em; line-height:1.2; margin:5px 0 6px; font-weight:790; }
