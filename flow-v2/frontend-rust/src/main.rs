@@ -267,6 +267,14 @@ fn App() -> impl IntoView {
     let nav_preview = RwSignal::<Option<Tab>>::new(None);
     let nav_suppress_click = RwSignal::new(false);
     apply_theme(dark.get_untracked());
+    // Leptos patches the selected scene asynchronously. Reset after the
+    // reactive DOM commit, not only before the selected tab changes.
+    Effect::new(move |_| {
+        let _screen=tab.get();
+        if let Some(window)=web_sys::window(){
+            window.scroll_to_with_x_and_y(0.0,0.0);
+        }
+    });
 
     Effect::new(move |_| {
         if let Some(saved) = profile.get() {

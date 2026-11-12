@@ -187,6 +187,7 @@ for (const [width,height] of sizes) {
     if(width===390)await page.evaluate(()=>window.scrollTo({top:150,behavior:"instant"}));
     await page.locator(nav).nth(1).click();
     if(width===390){
+      await page.waitForFunction(()=>window.scrollY===0,{timeout:1800});
       const top=await page.evaluate(()=>window.scrollY);
       if(top!==0)throw Error("Tab switch inherited the previous scroll offset: "+top);
     }
