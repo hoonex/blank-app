@@ -226,9 +226,9 @@ pub fn BusInfo()->impl IntoView {
                         <Show when=move ||!arrivals.get().is_empty()
                             fallback=move ||view!{<p class="bus-empty">"현재 제공되는 버스 도착정보가 없어요."</p>}>
                             <div class="bus-arrivals">
-                                <For each=move ||arrivals.get().into_iter().enumerate().collect::<Vec<_>>()
-                                    key=|(i,b)|format!("{}-{}",i,b.route)
-                                    children=move |(_,bus)|{
+                                <For each=move ||arrivals.get()
+                                    key=|b|format!("{}-{}",b.route,b.state)
+                                    children=move |bus|{
                                         view! {
                                             <div class="bus-arrival">
                                                 <strong class="bus-route">{bus.route}</strong>
