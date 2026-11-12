@@ -56,3 +56,19 @@ Updated: 2026-11-13 KST. Working branch: `feat/flow-v2-rust-bun-redesign-2026111
 4. Browser-test live `/`, `/legacy`, `/university`, `/admin`, `/transit`, and WASM/CSS after launch.
 5. Check on real Galaxy mobile browser for dynamic address-bar scroll jitter and touch highlight. If a mismatch persists, report it explicitly and keep previous deployed version for instant rollback.
 6. Next independent project: assess official Daegu bus stop arrival API quota/caching; no invented ETA.
+
+## November 13 — date/dock correction validated against Android screenshots
+
+- **Reference screenshots** from Chrome mobile showed: 7 days compressed with previous/today/next buttons; system gesture bar crossing floating navigation; content visible *behind* dock; unsatisfying full-screen route curtain.
+- **Date interaction**: five evenly-sized day buttons (selected in center); swipe left/right changes date by one day. On touch move the row follows the finger up to a 65px rubber-band limit. No previous/today/next controls. Buttons can be tapped, keep accessible date labels and immediate pressed feedback.
+- **Dock**: fixed-overlay approach was rejected after screenshot QA. App shell is a column with independently scrollable main viewport and bottom navigation as a *separate grid/flex row*; bottom gutter reserves room for Android system gestures. The tab thumb still tracks finger-drag; scrolling cannot put a lesson or event behind the dock.
+- **Transitions**: removed 720ms whole-screen portal and generic full-screen label. Route content enters in 360ms with a bounded directional clip/translate. Date row keyed by day gets a 300ms one-step slide. Reduced-motion users see content immediately. Hover decoration is gated to mouse-like pointers only.
+- **CI evidence**: Rust WASM + Chromium 390x844,844x390,768x1024,1024x768,1366x768,1920x1080 passed run 43255818992; a separate captured nav-at-content-bottom image visually confirms meal and next event remain readable above the dock. Test additionally emulates a shrinking viewport and verifies dock stays in the expected row.
+- **Caveat**: simulated viewport resizing is not identical to Samsung Internet/Chrome physical dynamic toolbar. Do not claim hardware verification until the user checks on device.
+
+### If resumed in a new session
+
+1. Get current PR #273 branch HEAD, production Cloudflare Worker version, and this documentation.
+2. Check whether static release `6b4047e474e54e7edf2209876d1b5c704f80dc55` is pinned in `flow-v2/deploy/cloudflare-bridge.mjs`. If only the bridge was committed, **preview and deploy**; do not assume GitHub code changes equal production.
+3. Check live `/`, `/legacy`, `/transit`, `/university`, `/admin` and verify new CSS/JS asset hashes and WASM. Rollback to recorded previous Worker version on any regression.
+4. User physical Chrome/Samsung screenshot for scroll + gesture bar is the final acceptance test. Follow up on left/right swipe tactile animation only if still deficient on device.

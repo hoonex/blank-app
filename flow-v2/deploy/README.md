@@ -75,3 +75,12 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Rollback Worker version: `60641088-6f68-48e4-9826-13cc4e49ccf8`; rollback is a separate Cloudflare deployments action, not a GitHub PR revert.
 - Open issues: Real Android address bar resizing/scroll interaction still requires a physical-device check; incomplete original-feature parity and native Worker asset migration; original bus information needs its own accuracy/quotas review.
 - Reference and resumable-next-task file: `flow-v2/DESIGN_REFERENCES_AND_RESUME.md`.
+
+## 2026-11-13: five-day swipe rail and non-overlapping mobile dock
+
+- Immutable GitHub static release `flow-v2-monograph-v4-a129568051c0`, `6b4047e474e54e7edf2209876d1b5c704f80dc55` with Rust JS `flow-school-web-ccfc802621f311b1.js`, CSS `style-a20f63d55a370120.css` and WASM `flow-school-web-85d2d2af64e82934_bg.wasm`.
+- Rust source `a129568051c0e26de5c5780c0dcbfac43f85caaf`, CI `43255818992` passed wasm32 typecheck, Trunk release build and six Chromium viewports including real touch dispatch on the date rail, dock swipe, tab navigation, reduced motion and keyboard focus.
+- Replaced crowded 7-day strip + previous/today/next arrows with one five-day centered swipe rail. Swipes advance one day, tap re-centers; the date choice does not change top-level tabs.
+- **Mobile scroll architecture**: `.flow-shell` uses a 100dvh flex column; only `.flow-main` scrolls. Bottom dock is a non-overlapping sibling flex row instead of a position:fixed overlay. It reserves an Android gesture-safe bottom gutter, and a content scroll no longer pushes the dock offscreen. Real Chrome device confirmation is still required.
+- Changed page entrance from full-screen portal overlay to 360ms directional masked view reveal. Removed sticky hover color on mobile and fixed brand header width and per-tab scroll reset. No extra data requests or new controls.
+- Prior production Worker version `d5d7e086-73fd-4c87-ad30-9036db5c2bbf` and old source pin `a4cfcfdabe3a21f7b02f4d400b5628d11fe68843` remain as rollback reference.
