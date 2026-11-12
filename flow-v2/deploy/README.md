@@ -94,3 +94,11 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Cloudflare Browser Rendering verified production root mounted WASM, correct CSS/JS and 200 responses for original `/legacy`, `/transit`, `/university`, `/admin`; no claim of entire old API feature parity.
 - Previous Worker version (immediate rollback target): `d5d7e086-73fd-4c87-ad30-9036db5c2bbf`.
 - Physical-device acceptance remains open: Samsung Chrome/Internet dynamic address bar and bottom Android system gesture inset. Report precise screenshot/device reproduction and reconcile before further motion redesign.
+
+## 2026-11-13 — real floating dock and in-app Daegu bus deployed release
+
+- Tested Rust source `792d9da04540d57b77e3c3e6eae113e72e47937e` with Chromium CI https://github.com/hoonex/blank-app/actions/runs/43331188145 (**success**, all 6 viewport sizes).
+- Immutable static commit `bf350345ba852081c64cf7e9c61d9164c9820f9f`, published to `flow-v2-monograph-v4-792d9da04540`: `flow-school-web-52618af9f2f706b0.js`, `flow-school-web-49ea575743f22da7_bg.wasm`, `style-6e347386e303d1ae.css`.
+- Fixed viewport-anchored rounded bottom tab bar, lower placement, CSS page-bottom padding, corrected logo line-height/top padding, mobile calendar month arrows hidden and month slider retained. End-of-page and viewport-resize smoke assertions passed.
+- New `School` tab contains Daegu bus stop search and stop-specific live arrivals. Raw public BIS website endpoints are proxied by Cloudflare with 1-hour stop-search cache and 20-second arrival cache, exact validation and honest API errors. Both search and arrivals returned real data on Cloudflare preview; details in `BUS_SOURCE_AND_STATUS.md`.
+- Prior deployed Cloudflare Worker version: `07054114-b7a9-4867-a39b-c1f880134371`. Restore that version if live smoke fails. Device-specific Samsung Chrome screenshot still needs user confirmation after production deployment.
