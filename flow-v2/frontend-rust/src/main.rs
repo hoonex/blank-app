@@ -622,12 +622,12 @@ fn Today(
                                             .find(|item|item.date==ymd(day)&&item.period==period)
                                             .map(|item|item.subject.clone()).unwrap_or_default();
                                         let empty=subject.is_empty();
+                                        let description=if empty {"수업 없음".to_owned()}else{subject.clone()};
                                         view!{
                                             <button type="button" class="week-cell"
                                                 class:today=move ||date.get()==day
                                                 class:empty=empty
-                                                aria-label=format!("{}요일 {}교시 {}",day_letter(day),period,
-                                                    if empty {"수업 없음".to_owned()}else{subject.clone()})
+                                                aria-label=format!("{}요일 {}교시 {}",day_letter(day),period,description)
                                                 on:click=move |_|date.set(day)>
                                                 <span>{if empty {"—".to_owned()}else{subject}}</span>
                                             </button>
