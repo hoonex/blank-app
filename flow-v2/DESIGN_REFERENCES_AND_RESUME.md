@@ -72,3 +72,12 @@ Updated: 2026-11-13 KST. Working branch: `feat/flow-v2-rust-bun-redesign-2026111
 2. Check whether static release `6b4047e474e54e7edf2209876d1b5c704f80dc55` is pinned in `flow-v2/deploy/cloudflare-bridge.mjs`. If only the bridge was committed, **preview and deploy**; do not assume GitHub code changes equal production.
 3. Check live `/`, `/legacy`, `/transit`, `/university`, `/admin` and verify new CSS/JS asset hashes and WASM. Rollback to recorded previous Worker version on any regression.
 4. User physical Chrome/Samsung screenshot for scroll + gesture bar is the final acceptance test. Follow up on left/right swipe tactile animation only if still deficient on device.
+
+## 2026-11-13 — completed final production rollout
+
+- **Live site:** https://blank-app.agfvrd.workers.dev/ — Worker version `d63380ab-8424-4b9d-817d-1c66077ea5cd`, built Rust asset pin `bf350345ba852081c64cf7e9c61d9164c9820f9f`.
+- **CI:** run `43331188145` succeeded across all six responsive viewports, real touch swipe, fixed floating dock scroll, tab-switch scroll reset, calendar, mocked bus UI and reduced-motion. Verified actual screen captures, notably `schedule-390x844`, `today-fold-390x844`, `nav-at-content-bottom-390x844`, `bus-390x844`.
+- **Preview real source:** BIS stop search for 동대구역 returned multiple named stops and IDs. Arrivals for stop `7011006800` returned source route 708/805/818/402 and other values. This independently verifies the server API, not just mocked browser fixtures. Live UI is enabled; do not call its predictions authoritative beyond provider response.
+- **Production:** browser rendering verified correct JS `flow-school-web-52618af9f2f706b0.js`, CSS `style-6e347386e303d1ae.css`, wasm mounted. Legacy/Transit/University/Admin all HTTP 200.
+- **Rollback:** old production Worker version `07054114-b7a9-4867-a39b-c1f880134371`, previous Rust release `6b4047e474e54e7edf2209876d1b5c704f80dc55`.
+- **Next priorities:** physical Samsung browser scroll/gesture bar screenshot; BusInfo real data freshness states and route-map feature if requested; integration of legacy subject editing and PWA; replace Github raw proxy with native Cloudflare Assets. The bus site's internal web endpoints are undocumented and may change; authenticated official public-data API is a planned fallback, not the current live source.
