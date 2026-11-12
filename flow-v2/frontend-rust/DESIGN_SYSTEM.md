@@ -27,7 +27,7 @@ A student should answer three questions within one glance: "What classes do I ha
 
 - **Today, mobile:** compact contextual header, seven-day strip, one flat summary line, visible timetable starting immediately. Meal and future event follow the timetable rather than preceding it.
 - **Today, desktop:** same information in a clear timetable + secondary column. No huge empty headline or three equal KPI cards.
-- **Week:** each column conveys subjects, not merely count and first subject. On mobile a horizontal scroll region with explicit snap.
+- **Week:** each column conveys subjects, not merely count and first subject. On mobile and tablet, five compact day rows keep the selected day's subjects discoverable without sideways scrolling. Five columns appear only on wide desktop.
 - **Calendar:** user must distinguish current day, selected day, and event-bearing days by semantic style. Do not hide event names unless the cell is genuinely narrow.
 - **School / Settings / Onboarding:** share the same typography, spacing, corner radii and accent; no independent theme.
 
@@ -60,3 +60,7 @@ A student should answer three questions within one glance: "What classes do I ha
 ## Change note — selected date marker
 
 In Chromium and other modern :has-supporting browsers, the seven-day selector uses one moving highlight plate with fallback static selected states. No JavaScript animation loop, no canvas and no repeated DOM observers.
+
+## QA correction: week view
+
+A six-viewport screenshot review exposed an empty-first-column problem: the fixture has subjects only on Thursday, so a horizontally scrollable five-column mobile layout hid real subjects. Switched the compact week view to vertical day rows and added a first-fold check for the selected day. In genuinely wide desktop, five columns remain comparable without horizontal scrolling.

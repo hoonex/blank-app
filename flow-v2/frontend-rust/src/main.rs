@@ -429,7 +429,7 @@ fn Today(
                                 view!{<button class:today=move ||date.get()==day
                                    type="button" on:click=move |_|{date.set(day);week_mode.set(false);}>
                                     <span class="week-day">{format!("{} {}",day_letter(day),day.day())}</span>
-                                    <strong>{format!("{}교시",rows.len())}</strong>
+                                    <strong>{if rows.is_empty() {"수업 없음".to_owned()} else {format!("{}교시",rows.len())}}</strong>
                                     <div class="week-lessons">{rows.into_iter().map(|r|view!{
                                         <span>{format!("{} {}",r.period,r.subject)}</span>
                                     }).collect_view()}</div>

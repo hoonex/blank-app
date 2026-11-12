@@ -57,6 +57,10 @@ for (const [width,height] of sizes) {
     }
     await page.getByRole("button",{name:"주간",exact:true}).click();
     if(await page.locator(".week-lessons span").count()<5)throw Error("Week view lacks subject detail");
+    if(width===390) {
+      const chosen=await page.locator(".week-sheet>button.today").boundingBox();
+      if(!chosen || chosen.y+chosen.height>844-58)throw Error("Selected day is not discoverable in week view without scrolling");
+    }
     await settleMotion(page);
     await page.screenshot({path:shots+"/week-"+width+"x"+height+".png",fullPage:true});
     await page.getByRole("button",{name:"하루",exact:true}).click();
