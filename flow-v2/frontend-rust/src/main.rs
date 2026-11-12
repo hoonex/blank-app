@@ -240,6 +240,9 @@ fn switch_section(next:Tab, current:RwSignal<Tab>, motion:RwSignal<usize>, direc
             .and_then(|doc|doc.query_selector(".flow-main").ok().flatten()) {
             main.set_scroll_top(0);
         }
+        if let Some(window)=web_sys::window() {
+            window.scroll_to_with_x_and_y(0.0,0.0);
+        }
         current.set(next);
         motion.update(|n|*n+=1);
     }

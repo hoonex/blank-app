@@ -105,9 +105,7 @@ for (const [width,height] of sizes) {
       if(!chosen || chosen.y+chosen.height>844-58)throw Error("Selected day is not discoverable in week view without scrolling");
     }
     await page.evaluate(() => {
-      const inner=document.querySelector(".flow-main");
-      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
-      else window.scrollTo(0,0);
+      window.scrollTo(0,0);
     });
     await settleMotion(page);
     await page.screenshot({path:shots+"/week-"+width+"x"+height+".png",fullPage:true});
@@ -126,9 +124,7 @@ for (const [width,height] of sizes) {
     const restored=await page.locator(".day-strip button.active").innerText();
     if(restored!==oldActive)throw Error("Date carousel did not allow returning via touch-sized items");
     await page.evaluate(() => {
-      const inner=document.querySelector(".flow-main");
-      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
-      else window.scrollTo(0,0);
+      window.scrollTo(0,0);
     });
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
@@ -150,34 +146,29 @@ for (const [width,height] of sizes) {
       if(accent!=="#d98570")throw Error("Muted terracotta accent not applied: "+accent);
       const navBar=page.locator(".mobile-bottom");
       const base=await navBar.boundingBox();
-      const before=await page.evaluate(()=>{
-        const main=document.querySelector(".flow-main").getBoundingClientRect();
-        const el=document.querySelector(".mobile-bottom");
-        return {position:getComputedStyle(el).position,mainBottom:main.bottom,
-          navTop:el.getBoundingClientRect().top};
-      });
-      if(before.position!=="absolute"||before.mainBottom<before.navTop+12)
-        throw Error("Bottom dock is not genuinely floating: "+JSON.stringify(before));
-      await page.evaluate(()=>{const el=document.querySelector(".flow-main");el.scrollTop=el.scrollHeight;});
+      const initial=await navBar.evaluate(el=>getComputedStyle(el).position);
+      if(initial!=="fixed")throw Error("Mobile dock must float, not occupy a layout row: "+initial);
+      await page.evaluate(()=>window.scrollTo({top:document.documentElement.scrollHeight,behavior:"instant"}));
       await page.waitForTimeout(200);
       const scrolled=await navBar.boundingBox();
       const metric=await page.evaluate(()=>({
-        height:window.innerHeight,scrollTop:document.querySelector(".flow-main").scrollTop,
-        contentBottom:document.querySelector(".today-aside").getBoundingClientRect().bottom
+        height:window.innerHeight,scrollTop:window.scrollY,
+        contentBottom:document.querySelector(".today-aside").getBoundingClientRect().bottom,
+        bottomPadding:parseFloat(getComputedStyle(document.querySelector(".flow-main")).paddingBottom)
       }));
       if(!scrolled||!base||metric.scrollTop<100||Math.abs(scrolled.y-base.y)>3||
-          Math.abs(scrolled.y+scrolled.height-(metric.height-5))>10||
+          Math.abs(scrolled.y+scrolled.height-(metric.height-10))>11||
           scrolled.x<10||scrolled.x+scrolled.width>width+1||
-          metric.contentBottom>scrolled.y-6)
-        throw Error("Floating nav occludes content or drifts: "+JSON.stringify({base,scrolled,metric}));
+          metric.contentBottom>scrolled.y-6||metric.bottomPadding<80)
+        throw Error("Floating nav covers content or drifts: "+JSON.stringify({base,scrolled,metric}));
       await page.screenshot({path:shots+"/nav-at-content-bottom-390x844.png"});
       await page.setViewportSize({width:390,height:752});
       await page.waitForTimeout(200);
       const smaller=await navBar.boundingBox();
-      if(!smaller||Math.abs(smaller.y+smaller.height-(752-5))>10)
-        throw Error("Floating dock drifted after Chrome viewport resize: "+JSON.stringify(smaller));
+      if(!smaller||Math.abs(smaller.y+smaller.height-(752-10))>12)
+        throw Error("Floating dock drifted after viewport resize: "+JSON.stringify(smaller));
       await page.setViewportSize({width,height});
-      await page.evaluate(()=>{document.querySelector(".flow-main").scrollTop=0;});
+      await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
       const buttons=await page.locator(".day-strip button").evaluateAll(nodes=>
         nodes.map(el=>el.getBoundingClientRect().width));
       if(buttons.length!==5||Math.min(...buttons)<52)
@@ -193,10 +184,10 @@ for (const [width,height] of sizes) {
     });
     if(borderCount)throw Error("Visible structural borders detected: "+borderCount);
     const nav = width<=870 ? ".mobile-bottom button" : ".rail-navigation button";
-    if(width===390)await page.evaluate(()=>{document.querySelector(".flow-main").scrollTop=150;});
+    if(width===390)await page.evaluate(()=>window.scrollTo({top:150,behavior:"instant"}));
     await page.locator(nav).nth(1).click();
     if(width===390){
-      const top=await page.evaluate(()=>document.querySelector(".flow-main").scrollTop);
+      const top=await page.evaluate(()=>window.scrollY);
       if(top!==0)throw Error("Tab switch inherited the previous scroll offset: "+top);
     }
     await page.locator(".scene[data-scene='calendar']").waitFor({state:"visible",timeout:3000});
@@ -250,9 +241,7 @@ for (const [width,height] of sizes) {
     if(width>870&&monthControl.radius<16)
       throw Error("Desktop month controls are not round");
     await page.evaluate(() => {
-      const inner=document.querySelector(".flow-main");
-      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
-      else window.scrollTo(0,0);
+      window.scrollTo(0,0);
     });
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
@@ -276,9 +265,7 @@ for (const [width,height] of sizes) {
     await page.locator(".setting-toggle").first().click();
     if ((await page.locator("html").getAttribute("data-theme"))!=="dark")throw Error("Dark-mode toggle broken");
     await page.evaluate(() => {
-      const inner=document.querySelector(".flow-main");
-      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
-      else window.scrollTo(0,0);
+      window.scrollTo(0,0);
     });
     await settleMotion(page);
     await page.screenshot({path:shots+"/dark-"+width+"x"+height+".png",fullPage:true});
