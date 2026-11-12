@@ -1,3 +1,5 @@
+mod bus;
+use bus::BusInfo;
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use gloo_net::http::Request;
 use leptos::prelude::*;
@@ -128,6 +130,13 @@ fn event_date(raw: &str) -> String {
 }
 fn monday(day: NaiveDate) -> NaiveDate {
     day - Duration::days(day.weekday().num_days_from_monday() as i64)
+}
+fn change_month(date:RwSignal<NaiveDate>,offset:i32){
+    let first=date.get_untracked();
+    let index=first.year()*12 + first.month() as i32 - 1 + offset;
+    let year=index.div_euclid(12);
+    let month=index.rem_euclid(12) as u32 + 1;
+    if let Some(next)=NaiveDate::from_ymd_opt(year,month,1){date.set(next);}
 }
 fn day_letter(day: NaiveDate) -> &'static str {
     match day.weekday() {
@@ -312,7 +321,7 @@ fn App() -> impl IntoView {
                         if !mobile_viewport() {return;}
                         // Horizontal navigation never steals taps on content controls.
                         if let Some(element)=ev.target().and_then(|t|t.dyn_into::<web_sys::Element>().ok()){
-                            if element.closest("button,a,input,textarea,select,[contenteditable],.calendar-grid,.day-strip,.week-sheet").ok().flatten().is_some(){
+                            if element.closest("button,a,input,textarea,select,[contenteditable],.calendar-grid,.calendar-sheet,.day-strip,.week-grid").ok().flatten().is_some(){
                                 scene_swipe.set(None);return;
                             }
                         }
@@ -733,6 +742,10 @@ fn Schedule(
     profile:RwSignal<Option<Profile>>,busy:RwSignal<bool>,error:RwSignal<String>
 )->impl IntoView{
     let month=move ||date.get().format("%Y년 %m월").to_string();
+    let month_touch=RwSignal::<Option<(i32,i32)>>::new(None);
+    let month_drag=RwSignal::new(0.0f64);
+    let month_direction=RwSignal::new(1i32);
+    let month_recent=RwSignal::new(0.0f64);
     let events=move ||data.get().map(|d|choose_events(&d,
         profile.get().map(|p|p.grade).unwrap_or(1))).unwrap_or_default();
     view!{
@@ -744,27 +757,50 @@ fn Schedule(
             </header>
             <div class="calendar-toolbar">
                 <h2>{month}</h2>
-                <div class="date-actions">
-                    <button type="button" aria-label="이전 달" on:click=move |_|
-                        date.update(|d|{
-                            let (y,m)=(d.year(),d.month());
-                            *d=if m==1{NaiveDate::from_ymd_opt(y-1,12,1).unwrap()}
-                            else{NaiveDate::from_ymd_opt(y,m-1,1).unwrap()};
-                        })>"←"</button>
-                    <button type="button" on:click=move |_|date.set(today_local())>"이번 달"</button>
-                    <button type="button" aria-label="다음 달" on:click=move |_|
-                        date.update(|d|{
-                            let (y,m)=(d.year(),d.month());
-                            *d=if m==12{NaiveDate::from_ymd_opt(y+1,1,1).unwrap()}
-                            else{NaiveDate::from_ymd_opt(y,m+1,1).unwrap()};
-                        })>"→"</button>
+                <div class="month-actions">
+                    <button type="button" class="month-chevron" aria-label="이전 달"
+                        on:click=move |_|change_month(date,-1)>"←"</button>
+                    <Show when=move ||{
+                        let today=today_local();
+                        date.get().month()!=today.month()||date.get().year()!=today.year()
+                    }>
+                        <button type="button" class="month-reset"
+                            on:click=move |_|date.set(today_local())>"이번 달"</button>
+                    </Show>
+                    <button type="button" class="month-chevron" aria-label="다음 달"
+                        on:click=move |_|change_month(date,1)>"→"</button>
                 </div>
             </div>
             <Show when=move ||!error.get().is_empty()>
                 <p class="api-error" role="alert">{move ||error.get()}</p>
             </Show>
             <div class="calendar-layout">
-                <section class="calendar-sheet">
+                <section class="calendar-sheet"
+                    style=move ||format!("--month-drag:{:.1}px;--month-dir:{}",month_drag.get(),month_direction.get())
+                    on:touchstart=move |ev|{
+                        month_touch.set(touch_start(&ev));month_drag.set(0.);
+                    }
+                    on:touchmove=move |ev|{
+                        if let (Some((sx,sy)),Some(p))=(month_touch.get_untracked(),ev.touches().item(0)){
+                            let dx=p.client_x()-sx;let dy=p.client_y()-sy;
+                            if dx.abs()>8 && dx.abs()*100>dy.abs()*160 {
+                                month_drag.set((dx as f64*0.33).clamp(-52.,52.));
+                            }
+                        }
+                    }
+                    on:touchend=move |ev|{
+                        if let (Some((sx,sy)),Some((ex,ey)))=(month_touch.get_untracked(),touch_end(&ev)){
+                            let dx=ex-sx;let dy=ey-sy;
+                            if dx.abs()>=56 && dx.abs()*100>dy.abs()*135{
+                                let step=if dx<0{1}else{-1};
+                                month_direction.set(step);
+                                month_recent.set(js_sys::Date::now());
+                                change_month(date,step);
+                            }
+                        }
+                        month_touch.set(None);month_drag.set(0.);
+                    }
+                    on:touchcancel=move |_|{month_touch.set(None);month_drag.set(0.);}>
                     <div class="calendar-grid">
                         {["일","월","화","수","목","금","토"].into_iter().map(|label|
                             view!{<span class="weekday">{label}</span>}).collect_view()}
@@ -790,7 +826,10 @@ fn Schedule(
                                         class:today=move ||day==today_local()
                                         class:selected=move ||day==date.get()
                                         aria-pressed=move ||day==date.get()
-                                        on:click=move |_|date.set(day)>
+                                        on:click=move |_|{
+                                            if js_sys::Date::now()-month_recent.get_untracked()<520.{return;}
+                                            date.set(day);
+                                        }>
                                         <span class="calendar-num">{format!("{:02}",day.day())}</span>
                                         <span class="calendar-event-text">{label}</span>
                                         {if count>1 {format!("+{}",count-1)} else {String::new()}}
@@ -852,9 +891,10 @@ fn Schedule(
 fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
     view! {
         <div class="scene" data-scene="school">
-            <div class="scene-head"><div><span class="eyebrow">"내 학교"</span>
-                <h1>"학교 정보"</h1></div>
+            <div class="scene-head"><div><span class="eyebrow">"학교와 통학"</span>
+                <h1>"학교"</h1></div>
 </div>
+            <BusInfo/>
             <section class="content-sheet school-sheet">
                 <span class="eyebrow">"학교 정보"</span>
                 <h2>{move ||profile.get().map(|p|p.school.name).unwrap_or_default()}</h2>
@@ -890,8 +930,8 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
                     }>"다시 선택 ↗"</button></div>
                 <div class="setting-row"><div><strong>"전체 기능"</strong><small>"시간표 수정·교내 정보 등 기존 기능을 계속 사용할 수 있습니다."</small></div>
                     <a href="/legacy" class="setting-toggle">"기존 Flow ↗"</a></div>
-                <div class="setting-row"><div><strong>"버스 정보"</strong><small>"도착정보는 대구시에서 직접 확인하고, 기존 교통 화면도 유지됩니다."</small></div>
-                    <div class="setting-links"><a href="https://businfo.daegu.go.kr/" target="_blank" rel="noopener noreferrer">"대구시 버스정보 ↗"</a><a href="/transit">"기존 교통 화면"</a></div></div>
+                <div class="setting-row"><div><strong>"버스 정보"</strong>
+                    <small>"학교 탭에서 정류장을 검색하고 운행 상태를 직접 확인할 수 있어요."</small></div></div>
                 <div class="setting-row"><div><strong>"대학교 모드"</strong><small>"기존 대학 기능은 같은 주소에서 이용 가능합니다."</small></div>
                     <a href="/university" class="setting-toggle">"대학교 모드 ↗"</a></div>
             </section>
