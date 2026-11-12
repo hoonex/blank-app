@@ -45,3 +45,9 @@ Known functional gaps before rollout: class list validation, full subject editin
 Add Cloudflare `NEIS_KEY` as a Worker secret; never commit the key. The separate `edge-rust/wrangler.toml` deploys only the Rust preview Worker. It serves `/healthz` and `/api/v2/school?action=search|classes|dashboard` directly from Rust, with documented compatibility actions `media|place` temporarily delegated to the original implementation.
 
 The Rust frontend defaults to the verified original API for its **unpublished** preview. Set `FLOW_RUST_EDGE_URL` at Rust frontend compile time (for example, `/api/v2/school` when both are served on one origin) to use the Rust backend. A Rust frontend and backend together have not yet been production-integrated.
+
+## Visual redesign — Kinetic Edition
+
+The rejected border/card dashboard was replaced on 2026-11-12 with a wholly borderless, kinetic editorial UI. The authoritative visual reference is [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md): Studio Edgar (kinetic black/white type), Codrops/Bisous editorial columns, Codrops clip-path transition choreography, native CSS and reduced-motion. Current layout: full-width dark date hero, giant rising numerals and lime brand shape, continuous flat lesson rows, contrasting lime lunch block, free-standing events, native masked page sweeps, floating mobile dock. Rust owns every interaction and state transition; CSS owns the motion. Zero GSAP runtime.
+
+For visual review use the Playwright artifacts from `Flow V2 Rust web`: 6 viewport screenshots each for Today, Week, Schedule, Settings dark mode and a page-transition mid-frame. The screenshot script resets scroll position **only in tests**, never in the live app. Existing domain and APIs remain untouched.

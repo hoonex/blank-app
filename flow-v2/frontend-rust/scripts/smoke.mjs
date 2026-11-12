@@ -61,6 +61,7 @@ for (const [width,height] of sizes) {
       const chosen=await page.locator(".week-sheet>button.today").boundingBox();
       if(!chosen || chosen.y+chosen.height>844-58)throw Error("Selected day is not discoverable in week view without scrolling");
     }
+    await page.evaluate(() => window.scrollTo(0,0));
     await settleMotion(page);
     await page.screenshot({path:shots+"/week-"+width+"x"+height+".png",fullPage:true});
     await page.getByRole("button",{name:"하루",exact:true}).click();
@@ -72,6 +73,7 @@ for (const [width,height] of sizes) {
     const after=await page.locator(".day-strip button.active").innerText();
     if(after!==(await targetDay.innerText()))throw Error("Date selector did not update");
     if(oldActive!==after)await page.locator(".today-reset").click();
+    await page.evaluate(() => window.scrollTo(0,0));
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
@@ -89,12 +91,14 @@ for (const [width,height] of sizes) {
     await page.waitForTimeout(300);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
+    await page.evaluate(() => window.scrollTo(0,0));
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
     await page.locator(".setting-toggle").first().click();
     if ((await page.locator("html").getAttribute("data-theme"))!=="dark")throw Error("Dark-mode toggle broken");
+    await page.evaluate(() => window.scrollTo(0,0));
     await settleMotion(page);
     await page.screenshot({path:shots+"/dark-"+width+"x"+height+".png",fullPage:true});
     const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
