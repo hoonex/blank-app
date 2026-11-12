@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f6f4">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Flow School — Rust로 다시 만든 학생 생활 도구">
+  <title>Flow — School</title>
+  <link rel="stylesheet" href="/flow-v2/frontend-rust/dist/style-165a73d33b1178d4.css" integrity="sha384-6Mt5uG7X/KOaXICfPLP2FJMN82G7TrIk3OLXNlAmpChqzpot+Lihaa3G4pWZlNr9"/>
+  
+<script type="module">
+import init, * as bindings from '/flow-v2/frontend-rust/dist/flow-school-web-e663448716012c66.js';
+const wasm = await init({ module_or_path: '/flow-v2/frontend-rust/dist/flow-school-web-66be9ee4ac0bac24_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+<link rel="modulepreload" href="/flow-v2/frontend-rust/dist/flow-school-web-e663448716012c66.js" crossorigin="anonymous" integrity="sha384-s5l7X7uDcjQEKZ9xdc8WydReSNRYFnLcgV8K2foQM+TTnYf2tkSE7OnWi/tzR1SM"><link rel="preload" href="/flow-v2/frontend-rust/dist/flow-school-web-66be9ee4ac0bac24_bg.wasm" crossorigin="anonymous" integrity="sha384-O/F8Kmzo5HNP7baPVTkKSZB+32V6RrP9fHo05HAJEFffTylHOKogz0j/eYZdsi+N" as="fetch" type="application/wasm"></head>
+<body></body>
+</html>
