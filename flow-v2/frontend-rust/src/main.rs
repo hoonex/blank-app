@@ -3,6 +3,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen::JsCast;
 
 // Production Rust builds can target the separately deployed Rust API with
 // FLOW_RUST_EDGE_URL=/api/v2/school. This isolated preview retains the
@@ -98,6 +99,9 @@ impl Tab {
     fn index(self) -> usize {
         match self { Self::Today => 0, Self::Schedule => 1, Self::School => 2, Self::Settings => 3 }
     }
+    fn from_index(index: usize) -> Self {
+        match index { 0 => Self::Today, 1 => Self::Schedule, 2 => Self::School, _ => Self::Settings }
+    }
 }
 
 fn storage() -> Option<web_sys::Storage> {
@@ -190,8 +194,38 @@ fn apply_theme(dark: bool) {
 }
 
 
-fn switch_section(next:Tab, current:RwSignal<Tab>, motion:RwSignal<usize>) {
+// A native touch contract: one finger, dominant horizontal motion, no gesture
+// state outside the active surface. CSS keeps vertical scrolling native.
+fn touch_start(event: &web_sys::TouchEvent) -> Option<(i32, i32)> {
+    if event.touches().length() != 1 { return None; }
+    event.touches().item(0).map(|p| (p.client_x(), p.client_y()))
+}
+fn touch_end(event: &web_sys::TouchEvent) -> Option<(i32, i32)> {
+    event.changed_touches().item(0).map(|p| (p.client_x(), p.client_y()))
+}
+fn mobile_viewport() -> bool {
+    web_sys::window().and_then(|w|w.inner_width().ok())
+        .and_then(|v|v.as_f64()).unwrap_or(1024.) <= 870.
+}
+// Return the moving plate's pixel offset and the closest selection.
+// The named host avoids event-delegation currentTarget surprises in Leptos.
+fn drag_position(event: &web_sys::TouchEvent, selector: &str, count: usize, gap: f64)
+    -> Option<(f64, usize)> {
+    let point=event.touches().item(0)?;
+    let host=web_sys::window()?.document()?.query_selector(selector).ok()??;
+    let rect=host.get_bounding_client_rect();
+    let width=rect.width();
+    if width <= 0. { return None; }
+    let segment=((width - 10. - gap * (count as f64 - 1.)) / count as f64).max(1.);
+    let x=(point.client_x() as f64-rect.left()-5.-segment/2.)
+        .clamp(0., (width-10.-segment).max(0.));
+    let position=(point.client_x() as f64-rect.left()).clamp(0.,width-0.001);
+    let index=((position / width * count as f64).floor() as usize).min(count-1);
+    Some((x,index))
+}
+fn switch_section(next:Tab, current:RwSignal<Tab>, motion:RwSignal<usize>, direction:RwSignal<i32>) {
     if current.get_untracked() != next {
+        direction.set(if next.index()>current.get_untracked().index(){1}else{-1});
         current.set(next);
         motion.update(|n|*n+=1);
     }
@@ -209,6 +243,12 @@ fn App() -> impl IntoView {
     let loaded_period = RwSignal::new(String::new());
     let dark = RwSignal::new(stored::<bool>(THEME_KEY).unwrap_or(false));
     let page_motion = RwSignal::new(0usize);
+    let direction = RwSignal::new(1i32);
+    let scene_swipe = RwSignal::<Option<(i32,i32)>>::new(None);
+    let nav_touch = RwSignal::<Option<(i32,i32)>>::new(None);
+    let nav_drag_x = RwSignal::<Option<f64>>::new(None);
+    let nav_preview = RwSignal::<Option<Tab>>::new(None);
+    let nav_suppress_click = RwSignal::new(false);
     apply_theme(dark.get_untracked());
 
     Effect::new(move |_| {
@@ -231,7 +271,13 @@ fn App() -> impl IntoView {
                 store(PROFILE_KEY,&p);profile.set(Some(p));
             })/>
         }>
-            <div class="flow-shell" data-mode=move ||tab.get().label()>
+            <div class="flow-shell" data-mode=move ||tab.get().label()
+                style=move ||format!("--portal-x:{}%;--travel-dir:{}",
+                    (tab.get().index() as f64+.5)*25.,direction.get())
+                on:contextmenu=move |ev| {
+                    // Suppress Android's hold-to-select menu, not desktop mouse right click.
+                    if mobile_viewport() { ev.prevent_default(); }
+                }>
                 <header class="global-header">
                     <div class="brand-wrap">
                         <div class="brand-lockup">
@@ -244,7 +290,7 @@ fn App() -> impl IntoView {
                             .map(|item|view! {
                                 <button type="button" class:active=move ||tab.get()==item
                                     aria-current=move ||if tab.get()==item {"page"} else {"false"}
-                                    on:click=move |_|switch_section(item,tab,page_motion)>
+                                    on:click=move |_|switch_section(item,tab,page_motion,direction)>
                                     <span>{item.label()}</span>
                                 </button>
                             }).collect_view()}
@@ -256,7 +302,31 @@ fn App() -> impl IntoView {
                         <a href="/legacy" title="기존 Flow 이용하기">"이전 버전 ↗"</a>
                     </div>
                 </header>
-                <main class="flow-main" id="content">
+                <main class="flow-main" id="content"
+                    on:touchstart=move |ev| {
+                        if !mobile_viewport() {return;}
+                        // Horizontal navigation never steals taps on content controls.
+                        if let Some(element)=ev.target().and_then(|t|t.dyn_into::<web_sys::Element>().ok()){
+                            if element.closest("button,a,input,textarea,select,[contenteditable],.calendar-grid,.day-strip,.week-sheet").ok().flatten().is_some(){
+                                scene_swipe.set(None);return;
+                            }
+                        }
+                        scene_swipe.set(touch_start(&ev));
+                    }
+                    on:touchend=move |ev| {
+                        if let (Some((start_x,start_y)),Some((end_x,end_y)))=
+                            (scene_swipe.get_untracked(),touch_end(&ev)) {
+                            let dx=end_x-start_x;
+                            let dy=end_y-start_y;
+                            if dx.abs()>=68 && (dx.abs() as f64)>(dy.abs() as f64)*1.35 {
+                                let old=tab.get_untracked().index() as i32;
+                                let target=(old+if dx<0 {1} else {-1}).clamp(0,3) as usize;
+                                switch_section(Tab::from_index(target),tab,page_motion,direction);
+                            }
+                        }
+                        scene_swipe.set(None);
+                    }
+                    on:touchcancel=move |_|scene_swipe.set(None)>
                     {move ||match tab.get(){
                         Tab::Today => view!{<Today data=dashboard date=date
                             profile=profile busy=busy error=error/>}.into_any(),
@@ -266,12 +336,45 @@ fn App() -> impl IntoView {
                         Tab::Settings => view!{<Settings dark=dark profile=profile/>}.into_any(),
                     }}
                 </main>
-                <nav class="mobile-bottom" aria-label="모바일 메뉴">
+                <nav class="mobile-bottom" aria-label="모바일 메뉴" data-dragging=move ||if nav_drag_x.get().is_some(){"true"}else{"false"}
+                    style=move ||format!("--nav-drag-x:{:.1}px",nav_drag_x.get().unwrap_or(0.))
+                    on:touchstart=move |ev| {
+                        nav_touch.set(touch_start(&ev));
+                        nav_drag_x.set(None);
+                        nav_preview.set(None);
+                        nav_suppress_click.set(false);
+                    }
+                    on:touchmove=move |ev| {
+                        if let (Some((start_x,start_y)),Some((now_x,now_y)))=
+                            (nav_touch.get_untracked(),ev.touches().item(0).map(|p|(p.client_x(),p.client_y()))) {
+                            if (now_x-start_x).abs()<9 || (now_y-start_y).abs()>40{return;}
+                            if let Some((px,i))=drag_position(&ev,".mobile-bottom",4,4.){
+                                nav_drag_x.set(Some(px));
+                                nav_preview.set(Some(Tab::from_index(i)));
+                            }
+                        }
+                    }
+                    on:touchend=move |_ev| {
+                        if let Some(item)=nav_preview.get_untracked(){
+                            nav_suppress_click.set(true);
+                            switch_section(item,tab,page_motion,direction);
+                        }
+                        nav_touch.set(None);nav_drag_x.set(None);nav_preview.set(None);
+                    }
+                    on:touchcancel=move |_|{
+                        nav_touch.set(None);nav_drag_x.set(None);nav_preview.set(None);
+                    }>
                     {[Tab::Today,Tab::Schedule,Tab::School,Tab::Settings].into_iter()
                         .map(|item|view!{
-                            <button type="button" class:active=move ||tab.get()==item
+                            <button type="button"
+                                class:active=move ||tab.get()==item
+                                class:preview=move ||nav_preview.get()==Some(item)
                                 aria-current=move ||if tab.get()==item{"page"}else{"false"}
-                                on:click=move |_|switch_section(item,tab,page_motion)>
+                                on:click=move |_|{
+                                    if nav_suppress_click.get_untracked(){
+                                        nav_suppress_click.set(false);
+                                    }else{switch_section(item,tab,page_motion,direction);}
+                                }>
                                 <span>{item.label()}</span>
                             </button>
                         }).collect_view()}
@@ -376,6 +479,10 @@ fn Today(
     profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>,error:RwSignal<String>
 )->impl IntoView{
     let week_mode=RwSignal::new(false);
+    let toggle_touch=RwSignal::<Option<(i32,i32)>>::new(None);
+    let toggle_drag_x=RwSignal::<Option<f64>>::new(None);
+    let toggle_preview=RwSignal::<Option<bool>>::new(None);
+    let toggle_suppress_click=RwSignal::new(false);
     let selected=move ||date.get();
     let lessons=move ||data.get().as_ref().map(|d|today_lessons(d,selected())).unwrap_or_default();
     let meals=move ||data.get().as_ref().and_then(|d|today_meal(d,selected()));
@@ -443,13 +550,45 @@ fn Today(
                                 if busy.get(){"··".to_owned()}else{format!("{:02}",lessons().len())}
                             }</span></h2>
                         </div>
-                        <div class="switch-track" role="group" aria-label="시간표 보기">
+                        <div class="switch-track" role="group" aria-label="시간표 보기"
+                            data-dragging=move ||if toggle_drag_x.get().is_some(){"true"}else{"false"}
+                            style=move ||format!("--toggle-drag-x:{:.1}px",toggle_drag_x.get().unwrap_or(0.))
+                            on:touchstart=move |ev|{
+                                toggle_touch.set(touch_start(&ev));
+                                toggle_drag_x.set(None);toggle_preview.set(None);
+                                toggle_suppress_click.set(false);
+                            }
+                            on:touchmove=move |ev|{
+                                if let (Some((sx,_)),Some(p))=(toggle_touch.get_untracked(),ev.touches().item(0)){
+                                    if (p.client_x()-sx).abs()<7{return;}
+                                    if let Some((px,index))=drag_position(&ev,".switch-track",2,4.){
+                                        toggle_drag_x.set(Some(px));toggle_preview.set(Some(index==1));
+                                    }
+                                }
+                            }
+                            on:touchend=move |_ev|{
+                                if let Some(next)=toggle_preview.get_untracked(){
+                                    toggle_suppress_click.set(true);week_mode.set(next);
+                                }
+                                toggle_touch.set(None);toggle_drag_x.set(None);toggle_preview.set(None);
+                            }
+                            on:touchcancel=move |_|{
+                                toggle_touch.set(None);toggle_drag_x.set(None);toggle_preview.set(None);
+                            }>
                             <button type="button" class:chosen=move ||!week_mode.get()
+                                class:preview=move ||toggle_preview.get()==Some(false)
                                 aria-pressed=move ||!week_mode.get()
-                                on:click=move |_|week_mode.set(false)>"하루"</button>
+                                on:click=move |_|{
+                                    if toggle_suppress_click.get_untracked(){toggle_suppress_click.set(false);}
+                                    else{week_mode.set(false);}
+                                }>"하루"</button>
                             <button type="button" class:chosen=move ||week_mode.get()
+                                class:preview=move ||toggle_preview.get()==Some(true)
                                 aria-pressed=move ||week_mode.get()
-                                on:click=move |_|week_mode.set(true)>"주간"</button>
+                                on:click=move |_|{
+                                    if toggle_suppress_click.get_untracked(){toggle_suppress_click.set(false);}
+                                    else{week_mode.set(true);}
+                                }>"주간"</button>
                         </div>
                     </div>
                     <Show when=move ||!week_mode.get() fallback=move ||view!{
@@ -503,7 +642,11 @@ fn Today(
                         <div class="aside-top"><span>"다가오는 일정"</span></div>
                         <strong class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".to_owned())}</strong>
                         <p class="event-date">{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</p>
-                        <a class="transit-link" href="/transit">"교통 정보 보러가기" <span aria-hidden="true">"↗"</span></a>
+                        <div class="transit-actions">
+                            <a class="transit-link" href="https://businfo.daegu.go.kr/" target="_blank" rel="noopener noreferrer">"대구시 버스 도착정보" <span aria-hidden="true">"↗"</span></a>
+                            <a class="transit-legacy" href="/transit">"기존 교통 화면"</a>
+                        </div>
+                        <p class="transit-caution">"버스 도착시간은 대구시 원본에서 확인합니다."</p>
                     </section>
                 </aside>
             </div>
@@ -672,8 +815,12 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
                     <button class="setting-toggle" on:click=move |_|{
                         profile.set(None);
                     }>"다시 선택 ↗"</button></div>
-                <div class="setting-row"><div><strong>"전체 기능"</strong><small>"아직 이식되지 않은 메뉴는 기존 서비스에서 사용할 수 있습니다."</small></div>
+                <div class="setting-row"><div><strong>"전체 기능"</strong><small>"시간표 수정·교내 정보 등 기존 기능을 계속 사용할 수 있습니다."</small></div>
                     <a href="/legacy" class="setting-toggle">"기존 Flow ↗"</a></div>
+                <div class="setting-row"><div><strong>"버스 정보"</strong><small>"도착정보는 대구시에서 직접 확인하고, 기존 교통 화면도 유지됩니다."</small></div>
+                    <div class="setting-links"><a href="https://businfo.daegu.go.kr/" target="_blank" rel="noopener noreferrer">"대구시 버스정보 ↗"</a><a href="/transit">"기존 교통 화면"</a></div></div>
+                <div class="setting-row"><div><strong>"대학교 모드"</strong><small>"기존 대학 기능은 같은 주소에서 이용 가능합니다."</small></div>
+                    <a href="/university" class="setting-toggle">"대학교 모드 ↗"</a></div>
             </section>
             <p class="note">"이전 화면은 ‘이전 버전’ 메뉴에서 열 수 있습니다. 일부 기능은 아직 기존 화면에서 제공합니다."</p>
         </div>

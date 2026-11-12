@@ -54,3 +54,14 @@ Production was already deployed via the pinned Cloudflare bridge `flow-v2/deploy
 
 - On narrow screens, each calendar day with an event uses one 6px round, ink-colored **data marker** in place of microscopic clipped event labels. The event name stays present in the document for assistive technology and is readable at full size in the existing selected-day panel; blank days have no visible marker.
 - Narrow calendar-to-detail spacing is 10px, preventing the floating bottom navigation from visually colliding with the lower edge of the selected-day surface. No new card or decoration was introduced.
+
+## V5 mobile and navigation interaction contract (2026-11-12)
+
+- **Bottom navigation**: four existing tabs, same fixed URL. Tap still works. One-finger drag translates the indicator under the finger; lift selects the closest tab. Navigation from a swipe of the main panel requires >=68px dominant horizontal movement. A touch starting inside a button/link/input/date picker/weekly timetable does not trigger a route swipe; native vertical scroll is preserved.
+- **Day/Week segmented control**: finger slides its indicator inside the existing pill, switching on release. Tap and keyboard access continue to work.
+- **Touch hygiene**: browser blue tap flash and long-press selection/context sheet suppressed only for non-editable application UI. Input/select/textarea retain selection, native editing and keyboard focus; desktop right-click not suppressed.
+- **Motion**: a 720ms single dark circular reveal originates from the chosen tab and retracts upward; 600ms directional/blurless-at-end content arrival. Inspired conceptually by Codrops page transitions and MDN pointer/touch guidance; implemented with native CSS + Rust Leptos, no GSAP, no JS gesture runtime or floating ornaments. `prefers-reduced-motion` disables all nonessential animation.
+- **Existing functions**: old school available at `/legacy`, old transit at `/transit`, university at `/university`. Settings exposes them directly; old integrations/ads/API keys are not modified. Main URL remains `blank-app.agfvrd.workers.dev`.
+- **Transit reliability**: original arrival calculation UI is not represented as live truth. Quick link to officially operated https://businfo.daegu.go.kr/ and explicit old transit UI; future API integration should use stop-level polling and data freshness, not pretend accurate location or arrival. Daegu official Bus Information System public API offers free JSON stop arrival, with 1,000 dev calls/day and potentially empty off-hours responses.
+
+References: https://tympanus.net/codrops/hub/ and https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action and https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-tap-highlight-color
