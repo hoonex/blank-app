@@ -273,7 +273,7 @@ fn App() -> impl IntoView {
         }>
             <div class="flow-shell" data-mode=move ||tab.get().label()
                 style=move ||format!("--portal-x:{}%;--travel-dir:{}",
-                    (tab.get().index() as f64+.5)*25.,direction.get())
+                    (tab.get().index() as f64+0.5)*25.,direction.get())
                 on:contextmenu=move |ev| {
                     // Suppress Android's hold-to-select menu, not desktop mouse right click.
                     if mobile_viewport() { ev.prevent_default(); }
