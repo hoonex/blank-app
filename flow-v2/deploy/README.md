@@ -22,3 +22,10 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Rounded monograph language preserved, no new ornamental cards. Date selection changes the existing contextual event sheet. Current day now uses time-correct labels; calendar event filtering matches the student's grade.
 - Browser smoke passed on 390x844, 844x390, 768x1024, 1024x768, 1366x768 and 1920x1080; includes clicked date detail, theme, mask transition, keyboard/ARIA controls, reduced-motion, horizontal overflow.
 - Prior live V3 static pin `516f2ca51236ba1f3794eaa441bdea64713004d4` retained in public release history. Deployment bridge now references the new pin and can be rolled back to previous Worker version if necessary.
+
+## V4 final polish release 314bd256ae5e
+
+- Immutable GitHub static branch `flow-v2-monograph-v4-2a7ff123d2d5`, commit `314bd256ae5e8f705a46b76509c92e14a2559184`, built from Rust source commit `2a7ff123d2d57484979a0fed0847db4e684f37aa`.
+- Final small-screen design: event labels below day numerals become compact high-contrast 6px status dots, while the selected-day panel displays the event's full name; detail-to-calendar gap reduced to 10px to keep the floating dock clear.
+- Production deploy sequence: verify GitHub static files, run Rust browser smoke on six viewports, publish preview Worker, verify preview SSR-equivalent hydration and legacy path, then update `blank-app` Worker.
+- Previous release available for rollback: `ad02e0f5001f731590f1e8700b7d61a697e0f0bd`.
