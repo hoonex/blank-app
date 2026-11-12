@@ -1,6 +1,6 @@
 # Flow Current Status
 
-> **Production status — 2026-11-12 KST:** New Flow Rust Monograph V5 release `ee45530dd9ba94318bbf12678218f29701b0c8ed` has passed six-viewport Chromium and actual touch swipe tests. The static release is pinned in `flow-v2/deploy/cloudflare-bridge.mjs`; the same canonical hostname `https://blank-app.agfvrd.workers.dev/` remains the rollout target. Former V4 rollback Worker version: `b217a752-5ab8-4f29-8b3a-c9a10fd22703`. `/legacy`, `/transit`, `/university`, and `/admin` preserve the original UIs. PR #273 stays draft; server-side Rust NEIS API and feature parity remain incomplete.
+> **Production status — 2026-11-12 KST:** New Flow Rust Monograph V5 release `ee45530dd9ba94318bbf12678218f29701b0c8ed` has passed six-viewport Chromium and actual touch swipe tests. Live deployed Cloudflare version `60641088-6f68-48e4-9826-13cc4e49ccf8` serves that pinned release at the unchanged canonical URL `https://blank-app.agfvrd.workers.dev/`. Former V4 rollback Worker version: `b217a752-5ab8-4f29-8b3a-c9a10fd22703`. `/legacy`, `/transit`, `/university`, and `/admin` preserve the original UIs. PR #273 stays draft; server-side Rust NEIS API and feature parity remain incomplete.
 
 Updated: 2026-09-07 (KST)
 

@@ -46,3 +46,12 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Original school/university/admin assets remain pinned at old release `b1ac095b47baa0c09430559bf127e7c873fa9263`, preserving old routes and data integrations. `/legacy` remains the real previous school front end, not a static screenshot.
 - Daegu city-run bus information `https://businfo.daegu.go.kr/` is the authoritative arrival link in Today and Settings; old transit remains `/transit`. Do not display invented ETA or draw unverified bus route geometries. Public API keys (if added later) must be stored as Worker secrets.
 - Rollback if needed to prior verified Cloudflare Worker `b217a752-5ab8-4f29-8b3a-c9a10fd22703` (V4).
+
+## Verified V5 live release
+
+- Same canonical URL: `https://blank-app.agfvrd.workers.dev/`.
+- Current Cloudflare Worker version `60641088-6f68-48e4-9826-13cc4e49ccf8`, 100% traffic; previous V4 Worker version `b217a752-5ab8-4f29-8b3a-c9a10fd22703` retained in deployment history for rollback.
+- Exactly tested code release `ee45530dd9ba94318bbf12678218f29701b0c8ed` / `flow-v2-monograph-v4-e7a06bfa6492`; immutable JS `flow-school-web-42b5c0ff67a86d3c.js`, WASM `flow-school-web-e928c418a6091364_bg.wasm`, CSS `style-10b39c7dee145566.css`.
+- Real browser on live root: WASM initialized, new style applied, blue-tap highlight reported transparent, `/`, `/legacy`, `/transit`, `/university`, `/admin` all HTTP 200; old School page's `#todayView` and school JS initialized through `/legacy`.
+- CDP touch-gesture test on source commit `e7a06bfa6492cf368ab84e6362382216bd2fe09e`, CI `43242013684` passed with six viewports. Static release `43241801705` succeeded.
+- No paid Kakao dependency added; the fallback bus link is the Daegu City official BIS, not a made-up ETA.
