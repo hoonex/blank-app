@@ -69,9 +69,21 @@ for (const [width,height] of sizes) {
       if(!bounds || bounds.y>500)throw Error("Timetable not visible in mobile first fold: "+JSON.stringify(bounds));
     }
     await page.getByRole("button",{name:"주간",exact:true}).click();
-    if(await page.locator(".week-lessons span").count()<5)throw Error("Week view lacks subject detail");
+    if(await page.locator(".week-grid-header button").count()!==5)
+      throw Error("Week view must show five weekday column headers");
+    if(await page.locator(".week-grid-row:not(.week-grid-header)").count()<7)
+      throw Error("Week grid needs seven or more periods");
+    if(await page.locator(".week-cell:not(.empty)").count()<7)
+      throw Error("Week grid lost real fixture subjects");
+    const weekGeometry=await page.locator(".week-grid-row:not(.week-grid-header)").first().evaluate(el=>{
+      const cells=[...el.querySelectorAll("button")];
+      return {count:cells.length,widths:cells.map(x=>x.getBoundingClientRect().width),
+        bodyWidth:document.documentElement.scrollWidth,viewport:window.innerWidth};
+    });
+    if(weekGeometry.count!==5 || Math.max(...weekGeometry.widths)-Math.min(...weekGeometry.widths)>3)
+      throw Error("Five-day calendar columns are inconsistent: "+JSON.stringify(weekGeometry));
     if(width===390) {
-      const chosen=await page.locator(".week-sheet>button.today").boundingBox();
+      const chosen=await page.locator(".week-grid-header button.today").boundingBox();
       if(!chosen || chosen.y+chosen.height>844-58)throw Error("Selected day is not discoverable in week view without scrolling");
     }
     await page.evaluate(() => window.scrollTo(0,0));
@@ -98,6 +110,23 @@ for (const [width,height] of sizes) {
         return {sameRow:Math.abs(a.top-b.top)<70,ratio:b.width/window.innerWidth};
       });
       if(!align.sameRow || align.ratio<.27)throw Error("Tablet information columns are not balanced: "+JSON.stringify(align));
+    }
+    if(width===390){
+      const mealBullet=await page.locator(".meal-list li").first().evaluate(el=>getComputedStyle(el,"::before").content);
+      if(mealBullet!=="none"&&mealBullet!=="normal")
+        throw Error("Meal bullet pseudo-element remained: "+mealBullet);
+      const accent=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().toLowerCase());
+      if(accent!=="#d98570")throw Error("Muted terracotta accent not applied: "+accent);
+      const navBar=page.locator(".mobile-bottom");
+      const base=await navBar.boundingBox();
+      await page.evaluate(()=>window.scrollTo({top:Math.max(500,document.body.scrollHeight),behavior:"instant"}));
+      await page.waitForTimeout(400);
+      const scrolled=await navBar.boundingBox();
+      const metric=await page.evaluate(()=>({height:window.innerHeight,scrollY:window.scrollY}));
+      if(!scrolled||!base||Math.abs(scrolled.y-base.y)>3||
+         Math.abs((scrolled.y+scrolled.height)-(metric.height-13))>12)
+        throw Error("Bottom tab bar jumps during scroll: "+JSON.stringify({base,scrolled,metric}));
+      await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
     }
     const borderCount=await page.evaluate(()=>{
       const targets=[...document.querySelectorAll(".today-heading,.class-row,.meal-sheet,.day-strip,.week-sheet")];
