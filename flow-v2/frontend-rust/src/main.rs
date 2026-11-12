@@ -343,7 +343,8 @@ fn App() -> impl IntoView {
                     on:touchcancel=move |_|scene_swipe.set(None)>
                     {move ||match tab.get(){
                         Tab::Today => view!{<Today data=dashboard date=date
-                            profile=profile busy=busy error=error/>}.into_any(),
+                            profile=profile busy=busy error=error
+                            tab=tab page_motion=page_motion direction=direction/>}.into_any(),
                         Tab::Schedule => view!{<Schedule data=dashboard date=date
                             profile=profile busy=busy error=error/>}.into_any(),
                         Tab::School => view!{<SchoolInfo profile=profile/>}.into_any(),
@@ -481,7 +482,8 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
 #[component]
 fn Today(
     data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>,
-    profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>,error:RwSignal<String>
+    profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>,error:RwSignal<String>,
+    tab:RwSignal<Tab>,page_motion:RwSignal<usize>,direction:RwSignal<i32>
 )->impl IntoView{
     let week_mode=RwSignal::new(false);
     let date_touch=RwSignal::<Option<(i32,i32)>>::new(None);
@@ -725,10 +727,13 @@ fn Today(
                         <strong class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".to_owned())}</strong>
                         <p class="event-date">{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</p>
                         <div class="transit-actions">
-                            <a class="transit-link" href="https://businfo.daegu.go.kr/" target="_blank" rel="noopener noreferrer">"대구시 버스 도착정보" <span aria-hidden="true">"↗"</span></a>
+                            <button type="button" class="transit-link"
+                                on:click=move |_|switch_section(Tab::School,tab,page_motion,direction)>
+                                "버스 도착정보"
+                            </button>
                             <a class="transit-legacy" href="/transit">"기존 교통 화면"</a>
                         </div>
-                        <p class="transit-caution">"버스 도착시간은 대구시 원본에서 확인합니다."</p>
+                        <p class="transit-caution">"정류장을 검색하면 Flow에서 바로 운행정보를 확인할 수 있어요."</p>
                     </section>
                 </aside>
             </div>

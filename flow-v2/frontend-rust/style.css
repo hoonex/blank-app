@@ -416,6 +416,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .brand-lockup{align-items:center;line-height:1.18;overflow:visible}
  .brand-lockup strong{line-height:1.15;padding-top:2px}
  .brand-edition{align-self:center}
+ .month-actions .month-chevron{display:none}
  .rail-navigation,.global-meta{display:none}
  .brand-wrap{min-width:0}
  .brand-lockup strong{font-size:30px}
