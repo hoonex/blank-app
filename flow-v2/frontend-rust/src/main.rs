@@ -4,10 +4,15 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::spawn_local;
 
-const SCHOOL_ENDPOINT: &str =
-    "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data";
+// Production Rust builds can target the separately deployed Rust API with
+// FLOW_RUST_EDGE_URL=/api/v2/school. This isolated preview retains the
+// existing API until the new Worker is configured and verified.
+const SCHOOL_ENDPOINT: &str = match option_env!("FLOW_RUST_EDGE_URL") {
+    Some(value) => value,
+    None => "https://eicwcohfrvhwimwevzkd.supabase.co/functions/v1/school-data",
+};
 const PROFILE_KEY: &str = "flow-school-profile-v3";
-const THEME_KEY: &str = "flow-school-theme-v3";
+const THEME_KEY: &str = "flow-v2-rust-theme";
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -259,7 +264,7 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
     let class_name = RwSignal::new("1".to_owned());
     let searching = RwSignal::new(false);
     let error = RwSignal::new(String::new());
-    let find = move |_| {
+    let find = move || {
         let q=query.get_untracked();
         if q.trim().chars().count()<2 { error.set("학교명을 두 글자 이상 입력하세요.".into()); return; }
         searching.set(true);
@@ -291,8 +296,8 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
                     <input id="school-search" type="search" placeholder="예: 정동고등학교"
                         prop:value=move || query.get()
                         on:input=move |ev|query.set(event_target_value(&ev))
-                        on:keydown=move |ev| if ev.key()=="Enter" {ev.prevent_default();find(())}/>
-                    <button class="button-strong" on:click=find>"검색"</button>
+                        on:keydown=move |ev| if ev.key()=="Enter" {ev.prevent_default();find()}/>
+                    <button class="button-strong" on:click=move |_| find()>"검색"</button>
                 </div>
                 <p class="form-status" role="status">{move || if searching.get() {"검색 중…".to_owned()}else{error.get()}}</p>
                 <div class="school-search-results">

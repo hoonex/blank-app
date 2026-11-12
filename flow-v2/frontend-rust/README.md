@@ -1,12 +1,12 @@
 # Flow V2 Rust migration / motion direction
 
 Status: **separate candidate**, not deployed and not a full feature-parity replacement.
-The existing Cloudflare Worker, endpoints, advertising unit IDs, live site, PWA and university/admin/transit systems have not been changed.
+The existing production Cloudflare Worker, advertising unit IDs, live site, PWA and university/admin/transit systems have not been changed.
 
 ## Target architecture
 
 - Frontend: Leptos 0.8 Rust CSR, compiled to WebAssembly via Trunk.
-- Backend: Cloudflare workers-rs, initially an API facade; must migrate NEIS and other provider services before any "all-Rust backend" production claim.
+- Backend: Cloudflare workers-rs; the preview implements Rust-native NEIS school search, class list, timetable, meals and calendar. Media and Kakao place lookup temporarily forward to original APIs. University, transit and admin still use existing services.
 - Bun: tooling/orchestration, tests, future package and release scripts (not the runtime).
 - Compatibility: existing localStorage profile keys and original school-data API response shape.
 - Routes: Rust frontend lives in `flow-v2/frontend-rust/` until parity and runtime verification.
@@ -39,3 +39,9 @@ Reference reading (interpretations, not copies):
 GitHub Actions `flow-v2-rust-web.yml` checks Rust CSR and builds the WASM bundle.
 
 Known functional gaps before rollout: class list validation, full subject editing, allergies, bell schedules, detailed nutritional modal, media selection, advanced transit, offline PWA, University and AdFit integration. These remain on the old site, not disabled.
+
+## Rust API preview configuration
+
+Add Cloudflare `NEIS_KEY` as a Worker secret; never commit the key. The separate `edge-rust/wrangler.toml` deploys only the Rust preview Worker. It serves `/healthz` and `/api/v2/school?action=search|classes|dashboard` directly from Rust, with documented compatibility actions `media|place` temporarily delegated to the original implementation.
+
+The Rust frontend defaults to the verified original API for its **unpublished** preview. Set `FLOW_RUST_EDGE_URL` at Rust frontend compile time (for example, `/api/v2/school` when both are served on one origin) to use the Rust backend. A Rust frontend and backend together have not yet been production-integrated.
