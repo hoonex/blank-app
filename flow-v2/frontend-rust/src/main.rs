@@ -281,8 +281,7 @@ fn App() -> impl IntoView {
                         key=|sequence|*sequence
                         children=move |_|view!{
                             <div class="transition-curtain">
-                                <span class="curtain-copy">"flow"</span>
-                                <span class="curtain-index">{move ||tab.get().label()}</span>
+                                <span class="curtain-label">{move ||tab.get().label()}</span>
                             </div>
                         }/>
                 </div>
@@ -319,13 +318,13 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
             <div class="onboarding-title">
                 <div class="brand-lockup"><strong>"flow"</strong><span class="brand-accent" aria-hidden="true">"."</span><small>"School"</small></div>
                 <span class="eyebrow">"학교 생활을 간단하게"</span>
-                <h1>"학교 생활을" <em>"새로운 흐름으로."</em></h1>
+                <h1>"학교 정보를" <em>"한곳에서."</em></h1>
                 <p>"시간표와 급식, 학사일정까지. 정보를 찾는 시간을 줄이고 오늘에 집중하세요."</p>
-                <div class="onboarding-footer">"Flow School · 새 버전 미리보기"</div>
+                
             </div>
             <section class="setup-sheet">
                 <span class="eyebrow">"시작하기"</span>
-                <h2>"내 학교 연결하기"</h2>
+                <h2>"학교 선택"</h2>
                 <p>"기존 Flow에서 선택한 정보는 그대로 사용할 수 있어요."</p>
                 <label for="school-search">"학교 이름"</label>
                 <div class="search-combo">
@@ -388,14 +387,14 @@ fn Today(
         <div class="scene" data-scene="today">
             <section class="today-heading">
                 <div class="hero-topline">
-                    <span class="hero-tag">"TODAY / FLOW 01"</span>
+                    <span class="hero-tag">"오늘의 학교생활"</span>
                     <span class="hero-school">{move ||profile.get().map(|p|
                         format!("{}　{}학년 {}반",p.school.name,p.grade,p.class_name)
                     ).unwrap_or_default()}</span>
                 </div>
                 <div class="hero-core">
                     <div class="hero-date">
-                        <span class="hero-small">"오늘, 너의 하루"</span>
+                        <span class="hero-small">"선택한 날짜"</span>
                         <h1>
                             <span class="date-motion">
                                 <For each=move ||vec![ymd(date.get())] key=|v|v.clone()
@@ -407,10 +406,7 @@ fn Today(
                             <span class="hero-weekday">{move ||format!("{}요일",day_letter(selected()))}</span>
                         </h1>
                     </div>
-                    <div class="hero-shape" aria-hidden="true">
-                        <span class="shape-orbit">"F"</span>
                     </div>
-                </div>
                 <div class="hero-bottom">
                     <div class="day-strip" role="group" aria-label="날짜 선택">
                         {move ||(0..7).map(|offset|{
@@ -442,7 +438,7 @@ fn Today(
                 <section class="timetable-sheet">
                     <div class="module-heading">
                         <div class="module-heading-copy">
-                            <span class="module-kicker">"01 / PERIODS"</span>
+                            <span class="module-kicker">"오늘의 수업"</span>
                             <h2>"시간표"<span class="module-count">{move ||
                                 if busy.get(){"··".to_owned()}else{format!("{:02}",lessons().len())}
                             }</span></h2>
@@ -480,8 +476,6 @@ fn Today(
                                     <div class="class-row">
                                         <span class="class-period">{format!("{:02}",lesson.period)}</span>
                                         <strong>{lesson.subject}</strong>
-                                        <span class="class-type">"수업"</span>
-                                        <span class="class-arrow" aria-hidden="true">"↗"</span>
                                     </div>
                                 }/>
                         </div>
@@ -493,9 +487,9 @@ fn Today(
                 <aside class="today-aside">
                     <section class="meal-sheet">
                         <div class="aside-top">
-                            <span>"02 / LUNCH"</span><span>"학교 급식"</span>
+                            <span>"급식"</span><span>"점심"</span>
                         </div>
-                        <h2>"오늘의" <em>"메뉴"</em></h2>
+                        <h2>"점심" <em>"급식"</em></h2>
                         <Show when=move ||meals().is_some()
                             fallback=||view!{<p class="empty-note">"오늘은 급식 정보가 없어요."</p>}>
                             <ul class="meal-list">
@@ -506,7 +500,7 @@ fn Today(
                         </Show>
                     </section>
                     <section class="upcoming-sheet">
-                        <div class="aside-top"><span>"03 / NEXT"</span><span>"다가오는 일정"</span></div>
+                        <div class="aside-top"><span>"다가오는 일정"</span></div>
                         <strong class="event-lead">{move ||next().map(|e|e.name).unwrap_or_else(||"예정 없음".to_owned())}</strong>
                         <p class="event-date">{move ||next().map(|e|event_date(&e.date)).unwrap_or_default()}</p>
                         <a class="transit-link" href="/transit">"교통 정보 보러가기" <span aria-hidden="true">"↗"</span></a>
@@ -527,8 +521,8 @@ fn Schedule(
     view!{
         <div class="scene" data-scene="calendar">
             <header class="scene-head">
-                <span class="hero-tag">"CALENDAR / FLOW 02"</span>
-                <h1>"일정"<span class="hero-dot">"."</span></h1>
+                <span class="hero-tag">"학교 일정"</span>
+                <h1>"일정"</h1>
                 <p>"다가오는 날들을 한눈에."</p>
             </header>
             <div class="calendar-toolbar">
@@ -590,12 +584,12 @@ fn Schedule(
                     </div>
                 </section>
                 <section class="event-sheet">
-                    <div class="aside-top"><span>"UPCOMING / EVENTS"</span>
+                    <div class="aside-top"><span>"이번 달 일정"</span>
                         <span>{move ||if busy.get(){"불러오는 중".to_owned()}else{
                             let ym=date.get().format("%Y%m").to_string();
                             format!("{}개의 일정",events().iter().filter(|e|e.date.starts_with(&ym)).count())
                         }}</span></div>
-                    <h2>"이번 달"<em>"의 기록"</em></h2>
+                    <h2>"이번 달 일정"</h2>
                     <div class="event-lines">
                         {move ||{
                             let ym=date.get().format("%Y%m").to_string();
@@ -618,7 +612,7 @@ fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
     view! {
         <div class="scene" data-scene="school">
             <div class="scene-head"><div><span class="eyebrow">"내 학교"</span>
-                <h1>"학교 정보"<span class="heading-period">"."</span></h1></div>
+                <h1>"학교 정보"</h1></div>
 </div>
             <section class="content-sheet school-sheet">
                 <span class="eyebrow">"학교 정보"</span>
@@ -641,7 +635,7 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
     view!{
         <div class="scene" data-scene="settings">
             <div class="scene-head"><div><span class="eyebrow">"화면과 정보 관리"</span>
-                <h1>"설정"<span class="heading-period">"."</span></h1></div>
+                <h1>"설정"</h1></div>
 </div>
             <section class="content-sheet settings-sheet">
                 <div class="setting-row"><div><strong>"테마"</strong><small>"밝은 화면 또는 어두운 화면"</small></div>

@@ -1,65 +1,44 @@
-# Flow School V2 — Kinetic Edition / Design System
+# Flow School — Design Authority / Monograph v3 (2026-11-12)
 
-Status: isolated Rust/Leptos WebAssembly prototype on draft PR #273, **NOT production**.
+## Decisive direction
+**Rounded editorial utility.** Not a collage of square editorial slabs and pill controls. The design must feel like *one product*, not multiple aesthetic experiments. V3 replaces the old `Kinetic Edition` with one coherent radius/motion system. User requested a bold design but no useless decoration.
 
-## Creative brief
+### Actual design tokens
+- **Surfaces: 28px** radius. These are *few*: date canvas, lunch surface, event surface, onboarding form.
+- **Rows: 16px** radius, used for hover state, school search choice, week selector. Timetable rows remain transparent until hover: a list, not separate cards.
+- **Controls: 999px** pill. Active mobile dock slides as a single highlight and date selector behaves as one moving selection.
+- Background `#f4f3ee`, text `#171917`, neon-tinted `#d8fc65`, dark field `#191b18`. No borders or gradient decorations. Dark mode uses separate semantic roles.
+- Typography Inter / Pretendard / OS Korean fallback. Hierarchy: prominent date (max 128px desktop, 57px minimum mobile), section title 32–46px, subject 18–24px, metadata 11–13px.
 
-- User instruction (November 12): abandon generic dashboard design, **no visible borders**, use visually bold, real design and animation references.
-- Core job: school timetable, lunch, events in a readable functional daily flow; never sacrifice keyboard/touch affordances and real data for a visual gimmick.
-- Identity: kinetic typography × editorial grid × inverted printed matter. Inspired by expressive studio sites, adapted to school utility. **Not a clone.**
+### Subtractive rules
+- Remove non-functional giant `F` badge and indefinite decorative background motion.
+- Remove `TODAY / FLOW 01`, `01 / PERIODS`, `02 / LUNCH`, `03 / NEXT` visual noise. Korean-first copy.
+- Timetable rows must not show a right-pointing arrow or repeated label '수업' when the row is not clickable.
+- Never add a new card/panel just because an area looks empty. Real information defines composition.
+- Do not repeat brand text in motion overlays. Route wipe spells the **destination** (오늘 / 일정 / 학교 / 설정), which explains what changed.
 
-## References — visual language and implementation details
+### Interaction and motion
+- Tab change: 530ms clipped color wipe with actual destination label; doesn't intercept pointer events. User can interrupt by changing tab again.
+- Date change: 560ms masked numeral rise; the date itself is the moving element.
+- Day selection: 430ms shared lime plate (CSS `:has()` progressive enhancement) with immediate date state update.
+- Bottom dock: 420ms selection plate, keyboard-focus visible.
+- Lesson rows: 400ms entrance with 25ms stagger, no perpetual loops.
+- Meal surface: 530ms single reveal, reduced motion removes it.
+- All interactions have tactile `:active` feedback and `prefers-reduced-motion` option removes animation.
 
-| Source inspected | Source | Decision we actually applied | Explicit non-copy |
-| --- | --- | --- | --- |
-| Studio Edgar | https://edgar.studio/ | Bold black/white type, oversized date numerals, constrained kinetic reveal | No copied lettering/assets, layout, branding, source or motion code |
-| Codrops — Bisous editorial CGI | https://tympanus.net/codrops/2026/06/29/inside-bisous-designing-an-editorial-experience-for-cinematic-cgi/ | Asymmetric 2-column editorial hierarchy; narrow technical microtext vs large display text; quiet neutral palette | Avoid CGI assets/photography and original identity |
-| Codrops — custom transitions | https://tympanus.net/codrops/2026/04/08/creating-custom-page-transitions-in-astro-with-barba-js-and-gsap/ | Two-phase incoming mask and exit, overlapping display typography | No Astro/Barba/GSAP runtime copied into Rust app |
-| Codrops — clip-path layers | https://tympanus.net/codrops/2023/10/31/image-layer-animations-with-clip-path/ | Native CSS clip-path reveal applied as section transition (not a global blur) | Do not reproduce licensed image layers |
-| MDN — View Transitions API | https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API/Using | Future upgrade path for browser-native shared-element continuity; current Rust-keyed transition is CSS to avoid JS dependency | Don't claim View Transitions API is being used when it is not |
-| Material motion | https://m1.material.io/motion/duration-easing.html | Input state ~190–480ms; large cross-screen scene can be ~820ms if user can continue interacting | No long blocking loads |
-| Chrome Modern Web Motion | https://developer.chrome.com/docs/modern-web-guidance/guides/ui-behaviors/motion | Prefer opacity/transform; use clip masks only on overlays; honor reduced motion and focus visibility | No endless ambient loops |
+### Responsive checks
+- 390×844 must show all seven class periods without mobile dock hiding the final row. User opens app for timetable first.
+- 844×390 landscape should retain data access and a compact bottom dock.
+- 768×1024, 1024×768, 1366×768, 1920×1080 have no body horizontal overflow, no cramped cards.
+- Calendar is borderless, marks selection by a circular number inside a 16px hover target, is keyboard-accessible.
+- First fold should show real date and school data, not a hero illustration.
 
-## Four invariants
+## References: use as principles, not copied visuals
+- [Linear Design Refresh](https://linear.app/now/behind-the-latest-design-refresh): chrome minimization and consistent navigation.
+- [Notion Calendar](https://www.notion.com/product/calendar): meaningful date grid and contextual events.
+- [Studio Edgar](https://edgar.studio/): typographic confidence; avoid importing oversized decorative lettering for utility flows.
+- [Codrops clip-path transitions](https://tympanus.net/codrops/2026/04/08/creating-custom-page-transitions-in-astro-with-barba-js-and-gsap/): masking choreography adapted as native CSS, no GSAP/Barba dependency.
+- [MDN animation accessibility](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion): motion preferences and nonessential animation removal.
 
-1. **No decorative borders anywhere**. Layout distinction relies on dramatic typographic scale, ink vs paper field, negative space and a single highlighted dark/lime panel. Focus rings are allowed for accessibility.
-2. **No dashboard cards**. Timetable is a continuous typographic list; lunch becomes an editorial lime slab; events a free-standing text composition.
-3. **One coherent transition model**. Rust updates the tab immediately, mounts a unique indexed CSS-only sweep overlay; an 820ms two-phase mask crosses the viewport with huge type. It is pointer-events:none and is interrupted/replaced on a new tab click.
-4. **Motion must encode a change**. Date numerals reenter on date change, seven-day selector travels on selection, lesson rows stagger only on redraw, mobile dock uses a sliding liquid plate; no random waves or ornamental parallax.
-
-## Visual roles
-
-- Base paper: #f1f0ea; ink: #141513; near-white #f9f9f3.
-- Accent: electric citron #d8ff5b. One accent; used for active selection, date-related focus, the lunch panel and transition sheet.
-- Display: Inter/Pretendard system fallback (no third-party font hosted). 79–206px numerals in hero desktop/mobile variable. Section 32–57px, lesson names 19–29px, metadata 10–13px.
-- Navigation: global header integrated into black band; on mobile a single suspended black bar with shared moving active plate, no card frames.
-- Screen composition: black date canvas / cream timetable field / lime lunch composition. Avoid English decoration on everyday school information; short monospaced-ish technical indices are allowed in display-only context.
-
-## Motion contract
-
-| Trigger | Motion | Time | Fallback |
-| --- | --- | --- | --- |
-| Tab change | Full-viewport mask enters, brief hold, exits toward top, with moving oversized "flow" typography | 820ms | Fade/instant on reduced motion |
-| Date change | Date numerals rise from masked baseline and rotate to rest | 800ms | Immediate content |
-| Day selection | Single lime capsule travels between seven dates | 480ms | Direct active button |
-| Bottom navigation | Single lime capsule follows active tab | 550ms | Direct active button |
-| Lesson list | Rows arrive from below with 40ms interval | 620ms base | Static rows |
-| Lunch | 720ms downward reveal of single contrasting composition | 720ms | Static block |
-| Press/hover | Scale or translate ~190–300ms, immediate input | 190–300ms | Focus-visible outline remains |
-
-Rust is the only controller of tab/date/theme state. CSS owns visual motion; no animation-library JavaScript or DOM observers. Nothing plays continuously during idle.
-
-## Responsive and performance QA
-
-- Matrix: 390x844, 844x390, 768x1024, 1024x768, 1366x768, 1920x1080. No horizontal overflow.
-- 390x844 must show date, day chooser and top of timetable before scrolling. Seven classroom periods must remain reachable and real data visible.
-- Short mobile landscape nav must not obscure actions; UI still scrolls naturally.
-- Week view: all five weekdays accessible, no horizontally hiding selected day; viewport-based list/grid.
-- Motion: test programmatic tab change and confirm overlay exists, default returns to visible state, user can trigger new tab during ongoing animation.
-- The app supports reduced-motion by globally disabling animation and transition.
-- Font scaling and text wrapping, keyboard focus and selected state must be understandable without animation.
-- No visual source/code/asset from references has been copied or included.
-
-## Out of scope and preservation
-
-Existing production Flow domain, AdFit, original School/University/Transit/Admin APIs and PWA remain unchanged. Rust frontend still defaults to original school-data API and Rust Worker native NEIS path remains isolated. Do not merge before full functional parity, live NEIS integration and visual/interaction QA.
+## Deployment ownership and limitations
+Production was already deployed via the pinned Cloudflare bridge `flow-v2/deploy/cloudflare-bridge.mjs`. This branch's V3 source is not published to production until a passing Rust Trunk build and responsive Chromium audit, then the immutable build pin and Worker are updated. User-authorized early rollout is not full school feature parity: original school tools remain at `/legacy`; University, Transit, Admin, legacy PWA remain intact. No direct edits on `main`.

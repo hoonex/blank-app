@@ -51,6 +51,19 @@ for (const [width,height] of sizes) {
     if(!/\d{2}\.\d{2}/.test(h1))throw Error("Unexpected kinetic date heading "+h1);
     if(await page.locator(".day-strip button").count()!==7)throw Error("Seven-day selector missing");
     if(await page.locator(".class-row").count()!==7)throw Error("Fixture timetable not fully visible");
+    if(await page.locator(".hero-shape,.class-arrow,.class-type,.curtain-copy").count()!==0)
+      throw Error("Superfluous ornament or false click affordance remains");
+    const geometry=await page.evaluate(()=>{
+      const radius=s=>parseFloat(getComputedStyle(document.querySelector(s)).borderTopLeftRadius);
+      return {hero:radius(".today-heading"),meal:radius(".meal-sheet"),item:radius(".class-row"),control:radius(".today-reset")};
+    });
+    if(geometry.hero<22||geometry.meal<22||geometry.item<12||geometry.control<15)
+      throw Error("Inconsistent rounded geometry: "+JSON.stringify(geometry));
+    if(width===390){
+      const last=await page.locator(".class-row").last().boundingBox();
+      if(!last||last.y+last.height>770)
+        throw Error("Seven class periods hidden behind navigation: "+JSON.stringify(last));
+    }
     if(width===390) {
       const bounds=await page.locator(".timetable-sheet").boundingBox();
       if(!bounds || bounds.y>500)throw Error("Timetable not visible in mobile first fold: "+JSON.stringify(bounds));
@@ -88,6 +101,9 @@ for (const [width,height] of sizes) {
     const nav = width<=870 ? ".mobile-bottom button" : ".rail-navigation button";
     await page.locator(nav).nth(1).click();
     await page.locator(".transition-curtain").waitFor({state:"attached",timeout:3000});
+    if(await page.locator(".curtain-label").count()!==1)throw Error("No semantic route transition label");
+    if((await page.locator(".curtain-label").innerText()).trim()!=="일정")
+      throw Error("Transition should announce destination, not decorative branding");
     await page.waitForTimeout(300);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
