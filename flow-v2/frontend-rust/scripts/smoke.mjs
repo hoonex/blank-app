@@ -44,6 +44,22 @@ for (const [width,height] of sizes) {
     };
     await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(data)});
   });
+  let busSearchCalls=0,busArrivalCalls=0;
+  await page.route("**/api/bus/search?*",route=>{
+    busSearchCalls++;
+    return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      ok:true,stops:[{id:"7011007300",name:"동대구역건너",number:"02094"},
+                     {id:"7011007200",name:"동대구역앞",number:"20669"}]
+    })});
+  });
+  await page.route("**/api/bus/arrivals?*",route=>{
+    busArrivalCalls++;
+    return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+      ok:true,blocked:false,fetchedAt:"2026-11-12T16:30:00.000Z",
+      buses:[{route:"413",state:"운행종료",previousStop:"운행종료",remainingStops:null,note:""},
+             {route:"618",state:"4분 후 도착",previousStop:"정류장 앞",remainingStops:2,note:""}]
+    })});
+  });
   try {
     await page.goto(base,{waitUntil:"networkidle",timeout:30000});
     await page.locator(".today-heading h1").waitFor({state:"visible",timeout:20000});
@@ -135,37 +151,31 @@ for (const [width,height] of sizes) {
       const navBar=page.locator(".mobile-bottom");
       const base=await navBar.boundingBox();
       const before=await page.evaluate(()=>{
-        const scroller=document.querySelector(".flow-main"),
-              nav=document.querySelector(".mobile-bottom");
-        const main=scroller.getBoundingClientRect(),dock=nav.getBoundingClientRect();
-        return {scrollHeight:scroller.scrollHeight,clientHeight:scroller.clientHeight,
-          navTop:dock.top,mainBottom:main.bottom};
+        const main=document.querySelector(".flow-main").getBoundingClientRect();
+        const el=document.querySelector(".mobile-bottom");
+        return {position:getComputedStyle(el).position,mainBottom:main.bottom,
+          navTop:el.getBoundingClientRect().top};
       });
-      if(before.mainBottom>before.navTop+1)
-        throw Error("Dock overlaps the content scrollport: "+JSON.stringify(before));
-      await page.evaluate(()=>{
-        const scroller=document.querySelector(".flow-main");
-        scroller.scrollTop=scroller.scrollHeight;
-      });
+      if(before.position!=="absolute"||before.mainBottom<before.navTop+12)
+        throw Error("Bottom dock is not genuinely floating: "+JSON.stringify(before));
+      await page.evaluate(()=>{const el=document.querySelector(".flow-main");el.scrollTop=el.scrollHeight;});
       await page.waitForTimeout(200);
       const scrolled=await navBar.boundingBox();
       const metric=await page.evaluate(()=>({
-        height:window.innerHeight,
-        scrollTop:document.querySelector(".flow-main").scrollTop,
-        contentBottom:document.querySelector(".flow-main").getBoundingClientRect().bottom
+        height:window.innerHeight,scrollTop:document.querySelector(".flow-main").scrollTop,
+        contentBottom:document.querySelector(".today-aside").getBoundingClientRect().bottom
       }));
-      const edge=metric.height-26;
       if(!scrolled||!base||metric.scrollTop<100||Math.abs(scrolled.y-base.y)>3||
-         Math.abs((scrolled.y+scrolled.height)-edge)>12||
-         scrolled.x<10 || scrolled.x+scrolled.width>width+1 ||
-         metric.contentBottom>scrolled.y+1)
-        throw Error("Bottom nav not isolated from scrolling content: "+JSON.stringify({before,base,scrolled,metric}));
+          Math.abs(scrolled.y+scrolled.height-(metric.height-5))>10||
+          scrolled.x<10||scrolled.x+scrolled.width>width+1||
+          metric.contentBottom>scrolled.y-6)
+        throw Error("Floating nav occludes content or drifts: "+JSON.stringify({base,scrolled,metric}));
       await page.screenshot({path:shots+"/nav-at-content-bottom-390x844.png"});
       await page.setViewportSize({width:390,height:752});
       await page.waitForTimeout(200);
       const smaller=await navBar.boundingBox();
-      if(!smaller || Math.abs(smaller.y+smaller.height-(752-26))>12)
-        throw Error("Bottom dock shifted during browser viewport collapse: "+JSON.stringify(smaller));
+      if(!smaller||Math.abs(smaller.y+smaller.height-(752-5))>10)
+        throw Error("Floating dock drifted after Chrome viewport resize: "+JSON.stringify(smaller));
       await page.setViewportSize({width,height});
       await page.evaluate(()=>{document.querySelector(".flow-main").scrollTop=0;});
       const buttons=await page.locator(".day-strip button").evaluateAll(nodes=>
@@ -200,8 +210,9 @@ for (const [width,height] of sizes) {
     await page.locator(".calendar-grid").waitFor();
     if(width===390){
       const logo=await page.locator(".brand-lockup").boundingBox();
-      if(!logo||logo.x>35)
-        throw Error("Mobile brand incorrectly centered: "+JSON.stringify(logo));
+      const header=await page.locator(".global-header").boundingBox();
+      if(!logo||!header||logo.x>35||logo.y<header.y-1)
+        throw Error("Mobile logo clipped or centered: "+JSON.stringify({logo,header}));
     }
     if(width===390){
       const summary=await page.locator(".calendar-event-text").filter({hasText:"시험 일정"}).first();
@@ -223,12 +234,21 @@ for (const [width,height] of sizes) {
       throw Error("Calendar must show one selected date");
     if(!(await page.locator(".event-lines").innerText()).trim())
       throw Error("Calendar selection must give contextual event feedback");
+    const initialMonth=await page.locator(".calendar-toolbar h2").innerText();
+    await page.locator(".calendar-grid button.out-month").last().click();
+    if((await page.locator(".calendar-toolbar h2").innerText())===initialMonth)
+      throw Error("Calendar next month not selected");
     await page.getByRole("button",{name:"이번 달",exact:true}).click();
-    const monthControl=await page.getByRole("button",{name:"이번 달",exact:true}).evaluate(el=>{
-      const r=el.getBoundingClientRect(),line=parseFloat(getComputedStyle(el).lineHeight);
-      return {height:r.height,lineHeight:line,scrollHeight:el.scrollHeight,width:r.width};
+    if((await page.locator(".calendar-toolbar h2").innerText())!==initialMonth)
+      throw Error("Month reset failed");
+    const monthControl=await page.locator(".month-actions .month-chevron").first().evaluate(el=>{
+      const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+      return {display:style.display,radius:parseFloat(style.borderRadius),width:r.width};
     });
-    if(monthControl.width<54)throw Error("Month reset label must remain on one line: "+JSON.stringify(monthControl));
+    if(width<=870&&monthControl.display!=="none")
+      throw Error("Mobile month buttons still show sticky black background");
+    if(width>870&&monthControl.radius<16)
+      throw Error("Desktop month controls are not round");
     await page.evaluate(() => {
       const inner=document.querySelector(".flow-main");
       if(window.innerWidth<=870&&inner)inner.scrollTop=0;
@@ -236,6 +256,21 @@ for (const [width,height] of sizes) {
     });
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
+    await page.locator(nav).nth(2).click();
+    await page.locator("#bus-stop-query").waitFor();
+    if(await page.locator('a[href*="businfo.daegu.go.kr"]').count()!==0)
+      throw Error("Bus control still sends users outside Flow");
+    await page.locator("#bus-stop-query").fill("동대구");
+    await page.locator(".bus-search button").click();
+    await page.locator(".bus-stop-option").first().waitFor();
+    if(busSearchCalls!==1)throw Error("Bus search requested multiple times");
+    await page.locator(".bus-stop-option").first().click();
+    await page.locator(".bus-arrival").first().waitFor();
+    const busText=await page.locator(".bus-arrivals").innerText();
+    if(!busText.includes("413")||!busText.includes("운행종료")||
+       !busText.includes("618")||busArrivalCalls!==1)
+      throw Error("Bus arrivals UI did not render real response schema: "+busText);
+    if(width===390)await page.screenshot({path:shots+"/bus-390x844.png"});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
     await page.locator(".setting-toggle").first().click();
