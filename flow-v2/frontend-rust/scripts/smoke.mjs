@@ -88,7 +88,11 @@ for (const [width,height] of sizes) {
       const chosen=await page.locator(".week-grid-header button.today").boundingBox();
       if(!chosen || chosen.y+chosen.height>844-58)throw Error("Selected day is not discoverable in week view without scrolling");
     }
-    await page.evaluate(() => window.scrollTo(0,0));
+    await page.evaluate(() => {
+      const inner=document.querySelector(".flow-main");
+      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
+      else window.scrollTo(0,0);
+    });
     await settleMotion(page);
     await page.screenshot({path:shots+"/week-"+width+"x"+height+".png",fullPage:true});
     await page.getByRole("button",{name:"하루",exact:true}).click();
@@ -105,7 +109,11 @@ for (const [width,height] of sizes) {
     await page.locator(".day-strip button").nth(4).click();
     const restored=await page.locator(".day-strip button.active").innerText();
     if(restored!==oldActive)throw Error("Date carousel did not allow returning via touch-sized items");
-    await page.evaluate(() => window.scrollTo(0,0));
+    await page.evaluate(() => {
+      const inner=document.querySelector(".flow-main");
+      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
+      else window.scrollTo(0,0);
+    });
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
@@ -175,7 +183,12 @@ for (const [width,height] of sizes) {
     });
     if(borderCount)throw Error("Visible structural borders detected: "+borderCount);
     const nav = width<=870 ? ".mobile-bottom button" : ".rail-navigation button";
+    if(width===390)await page.evaluate(()=>{document.querySelector(".flow-main").scrollTop=150;});
     await page.locator(nav).nth(1).click();
+    if(width===390){
+      const top=await page.evaluate(()=>document.querySelector(".flow-main").scrollTop);
+      if(top!==0)throw Error("Tab switch inherited the previous scroll offset: "+top);
+    }
     await page.locator(".scene[data-scene='calendar']").waitFor({state:"visible",timeout:3000});
     if(await page.locator(".transition-curtain").count()!==0)
       throw Error("Old full-screen transition curtain still blocks page");
@@ -185,6 +198,11 @@ for (const [width,height] of sizes) {
     await page.waitForTimeout(135);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
+    if(width===390){
+      const logo=await page.locator(".brand-lockup").boundingBox();
+      if(!logo||logo.x>35)
+        throw Error("Mobile brand incorrectly centered: "+JSON.stringify(logo));
+    }
     if(width===390){
       const summary=await page.locator(".calendar-event-text").filter({hasText:"시험 일정"}).first();
       const dot=await summary.evaluate(el=>{
@@ -211,14 +229,22 @@ for (const [width,height] of sizes) {
       return {height:r.height,lineHeight:line,scrollHeight:el.scrollHeight,width:r.width};
     });
     if(monthControl.width<54)throw Error("Month reset label must remain on one line: "+JSON.stringify(monthControl));
-    await page.evaluate(() => window.scrollTo(0,0));
+    await page.evaluate(() => {
+      const inner=document.querySelector(".flow-main");
+      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
+      else window.scrollTo(0,0);
+    });
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
     await page.locator(".setting-toggle").first().click();
     if ((await page.locator("html").getAttribute("data-theme"))!=="dark")throw Error("Dark-mode toggle broken");
-    await page.evaluate(() => window.scrollTo(0,0));
+    await page.evaluate(() => {
+      const inner=document.querySelector(".flow-main");
+      if(window.innerWidth<=870&&inner)inner.scrollTop=0;
+      else window.scrollTo(0,0);
+    });
     await settleMotion(page);
     await page.screenshot({path:shots+"/dark-"+width+"x"+height+".png",fullPage:true});
     const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);

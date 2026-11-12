@@ -226,6 +226,11 @@ fn drag_position(event: &web_sys::TouchEvent, selector: &str, count: usize, gap:
 fn switch_section(next:Tab, current:RwSignal<Tab>, motion:RwSignal<usize>, direction:RwSignal<i32>) {
     if current.get_untracked() != next {
         direction.set(if next.index()>current.get_untracked().index(){1}else{-1});
+        // A new tab starts at the top of its independent scrollport.
+        if let Some(main)=web_sys::window().and_then(|w|w.document())
+            .and_then(|doc|doc.query_selector(".flow-main").ok().flatten()) {
+            main.set_scroll_top(0);
+        }
         current.set(next);
         motion.update(|n|*n+=1);
     }
