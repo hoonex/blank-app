@@ -90,6 +90,15 @@ for (const [width,height] of sizes) {
     await settleMotion(page);
     await page.screenshot({path:shots+"/today-fold-"+width+"x"+height+".png"});
     await page.screenshot({path:shots+"/today-"+width+"x"+height+".png",fullPage:true});
+
+    if(width===768||width===844){
+      const align=await page.evaluate(()=>{
+        const a=document.querySelector(".timetable-sheet").getBoundingClientRect();
+        const b=document.querySelector(".meal-sheet").getBoundingClientRect();
+        return {sameRow:Math.abs(a.top-b.top)<70,ratio:b.width/window.innerWidth};
+      });
+      if(!align.sameRow || align.ratio<.27)throw Error("Tablet information columns are not balanced: "+JSON.stringify(align));
+    }
     const borderCount=await page.evaluate(()=>{
       const targets=[...document.querySelectorAll(".today-heading,.class-row,.meal-sheet,.day-strip,.week-sheet")];
       return targets.filter(node=>{
@@ -107,6 +116,11 @@ for (const [width,height] of sizes) {
     await page.waitForTimeout(300);
     if(width===390)await page.screenshot({path:shots+"/page-transition-"+width+"x"+height+".png"});
     await page.locator(".calendar-grid").waitFor();
+    const monthControl=await page.getByRole("button",{name:"이번 달",exact:true}).evaluate(el=>{
+      const r=el.getBoundingClientRect(),line=parseFloat(getComputedStyle(el).lineHeight);
+      return {height:r.height,lineHeight:line,scrollHeight:el.scrollHeight,width:r.width};
+    });
+    if(monthControl.width<54)throw Error("Month reset label must remain on one line: "+JSON.stringify(monthControl));
     await page.evaluate(() => window.scrollTo(0,0));
     await settleMotion(page);
     await page.screenshot({path:shots+"/schedule-"+width+"x"+height+".png",fullPage:true});

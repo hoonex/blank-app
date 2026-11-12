@@ -394,7 +394,7 @@ fn Today(
                 </div>
                 <div class="hero-core">
                     <div class="hero-date">
-                        <span class="hero-small">"선택한 날짜"</span>
+                        
                         <h1>
                             <span class="date-motion">
                                 <For each=move ||vec![ymd(date.get())] key=|v|v.clone()
@@ -487,9 +487,9 @@ fn Today(
                 <aside class="today-aside">
                     <section class="meal-sheet">
                         <div class="aside-top">
-                            <span>"급식"</span><span>"점심"</span>
+                            <span>"오늘의 급식"</span>
                         </div>
-                        <h2>"점심" <em>"급식"</em></h2>
+                        <h2>"점심 메뉴"</h2>
                         <Show when=move ||meals().is_some()
                             fallback=||view!{<p class="empty-note">"오늘은 급식 정보가 없어요."</p>}>
                             <ul class="meal-list">
@@ -523,7 +523,7 @@ fn Schedule(
             <header class="scene-head">
                 <span class="hero-tag">"학교 일정"</span>
                 <h1>"일정"</h1>
-                <p>"다가오는 날들을 한눈에."</p>
+                
             </header>
             <div class="calendar-toolbar">
                 <h2>{month}</h2>
@@ -584,12 +584,12 @@ fn Schedule(
                     </div>
                 </section>
                 <section class="event-sheet">
-                    <div class="aside-top"><span>"이번 달 일정"</span>
+                    <div class="aside-top"><span>"학사일정"</span>
                         <span>{move ||if busy.get(){"불러오는 중".to_owned()}else{
                             let ym=date.get().format("%Y%m").to_string();
                             format!("{}개의 일정",events().iter().filter(|e|e.date.starts_with(&ym)).count())
                         }}</span></div>
-                    <h2>"이번 달 일정"</h2>
+                    <h2>"이번 달"</h2>
                     <div class="event-lines">
                         {move ||{
                             let ym=date.get().format("%Y%m").to_string();
