@@ -224,7 +224,7 @@ for (const [width,height] of sizes) {
       const toggle=await page.locator(".switch-track").boundingBox();
       await touchSlide(toggle.x+toggle.width*.25,toggle.y+toggle.height*.5,
                       toggle.x+toggle.width*.75,toggle.y+toggle.height*.5);
-      if(!(await page.locator(".week-sheet").isVisible()))
+      if(!(await page.locator(".week-grid").isVisible()))
         throw Error("Day/Week segmented drag did not switch to Week");
       if(await page.locator(".switch-track").getAttribute("data-dragging")!=="false")
         throw Error("Segmented control never released drag");
