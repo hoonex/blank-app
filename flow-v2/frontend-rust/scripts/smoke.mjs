@@ -126,16 +126,40 @@ for (const [width,height] of sizes) {
       if(accent!=="#d98570")throw Error("Muted terracotta accent not applied: "+accent);
       const navBar=page.locator(".mobile-bottom");
       const base=await navBar.boundingBox();
-      await page.evaluate(()=>window.scrollTo({top:Math.max(500,document.body.scrollHeight),behavior:"instant"}));
-      await page.waitForTimeout(400);
+      const before=await page.evaluate(()=>{
+        const scroller=document.querySelector(".flow-main"),
+              nav=document.querySelector(".mobile-bottom");
+        const main=scroller.getBoundingClientRect(),dock=nav.getBoundingClientRect();
+        return {scrollHeight:scroller.scrollHeight,clientHeight:scroller.clientHeight,
+          navTop:dock.top,mainBottom:main.bottom};
+      });
+      if(before.mainBottom>before.navTop+1)
+        throw Error("Dock overlaps the content scrollport: "+JSON.stringify(before));
+      await page.evaluate(()=>{
+        const scroller=document.querySelector(".flow-main");
+        scroller.scrollTop=scroller.scrollHeight;
+      });
+      await page.waitForTimeout(200);
       const scrolled=await navBar.boundingBox();
-      const metric=await page.evaluate(()=>({height:window.innerHeight,scrollY:window.scrollY}));
-      const edge=metric.height-34;
-      if(!scrolled||!base||Math.abs(scrolled.y-base.y)>3||
-         Math.abs((scrolled.y+scrolled.height)-edge)>12 ||
-         scrolled.x<10 || scrolled.x+scrolled.width>windowWidth()+1)
-        throw Error("Bottom tab bar moves or escapes viewport during scroll: "+JSON.stringify({base,scrolled,metric}));
-      function windowWidth(){return width;}
+      const metric=await page.evaluate(()=>({
+        height:window.innerHeight,
+        scrollTop:document.querySelector(".flow-main").scrollTop,
+        contentBottom:document.querySelector(".flow-main").getBoundingClientRect().bottom
+      }));
+      const edge=metric.height-26;
+      if(!scrolled||!base||metric.scrollTop<100||Math.abs(scrolled.y-base.y)>3||
+         Math.abs((scrolled.y+scrolled.height)-edge)>12||
+         scrolled.x<10 || scrolled.x+scrolled.width>width+1 ||
+         metric.contentBottom>scrolled.y+1)
+        throw Error("Bottom nav not isolated from scrolling content: "+JSON.stringify({before,base,scrolled,metric}));
+      await page.screenshot({path:shots+"/nav-at-content-bottom-390x844.png"});
+      await page.setViewportSize({width:390,height:752});
+      await page.waitForTimeout(200);
+      const smaller=await navBar.boundingBox();
+      if(!smaller || Math.abs(smaller.y+smaller.height-(752-26))>12)
+        throw Error("Bottom dock shifted during browser viewport collapse: "+JSON.stringify(smaller));
+      await page.setViewportSize({width,height});
+      await page.evaluate(()=>{document.querySelector(".flow-main").scrollTop=0;});
       const buttons=await page.locator(".day-strip button").evaluateAll(nodes=>
         nodes.map(el=>el.getBoundingClientRect().width));
       if(buttons.length!==5||Math.min(...buttons)<52)
