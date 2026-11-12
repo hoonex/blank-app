@@ -111,9 +111,13 @@ async function busProxy(request,path){
     else if(!Array.isArray(body.list))return busJSON({ok:false,error:BUS_ERRORS.unavailable},502);
     else output={ok:true,blocked:false,buses:body.list.slice(0,90).map(item=>{
       const gap=Number(item.bsGap);
+      const rawState=String(item.arrState||item.bsNm||"도착정보 없음");
+      // BIS abbreviates one/two stops away as "전" and "전전".
+      // Pair a readable status with the exact provider stop count below.
+      const readableState=(rawState==="전"||rawState==="전전")?"접근 중":rawState;
       return {
         route:String(item.routeNo||"").slice(0,30),
-        state:String(item.arrState||item.bsNm||"도착정보 없음").slice(0,90),
+        state:readableState.slice(0,90),
         previousStop:String(item.bsNm||"").slice(0,90),
         remainingStops:Number.isFinite(gap)&&gap>=0?gap:null,
         note:String(item.routeNote||"").slice(0,120)

@@ -25,3 +25,9 @@ Verified in Cloudflare's separate test Worker on 2026-11-13 KST.
 2. Test busy stops and route status distinctions (e.g. 운행종료, 출발예정, 1개 정류장 전) and display updated-at time.
 3. Observe actual Samsung Chrome dynamic toolbar and bottom gesture indicator while scrolling School tab.
 4. Add route path / stop-to-stop details only after confirming true provider data, not guessed bus coordinates.
+
+## 2026-11-13 production validation and small accessibility fix
+
+- Production `/api/bus/search?q=동대구역` returned 11 actual stop matches (including 동대구역 ID 7011006700).
+- Production `/api/bus/arrivals?stopId=7011006800` returned 14 actual buses and a provider fetch timestamp. The source uses compact `arrState` values `전`, `전전`; the bridge maps only these status strings to `접근 중` and continues to display the provider `bsGap` numeric count (e.g. 1 or 2 stops), without inventing an ETA. Other states (e.g. `출발예정`, `7분`) remain unchanged.
+- Worker version before this wording patch: `d63380ab-8424-4b9d-817d-1c66077ea5cd`, rollback target if needed.
