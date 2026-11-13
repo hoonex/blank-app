@@ -110,3 +110,13 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - New Rust timetable editor: 1–9th period for selected day, write localStorage scoped by office/school/grade/class/date/period, shown in Day and Week, restore provider original anytime. No provider data is overwritten, local device only; not cloud-synced.
 - All links to `/legacy`, `/transit` and external schoolinfo removed from Rust UI, no previous-version messages or buttons. Only `/university` retained as clickable anchor. Old routes remain internally addressable as backwards compatibility, not as UI navigation.
 - Prior production Worker `5840c44b-27aa-4cfc-a320-45051adb82d9` and asset pin `bf350345ba852081c64cf7e9c61d9164c9820f9f` are rollback references.
+
+## 2026-11-13 verified production deploy — no legacy UI links
+
+- Worker version `d276815e-cd8f-4018-9df0-3eb35d92d7c4`; old immediate rollback `5840c44b-27aa-4cfc-a320-45051adb82d9`.
+- Static release `c96fc8a5f80a9e82f22ec9486e5b6f835133abe7` from `flow-v2-monograph-v4-636f782e849f`, source `636f782e849f4c3dd65b9771b0bde2e360a9fc36`.
+- Full Chromium CI `43334884116` passed 6 viewports, including edit Save → visible row changes → reload persistence → official source restore, and /university-only UI link assertion. Initial red CI run `43334403705` revealed stale keyed Leptos row; fixed via subject-aware row key and reran successfully.
+- Preview Cloudflare Worker verified new assets and 200 for /university, /legacy and bus search endpoint; production root verified new JS/CSS and mounted Rust WASM.
+- No UI link points to legacy, transit or external schoolinfo. The only user-facing anchor is University; previous routes are left reachable for compatibility/rollback but invisible from Rust nav.
+- Native timetable edit overrides are stored separately in device localStorage under `flow-school-timetable-overrides-v1`, scoped to office, school, grade, class, date and period. The NEIS original can be restored at any time; no cross-device syncing has been added.
+- Next migration tasks: investigate and port any remaining legacy-only user features into Rust (instead of recreating old-version links), expand persistence to authenticated sync if required, and complete physical Android Chrome browser acceptance.
