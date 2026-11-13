@@ -92,7 +92,7 @@
         for (const node of choices.children) node.classList.remove('active');
         option.classList.add('active');
         status('선택한 정류장: ' + point.place_name + ' · ' + sourceLabel +
-          ' (동일한 정류장 이름이 여러 곳일 수 있어요)');
+          (sourceLabel.includes('BIS 원본') ? '' : ' (동일한 정류장 이름이 여러 곳일 수 있어요)'));
       };
       option.addEventListener('click', focus);
       k.event.addListener(marker,'click',focus);
@@ -106,7 +106,12 @@
         sourceLabel + ' · 지도 핀이나 아래 위치를 선택해 주세요.');
     }
   }
-  window.flowBusMapOpen = async name => {
+  window.flowBusMapOpen = async stopPayload => {
+    let stop = null;
+    try {
+      stop = typeof stopPayload === "string" ? JSON.parse(stopPayload) : stopPayload;
+    } catch (_) { stop = {name:String(stopPayload||"")}; }
+    const name = String(stop?.name||"").trim();
     const token = ++generation;
     const box = document.getElementById('flow-bus-map-canvas');
     if (!box) return;
@@ -116,10 +121,16 @@
       return;
     }
     if (token !== generation || !document.getElementById('flow-bus-map-canvas')) return;
-    // GPS values are from Daegu City's public 2026-09-02 stop coordinates,
-    // not an unreliable general-places search. This dataset lacks a BIS ID;
-    // matching is by exact station name, with all same-name points selectable.
+    // Prefer the exact stop-ID's coordinates returned by the Daegu BIS
+    // search endpoint (EPSG:5187 -> WGS84 in the Worker). The older public
+    // 2026-09 GPS list remains a fallback for saved/pre-migration records.
     try {
+      if (stop && Number.isFinite(stop.lat) && Number.isFinite(stop.lng) &&
+          validPoint({y:stop.lat,x:stop.lng})) {
+        const exact=[{place_name:name,x:stop.lng,y:stop.lat}];
+        showCandidates(exact,name,token,'대구 BIS 원본 정류장 좌표');
+        return;
+      }
       const official = (await officialStops())
         .filter(row=>Array.isArray(row)&&norm(row[0])===norm(name))
         .map(row=>({place_name:row[0],y:row[1],x:row[2]}))

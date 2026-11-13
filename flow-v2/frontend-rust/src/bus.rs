@@ -5,7 +5,6 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::spawn_local;
-use crate::bus_map::render_stop_map;
 use wasm_bindgen::{JsCast,JsValue};
 
 const BUS_STOP_KEY: &str = "flow-daegu-favorite-stop-v1";
@@ -15,10 +14,8 @@ struct BusStop {
     id: String,
     name: String,
     number: String,
-    #[serde(default)]
-    lat: Option<f64>,
-    #[serde(default)]
-    lng: Option<f64>,
+    #[serde(default)] lat: Option<f64>,
+    #[serde(default)] lng: Option<f64>,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,10 +46,6 @@ struct ArrivalPayload {
     reason: Option<String>,
     fetched_at: Option<String>,
     error: Option<String>,
-}
-fn has_location(s:&BusStop)->bool {
-    matches!((s.lat,s.lng),(Some(lat),Some(lng))
-        if lat>=35.4&&lat<=36.5&&lng>=127.7&&lng<=129.4)
 }
 fn local_stop() -> Option<BusStop> {
     let storage=web_sys::window()?.local_storage().ok()??;
@@ -140,12 +133,14 @@ fn refresh_arrivals(
         }
     });
 }
-fn map_command(name:&str,show:bool){
+fn map_command(stop:Option<&BusStop>,show:bool){
     let Some(window)=web_sys::window() else{return};
     let fn_name=if show{"flowBusMapOpen"}else{"flowBusMapClose"};
     if let Ok(value)=js_sys::Reflect::get(window.as_ref(),&JsValue::from_str(fn_name)){
         if let Some(function)=value.dyn_ref::<js_sys::Function>(){
-            let _=function.call1(window.as_ref(),&JsValue::from_str(name));
+            let json=stop.and_then(|s|serde_json::to_string(s).ok())
+                .unwrap_or_else(||"null".to_string());
+            let _=function.call1(window.as_ref(),&JsValue::from_str(&json));
         }
     }
 }
@@ -164,30 +159,6 @@ pub fn BusInfo()->impl IntoView {
     let fetched_at=RwSignal::new(String::new());
     let seq_arrival=RwSignal::new(0u64);
     let loaded_stop=RwSignal::new(String::new());
-    let map_host=NodeRef::<leptos::html::Div>::new();
-    let map_search_attempted=RwSignal::new(false);
-    // A favorite from the old release does not contain coordinates. Resolve
-    // it from the authoritative BIS stop ID via name search, without guessing.
-    Effect::new(move |_|{
-        if let Some(saved)=selected.get(){
-            if !has_location(&saved) && !map_search_attempted.get_untracked(){
-                map_search_attempted.set(true);
-                query.set(saved.name.clone());
-                find_stops(saved.name,results,busy_search,search_message,seq_search);
-            }
-        }
-    });
-    Effect::new(move |_|{
-        let matches=results.get();
-        let favorite=selected.get();
-        let items=if matches.iter().any(has_location) {matches}
-            else {favorite.clone().into_iter().filter(has_location).collect()};
-        let id=favorite.map(|s|s.id).unwrap_or_default();
-        if let Some(_node)=map_host.get(){
-            let json=serde_json::to_string(&items).unwrap_or_else(|_|"[]".into());
-            render_stop_map(&json,&id);
-        }
-    });
     let map_open=RwSignal::new(false);
     Effect::new(move |_|{
         if let Some(stop)=selected.get() {
@@ -202,9 +173,9 @@ pub fn BusInfo()->impl IntoView {
         let open=map_open.get();
         let stop=selected.get();
         if open{
-            if let Some(s)=stop {map_command(&s.name,true);}
+            if let Some(ref s)=stop {map_command(Some(s),true);}
         }else{
-            map_command("",false);
+            map_command(None,false);
         }
     });
     view! {
@@ -237,8 +208,7 @@ pub fn BusInfo()->impl IntoView {
                     <For each=move ||results.get() key=|s|s.id.clone() children=move |stop|{
                         let clicked=stop.clone();
                         view! {
-                            <button type="button" class="bus-stop-option"
-                                data-bus-stop-id=stop.id.clone() on:click=move |_|{
+                            <button type="button" class="bus-stop-option" on:click=move |_|{
                                 save_stop(&clicked);
                                 selected.set(Some(clicked.clone()));
                                 // If the map is open, the reactive effect searches
@@ -252,18 +222,6 @@ pub fn BusInfo()->impl IntoView {
                         }
                     }/>
                 </div>
-            </Show>
-            <Show when=move ||results.get().iter().any(has_location) ||
-                selected.get().as_ref().is_some_and(has_location)>
-                <section class="bus-map-wrap" aria-label="정류장 위치 지도">
-                    <div class="bus-map-heading">
-                        <strong>"정류장 위치"</strong>
-                        <span>"카카오맵 · 대구시 정류장 좌표"</span>
-                    </div>
-                    <div class="bus-map-canvas" id="flow-kakao-bus-map" node_ref=map_host
-                        role="application" aria-label="대구 버스정류장 위치를 표시한 지도"></div>
-                    <p class="bus-map-status" role="status">"정류장 지도를 준비하고 있어요."</p>
-                </section>
             </Show>
             <Show when=move ||selected.get().is_some()
                 fallback=move ||view!{<p class="bus-empty">"정류장을 검색해 선택하면 이곳에서 도착정보를 볼 수 있어요."</p>}>
@@ -293,7 +251,7 @@ pub fn BusInfo()->impl IntoView {
                         <section class="bus-map" id="flow-bus-map" aria-label="카카오 지도 정류장 위치">
                             <div class="bus-map-heading">
                                 <strong>"정류장 위치"</strong>
-                                <small>"대구시 공개 정류소 GPS · 2026.09 / 카카오 지도"</small>
+                                <small>"대구 BIS 원본 좌표 · 카카오 지도"</small>
                             </div>
                             <div class="bus-map-canvas" id="flow-bus-map-canvas" role="application"
                                 aria-label="드래그 및 확대 가능한 정류장 지도"></div>
