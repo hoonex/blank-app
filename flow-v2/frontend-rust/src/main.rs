@@ -279,6 +279,21 @@ fn App() -> impl IntoView {
         }
     });
 
+    // AdFit was already approved/configured for the original School site.
+    // The Rust migration dropped its DOM slot. Restore the same unmodified unit
+    // only after a school profile exists, and load the official SDK once.
+    Effect::new(move |_| {
+        if profile.get().is_some() {
+            if let Some(window)=web_sys::window(){
+                if let Ok(value)=js_sys::Reflect::get(window.as_ref(),
+                    &wasm_bindgen::JsValue::from_str("flowAdfitStart")){
+                    if let Some(call)=value.dyn_ref::<js_sys::Function>(){
+                        let _=call.call0(window.as_ref());
+                    }
+                }
+            }
+        }
+    });
     Effect::new(move |_| {
         if let Some(saved) = profile.get() {
             let day = date.get();
@@ -365,6 +380,14 @@ fn App() -> impl IntoView {
                         Tab::Settings => view!{<Settings dark=dark profile=profile/>}.into_any(),
                     }}
                 </main>
+                <aside class="flow-adfit-native" aria-label="광고 영역">
+                    <span class="flow-adfit-caption">"광고"</span>
+                    <ins class="kakao_ad_area" style="display:none;width:100%;"
+                        data-ad-unit="DAN-ovpJn5XCBs1n1owQ"
+                        data-ad-width="320"
+                        data-ad-height="100"
+                        aria-label="Kakao AdFit 광고"></ins>
+                </aside>
                 <nav class="mobile-bottom" aria-label="모바일 메뉴" data-dragging=move ||if nav_drag_x.get().is_some(){"true"}else{"false"}
                     style=move ||format!("--nav-drag-x:{:.1}px",nav_drag_x.get().unwrap_or(0.))
                     on:touchstart=move |ev| {
