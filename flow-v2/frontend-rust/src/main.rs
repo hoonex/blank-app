@@ -334,7 +334,7 @@ fn App() -> impl IntoView {
                         if !mobile_viewport() {return;}
                         // Horizontal navigation never steals taps on content controls.
                         if let Some(element)=ev.target().and_then(|t|t.dyn_into::<web_sys::Element>().ok()){
-                            if element.closest("button,a,input,textarea,select,[contenteditable],.calendar-grid,.calendar-sheet,.day-strip,.week-grid").ok().flatten().is_some(){
+                            if element.closest("button,a,input,textarea,select,[contenteditable],.calendar-grid,.calendar-sheet,.day-carousel,.day-strip,.week-grid").ok().flatten().is_some(){
                                 scene_swipe.set(None);return;
                             }
                         }

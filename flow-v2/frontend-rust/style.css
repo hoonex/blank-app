@@ -579,7 +579,9 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
 @media(max-width:870px) and (orientation:landscape) and (max-height:440px){
  .global-header{height:45px}
  .today-heading{padding:10px 16px}
- .hero-topline{display:none}
+ .hero-topline{display:flex;position:absolute;top:8px;right:16px;left:auto;z-index:2}
+ .hero-topline .hero-tag,.hero-topline .hero-school{display:none}
+ .hero-topline .return-to-today{font-size:10px;padding:4px 7px;background:#2d302b}
  .hero-core{min-height:56px}
  .hero-small{display:none}
  .hero-numeral{font-size:53px}

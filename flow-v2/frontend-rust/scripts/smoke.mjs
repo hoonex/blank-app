@@ -7,7 +7,7 @@ const shots = "flow-v2/frontend-rust/screenshots";
 await mkdir(shots, { recursive: true });
 
 const sizes = [
-  [390,844],[844,390],[768,1024],[1024,768],[1366,768],[1920,1080]
+  [390,844],[844,390],[768,1024],[1024,768],[1366,768],[1536,960],[1920,1080]
 ];
 let failures = 0;
 async function settleMotion(page) {
