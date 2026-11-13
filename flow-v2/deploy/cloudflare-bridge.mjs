@@ -44,6 +44,33 @@ async function proxy(rel,version,request){
   return new Response(request.method==="HEAD"?null:upstream.body,{status:200,headers});
 }
 
+/* Daegu BIS ngisXPos/ngisYPos is KGD2002 / East Belt 2010 (EPSG:5187),
+   in metres, not WGS84 latitude/longitude. GRS80 inverse Transverse Mercator.
+   Incorrect or out-of-Daegu coordinates must never produce a guessed marker. */
+function daeguNgisToGps(rawX,rawY){
+  const x=Number(rawX),y=Number(rawY);
+  if(!Number.isFinite(x)||!Number.isFinite(y)||x<100000||x>300000||y<250000||y>500000)return null;
+  const a=6378137,f=1/298.257222101,e2=2*f-f*f,ep2=e2/(1-e2),rad=Math.PI/180;
+  const a0=1-e2/4-3*e2**2/64-5*e2**3/256,
+    a2=3*e2/8+3*e2**2/32+45*e2**3/1024,
+    a4=15*e2**2/256+45*e2**3/1024,a6=35*e2**3/3072;
+  const arc=t=>a*(a0*t-a2*Math.sin(2*t)+a4*Math.sin(4*t)-a6*Math.sin(6*t));
+  const mu=(arc(38*rad)+(y-600000))/(a*a0),
+    e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+
+    (21*e1**2/16-55*e1**4/32)*Math.sin(4*mu)+
+    (151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const sn=Math.sin(p),cs=Math.cos(p),tn=Math.tan(p),t=tn*tn,c=ep2*cs*cs,
+    n=a/Math.sqrt(1-e2*sn*sn),
+    r=a*(1-e2)/(1-e2*sn*sn)**1.5,d=(x-200000)/n;
+  const lat=(p-n*tn/r*(d*d/2-(5+3*t+10*c-4*c*c-9*ep2)*d**4/24+
+    (61+90*t+298*c+45*t*t-252*ep2-3*c*c)*d**6/720))/rad;
+  const lng=(129*rad+(d-(1+2*t+c)*d**3/6+
+    (5-2*c+28*t-3*c*c+8*ep2+24*t*t)*d**5/120)/cs)/rad;
+  return lat>=35.4&&lat<=36.5&&lng>=127.7&&lng<=129.4?
+    {lat:Math.round(lat*1e7)/1e7,lng:Math.round(lng*1e7)/1e7}:null;
+}
+
 /* A deliberately narrow bridge for the public Daegu BIS web data endpoints.
    This is the same unauthenticated JSON endpoint the public BIS site uses,
    not a paid Kakao API. Never let the client choose an origin or path. */
@@ -101,7 +128,8 @@ async function busProxy(request,path){
     const items=source.body.filter(x=>/^\d{10}$/.test(String(x.bsId||"")))
       .slice(0,35).map(x=>({
         id:String(x.bsId),name:String(x.bsNm||"").slice(0,90),
-        number:String(x.wincId||"").slice(0,14)
+        number:String(x.wincId||"").slice(0,14),
+        ...daeguNgisToGps(x.ngisXPos,x.ngisYPos)
       }));
     output={ok:true,source:"대구광역시 버스정보시스템",stops:items};
   }else{
