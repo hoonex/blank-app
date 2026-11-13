@@ -247,7 +247,7 @@ pub fn BusInfo()->impl IntoView {
                         <section class="bus-map" id="flow-bus-map" aria-label="카카오 지도 정류장 위치">
                             <div class="bus-map-heading">
                                 <strong>"정류장 위치"</strong>
-                                <small>"카카오 지도 검색 결과 · 동명이소 주의"</small>
+                                <small>"대구시 공개 정류소 GPS · 2026.09 / 카카오 지도"</small>
                             </div>
                             <div class="bus-map-canvas" id="flow-bus-map-canvas" role="application"
                                 aria-label="드래그 및 확대 가능한 정류장 지도"></div>

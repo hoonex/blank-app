@@ -360,14 +360,18 @@ for (const [width,height] of sizes) {
       throw Error("Bus arrivals UI did not render real response schema: "+busText);
     await page.getByRole("button",{name:"지도 보기"}).click();
     await page.locator("#flow-bus-map-canvas").waitFor({state:"visible"});
-    await page.waitForFunction(()=>document.querySelectorAll(".bus-map-choice").length===2,
+    await page.waitForFunction(()=>document.querySelectorAll(".bus-map-choice").length===1,
       null,{timeout:4000});
     const markerSource=await page.locator("#flow-bus-map-status").innerText();
-    if(!markerSource.includes("위치")||!(await page.locator(".bus-map-heading").innerText()).includes("카카오"))
-      throw Error("Map did not expose Kakao search candidates and provenance: "+markerSource);
-    await page.locator(".bus-map-choice").last().click();
-    if(!(await page.locator("#flow-bus-map-status").innerText()).includes("선택한 장소"))
-      throw Error("Map candidate cannot be selected");
+    if(!markerSource.includes("대구시 공개 GPS")||
+       !(await page.locator(".bus-map-heading").innerText()).includes("카카오"))
+      throw Error("Map ignored the official 2026 stop GPS file: "+markerSource);
+    const officialPoint=await page.locator(".bus-map-choice").first().innerText();
+    if(!officialPoint.includes("동대구역건너"))
+      throw Error("Official stop name and displayed pin disagree");
+    await page.locator(".bus-map-choice").first().click();
+    if(!(await page.locator("#flow-bus-map-status").innerText()).includes("선택한 정류장"))
+      throw Error("Official map pin cannot be focused");
     if(await page.evaluate(()=>window.__kakaoMapInstalls)!==1)
       throw Error("Map was repeatedly initialized instead of reusing one instance");
     if(width===390)await page.screenshot({path:shots+"/bus-map-390x844.png"});
