@@ -1,5 +1,7 @@
 mod bus;
+mod timetable;
 use bus::BusInfo;
+use timetable::{TimetableEditor,TimetableOverride};
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use gloo_net::http::Request;
 use leptos::prelude::*;
@@ -254,6 +256,7 @@ fn App() -> impl IntoView {
     let tab = RwSignal::new(Tab::Today);
     let date = RwSignal::new(today_local());
     let dashboard = RwSignal::<Option<Dashboard>>::new(None);
+    let timetable_overrides=RwSignal::<Vec<TimetableOverride>>::new(timetable::initial());
     let error = RwSignal::new(String::new());
     let busy = RwSignal::new(false);
     let serial = RwSignal::new(0u64);
@@ -354,7 +357,8 @@ fn App() -> impl IntoView {
                     {move ||match tab.get(){
                         Tab::Today => view!{<Today data=dashboard date=date
                             profile=profile busy=busy error=error
-                            tab=tab page_motion=page_motion direction=direction/>}.into_any(),
+                            tab=tab page_motion=page_motion direction=direction
+                            overrides=timetable_overrides/>}.into_any(),
                         Tab::Schedule => view!{<Schedule data=dashboard date=date
                             profile=profile busy=busy error=error/>}.into_any(),
                         Tab::School => view!{<SchoolInfo profile=profile/>}.into_any(),
@@ -493,9 +497,11 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
 fn Today(
     data:RwSignal<Option<Dashboard>>, date:RwSignal<NaiveDate>,
     profile:RwSignal<Option<Profile>>, busy:RwSignal<bool>,error:RwSignal<String>,
-    tab:RwSignal<Tab>,page_motion:RwSignal<usize>,direction:RwSignal<i32>
+    tab:RwSignal<Tab>,page_motion:RwSignal<usize>,direction:RwSignal<i32>,
+    overrides:RwSignal<Vec<TimetableOverride>>
 )->impl IntoView{
     let week_mode=RwSignal::new(false);
+    let editor_open=RwSignal::new(false);
     let date_touch=RwSignal::<Option<(i32,i32)>>::new(None);
     let date_drag=RwSignal::new(0.0f64);
     let date_direction=RwSignal::new(1i32);
@@ -505,7 +511,10 @@ fn Today(
     let toggle_preview=RwSignal::<Option<bool>>::new(None);
     let toggle_suppress_click=RwSignal::new(false);
     let selected=move ||date.get();
-    let lessons=move ||data.get().as_ref().map(|d|today_lessons(d,selected())).unwrap_or_default();
+    let lessons=move ||{
+        let raw=data.get();let selected_profile=profile.get();let saved=overrides.get();
+        timetable::day_lessons(raw.as_ref(),selected_profile.as_ref(),selected(),&saved)
+    };
     let meals=move ||data.get().as_ref().and_then(|d|today_meal(d,selected()));
     let next=move ||data.get().as_ref().and_then(|d|choose_events(d,
         profile.get().map(|p|p.grade).unwrap_or(1)).into_iter()
@@ -610,6 +619,12 @@ fn Today(
                                 if busy.get(){"··".to_owned()}else{format!("{:02}",lessons().len())}
                             }</span></h2>
                         </div>
+                        <div class="module-controls">
+                        <button type="button" class="edit-timetable-trigger"
+                            aria-expanded=move ||editor_open.get()
+                            on:click=move |_|editor_open.update(|v|*v=!*v)>
+                            {move ||if editor_open.get(){"수정 닫기"}else{"과목 수정"}}
+                        </button>
                         <div class="switch-track" role="group" aria-label="시간표 보기"
                             data-dragging=move ||if toggle_drag_x.get().is_some(){"true"}else{"false"}
                             style=move ||format!("--toggle-drag-x:{:.1}px",toggle_drag_x.get().unwrap_or(0.))
@@ -650,7 +665,9 @@ fn Today(
                                     else{week_mode.set(true);}
                                 }>"주간"</button>
                         </div>
+                        </div>
                     </div>
+                    <TimetableEditor data=data date=date profile=profile edits=overrides open=editor_open/>
                     <Show when=move ||!week_mode.get() fallback=move ||view!{
                         <div class="week-grid" role="table" aria-label="월요일부터 금요일 주간 시간표">
                             <div class="week-grid-row week-grid-header" role="row">
@@ -678,9 +695,10 @@ fn Today(
                                 (1u8..=max_period).map(|period|{
                                     let cells=(0..5).map(|offset|{
                                         let day=first+Duration::days(offset);
-                                        let subject=rows.iter()
-                                            .find(|item|item.date==ymd(day)&&item.period==period)
-                                            .map(|item|item.subject.clone()).unwrap_or_default();
+                                        let selected_profile=profile.get();let saved=overrides.get();
+                                        let raw=data.get();
+                                        let subject=timetable::subject_at(raw.as_ref(),selected_profile.as_ref(),
+                                            day,period,&saved);
                                         let empty=subject.is_empty();
                                         let description=if empty {"수업 없음".to_owned()}else{subject.clone()};
                                         view!{
