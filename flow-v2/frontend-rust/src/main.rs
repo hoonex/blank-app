@@ -507,6 +507,7 @@ fn Today(
     // A large rolling date window is recentered after each settled gesture.
     let date_rail_origin=RwSignal::new(date.get_untracked());
     let date_rail=NodeRef::<leptos::html::Div>::new();
+    let day_offsets=(-90i64..=90).collect::<Vec<_>>();
     Effect::new(move |_|{
         let selected=date.get();
         if let Some(rail)=date_rail.get(){
@@ -586,7 +587,7 @@ fn Today(
                             }
                         }>
                         <div class="day-strip">
-                            <For each=move ||(-90i64..=90).collect::<Vec<_>>()
+                            <For each=move ||day_offsets.clone()
                                 key=|offset|*offset
                                 children=move |offset|{
                                     let day=move ||date_rail_origin.get()+Duration::days(offset);
