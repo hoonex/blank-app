@@ -1,0 +1,46 @@
+name: Flow V2 isolated preview
+on:
+  pull_request:
+    paths:
+      - "flow-v2/**"
+      - ".github/workflows/flow-v2-preview.yml"
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Contract tests
+        working-directory: flow-v2
+        run: bun test
+      - name: Bun production bundle
+        working-directory: flow-v2
+        run: bun run build
+      - name: Serve preview
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          sleep 2
+      - name: Browser checks and captures
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          node flow-v2/scripts/screenshot-audit.mjs
+      - name: Upload screenshot matrix
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-v2-screenshots
+          path: flow-v2/screenshots/
+          if-no-files-found: ignore
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Rust target check
+        working-directory: flow-v2/edge-rust
+        run: cargo check --target wasm32-unknown-unknown

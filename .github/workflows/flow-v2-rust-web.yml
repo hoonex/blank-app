@@ -1,0 +1,59 @@
+name: Flow V2 Rust web
+on:
+  push:
+    branches:
+      - feat/flow-v2-rust-bun-redesign-20261112
+    paths:
+      - "flow-v2/frontend-rust/**"
+      - ".github/workflows/flow-v2-rust-web.yml"
+  pull_request:
+    paths:
+      - "flow-v2/frontend-rust/**"
+      - "flow-v2/edge-rust/**"
+      - "flow-v2/package.json"
+      - ".github/workflows/flow-v2-rust-web.yml"
+  workflow_dispatch:
+
+jobs:
+  rust-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: flow-v2/frontend-rust
+      - name: Rust CSR typecheck
+        working-directory: flow-v2/frontend-rust
+        run: cargo check --target wasm32-unknown-unknown
+      - name: Install Trunk build tool
+        uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - name: Build Rust frontend
+        working-directory: flow-v2/frontend-rust
+        run: trunk build --release --public-url /flow-v2/frontend-rust/dist/
+      - name: Serve Rust frontend
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          sleep 2
+      - name: Run Rust WASM browser checks and capture screenshots
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          node flow-v2/frontend-rust/scripts/smoke.mjs
+      - name: Upload rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-v2-rust-viewport-matrix
+          path: flow-v2/frontend-rust/screenshots/
+          if-no-files-found: ignore
+      - name: Upload Rust frontend bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: flow-v2-rust-web
+          path: flow-v2/frontend-rust/dist/
+          if-no-files-found: error

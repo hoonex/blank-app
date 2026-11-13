@@ -1,0 +1,9 @@
+name = "flow-school-edge-v2-preview"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-11-12"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+# Preview only; do not route this Worker to the existing production domain
+# until API parity, performance and rollback checks pass.

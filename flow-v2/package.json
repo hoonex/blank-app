@@ -1,0 +1,13 @@
+{
+  "name": "flow-v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:legacy-preview": "bun build ./app.js --target browser --outdir ./dist --entry-naming app.js",
+    "build": "bun run build:legacy-preview",
+    "test": "bun test",
+    "build:rust:web": "cd frontend-rust && trunk build --release --public-url /flow-v2/frontend-rust/dist/",
+    "check:rust": "cargo check --manifest-path frontend-rust/Cargo.toml --target wasm32-unknown-unknown && cargo check --manifest-path edge-rust/Cargo.toml --target wasm32-unknown-unknown",
+    "check": "bun test && bun run build:legacy-preview"
+  }
+}

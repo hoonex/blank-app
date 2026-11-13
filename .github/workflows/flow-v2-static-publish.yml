@@ -1,0 +1,63 @@
+name: Flow V2 static publish for Cloudflare
+on:
+  push:
+    branches:
+      - feat/flow-v2-rust-bun-redesign-20261112
+    paths:
+      - 'flow-v2/frontend-rust/**'
+      - .github/workflows/flow-v2-static-publish.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.repository == 'hoonex/blank-app'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: flow-v2/frontend-rust
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - name: Build production Rust WebAssembly files
+        working-directory: flow-v2/frontend-rust
+        run: trunk build --release --public-url /flow-v2/frontend-rust/dist/
+      - name: Verify compiled files
+        run: |
+          test -f flow-v2/frontend-rust/dist/index.html
+          test "$(find flow-v2/frontend-rust/dist -maxdepth 1 -name '*.wasm' | wc -l)" -eq 1
+          test "$(find flow-v2/frontend-rust/dist -maxdepth 1 -name '*.js' | wc -l)" -eq 1
+          test "$(find flow-v2/frontend-rust/dist -maxdepth 1 -name '*.css' | wc -l)" -eq 1
+          ls -lh flow-v2/frontend-rust/dist
+      - name: Publish static build to isolated immutable branch
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/flow-static-output
+          cp -a flow-v2/frontend-rust/dist/. /tmp/flow-static-output/
+          git worktree add --detach /tmp/flow-static
+          cd /tmp/flow-static
+          RELEASE_BRANCH="flow-v2-monograph-v4-${GITHUB_SHA:0:12}"
+          git switch --orphan "$RELEASE_BRANCH"
+          git rm --quiet -r -f . || true
+          cp -a /tmp/flow-static-output/. .
+          git add --all
+          git commit -m "build(flow-v2): publish immutable rounded Rust bundle ${GITHUB_SHA:0:12}"
+          git push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
+          echo "### Published source bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source SHA: ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Asset branch: ${RELEASE_BRANCH}" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flow-v2-static-cloudflare-bundle
+          path: flow-v2/frontend-rust/dist/
