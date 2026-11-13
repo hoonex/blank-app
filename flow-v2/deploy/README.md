@@ -120,3 +120,15 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - No UI link points to legacy, transit or external schoolinfo. The only user-facing anchor is University; previous routes are left reachable for compatibility/rollback but invisible from Rust nav.
 - Native timetable edit overrides are stored separately in device localStorage under `flow-school-timetable-overrides-v1`, scoped to office, school, grade, class, date and period. The NEIS original can be restored at any time; no cross-device syncing has been added.
 - Next migration tasks: investigate and port any remaining legacy-only user features into Rust (instead of recreating old-version links), expand persistence to authenticated sync if required, and complete physical Android Chrome browser acceptance.
+
+## 2026-11-13 — tablet-width dates and continuous multi-day swipe
+
+- Source commit `bf2324c41c5694c4015dcbd410f0d88a0f91bae9` (original multi-day scrub implementation `010e14038ca1e7e0bad1159bb8286862da5ca740`).
+- Passing full Rust WebAssembly / Chromium workflow: `43339873290`, 7 viewports (390×844, 844×390, 768×1024, 1024×768, 1366×768, **1536×960 user screenshot reference**, 1920×1080).
+- New immutable static branch `flow-v2-monograph-v4-bf2324c41c56`, commit `8edad6033f0d518e6b397893d7c6691730df62b5`, JS `flow-school-web-9c7186877f120f5c.js`, CSS `style-b524a04a0eefda2f.css`, WASM `flow-school-web-ab90b26f1be8d22f_bg.wasm`.
+- Fixed clipped large `MM.DD` numbers by removing overflow clipping and increasing numeric line-height/letter spacing and padding.
+- Date carousel now fills the whole hero, with 5 visible dates on narrow phones, 7 on mid-width devices, and 11 dates on wide/landscape tablets and desktops. No additional navigation arrows.
+- Direct-manipulation touch rail follows the finger and changes by multiple days based on swipe distance / available cell width, not a fixed ±1-day step. At other dates, a quiet "오늘로 돌아가기" action appears; the actual current day has a labeled indicator and `aria-current=date`.
+- In short landscape, the return action is independently positioned without restoring unnecessary text. Last hovered date uses a subtle background instead of persistent underline.
+- This release changes no NEIS backend or bus endpoint and retains the sole `/university` link and native timetable editor.
+- Previous pinned release `c96fc8a5f80a9e82f22ec9486e5b6f835133abe7` and previous Cloudflare Worker version `d276815e-cd8f-4018-9df0-3eb35d92d7c4` are rollback references.
