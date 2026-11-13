@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f6f6f4">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Flow School — Rust로 다시 만든 학생 생활 도구">
+  <title>Flow — School</title>
+  <link rel="stylesheet" href="/flow-v2/frontend-rust/dist/style-f2805f3fda656187.css" integrity="sha384-CBsZbisFeMjVoYs4lgDDBWVwcat1PSmUHJqdRzrjMsGIFcCx0pJGgv7T9aP7EIiq"/>
+  
+<script type="module">
+import init, * as bindings from '/flow-v2/frontend-rust/dist/flow-school-web-a11becaf83a272c4.js';
+const wasm = await init({ module_or_path: '/flow-v2/frontend-rust/dist/flow-school-web-850acba506c2ea21_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+  
+<link rel="modulepreload" href="/flow-v2/frontend-rust/dist/flow-school-web-a11becaf83a272c4.js" crossorigin="anonymous" integrity="sha384-ZVNXspUTDdE5cD/9cDkZiq79EfVBD/DFDrkM1MTW7UQ3Gcee7PMAWI1M8qUJSckS"><link rel="preload" href="/flow-v2/frontend-rust/dist/flow-school-web-850acba506c2ea21_bg.wasm" crossorigin="anonymous" integrity="sha384-4Trmfq54eC7nquoIAevi6wIXeuqoInczxytWjUvqfk6abHlUa3iV+ECE20nLSJ+N" as="fetch" type="application/wasm"></head>
+<body><script>
+/* Flow's maps are opt-in and loaded only after a stop is selected.
+   The JavaScript key is an existing domain-restricted public SDK identifier. */
+(() => {
+  'use strict';
+  const KAKAO_JS_KEY = 'cc0aae65f94df3b64e5d231dd3a9963a';
+  const KAKAO_SDK = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' +
+    encodeURIComponent(KAKAO_JS_KEY) + '&autoload=false&libraries=services';
+  let sdkLoading = null;
+  let map = null;
+  let markers = [];
+  let generation = 0;
+  let officialStopsPromise = null;
+  function officialStops(){
+    if (!officialStopsPromise) officialStopsPromise =
+      fetch('/flow-v2/frontend-rust/dist/bus-stop-coords.json',{cache:'force-cache'})
+        .then(r=>{if(!r.ok)throw Error('official stop dataset unavailable');return r.json()})
+        .then(j=>Array.isArray(j.stops)?j.stops:[])
+        .catch(()=>[]);
+    return officialStopsPromise;
+  }
+  const norm = s => String(s || '').normalize('NFKC').replace(/[\s()[\]·.,]/g, '').toLowerCase();
+  const validPoint = p => Number.isFinite(Number(p.y)) && Number.isFinite(Number(p.x)) &&
+    Number(p.y) > 35.4 && Number(p.y) < 36.4 &&
+    Number(p.x) > 128.0 && Number(p.x) < 129.4;
+
+  function sdk() {
+    if (window.kakao?.maps?.Map && window.kakao?.maps?.services?.Places) return Promise.resolve(true);
+    if (sdkLoading) return sdkLoading;
+    sdkLoading = new Promise(resolve => {
+      const script = document.createElement('script');
+      script.src = KAKAO_SDK;
+      script.async = true;
+      script.dataset.flowBusKakao = 'true';
+      script.onerror = () => { sdkLoading = null; resolve(false); };
+      script.onload = () => {
+        try { window.kakao.maps.load(() => resolve(Boolean(window.kakao.maps.Map))); }
+        catch (_) { sdkLoading = null; resolve(false); }
+      };
+      document.head.append(script);
+    });
+    return sdkLoading;
+  }
+  function status(text) {
+    const element = document.getElementById('flow-bus-map-status');
+    if (element) element.textContent = text;
+  }
+  function clearMarkers() {
+    for (const marker of markers) { try { marker.setMap(null); } catch (_) {} }
+    markers = [];
+  }
+  function showCandidates(places, name, token, sourceLabel) {
+    if (token !== generation) return;
+    const panel = document.getElementById('flow-bus-map-canvas');
+    const choices = document.getElementById('flow-bus-map-choices');
+    if (!panel || !choices) return;
+    clearMarkers();
+    choices.replaceChildren();
+    if (!places.length) {
+      status('이 정류장의 지도 위치를 확인하지 못했어요. BIS 도착정보는 계속 사용할 수 있어요.');
+      return;
+    }
+    const k = window.kakao.maps;
+    const bounds = new k.LatLngBounds();
+    if (!map) map = new k.Map(panel,{center:new k.LatLng(Number(places[0].y),Number(places[0].x)),level:4});
+    map.relayout();
+    places.forEach((point, i) => {
+      const pos = new k.LatLng(Number(point.y),Number(point.x));
+      bounds.extend(pos);
+      const marker = new k.Marker({position:pos,map});
+      markers.push(marker);
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'bus-map-choice';
+      option.textContent = point.place_name + (point.road_address_name ? ' · ' + point.road_address_name : '');
+      const focus = () => {
+        map.setCenter(pos);
+        map.setLevel(3);
+        for (const node of choices.children) node.classList.remove('active');
+        option.classList.add('active');
+        status('선택한 정류장: ' + point.place_name + ' · ' + sourceLabel +
+          ' (동일한 정류장 이름이 여러 곳일 수 있어요)');
+      };
+      option.addEventListener('click', focus);
+      k.event.addListener(marker,'click',focus);
+      choices.append(option);
+    });
+    map.setBounds(bounds);
+    if (places.length === 1) {
+      choices.firstElementChild.click();
+    } else {
+      status('같은 이름의 정류소 ' + places.length + '곳을 찾았어요 · ' +
+        sourceLabel + ' · 지도 핀이나 아래 위치를 선택해 주세요.');
+    }
+  }
+  window.flowBusMapOpen = async name => {
+    const token = ++generation;
+    const box = document.getElementById('flow-bus-map-canvas');
+    if (!box) return;
+    status('카카오 지도를 불러오는 중…');
+    if (!(await sdk())) {
+      if (token === generation) status('카카오 지도 연결에 실패했어요. 지도 API 사용 설정과 등록된 도메인을 확인해 주세요.');
+      return;
+    }
+    if (token !== generation || !document.getElementById('flow-bus-map-canvas')) return;
+    // GPS values are from Daegu City's public 2026-09-02 stop coordinates,
+    // not an unreliable general-places search. This dataset lacks a BIS ID;
+    // matching is by exact station name, with all same-name points selectable.
+    try {
+      const official = (await officialStops())
+        .filter(row=>Array.isArray(row)&&norm(row[0])===norm(name))
+        .map(row=>({place_name:row[0],y:row[1],x:row[2]}))
+        .filter(validPoint);
+      if (token !== generation) return;
+      if (official.length) {
+        showCandidates(official,name,token,'대구시 공개 GPS · 2026.09.02');
+        return;
+      }
+      // Kakao Places is a secondary source only if it supplies an exact
+      // matching stop name. Similar commercial places must never become pins.
+      const places = new window.kakao.maps.services.Places();
+      const search = q => new Promise(resolve=>places.keywordSearch(q,(items,state)=>
+        resolve(state===window.kakao.maps.services.Status.OK?items:[]),{size:15}));
+      let items=await search(name+' 버스정류장 대구');
+      if (!items.length) items=await search(name);
+      showCandidates(items.filter(p=>validPoint(p)&&norm(p.place_name)===norm(name))
+        .slice(0,8),name,token,'카카오 장소 검색 · 정류소 이름 일치');
+    } catch (_) {
+      if (token === generation) status('정류장 위치를 확인하지 못했어요. BIS 도착정보는 계속 사용할 수 있어요.');
+    }
+  };
+  window.flowBusMapClose = () => { generation++; clearMarkers();map = null; };
+
+  // AdFit must only load when its real approved unit is in the document.
+  // Never synthesize adverts, edit the provider SDK, or insert multiple units.
+  window.flowAdfitStart = () => {
+    if (!document.querySelector('ins.kakao_ad_area[data-ad-unit]')) return;
+    if (document.querySelector('script[data-flow-adfit-native]')) return;
+    const script = document.createElement('script');
+    script.src = 'https://t1.kakaocdn.net/kas/static/ba.min.js';
+    script.async = true;
+    script.charset = 'utf-8';
+    script.dataset.flowAdfitNative = 'true';
+    document.head.append(script);
+  };
+})();
+</script>
+</body>
+</html>
