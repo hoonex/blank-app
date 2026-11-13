@@ -102,3 +102,11 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - Fixed viewport-anchored rounded bottom tab bar, lower placement, CSS page-bottom padding, corrected logo line-height/top padding, mobile calendar month arrows hidden and month slider retained. End-of-page and viewport-resize smoke assertions passed.
 - New `School` tab contains Daegu bus stop search and stop-specific live arrivals. Raw public BIS website endpoints are proxied by Cloudflare with 1-hour stop-search cache and 20-second arrival cache, exact validation and honest API errors. Both search and arrivals returned real data on Cloudflare preview; details in `BUS_SOURCE_AND_STATUS.md`.
 - Prior deployed Cloudflare Worker version: `07054114-b7a9-4867-a39b-c1f880134371`. Restore that version if live smoke fails. Device-specific Samsung Chrome screenshot still needs user confirmation after production deployment.
+
+## 2026-11-13 — native timetable and University-only UI link release
+
+- Tested Rust source `636f782e849f4c3dd65b9771b0bde2e360a9fc36`, CI run `43334884116` **success** (6 viewport smoke including native period edit, reload persistence, original restoration, absence of legacy links, settings University-only outbound link).
+- Immutable published static branch `flow-v2-monograph-v4-636f782e849f`, commit `c96fc8a5f80a9e82f22ec9486e5b6f835133abe7` with `flow-school-web-21ea350cd6a75012.js`, `style-f9f6bb3ab8545581.css`, `flow-school-web-8c2d110fc7df9da7_bg.wasm`.
+- New Rust timetable editor: 1–9th period for selected day, write localStorage scoped by office/school/grade/class/date/period, shown in Day and Week, restore provider original anytime. No provider data is overwritten, local device only; not cloud-synced.
+- All links to `/legacy`, `/transit` and external schoolinfo removed from Rust UI, no previous-version messages or buttons. Only `/university` retained as clickable anchor. Old routes remain internally addressable as backwards compatibility, not as UI navigation.
+- Prior production Worker `5840c44b-27aa-4cfc-a320-45051adb82d9` and asset pin `bf350345ba852081c64cf7e9c61d9164c9820f9f` are rollback references.
