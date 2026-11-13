@@ -96,3 +96,13 @@ Updated: 2026-11-13 KST. Working branch: `feat/flow-v2-rust-bun-redesign-2026111
 1. If requested, expose existing NEIS allergy numbers as friendly names with clear data provenance, add available event description without inventing text, and optionally show official classroom/room data only if underlying API actually supplies it.
 2. Review high school timetable data for grade/class identity correctness and preserve current device-local manual corrections.
 3. Continue visual/on-device QA for the responsive 5/7/11-day strip and bottom navigation.
+
+## 2026-11-13 — native platform inertia + magnetic snap accepted in CI
+
+- User requested native unlimited/momentum swipe with magnetic attraction when velocity slows. Previous custom touch-release step calculation was removed. New `day-carousel` is horizontal scroll container with `scroll-snap-type:x mandatory` and 5/7/11 responsive cell sizing. The mobile browser handles touch tracking/deceleration; CSS snap centers a date on natural settling, **not a custom numeric velocity threshold**.
+- Date domain is effectively unlimited across gestures by rendering 181 contiguous days around a rolling origin and re-anchoring once the user's kinetic motion has stopped. No duplicate NEIS calls or JS animation RAF loops were added. The currently selected day continues to drive existing timetable/meal/events.
+- Scoped changes: `flow-v2/frontend-rust/src/main.rs`, `style.css`, `scripts/smoke.mjs`, Cloudflare static hash pin only. `flow-v2/frontend-rust/src/bus.rs` and old school endpoints untouched.
+- Source `443dd5794e76051d04d507f8c8261bf8c5c3aa4f`, CI run `43342438372` success seven viewports, screenshots inspected. Real CDP touch pan forward/back, magnetic resting geometry, rolling-origin near edge, date-label clarity, bottom nav drag, theme, timetable persistence all passed.
+- Immutable published release `8c024bcf54e5e414607633e7f90ba8daee4289d4`: JS `flow-school-web-9f65b1a72b74471d.js`, CSS `style-57854dd3cb4cce96.css`, WASM `flow-school-web-54128b5abb7bb712_bg.wasm`.
+- Preview Worker `flow-v2-kinetic-preview` version `175293ac-b601-4d77-be79-9dc180e6a9f7` rendered new assets. Production Worker `blank-app` version `94994baf-8fe6-4efa-8d14-7f79cfa3afbc` at original URL rendered new assets. Previous Worker rollback `e272e8fc-cdc7-4c57-b32b-56f9a82be987`.
+- Real Galaxy Chrome/Samsung Internet inertia can vary from Chromium CDP; user screenshot/gesture confirmation remains the last acceptance step. Future need: a tunable magnetic velocity threshold would require a custom physics driver, rather than the current reliable native scroll-snap friction.
