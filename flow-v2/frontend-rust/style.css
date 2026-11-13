@@ -756,3 +756,51 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
  .editor-periods{grid-template-columns:repeat(9,minmax(0,1fr));gap:3px}
  .editor-periods button{min-height:33px;font-size:11px}
 }
+
+/* Only the School Today surface has the pre-existing 320x100 AdFit unit.
+   No invisible ad placeholders or navigation-adjacent slots. */
+.flow-adfit-native{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  width:320px;max-width:calc(100% - 32px);
+  margin:35px auto 30px;
+}
+.flow-shell:not([data-mode="오늘"]) .flow-adfit-native{display:none}
+.flow-adfit-caption{display:none;font-size:10px;color:var(--muted);letter-spacing:.04em}
+.flow-adfit-native:has(.kakao_ad_area iframe) .flow-adfit-caption{display:block}
+.flow-adfit-native .kakao_ad_area{max-width:100%;overflow:hidden}
+@media(max-width:870px){
+  .flow-adfit-native{margin-bottom:calc(112px + env(safe-area-inset-bottom))}
+}
+/* Integrated Kakao stop-position map, opt-in, no external-page detours. */
+.bus-selected-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.bus-map-toggle{
+  min-height:41px;white-space:nowrap;padding:8px 17px;
+  border-radius:999px;background:rgba(255,255,255,.12);
+  color:var(--night-text);font-size:12px;font-weight:740;
+  transition:background .17s,scale .17s;
+}
+.bus-map-toggle:active{background:rgba(255,255,255,.24);scale:.96}
+.bus-map{display:grid;gap:9px;margin-top:16px;min-width:0}
+.bus-map-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.bus-map-heading strong{font-size:13px}
+.bus-map-heading small,.bus-map-status{color:#babcb1;font-size:11px;line-height:1.55}
+.bus-map-status{min-height:15px;margin:0}
+.bus-map-canvas{
+  width:100%;height:clamp(230px,27vw,370px);overflow:hidden;
+  border-radius:18px;background:#ecebe4;
+  touch-action:pan-x pan-y;
+  -webkit-touch-callout:none;
+}
+.bus-map-choices{display:flex;gap:7px;max-width:100%;overflow-x:auto;padding-bottom:3px;scrollbar-width:thin}
+.bus-map-choice{
+  flex:0 0 auto;max-width:min(260px,80vw);white-space:normal;
+  text-align:left;padding:11px 13px;border-radius:13px;
+  background:rgba(255,255,255,.09);font-size:11px;color:#eee;font-weight:690;
+}
+.bus-map-choice.active{background:var(--accent);color:#171917}
+@media(max-width:590px){
+  .bus-selected-heading{align-items:flex-start;flex-wrap:wrap}
+  .bus-selected-actions{width:100%}
+  .bus-map-toggle,.bus-selected-actions .bus-refresh{flex:1}
+  .bus-map-canvas{height:270px;border-radius:15px}
+}
