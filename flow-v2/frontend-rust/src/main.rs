@@ -324,7 +324,6 @@ fn App() -> impl IntoView {
                         <span class="school-meta">{move ||profile.get().map(|p|
                             format!("{} / {}학년 {}반",p.school.name,p.grade,p.class_name)
                         ).unwrap_or_default()}</span>
-                        <a href="/legacy" title="기존 Flow 이용하기">"이전 버전 ↗"</a>
                     </div>
                 </header>
                 <main class="flow-main" id="content"
@@ -445,7 +444,7 @@ fn Setup(on_done: Callback<Profile>) -> impl IntoView {
             <section class="setup-sheet">
                 <span class="eyebrow">"시작하기"</span>
                 <h2>"학교 선택"</h2>
-                <p>"기존 Flow에서 선택한 정보는 그대로 사용할 수 있어요."</p>
+                <p>"학교를 연결하면 시간표·급식·일정을 한곳에서 확인할 수 있어요."</p>
                 <label for="school-search">"학교 이름"</label>
                 <div class="search-combo">
                     <input id="school-search" type="search" placeholder="예: 정동고등학교"
@@ -742,7 +741,6 @@ fn Today(
                                 on:click=move |_|switch_section(Tab::School,tab,page_motion,direction)>
                                 "버스 도착정보"
                             </button>
-                            <a class="transit-legacy" href="/transit">"기존 교통 화면"</a>
                         </div>
                         <p class="transit-caution">"정류장을 검색하면 Flow에서 바로 운행정보를 확인할 수 있어요."</p>
                     </section>
@@ -920,8 +918,6 @@ fn SchoolInfo(profile:RwSignal<Option<Profile>>) -> impl IntoView {
                     <div><small>"학급"</small><strong>{move ||profile.get().map(|p|format!("{}학년 {}반",p.grade,p.class_name)).unwrap_or_default()}</strong></div>
                     <div><small>"전화번호"</small><strong>{move ||profile.get().map(|p|p.school.phone).unwrap_or_default()}</strong></div>
                 </div>
-                <div class="school-actions"><a href="/legacy" class="button-strong">"기존 Flow ↗"</a>
-                    <a href="https://www.schoolinfo.go.kr/Main.do" target="_blank" rel="noopener noreferrer">"학교알리미 ↗"</a></div>
             </section>
         </div>
     }
@@ -940,18 +936,16 @@ fn Settings(dark:RwSignal<bool>,profile:RwSignal<Option<Profile>>) -> impl IntoV
                         on:click=move |_|{
                            let next=!dark.get_untracked();dark.set(next);store(THEME_KEY,&next);apply_theme(next);
                         }>{move ||if dark.get(){"다크 모드 ●"}else{"라이트 모드 ○"}}</button></div>
-                <div class="setting-row"><div><strong>"학급 변경"</strong><small>"새 학교를 연결할 때 기존 Flow 설정과 호환됩니다."</small></div>
+                <div class="setting-row"><div><strong>"학급 변경"</strong><small>"학교·학년·반을 다시 선택할 수 있어요."</small></div>
                     <button class="setting-toggle" on:click=move |_|{
                         profile.set(None);
                     }>"다시 선택 ↗"</button></div>
-                <div class="setting-row"><div><strong>"전체 기능"</strong><small>"시간표 수정·교내 정보 등 기존 기능을 계속 사용할 수 있습니다."</small></div>
-                    <a href="/legacy" class="setting-toggle">"기존 Flow ↗"</a></div>
+                <div class="setting-row"><div><strong>"시간표 관리"</strong><small>"오늘 탭에서 과목을 직접 수정하고 원본으로 복원할 수 있어요."</small></div></div>
                 <div class="setting-row"><div><strong>"버스 정보"</strong>
                     <small>"학교 탭에서 정류장을 검색하고 운행 상태를 직접 확인할 수 있어요."</small></div></div>
-                <div class="setting-row"><div><strong>"대학교 모드"</strong><small>"기존 대학 기능은 같은 주소에서 이용 가능합니다."</small></div>
+                <div class="setting-row"><div><strong>"대학교 모드"</strong><small>"Flow University로 이동합니다."</small></div>
                     <a href="/university" class="setting-toggle">"대학교 모드 ↗"</a></div>
             </section>
-            <p class="note">"이전 화면은 ‘이전 버전’ 메뉴에서 열 수 있습니다. 일부 기능은 아직 기존 화면에서 제공합니다."</p>
         </div>
     }
 }
