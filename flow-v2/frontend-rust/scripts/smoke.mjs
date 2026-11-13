@@ -32,7 +32,27 @@ for (const [width,height] of sizes) {
   };
   await page.addInitScript(school => {
     localStorage.setItem("flow-school-profile-v3", JSON.stringify({school,grade:2,className:"6"}));
+    window.__kakaoMapInstalls=0;
+    class FakeMap {
+      constructor(){window.__kakaoMapInstalls++;}
+      relayout(){} setBounds(){} setCenter(){} setLevel(){}
+    }
+    class FakeBounds {extend(){}}
+    class FakeLatLng {constructor(lat,lng){this.lat=lat;this.lng=lng;}}
+    class FakeMarker {constructor(options){this.options=options;}setMap(){}}
+    class FakePlaces {
+      keywordSearch(query,callback){
+        callback([
+          {place_name:"동대구역건너",x:"128.6270",y:"35.8783",road_address_name:"대구광역시 동구"},
+          {place_name:"동대구역건너",x:"128.6280",y:"35.8785",road_address_name:"대구광역시 동구 동쪽"}
+        ],"OK");
+      }
+    }
+    window.kakao={maps:{Map:FakeMap,LatLng:FakeLatLng,LatLngBounds:FakeBounds,Marker:FakeMarker,
+      event:{addListener(){}},services:{Places:FakePlaces,Status:{OK:"OK"}}}};
   },fixture);
+  await page.route("https://t1.kakaocdn.net/kas/static/ba.min.js",route=>
+    route.fulfill({status:200,contentType:"text/javascript",body:"/* AdFit approved SDK is mocked during CI */"}));
   await page.route("**/functions/v1/school-data*",async route => {
     const day = new Date(),p=x=>String(x).padStart(2,"0");
     const date = day.getFullYear()+p(day.getMonth()+1)+p(day.getDate());
@@ -65,6 +85,14 @@ for (const [width,height] of sizes) {
     await page.locator(".today-heading h1").waitFor({state:"visible",timeout:20000});
     const h1 = await page.locator(".today-heading h1").innerText();
     if(!/\d{2}\.\d{2}/.test(h1))throw Error("Unexpected kinetic date heading "+h1);
+    const adSlots=await page.locator('ins.kakao_ad_area[data-ad-unit="DAN-ovpJn5XCBs1n1owQ"]').count();
+    if(adSlots!==1)throw Error("Original Kakao AdFit unit is absent/duplicated: "+adSlots);
+    const adAttrs=await page.locator('ins.kakao_ad_area').evaluate(el=>({
+      width:el.dataset.adWidth,height:el.dataset.adHeight
+    }));
+    if(adAttrs.width!=="320"||adAttrs.height!=="100")
+      throw Error("Original unmodified AdFit unit format changed");
+    await page.locator('script[data-flow-adfit-native]').waitFor({state:"attached",timeout:4000});
     if(await page.locator(".day-strip button").count()!==181)
       throw Error("Rolling kinetic date window must have 181 date cells");
     await page.waitForFunction(()=>{
@@ -330,6 +358,22 @@ for (const [width,height] of sizes) {
     if(!busText.includes("413")||!busText.includes("운행종료")||
        !busText.includes("618")||busArrivalCalls!==1)
       throw Error("Bus arrivals UI did not render real response schema: "+busText);
+    await page.getByRole("button",{name:"지도 보기"}).click();
+    await page.locator("#flow-bus-map-canvas").waitFor({state:"visible"});
+    await page.waitForFunction(()=>document.querySelectorAll(".bus-map-choice").length===2,
+      null,{timeout:4000});
+    const markerSource=await page.locator("#flow-bus-map-status").innerText();
+    if(!markerSource.includes("위치")||!(await page.locator(".bus-map-heading").innerText()).includes("카카오"))
+      throw Error("Map did not expose Kakao search candidates and provenance: "+markerSource);
+    await page.locator(".bus-map-choice").last().click();
+    if(!(await page.locator("#flow-bus-map-status").innerText()).includes("선택한 장소"))
+      throw Error("Map candidate cannot be selected");
+    if(await page.evaluate(()=>window.__kakaoMapInstalls)!==1)
+      throw Error("Map was repeatedly initialized instead of reusing one instance");
+    if(width===390)await page.screenshot({path:shots+"/bus-map-390x844.png"});
+    await page.getByRole("button",{name:"지도 닫기"}).click();
+    if(await page.locator("#flow-bus-map-canvas").count())
+      throw Error("Map DOM remains open after closing");
     if(width===390)await page.screenshot({path:shots+"/bus-390x844.png"});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
