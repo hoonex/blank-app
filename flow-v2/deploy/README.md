@@ -132,3 +132,12 @@ The new V3 frontend uses a single rounded shape language: 28px major surfaces, 1
 - In short landscape, the return action is independently positioned without restoring unnecessary text. Last hovered date uses a subtle background instead of persistent underline.
 - This release changes no NEIS backend or bus endpoint and retains the sole `/university` link and native timetable editor.
 - Previous pinned release `c96fc8a5f80a9e82f22ec9486e5b6f835133abe7` and previous Cloudflare Worker version `d276815e-cd8f-4018-9df0-3eb35d92d7c4` are rollback references.
+
+## 2026-11-13 — native Kakao stop map, real exact BIS coordinates, restored AdFit
+
+- Source `76a1b31d5f82e809f243ad61eb31842211e2d641` Chromium/Rust CI `43353018350` **success**; static branch `flow-v2-monograph-v4-76a1b31d5f82`, SHA `e7a8b3370bbd3f1d0bdb1bb7b29fc62a48b59d51`.
+- Reused original domain-registered browser-facing Kakao Maps JavaScript key already in `school-transit-map.js`, no invented new keys, and original approved School AdFit unit `DAN-ovpJn5XCBs1n1owQ` (320×100) from `flow-adfit-config.js`.
+- The original rust website already received the opt-in integrated map toggle and ad slot from concurrent integration commits. Reconciled duplicate alternative map/ad features: kept the tested legacy port in `index.html` + native `bus.rs` and `main.rs`, removed live references to redundant map component. The extra unreferenced `src/bus_map.rs` is deleted in this release record.
+- More precise stop pins: the same BIS stop-name search response provides `ngisXPos`/`ngisYPos` EPSG:5187 coordinates. Cloudflare Worker converts these accurately to WGS84, rejects invalid/out-of-region coords, and returns `lat`/`lng` alongside stop id/name/number. The Rust map sends stop identity + exact coords to existing Kakao SDK UI. The older verified Daegu City 2026-09 official stop GPS dataset remains a fallback for old device favorites with no location fields. Do not use guessed coordinates.
+- SDK is lazy on user selection/opening the map; AdFit provider SDK is loaded once when a school profile exists. The slot itself is not an invented ad, and real ad fill depends on Kakao.
+- Previous live Worker `94994baf-8fe6-4efa-8d14-7f79cfa3afbc` and previous static `8c024bcf54e5e414607633e7f90ba8daee4289d4` are immediate rollback references.

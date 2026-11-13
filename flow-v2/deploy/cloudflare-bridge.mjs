@@ -1,7 +1,7 @@
 /* Flow V2: Rust school as the front door, pinned legacy static fallback.
    SHA-pinned sources avoid deploying credentials or unreviewed HEAD changes.
    No static ASSETS binding: this intentionally avoids asset-first routing. */
-const V2_RELEASE="8c024bcf54e5e414607633e7f90ba8daee4289d4";
+const V2_RELEASE="e7a8b3370bbd3f1d0bdb1bb7b29fc62a48b59d51";
 const LEGACY_RELEASE="b1ac095b47baa0c09430559bf127e7c873fa9263";
 const V2_BASE="https://raw.githubusercontent.com/hoonex/blank-app/"+V2_RELEASE+"/";
 const LEGACY_BASE="https://raw.githubusercontent.com/hoonex/blank-app/"+LEGACY_RELEASE+"/";
