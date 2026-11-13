@@ -81,3 +81,18 @@ Updated: 2026-11-13 KST. Working branch: `feat/flow-v2-rust-bun-redesign-2026111
 - **Production:** browser rendering verified correct JS `flow-school-web-52618af9f2f706b0.js`, CSS `style-6e347386e303d1ae.css`, wasm mounted. Legacy/Transit/University/Admin all HTTP 200.
 - **Rollback:** old production Worker version `07054114-b7a9-4867-a39b-c1f880134371`, previous Rust release `6b4047e474e54e7edf2209876d1b5c704f80dc55`.
 - **Next priorities:** physical Samsung browser scroll/gesture bar screenshot; BusInfo real data freshness states and route-map feature if requested; integration of legacy subject editing and PWA; replace Github raw proxy with native Cloudflare Assets. The bus site's internal web endpoints are undocumented and may change; authenticated official public-data API is a planned fallback, not the current live source.
+
+## 2026-11-13 — exact Galaxy Tab horizontal complaint closed
+
+- Source verified `bf2324c41c5694c4015dcbd410f0d88a0f91bae9`. CI `43339873290` passed 390×844, 844×390, 768×1024, 1024×768, 1366×768, **1536×960**, 1920×1080.
+- Removed numeral clipping: the date motion wrapper is no longer overflow-hidden, glyph line-height and padding were corrected. Visual capture at 1536×960 reviewed, large numbers complete.
+- Hero date band fills available width; 5/7/11 visible dates by CSS breakpoint, selected date stays centered. Touchmove translates the rail directly; release selects a proportional number of days from the gesture distance, not the old hardcoded ±1. This is continuous finger-following with multi-day snapping; it is **not** a long virtualized native momentum scroll list.
+- Current day has an explicit “오늘” tag and `aria-current=date`; a contextual today-reset appears when browsing other dates, including short landscape.
+- Kept mobile bottom nav / native lesson editor / bus proxy unchanged and did not reintroduce old-version links. Official NEIS datasets were researched, but no new endpoints were added: school basic info, class info, high school timetable (including course/room fields where supplied), event names/details/grade applicability, meal dishes/calories/allergy codes and school department info. Official catalog: https://open.neis.go.kr/portal/data/dataset/searchDatasetPage.do . Public NEIS OpenAPI differs from NEIS+ private student portal; no grades/records access is asserted.
+- Production Worker version `e272e8fc-cdc7-4c57-b32b-56f9a82be987`; previous rollback version `d276815e-cd8f-4018-9df0-3eb35d92d7c4`. User's physical browser dynamic toolbar remains untested; Chromium 1536×960 matches the content viewport, not Android chrome.
+
+### Next user-requested feature priorities
+
+1. If requested, expose existing NEIS allergy numbers as friendly names with clear data provenance, add available event description without inventing text, and optionally show official classroom/room data only if underlying API actually supplies it.
+2. Review high school timetable data for grade/class identity correctness and preserve current device-local manual corrections.
+3. Continue visual/on-device QA for the responsive 5/7/11-day strip and bottom navigation.
