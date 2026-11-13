@@ -1,4 +1,5 @@
 mod bus;
+mod bus_map;
 mod timetable;
 use bus::BusInfo;
 use timetable::{TimetableEditor,TimetableOverride};
@@ -379,6 +380,7 @@ fn App() -> impl IntoView {
                         Tab::School => view!{<SchoolInfo profile=profile/>}.into_any(),
                         Tab::Settings => view!{<Settings dark=dark profile=profile/>}.into_any(),
                     }}
+                    <AdFitBanner/>
                 </main>
                 <aside class="flow-adfit-native" aria-label="광고 영역">
                     <span class="flow-adfit-caption">"광고"</span>
@@ -433,6 +435,36 @@ fn App() -> impl IntoView {
                 </nav>
             </div>
         </Show>
+    }
+}
+
+#[component]
+fn AdFitBanner() -> impl IntoView {
+    // Reuse the already approved school AdFit unit and SDK from legacy Flow.
+    // The slot is stable across tabs: do not reload the SDK on every tab change.
+    let container=NodeRef::<leptos::html::Div>::new();
+    Effect::new(move |_| {
+        if container.get().is_none(){return;}
+        if let Some(doc)=web_sys::window().and_then(|w|w.document()){
+            if doc.query_selector("script[data-flow-adfit-sdk-v2]").ok().flatten().is_some(){return;}
+            if let Ok(script)=doc.create_element("script"){
+                let _=script.set_attribute("src","https://t1.kakaocdn.net/kas/static/ba.min.js");
+                let _=script.set_attribute("async","");
+                let _=script.set_attribute("charset","utf-8");
+                let _=script.set_attribute("data-flow-adfit-sdk-v2","true");
+                if let Some(head)=doc.query_selector("head").ok().flatten(){
+                    let _=head.append_child(&script);
+                }
+            }
+        }
+    });
+    view!{
+        <div class="flow-adfit-rail" node_ref=container aria-label="광고 영역">
+            <span class="flow-adfit-label">"광고"</span>
+            <ins class="kakao_ad_area flow-adfit-slot" style="display:none;width:100%;"
+                data-ad-unit="DAN-ovpJn5XCBs1n1owQ"
+                data-ad-width="320" data-ad-height="100" aria-label="광고"></ins>
+        </div>
     }
 }
 
