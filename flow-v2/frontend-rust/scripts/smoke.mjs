@@ -65,7 +65,29 @@ for (const [width,height] of sizes) {
     await page.locator(".today-heading h1").waitFor({state:"visible",timeout:20000});
     const h1 = await page.locator(".today-heading h1").innerText();
     if(!/\d{2}\.\d{2}/.test(h1))throw Error("Unexpected kinetic date heading "+h1);
-    if(await page.locator(".day-strip button").count()!==5)throw Error("Five-day centered date selector missing");
+    if(await page.locator(".day-strip button").count()!==11)
+      throw Error("11-date responsive rail source missing");
+    const visibleCount=await page.locator(".day-strip button:visible").count();
+    const expectedVisible=width<=620?5:width<=1120?7:11;
+    if(visibleCount!==expectedVisible)
+      throw Error("Responsive date density incorrect "+JSON.stringify({width,visibleCount,expectedVisible}));
+    const actualToday=page.locator(".day-strip button[aria-current='date']");
+    if(await actualToday.count()!==1||!(await actualToday.innerText()).includes("오늘"))
+      throw Error("Real current day lacks a recognizable Today marker");
+    const dateGeom=await page.evaluate(()=>{
+      const hero=document.querySelector(".today-heading").getBoundingClientRect();
+      const rail=document.querySelector(".day-carousel").getBoundingClientRect();
+      const n=document.querySelector(".hero-numeral").getBoundingClientRect();
+      const wrap=document.querySelector(".date-motion");
+      return {heroRight:hero.right,heroLeft:hero.left,railWidth:rail.width,heroWidth:hero.width,
+        digitRight:n.right,digitLeft:n.left,digitBottom:n.bottom,
+        wrapOverflow:getComputedStyle(wrap).overflow};
+    });
+    if(dateGeom.wrapOverflow!=="visible"||dateGeom.digitRight>dateGeom.heroRight-3||
+       dateGeom.digitLeft<dateGeom.heroLeft+4)
+      throw Error("Clipped hero numeral: "+JSON.stringify(dateGeom));
+    if(width>=1121&&dateGeom.railWidth/dateGeom.heroWidth<.8)
+      throw Error("Wide date selector underfills banner: "+JSON.stringify(dateGeom));
     if(await page.locator(".today-heading .date-actions").count()!==0)
       throw Error("Unnecessary previous/today/next buttons remain in Today");
     if(await page.locator(".class-row").count()!==7)throw Error("Fixture timetable not fully visible");
@@ -139,14 +161,16 @@ for (const [width,height] of sizes) {
     if(await page.locator(".day-strip button.active").count()!==1)
       throw Error("Date selector must have one active day");
     const oldActive=await page.locator(".day-strip button.active").innerText();
-    const targetDay=page.locator(".day-strip button").nth(0);
+    const targetDay=page.locator(".day-strip button:visible").first();
     const desired=await targetDay.innerText();
     await targetDay.click();
     const after=await page.locator(".day-strip button.active").innerText();
     if(after!==desired||after===oldActive)
       throw Error("Carousel tap did not recenter clicked day: "+oldActive+" => "+after);
     // The old center day is now the rightmost visible day after moving -2.
-    await page.locator(".day-strip button").nth(4).click();
+    if(!(await page.locator(".return-to-today").isVisible()))
+      throw Error("Away from today, a discreet return action must appear");
+    await page.locator(".day-strip button:visible").last().click();
     const restored=await page.locator(".day-strip button.active").innerText();
     if(restored!==oldActive)throw Error("Date carousel did not allow returning via touch-sized items");
     await page.evaluate(() => {
@@ -196,7 +220,8 @@ for (const [width,height] of sizes) {
       await page.setViewportSize({width,height});
       await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
       const buttons=await page.locator(".day-strip button").evaluateAll(nodes=>
-        nodes.map(el=>el.getBoundingClientRect().width));
+        nodes.filter(el=>getComputedStyle(el).display!=="none")
+          .map(el=>el.getBoundingClientRect().width));
       if(buttons.length!==5||Math.min(...buttons)<52)
         throw Error("Date buttons still too cramped on 390px: "+JSON.stringify(buttons));
       await page.evaluate(()=>window.scrollTo({top:0,behavior:"instant"}));
@@ -339,13 +364,20 @@ for (const [width,height] of sizes) {
                       navRect.x+navRect.width*.125,navRect.y+navRect.height*.5);
       if((await page.locator(".mobile-bottom button.active").innerText())!=="오늘")
         throw Error("Cannot drag back to Today");
-      // The five-day strip accepts a genuine horizontal swipe without stealing tab swipes.
+      // A single wide drag must move multiple dates, not one day per gesture.
       const beforeDate=await page.locator(".hero-numeral").innerText();
       const strip=await page.locator(".day-carousel").boundingBox();
       await touchSlide(strip.x+strip.width*.79,strip.y+strip.height*.5,
                       strip.x+strip.width*.24,strip.y+strip.height*.5);
       const advanced=await page.locator(".hero-numeral").innerText();
-      if(advanced===beforeDate)throw Error("Swiping left on date rail did not advance day");
+      const dateValue=x=>{
+        const [month,day]=x.split(".").map(Number);
+        return new Date(new Date().getFullYear(),month-1,day).getTime();
+      };
+      const daysMoved=Math.round((dateValue(advanced)-dateValue(beforeDate))/86400000);
+      if(daysMoved<2)throw Error("Wide date swipe moved only "+daysMoved+" day(s), expected multiple");
+      if(!(await page.locator(".return-to-today").isVisible()))
+        throw Error("Returning to Today must be discoverable after scrolling away");
       if((await page.locator(".mobile-bottom button.active").innerText())!=="오늘")
         throw Error("Date swipe incorrectly switched top-level tabs");
       await touchSlide(strip.x+strip.width*.22,strip.y+strip.height*.5,
