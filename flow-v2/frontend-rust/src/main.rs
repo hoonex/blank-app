@@ -502,11 +502,29 @@ fn Today(
 )->impl IntoView{
     let week_mode=RwSignal::new(false);
     let editor_open=RwSignal::new(false);
-    let date_touch=RwSignal::<Option<(i32,i32)>>::new(None);
-    let date_drag=RwSignal::new(0.0f64);
-    let date_dragging=RwSignal::new(false);
-    let date_direction=RwSignal::new(1i32);
-    let date_last_swipe=RwSignal::new(0.0f64);
+    // The browser owns kinetic scrolling and friction. CSS scroll snapping
+    // provides magnetic centering once native scroll velocity subsides.
+    // A large rolling date window is recentered after each settled gesture.
+    let date_rail_origin=RwSignal::new(date.get_untracked());
+    let date_rail=NodeRef::<leptos::html::Div>::new();
+    Effect::new(move |_|{
+        let selected=date.get();
+        if let Some(rail)=date_rail.get(){
+            let midpoint=((rail.scroll_width()-rail.client_width()) as f64)/2.0;
+            let step=midpoint/90.0;
+            if step<1.0{return;}
+            let offset=(selected-date_rail_origin.get_untracked()).num_days();
+            if offset.abs()>=65{
+                // Rebase without bounds: the visible calendar date is preserved,
+                // only its source window changes. Reset the scroll anchor after
+                // the provider finishes kinetic movement (scrollend).
+                date_rail_origin.set(selected);
+                rail.set_scroll_left(midpoint.round() as i32);
+            }else{
+                rail.set_scroll_left((midpoint+offset as f64*step).round() as i32);
+            }
+        }
+    });
     let toggle_touch=RwSignal::<Option<(i32,i32)>>::new(None);
     let toggle_drag_x=RwSignal::<Option<f64>>::new(None);
     let toggle_preview=RwSignal::<Option<bool>>::new(None);
@@ -529,7 +547,6 @@ fn Today(
                     <Show when=move ||selected()!=today_local()>
                         <button type="button" class="return-to-today"
                             on:click=move |_|{
-                                date_direction.set(if today_local()>date.get_untracked(){1}else{-1});
                                 date.set(today_local());
                             }>"오늘로 돌아가기"</button>
                     </Show>
@@ -553,86 +570,50 @@ fn Today(
                     </div>
                     </div>
                 <div class="hero-bottom">
-                    <div class="day-carousel" role="group" aria-label="연속 날짜 선택. 좌우로 밀어 여러 날짜 이동"
-                        data-dragging=move ||if date_dragging.get() {"true"}else{"false"}
-                        style=move ||format!("--day-drag-x:{:.1}px;--day-dir:{}",
-                            date_drag.get(),date_direction.get())
-                        on:touchstart=move |ev|{
-                            date_touch.set(touch_start(&ev));
-                            date_drag.set(0.);
-                            date_dragging.set(true);
-                        }
-                        on:touchmove=move |ev|{
-                            if let (Some((sx,sy)),Some(point))=
-                                (date_touch.get_untracked(),ev.touches().item(0)){
-                                let dx=point.client_x()-sx;
-                                let dy=point.client_y()-sy;
-                                if dx.abs()>4 && dx.abs()*10 > dy.abs()*12 {
-                                    date_drag.set(dx as f64);
+                    <div class="day-carousel" node_ref=date_rail role="group"
+                        aria-label="날짜 선택. 좌우로 스크롤하면 관성 이동 후 날짜가 중앙에 맞춰집니다"
+                        on:scrollend=move |_|{
+                            if let Some(rail)=date_rail.get_untracked(){
+                                let midpoint=(rail.scroll_width()-rail.client_width()) as f64/2.0;
+                                let step=midpoint/90.0;
+                                if step<1.0{return;}
+                                let offset=(((rail.scroll_left() as f64-midpoint)/step).round()
+                                    as i64).clamp(-90,90);
+                                let next=date_rail_origin.get_untracked()+Duration::days(offset);
+                                if next!=date.get_untracked(){
+                                    date.set(next);
                                 }
                             }
-                        }
-                        on:touchend=move |ev|{
-                            if let (Some((sx,sy)),Some((ex,ey)))=
-                                (date_touch.get_untracked(),touch_end(&ev)){
-                                let dx=(ex-sx) as f64;
-                                let dy=(ey-sy) as f64;
-                                if dx.abs()>=28. && dx.abs()>dy.abs()*1.3 {
-                                    let width=web_sys::window().and_then(|w|w.document())
-                                        .and_then(|d|d.query_selector(".day-carousel").ok().flatten())
-                                        .map(|el|el.get_bounding_client_rect().width())
-                                        .unwrap_or(350.);
-                                    let viewport=web_sys::window().and_then(|w|w.inner_width().ok())
-                                        .and_then(|v|v.as_f64()).unwrap_or(390.);
-                                    let count=if viewport<=620. {5.} else if viewport<=1120. {7.} else {11.};
-                                    let cell=(width/count).max(35.);
-                                    let steps=((dx.abs()/cell).round() as i64).clamp(1,14);
-                                    let sign:i64=if dx<0. {1}else{-1};
-                                    date_direction.set(sign as i32);
-                                    date_last_swipe.set(js_sys::Date::now());
-                                    date.update(|day|*day+=Duration::days(sign*steps));
-                                }
-                            }
-                            date_touch.set(None);
-                            date_drag.set(0.);
-                            date_dragging.set(false);
-                        }
-                        on:touchcancel=move |_|{
-                            date_touch.set(None);
-                            date_drag.set(0.);
-                            date_dragging.set(false);
                         }>
-                        <For each=move ||vec![date.get()] key=|day|ymd(*day)
-                            children=move |center|{
-                                view!{
-                                    <div class="day-strip">
-                                        {(-5i64..=5).map(|offset|{
-                                            let day=center+Duration::days(offset);
-                                            view!{
-                                                <button type="button"
-                                                    class:active=move ||date.get()==day
-                                                    class:real-today=move ||day==today_local()
-                                                    aria-current=move ||if day==today_local() {"date"}else{"false"}
-                                                    aria-pressed=move ||date.get()==day
-                                                    aria-label=format!("{}월 {}일 {}요일{}",
-                                                        day.month(),day.day(),day_letter(day),
-                                                        if day==today_local() {" 오늘"} else {""})
-                                                    on:click=move |_|{
-                                                        if js_sys::Date::now()-date_last_swipe.get_untracked()<550. {return;}
-                                                        date_direction.set(if day>=date.get_untracked(){1}else{-1});
-                                                        date.set(day);
-                                                    }>
-                                                    <small>{day_letter(day)}</small>
-                                                    <strong>{format!("{:02}",day.day())}</strong>
-                                                    <Show when=move ||day==today_local()>
-                                                        <span class="day-today-label" aria-hidden="true">"오늘"</span>
-                                                    </Show>
-                                                </button>
+                        <div class="day-strip">
+                            <For each=move ||(-90i64..=90).collect::<Vec<_>>()
+                                key=|offset|*offset
+                                children=move |offset|{
+                                    let day=move ||date_rail_origin.get()+Duration::days(offset);
+                                    view!{
+                                        <button type="button"
+                                            class:active=move ||date.get()==day()
+                                            class:real-today=move ||day()==today_local()
+                                            aria-current=move ||if day()==today_local() {"date"}else{"false"}
+                                            aria-pressed=move ||date.get()==day()
+                                            aria-label=move ||{
+                                                let d=day();
+                                                format!("{}월 {}일 {}요일{}",d.month(),d.day(),
+                                                    day_letter(d),if d==today_local() {" 오늘"} else {""})
                                             }
-                                        }).collect_view()}
-                                    </div>
-                                }
-                            }/>
+                                            on:click=move |_|{
+                                                let selected=day();
+                                                if selected!=date.get_untracked(){date.set(selected);}
+                                            }>
+                                            <small>{move ||day_letter(day())}</small>
+                                            <strong>{move ||format!("{:02}",day().day())}</strong>
+                                            <span class="day-today-label" aria-hidden="true">
+                                                {move ||if day()==today_local() {"오늘"}else{""}}
+                                            </span>
+                                        </button>
+                                    }
+                                }/>
+                        </div>
                     </div>
                 </div>
             </section>
