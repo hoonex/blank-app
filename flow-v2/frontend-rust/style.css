@@ -762,14 +762,15 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
 .flow-adfit-native{
   display:flex;flex-direction:column;align-items:center;gap:8px;
   width:320px;max-width:calc(100% - 32px);
-  margin:35px auto 30px;
+  margin:0 auto;
 }
+.flow-adfit-native:has(.kakao_ad_area iframe){margin:35px auto 30px}
 .flow-shell:not([data-mode="오늘"]) .flow-adfit-native{display:none}
 .flow-adfit-caption{display:none;font-size:10px;color:var(--muted);letter-spacing:.04em}
 .flow-adfit-native:has(.kakao_ad_area iframe) .flow-adfit-caption{display:block}
 .flow-adfit-native .kakao_ad_area{max-width:100%;overflow:hidden}
 @media(max-width:870px){
-  .flow-adfit-native{margin-bottom:calc(112px + env(safe-area-inset-bottom))}
+  .flow-adfit-native:has(.kakao_ad_area iframe){margin-bottom:calc(112px + env(safe-area-inset-bottom))}
 }
 /* Integrated Kakao stop-position map, opt-in, no external-page detours. */
 .bus-selected-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
