@@ -71,6 +71,32 @@ for (const [width,height] of sizes) {
     if(await page.locator(".class-row").count()!==7)throw Error("Fixture timetable not fully visible");
     if(await page.locator(".hero-shape,.class-arrow,.class-type,.curtain-copy").count()!==0)
       throw Error("Superfluous ornament or false click affordance remains");
+    if(width===390){
+      if(await page.locator('a[href="/legacy"],a[href="/transit"],a[href*="schoolinfo.go.kr"]').count())
+        throw Error("Old Flow or external school links remain in the native app");
+      await page.getByRole("button",{name:"과목 수정"}).click();
+      await page.locator(".editor-periods button").nth(1).click();
+      await page.locator("#subject-draft").fill("인공지능 실습");
+      await page.locator(".editor-save").click();
+      if(await page.locator(".class-row").filter({hasText:"인공지능 실습"}).count()!==1)
+        throw Error("Native timetable edit did not update Today");
+      const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem("flow-school-timetable-overrides-v1")||"[]"));
+      if(!saved.some(x=>x.subject==="인공지능 실습"))
+        throw Error("Timetable editing did not persist to local storage");
+      await page.reload({waitUntil:"networkidle"});
+      await page.locator(".class-row").filter({hasText:"인공지능 실습"}).waitFor();
+      await page.getByRole("button",{name:"과목 수정"}).click();
+      await page.locator(".editor-periods button").nth(1).click();
+      if((await page.locator("#subject-draft").inputValue())!=="인공지능 실습")
+        throw Error("Timetable editing was lost after reload");
+      await page.locator(".editor-reset").click();
+      if(await page.locator(".class-row").filter({hasText:"인공지능 실습"}).count())
+        throw Error("Restore did not recover provider's original lesson");
+      const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem("flow-school-timetable-overrides-v1")||"[]"));
+      if(restored.some(x=>x.subject==="인공지능 실습"))
+        throw Error("Reset left override in localStorage");
+      await page.locator(".editor-close").click();
+    }
     const geometry=await page.evaluate(()=>{
       const radius=s=>parseFloat(getComputedStyle(document.querySelector(s)).borderTopLeftRadius);
       return {hero:radius(".today-heading"),meal:radius(".meal-sheet"),item:radius(".class-row"),control:radius(".day-strip button.active")};
@@ -263,6 +289,10 @@ for (const [width,height] of sizes) {
     if(width===390)await page.screenshot({path:shots+"/bus-390x844.png"});
     await page.locator(nav).nth(3).click();
     await page.locator(".setting-row").first().waitFor();
+    const links=await page.locator(".scene[data-scene='settings'] a[href]")
+      .evaluateAll(items=>items.map(el=>el.getAttribute("href")));
+    if(links.length!==1||links[0]!=="/university")
+      throw Error("Only Flow University may link outside School: "+JSON.stringify(links));
     await page.locator(".setting-toggle").first().click();
     if ((await page.locator("html").getAttribute("data-theme"))!=="dark")throw Error("Dark-mode toggle broken");
     await page.evaluate(() => {
