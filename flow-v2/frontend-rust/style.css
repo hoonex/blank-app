@@ -71,15 +71,22 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 }
 .hero-topline{display:flex;align-items:center;justify-content:space-between;gap:14px}
 .hero-tag,.hero-school{font-size:11px;font-weight:660;color:#b6bcb0}
+.return-to-today{
+ font-size:11px;font-weight:760;color:var(--night-text);
+ text-decoration:underline;text-decoration-color:var(--accent);
+ text-underline-offset:4px;padding:5px 8px;border-radius:999px;
+}
+.return-to-today:active{background:var(--accent);color:#171917}
+.hero-topline:has(.return-to-today) .hero-school{margin-left:auto}
 .hero-school{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .hero-core{min-height:132px;display:flex;align-items:center}
 .hero-date{min-width:0}
 .hero-small{display:block;font-size:11px;letter-spacing:.02em;font-weight:600;color:#b6bcb0;margin:0 0 7px}
-.hero-date h1{margin:0;display:flex;align-items:baseline;gap:clamp(12px,3vw,26px);white-space:nowrap;line-height:1}
-.date-motion{display:inline-flex;overflow:hidden;vertical-align:middle;padding:0 3px 7px 0}
+.hero-date h1{margin:0;display:flex;align-items:baseline;gap:clamp(12px,3vw,26px);white-space:nowrap;line-height:1.12}
+.date-motion{display:inline-flex;overflow:visible;vertical-align:middle;padding:.08em .12em .14em .025em;min-height:1.12em}
 .hero-numeral{
   display:inline-block;font-size:clamp(79px,9.4vw,128px);
-  line-height:.94;font-weight:840;letter-spacing:-.105em;font-variant-numeric:tabular-nums;
+  line-height:1.09;font-weight:840;letter-spacing:-.072em;font-variant-numeric:tabular-nums;
   animation:digit-in .56s var(--snap) both
 }
 .hero-weekday{font-size:clamp(18px,2.3vw,27px);font-weight:750;letter-spacing:-.04em;color:var(--accent)}
@@ -87,20 +94,21 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
    motion changes the selected day, without three separate paging buttons. */
 .hero-bottom{display:block;width:100%;min-width:0}
 .day-carousel{
-  width:100%;max-width:650px;position:relative;overflow:hidden;
+  width:100%;max-width:none;position:relative;overflow:hidden;
   touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain;
   -webkit-user-select:none;user-select:none;
 }
 .day-strip{
-  --day-gap:7px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  --day-gap:7px;display:grid;grid-template-columns:repeat(11,minmax(0,1fr));
   gap:var(--day-gap);width:100%;position:relative;
   transform:translate3d(var(--day-drag-x,0px),0,0);
-  animation:date-rail-enter .3s cubic-bezier(.2,.85,.2,1) both;
+  transition:transform .29s cubic-bezier(.19,.85,.28,1.1);
+  animation:date-rail-fade .2s ease-out both;
   will-change:transform;
 }
 .day-strip button{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  position:relative;min-width:0;min-height:69px;padding:8px 3px;
+  position:relative;min-width:0;min-height:79px;padding:8px 3px 17px;
   border-radius:19px;background:transparent;color:#aeb5a9;
   transition:background .24s,color .24s,scale .2s cubic-bezier(.2,1.6,.22,1);
   -webkit-tap-highlight-color:transparent;
@@ -108,13 +116,34 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .day-strip button small{font-size:12px;font-weight:690}
 .day-strip button strong{font-size:20px;line-height:1.05;font-weight:810;font-variant-numeric:tabular-nums}
 .day-strip button.active{background:var(--accent);color:#171917;scale:1}
+.day-strip button.real-today:not(.active){
+  background:color-mix(in srgb,var(--accent) 19%,transparent);
+  color:var(--night-text);
+}
+.day-today-label{
+  position:absolute;bottom:5px;left:0;right:0;
+  font-size:10px;font-weight:820;text-align:center;
+  line-height:1.1;letter-spacing:-.03em;color:var(--accent);
+}
+.day-strip button.active .day-today-label{color:#171917}
+.day-carousel[data-dragging="true"] .day-strip{
+  transition:none;animation:none;
+}
+@media(min-width:621px) and (max-width:1120px){
+  .day-strip{grid-template-columns:repeat(7,minmax(0,1fr))}
+  .day-strip button:nth-child(-n+2),.day-strip button:nth-child(n+10){display:none}
+}
+@media(max-width:620px){
+  .day-strip{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .day-strip button:nth-child(-n+3),.day-strip button:nth-child(n+9){display:none}
+}
 @media(hover:hover) and (pointer:fine){
  .day-strip button:not(.active):hover{color:#f5f6ee;text-decoration:underline;text-underline-offset:6px}
 }
 .day-strip button:active{scale:.94}
-@keyframes date-rail-enter{
-  from{opacity:.55;transform:translate3d(calc(var(--day-dir,1) * 22px + var(--day-drag-x,0px)),0,0)}
-  to{opacity:1;transform:translate3d(var(--day-drag-x,0px),0,0)}
+@keyframes date-rail-fade{
+  from{opacity:.64}
+  to{opacity:1}
 }
 .api-error{max-width:1360px;margin:16px auto 0;padding:12px 18px;border-radius:var(--radius-item);background:#ffddd4;color:#6b2921}
 .today-layout{
@@ -482,7 +511,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-date h1{gap:12px}
  .hero-bottom{margin-top:5px}
  .day-strip{--day-gap:6px}
- .day-strip button{min-height:62px;gap:3px;border-radius:17px}
+ .day-strip button{min-height:72px;gap:3px;border-radius:17px;padding-bottom:15px}
  .day-strip button small{font-size:11px}
  .day-strip button strong{font-size:18px}
  .today-layout{padding:22px 0 54px;gap:28px}
@@ -555,7 +584,8 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-small{display:none}
  .hero-numeral{font-size:53px}
  .hero-weekday{font-size:13px}
- .day-strip button{min-height:38px;flex-direction:row;gap:5px}
+ .day-strip button{min-height:43px;flex-direction:row;gap:5px;padding-bottom:8px}
+ .day-today-label{font-size:8px;bottom:2px}
  .today-layout{padding-top:13px}
  .class-row{min-height:41px}
  .mobile-bottom{height:46px;bottom:calc(4px + env(safe-area-inset-bottom))}
