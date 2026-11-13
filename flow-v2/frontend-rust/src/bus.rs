@@ -5,6 +5,7 @@ use gloo_net::http::Request;
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen::{JsCast,JsValue};
 
 const BUS_STOP_KEY: &str = "flow-daegu-favorite-stop-v1";
 
@@ -130,6 +131,15 @@ fn refresh_arrivals(
         }
     });
 }
+fn map_command(name:&str,show:bool){
+    let Some(window)=web_sys::window() else{return};
+    let fn_name=if show{"flowBusMapOpen"}else{"flowBusMapClose"};
+    if let Ok(value)=js_sys::Reflect::get(window.as_ref(),&JsValue::from_str(fn_name)){
+        if let Some(function)=value.dyn_ref::<js_sys::Function>(){
+            let _=function.call1(window.as_ref(),&JsValue::from_str(name));
+        }
+    }
+}
 #[component]
 pub fn BusInfo()->impl IntoView {
     let query=RwSignal::new(String::new());
@@ -145,6 +155,7 @@ pub fn BusInfo()->impl IntoView {
     let fetched_at=RwSignal::new(String::new());
     let seq_arrival=RwSignal::new(0u64);
     let loaded_stop=RwSignal::new(String::new());
+    let map_open=RwSignal::new(false);
     Effect::new(move |_|{
         if let Some(stop)=selected.get() {
             if loaded_stop.get_untracked()!=stop.id {
@@ -152,6 +163,15 @@ pub fn BusInfo()->impl IntoView {
                 refresh_arrivals(stop.id,arrivals,busy_arrivals,arrival_message,blocked,
                     fetched_at,seq_arrival);
             }
+        }
+    });
+    Effect::new(move |_|{
+        let open=map_open.get();
+        let stop=selected.get();
+        if open{
+            if let Some(s)=stop {map_command(&s.name,true);}
+        }else{
+            map_command("",false);
         }
     });
     view! {
@@ -187,6 +207,8 @@ pub fn BusInfo()->impl IntoView {
                             <button type="button" class="bus-stop-option" on:click=move |_|{
                                 save_stop(&clicked);
                                 selected.set(Some(clicked.clone()));
+                                // If the map is open, the reactive effect searches
+                                // for the newly selected stop's candidate locations.
                                 results.set(Vec::new());
                                 query.set(clicked.name.clone());
                             }>
@@ -205,14 +227,37 @@ pub fn BusInfo()->impl IntoView {
                             <strong>{move ||selected.get().map(|s|s.name).unwrap_or_default()}</strong>
                             <span>{move ||selected.get().map(|s|format!("정류장 번호 {}",s.number)).unwrap_or_default()}</span>
                         </div>
-                        <button type="button" class="bus-refresh" disabled=move ||busy_arrivals.get()
-                            on:click=move |_|{
-                                if let Some(stop)=selected.get_untracked(){
-                                    refresh_arrivals(stop.id,arrivals,busy_arrivals,arrival_message,
-                                        blocked,fetched_at,seq_arrival)
-                                }
-                            }>{move ||if busy_arrivals.get(){"조회 중"}else{"새로고침"}}</button>
+                        <div class="bus-selected-actions">
+                            <button type="button" class="bus-map-toggle"
+                                aria-expanded=move ||map_open.get()
+                                aria-controls="flow-bus-map"
+                                on:click=move |_|map_open.update(|v|*v=!*v)>
+                                {move ||if map_open.get(){"지도 닫기"}else{"지도 보기"}}
+                            </button>
+                            <button type="button" class="bus-refresh" disabled=move ||busy_arrivals.get()
+                                on:click=move |_|{
+                                    if let Some(stop)=selected.get_untracked(){
+                                        refresh_arrivals(stop.id,arrivals,busy_arrivals,arrival_message,
+                                            blocked,fetched_at,seq_arrival)
+                                    }
+                                }>{move ||if busy_arrivals.get(){"조회 중"}else{"새로고침"}}</button>
+                        </div>
                     </div>
+                    <Show when=move ||map_open.get()>
+                        <section class="bus-map" id="flow-bus-map" aria-label="카카오 지도 정류장 위치">
+                            <div class="bus-map-heading">
+                                <strong>"정류장 위치"</strong>
+                                <small>"카카오 지도 검색 결과 · 동명이소 주의"</small>
+                            </div>
+                            <div class="bus-map-canvas" id="flow-bus-map-canvas" role="application"
+                                aria-label="드래그 및 확대 가능한 정류장 지도"></div>
+                            <p class="bus-map-status" id="flow-bus-map-status" aria-live="polite">
+                                "지도 위치를 확인 중이에요."
+                            </p>
+                            <div class="bus-map-choices" id="flow-bus-map-choices"
+                                aria-label="일치하는 지도 위치 후보"></div>
+                        </section>
+                    </Show>
                     <div class="bus-meta">
                         <span>{move ||if fetched_at.get().is_empty(){
                             "대구시 운행정보".to_string()
