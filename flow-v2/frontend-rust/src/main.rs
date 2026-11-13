@@ -567,7 +567,7 @@ fn Today(
                                 (date_touch.get_untracked(),ev.touches().item(0)){
                                 let dx=point.client_x()-sx;
                                 let dy=point.client_y()-sy;
-                                if dx.abs()>4 && dx.abs() > dy.abs()*1.2 {
+                                if dx.abs()>4 && dx.abs()*10 > dy.abs()*12 {
                                     date_drag.set(dx as f64);
                                 }
                             }
