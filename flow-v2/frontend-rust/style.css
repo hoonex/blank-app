@@ -37,7 +37,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 }
 :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 .mobile-bottom,.switch-track,.day-carousel{touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain}
-.flow-main{touch-action:pan-y}
+.flow-main{touch-action:auto}
 .global-header{
   height:72px;padding:0 clamp(20px,4.1vw,64px);
   display:flex;align-items:center;gap:clamp(18px,4vw,70px);
@@ -90,27 +90,37 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   animation:digit-in .56s var(--snap) both
 }
 .hero-weekday{font-size:clamp(18px,2.3vw,27px);font-weight:750;letter-spacing:-.04em;color:var(--accent)}
-/* One tactile five-day carousel. Vertical scroll stays native; horizontal
-   motion changes the selected day, without three separate paging buttons. */
+/* Native kinetic rail: Chromium/WebKit applies platform momentum on touch,
+   then magnetically scroll-snaps to the nearest date as movement settles.
+   A fixed logical window of 181 dates rolls forward/back after selection. */
 .hero-bottom{display:block;width:100%;min-width:0}
 .day-carousel{
-  width:100%;max-width:none;position:relative;overflow:hidden;
-  touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain;
+  --visible-days:11;--day-gap:7px;
+  display:block;position:relative;width:100%;max-width:none;
+  container-type:inline-size;
+  overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;
+  scroll-padding-inline:50%;
+  touch-action:pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
   -webkit-user-select:none;user-select:none;
 }
+.day-carousel::-webkit-scrollbar{display:none}
 .day-strip{
-  --day-gap:7px;display:grid;grid-template-columns:repeat(11,minmax(0,1fr));
-  gap:var(--day-gap);width:100%;position:relative;
-  transform:translate3d(var(--day-drag-x,0px),0,0);
-  transition:transform .29s cubic-bezier(.19,.85,.28,1.1);
-  animation:date-rail-fade .2s ease-out both;
-  will-change:transform;
+  --day-cell:calc((100cqw - (var(--visible-days) - 1)*var(--day-gap))/var(--visible-days));
+  display:flex;align-items:stretch;gap:var(--day-gap);
+  width:max-content;min-width:100%;
+  padding-inline:calc((100cqw - var(--day-cell))/2);
 }
 .day-strip button{
+  flex:0 0 var(--day-cell);width:var(--day-cell);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   position:relative;min-width:0;min-height:79px;padding:8px 3px 17px;
   border-radius:19px;background:transparent;color:#aeb5a9;
-  transition:background .24s,color .24s,scale .2s cubic-bezier(.2,1.6,.22,1);
+  scroll-snap-align:center;scroll-snap-stop:normal;
+  transition:background .2s,color .2s,scale .2s cubic-bezier(.2,1.6,.22,1);
   -webkit-tap-highlight-color:transparent;
 }
 .day-strip button small{font-size:12px;font-weight:690}
@@ -125,26 +135,18 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   font-size:10px;font-weight:820;text-align:center;
   line-height:1.1;letter-spacing:-.03em;color:var(--accent);
 }
+.day-today-label:empty{visibility:hidden}
 .day-strip button.active .day-today-label{color:#171917}
-.day-carousel[data-dragging="true"] .day-strip{
-  transition:none;animation:none;
-}
 @media(min-width:621px) and (max-width:1120px){
-  .day-strip{grid-template-columns:repeat(7,minmax(0,1fr))}
-  .day-strip button:nth-child(-n+2),.day-strip button:nth-child(n+10){display:none}
+  .day-carousel{--visible-days:7}
 }
 @media(max-width:620px){
-  .day-strip{grid-template-columns:repeat(5,minmax(0,1fr))}
-  .day-strip button:nth-child(-n+3),.day-strip button:nth-child(n+9){display:none}
+  .day-carousel{--visible-days:5}
 }
 @media(hover:hover) and (pointer:fine){
  .day-strip button:not(.active):hover{background:rgba(255,255,255,.075);color:var(--night-text)}
 }
 .day-strip button:active{scale:.94}
-@keyframes date-rail-fade{
-  from{opacity:.64}
-  to{opacity:1}
-}
 .api-error{max-width:1360px;margin:16px auto 0;padding:12px 18px;border-radius:var(--radius-item);background:#ffddd4;color:#6b2921}
 .today-layout{
   max-width:1408px;margin:0 auto;
@@ -510,7 +512,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .hero-weekday{font-size:15px}
  .hero-date h1{gap:12px}
  .hero-bottom{margin-top:5px}
- .day-strip{--day-gap:6px}
+ .day-carousel{--day-gap:6px}
  .day-strip button{min-height:72px;gap:3px;border-radius:17px;padding-bottom:15px}
  .day-strip button small{font-size:11px}
  .day-strip button strong{font-size:18px}
