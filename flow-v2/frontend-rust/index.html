@@ -9,6 +9,7 @@
   <title>Flow — School</title>
   <link data-trunk rel="css" href="./style.css">
   <link data-trunk rel="rust" data-wasm-opt="0">
+  <link data-trunk rel="copy-file" href="./bus-stop-coords.json">
 </head>
 <body><script>
 /* Flow's maps are opt-in and loaded only after a stop is selected.
@@ -22,6 +23,15 @@
   let map = null;
   let markers = [];
   let generation = 0;
+  let officialStopsPromise = null;
+  function officialStops(){
+    if (!officialStopsPromise) officialStopsPromise =
+      fetch('/flow-v2/frontend-rust/dist/bus-stop-coords.json',{cache:'force-cache'})
+        .then(r=>{if(!r.ok)throw Error('official stop dataset unavailable');return r.json()})
+        .then(j=>Array.isArray(j.stops)?j.stops:[])
+        .catch(()=>[]);
+    return officialStopsPromise;
+  }
   const norm = s => String(s || '').normalize('NFKC').replace(/[\s()[\]·.,]/g, '').toLowerCase();
   const validPoint = p => Number.isFinite(Number(p.y)) && Number.isFinite(Number(p.x)) &&
     Number(p.y) > 35.4 && Number(p.y) < 36.4 &&
@@ -52,7 +62,7 @@
     for (const marker of markers) { try { marker.setMap(null); } catch (_) {} }
     markers = [];
   }
-  function showCandidates(places, name, token) {
+  function showCandidates(places, name, token, sourceLabel) {
     if (token !== generation) return;
     const panel = document.getElementById('flow-bus-map-canvas');
     const choices = document.getElementById('flow-bus-map-choices');
@@ -81,7 +91,8 @@
         map.setLevel(3);
         for (const node of choices.children) node.classList.remove('active');
         option.classList.add('active');
-        status('선택한 장소: ' + point.place_name + ' · 카카오 지도 검색 위치 (BIS 정류장 ID와 자동 대조된 좌표는 아님)');
+        status('선택한 정류장: ' + point.place_name + ' · ' + sourceLabel +
+          ' (동일한 정류장 이름이 여러 곳일 수 있어요)');
       };
       option.addEventListener('click', focus);
       k.event.addListener(marker,'click',focus);
@@ -91,7 +102,8 @@
     if (places.length === 1) {
       choices.firstElementChild.click();
     } else {
-      status('이름이 비슷한 정류장 ' + places.length + '곳을 찾았어요. 지도 핀이나 아래 위치를 선택해 주세요.');
+      status('같은 이름의 정류소 ' + places.length + '곳을 찾았어요 · ' +
+        sourceLabel + ' · 지도 핀이나 아래 위치를 선택해 주세요.');
     }
   }
   window.flowBusMapOpen = async name => {
@@ -104,20 +116,30 @@
       return;
     }
     if (token !== generation || !document.getElementById('flow-bus-map-canvas')) return;
-    // Do not guess an exact GPS coordinate from a stop name. Kakao Places
-    // returns separately selectable candidate locations, not an official BIS ID match.
-    const places = new window.kakao.maps.services.Places();
-    const search = q => new Promise(resolve => places.keywordSearch(q,(items,state) => {
-      resolve(state === window.kakao.maps.services.Status.OK ? items : []);
-    },{size:15}));
+    // GPS values are from Daegu City's public 2026-09-02 stop coordinates,
+    // not an unreliable general-places search. This dataset lacks a BIS ID;
+    // matching is by exact station name, with all same-name points selectable.
     try {
-      let items = await search(name + ' 버스정류장 대구');
-      if (!items.length) items = await search(name);
-      const exact = items.filter(p => validPoint(p) && norm(p.place_name) === norm(name));
-      const potential = exact.length ? exact : items.filter(validPoint);
-      showCandidates(potential.slice(0,8),name,token);
+      const official = (await officialStops())
+        .filter(row=>Array.isArray(row)&&norm(row[0])===norm(name))
+        .map(row=>({place_name:row[0],y:row[1],x:row[2]}))
+        .filter(validPoint);
+      if (token !== generation) return;
+      if (official.length) {
+        showCandidates(official,name,token,'대구시 공개 GPS · 2026.09.02');
+        return;
+      }
+      // Kakao Places is a secondary source only if it supplies an exact
+      // matching stop name. Similar commercial places must never become pins.
+      const places = new window.kakao.maps.services.Places();
+      const search = q => new Promise(resolve=>places.keywordSearch(q,(items,state)=>
+        resolve(state===window.kakao.maps.services.Status.OK?items:[]),{size:15}));
+      let items=await search(name+' 버스정류장 대구');
+      if (!items.length) items=await search(name);
+      showCandidates(items.filter(p=>validPoint(p)&&norm(p.place_name)===norm(name))
+        .slice(0,8),name,token,'카카오 장소 검색 · 정류소 이름 일치');
     } catch (_) {
-      if (token === generation) status('정류장 위치를 찾지 못했어요. 도착정보는 계속 사용할 수 있어요.');
+      if (token === generation) status('정류장 위치를 확인하지 못했어요. BIS 도착정보는 계속 사용할 수 있어요.');
     }
   };
   window.flowBusMapClose = () => { generation++; clearMarkers();map = null; };
