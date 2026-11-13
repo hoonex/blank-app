@@ -722,7 +722,7 @@ fn Today(
                         </div>
                     }>
                         <div class="class-rows">
-                            <For each=lessons key=|l|format!("{}:{}",l.date,l.period)
+                            <For each=lessons key=|l|format!("{}:{}:{}",l.date,l.period,l.subject)
                                 children=|lesson|view!{
                                     <div class="class-row">
                                         <span class="class-period">{format!("{:02}",lesson.period)}</span>
