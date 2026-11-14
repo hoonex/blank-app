@@ -43,11 +43,14 @@
    padding:9px 1px 0;gap:4px;font-size:12px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
  .flow-wheel-date.out-month{opacity:.24}
  .flow-wheel-event{width:5px;height:5px;background:var(--ink);border-radius:50%}
- .flow-wheel-lip{position:absolute;top:50%;transform:translateY(-50%);
-   font-size:11px;font-weight:790;letter-spacing:-.03em;
-   color:var(--ink);opacity:.8;writing-mode:vertical-rl;pointer-events:none}
- .flow-wheel-neighbor[data-wheel-side="-1"] .flow-wheel-lip{right:5px}
- .flow-wheel-neighbor[data-wheel-side="1"] .flow-wheel-lip{left:5px}
+ .flow-wheel-lip{
+   position:absolute;bottom:11px;top:auto;transform:none;
+   padding:4px 6px;border-radius:7px;background:var(--paper-low);
+   font-size:11px;font-weight:800;letter-spacing:-.03em;
+   color:var(--ink);writing-mode:horizontal-tb;pointer-events:none
+ }
+ .flow-wheel-neighbor[data-wheel-side="-1"] .flow-wheel-lip{right:7px}
+ .flow-wheel-neighbor[data-wheel-side="1"] .flow-wheel-lip{left:7px}
  .flow-wheel-neighbor:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
  .calendar-layout.flow-wheel-dragging,.calendar-layout.flow-wheel-dragging *{cursor:grabbing!important}
  html[data-theme=dark] .flow-wheel-neighbor,

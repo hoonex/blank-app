@@ -108,11 +108,10 @@
     const s=state;
     if(!s||!s.scene.isConnected)return;
     s.progress=progress;
-    const viewportWidth=s.layout.clientWidth;
-    const width=s.main.offsetWidth, height=s.main.offsetHeight;
-    const angle=.58; // radians, ~33 degrees per month
-    const outerWidth=width*.5*Math.cos(angle)+height*.5*Math.sin(angle);
-    const radius=clamp((viewportWidth*.5+outerWidth-21)/Math.sin(angle),430,1500);
+    const height=s.main.offsetHeight;
+    const angle=.82; // radians, ~47 degrees between months on the wheel
+    // Hub stays close to the bottom of the visible viewport, not below an arbitrary 3D surface.
+    const radius=clamp(window.innerHeight-s.layout.getBoundingClientRect().top-height*.5-28,330,760);
     const pivot=`50% calc(50% + ${radius.toFixed(1)}px)`;
     s.main.style.transformOrigin=pivot;
     s.main.style.transform=`rotate(${(-progress*angle).toFixed(5)}rad)`;
@@ -205,6 +204,7 @@
       if(d.vertical||Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy)*1.2)return;
       d.moved=true;
       s.layout.classList.add('flow-wheel-dragging');
+      try { s.layout.setPointerCapture(e.pointerId); } catch (_) { /* Synthetic pointers may not be capturable. */ }
     }
     if(e.cancelable)e.preventDefault();
     position(clamp(-dx/(s.layout.clientWidth*.83),-1.25,1.25));
