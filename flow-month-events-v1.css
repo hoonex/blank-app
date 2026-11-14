@@ -1,0 +1,63 @@
+/* Full month event ledger, grounded in the same dashboard as the calendar. */
+.calendar-layout>.flow-month-events{
+  grid-column:1 / -1;min-width:0;width:100%;
+  padding:clamp(22px,3.5vw,32px);
+  background:var(--surface);color:var(--ink);
+  border-radius:var(--radius-panel);
+  box-shadow:0 6px 26px rgba(20,24,20,.045);
+}
+.flow-month-events-head{display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding-bottom:17px}
+.flow-month-events-heading{display:flex;flex-direction:column;gap:5px}
+.flow-month-events-eyebrow{font-size:11px;font-weight:720;color:var(--muted)}
+.flow-month-events-heading h3{font-size:clamp(22px,3.3vw,29px);line-height:1.14;font-weight:830;
+  letter-spacing:-.055em;margin:0}
+.flow-month-events-count{color:var(--muted);font-size:12px;font-weight:720;white-space:nowrap}
+.flow-month-events-list{display:flex;flex-direction:column}
+.flow-month-event{
+  width:100%;min-height:67px;display:grid;grid-template-columns:48px minmax(0,1fr) 18px;
+  gap:16px;align-items:center;text-align:left;padding:13px 2px;
+  border-top:1px solid color-mix(in srgb,var(--muted) 18%,transparent);
+  cursor:pointer;transition:background-color .2s,padding .2s,transform .2s
+}
+.flow-month-event:active{transform:scale(.988)}
+@media(hover:hover) and (pointer:fine){
+ .flow-month-event:hover{padding-left:8px;background:color-mix(in srgb,var(--paper-low) 65%,transparent)}
+}
+.flow-month-event-date{min-height:42px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ gap:2px;font-variant-numeric:tabular-nums}
+.flow-month-event-date strong{font-size:22px;line-height:1;font-weight:810;letter-spacing:-.055em}
+.flow-month-event-date small{font-size:10px;line-height:1.15;color:var(--muted);font-weight:730}
+.flow-month-event-name{font-size:15px;font-weight:710;line-height:1.4;overflow-wrap:anywhere;letter-spacing:-.03em}
+.flow-month-event-arrow{font-size:23px;font-weight:450;color:var(--muted);line-height:1;text-align:right}
+.flow-month-events-message{margin:3px 0 0;border-top:1px solid color-mix(in srgb,var(--muted) 18%,transparent);
+  padding:20px 0 7px;color:var(--muted);font-size:13px}
+.flow-month-events-footnote{font-size:11px;line-height:1.55;color:var(--muted);margin:12px 0 0}
+@media(max-width:870px){
+ /* Translucent light dock deliberately contrasts with the almost-black event card. */
+ .mobile-bottom{
+   background:rgba(240,238,230,.94)!important;
+   border:1px solid rgba(35,39,34,.15)!important;
+   box-shadow:0 12px 34px rgba(15,19,15,.22),0 2px 6px rgba(15,19,15,.075)!important;
+   -webkit-backdrop-filter:blur(18px) saturate(1.08);
+   backdrop-filter:blur(18px) saturate(1.08);
+ }
+ .mobile-bottom button:not(.active):not(.preview){color:#55594e!important}
+ .mobile-bottom button.active,.mobile-bottom button.preview{color:#171917!important}
+ .mobile-bottom::before{background:var(--accent)!important}
+ html[data-theme="dark"] .mobile-bottom{
+   background:rgba(63,67,61,.96)!important;
+   border-color:rgba(255,255,255,.23)!important;
+   box-shadow:0 12px 32px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.07)!important;
+ }
+ html[data-theme="dark"] .mobile-bottom button:not(.active):not(.preview){color:#e4e5dc!important}
+ html[data-theme="dark"] .mobile-bottom button.active,
+ html[data-theme="dark"] .mobile-bottom button.preview{color:#171917!important}
+ .calendar-layout>.flow-month-events{padding:23px 21px;border-radius:25px}
+}
+@media(max-width:590px){
+ .calendar-layout>.flow-month-events{margin-top:1px}
+ .flow-month-event{grid-template-columns:43px minmax(0,1fr) 15px;gap:13px;min-height:64px}
+ .flow-month-event-name{font-size:14px}
+ .flow-month-event-date strong{font-size:21px}
+}
