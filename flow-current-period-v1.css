@@ -1,0 +1,46 @@
+/* Haksi-equivalent, clock-driven lesson indicator; educational reference
+   timings are not claimed to be Jungdong's official bell schedule. */
+.timetable-sheet .module-heading-copy{min-width:0}
+.flow-live-period{
+  display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;
+  position:relative;max-width:100%;
+  margin-top:11px;padding:8px 12px;border-radius:12px;
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+  color:var(--ink);font-variant-numeric:tabular-nums;
+  transition:opacity .2s,background-color .2s;
+}
+.flow-live-period.flow-live-hidden{display:none}
+.flow-live-period-dot{height:7px;width:7px;border-radius:50%;flex:none;background:var(--accent)}
+.flow-live-period-title{font-size:12px;line-height:1.3;font-weight:810;white-space:nowrap}
+.flow-live-period-summary{font-size:10px;font-weight:650;line-height:1.4;color:var(--muted)}
+.flow-live-period-progress{height:3px;flex:0 0 100%;overflow:hidden;
+  background:color-mix(in srgb,var(--accent) 25%,transparent);border-radius:5px}
+.flow-live-period-progress i{display:block;width:100%;height:100%;transform:scaleX(0);
+  background:var(--accent);transform-origin:left center;transition:transform 250ms linear}
+.flow-live-period[data-phase="break"] .flow-live-period-dot,
+.flow-live-period[data-phase="lunch"] .flow-live-period-dot,
+.flow-live-period[data-phase="done"] .flow-live-period-dot{
+  background:var(--muted)
+}
+.timetable-sheet .class-rows .class-row.flow-period-active{
+ background:color-mix(in srgb,var(--accent) 15%,var(--surface));
+ box-shadow:inset 3px 0 0 var(--accent);padding-left:18px;
+}
+.timetable-sheet .class-rows .class-row.flow-period-active .class-period{
+  color:var(--ink);font-weight:850
+}
+.timetable-sheet .class-rows .class-row.flow-period-done{
+ opacity:.47
+}
+.timetable-sheet .week-grid-row.flow-period-active{
+ background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+ box-shadow:inset 3px 0 0 var(--accent)
+}
+@media(max-width:590px){
+ .flow-live-period{padding:8px 10px;margin-top:8px;max-width:100%}
+ .flow-live-period-summary{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .flow-live-period-progress i{transition:none}
+ .timetable-sheet .class-rows .class-row.flow-period-active{transition:none}
+}
