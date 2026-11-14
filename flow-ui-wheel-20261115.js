@@ -91,6 +91,7 @@
       item.className='flow-wheel-date'+(outside?' out-month':'');
       item.style.gridColumn=String(col+1);
       item.style.gridRow=String(2+Math.floor(i/7));
+      if(!outside&&date.getDate()===1)item.classList.add('selected');
       const number=document.createElement('span');
       number.textContent=pad(date.getDate());
       item.appendChild(number);
@@ -161,13 +162,15 @@
       card.style.transform=`translateX(-50%) rotate(${rad.toFixed(5)}rad)`;
       card.style.pointerEvents=!s.animating&&Math.abs(relative)<1.15?'auto':'none';
       card.style.zIndex=String(Math.round(100-Math.abs(relative)*40));
+      const lip=card.querySelector('.flow-wheel-lip');
+      if(lip)lip.style.opacity=String(clamp((Math.abs(relative)-.24)/.35,0,1));
       // Virtualize offscreen columns; full grid only as the month turns toward center.
       updateGrid(info,relative);
     }
   }
   function refresh(force=false) {
     const s=state;
-    if(!s||s.animating||!s.scene.isConnected)return;
+    if(!s||(!force&&(s.animating||s.handoff))||!s.scene.isConnected)return;
     const m=monthFrom(s.scene);
     if(!m)return;
     const [y,mo]=m;
@@ -209,25 +212,72 @@
   }
   function navigate(delta){
     const s=state;
-    if(!s||s.animating)return;
+    if(!s||s.animating||s.handoff)return;
     const direction=delta<0?-1:1;
-    s.clickBlockUntil=performance.now()+650;
-    tween(direction,370,()=>{
+    const oldMonth=monthFrom(s.scene);
+    s.clickBlockUntil=performance.now()+900;
+    tween(direction,440,()=>{
       const buttons=s.scene.querySelectorAll('.month-actions .month-chevron');
       const chosen=direction<0?buttons[0]:buttons[buttons.length-1];
-      if(!chosen || buttons.length<2){tween(0,230);return;}
-      chosen.click();  // Original Leptos month transition; preserves real data.
-      requestAnimationFrame(()=>{
-        if(state!==s)return;
-        s.progress=0;
-        refresh(true);
-        position(0);
-      });
+      const arriving=s.neighbors[direction<0?0:1]?.card;
+      if(!chosen||buttons.length<2||!arriving){tween(0,230);return;}
+      // Keep the arrived visual card on screen while Leptos swaps its DOM.
+      const cover=arriving.cloneNode(true);
+      cover.classList.add('flow-wheel-handoff');
+      cover.setAttribute('aria-hidden','true');
+      cover.removeAttribute('role');
+      cover.removeAttribute('tabindex');
+      cover.style.zIndex='250';
+      cover.style.opacity='1';
+      cover.style.pointerEvents='none';
+      s.layout.appendChild(cover);
+      s.handoff=true;
+      s.main.style.opacity='0';
+      s.main.style.transform='rotate(0rad)';
+      s.main.style.zIndex='200';
+      chosen.click();
+      const expected=oldMonth&&shift(oldMonth[0],oldMonth[1],direction);
+      let attempts=0;
+      const settle=()=>{
+        if(state!==s||!s.scene.isConnected){cover.remove();return;}
+        const now=monthFrom(s.scene);
+        if(expected&&(!now||now[0]!==expected[0]||now[1]!==expected[1])&&attempts++<24){
+          requestAnimationFrame(settle);return;
+        }
+        requestAnimationFrame(()=>{
+          if(state!==s){cover.remove();return;}
+          s.progress=0;
+          refresh(true);
+          position(0);
+          s.main.style.transform='rotate(0rad)';
+          s.main.style.opacity='0';
+          s.main.style.zIndex='200';
+          const duration=reduced?0:220;
+          if(!duration){
+            s.main.style.opacity='1';
+            cover.remove();s.handoff=false;return;
+          }
+          const fadeIn=s.main.animate([{opacity:0},{opacity:1}],{
+            duration,easing:'cubic-bezier(.22,1,.36,1)',fill:'forwards'
+          });
+          const fadeOut=cover.animate([{opacity:1},{opacity:0}],{
+            duration,easing:'cubic-bezier(.22,1,.36,1)',fill:'forwards'
+          });
+          Promise.allSettled([fadeIn.finished,fadeOut.finished]).then(()=>{
+            if(state!==s)return;
+            s.main.style.opacity='1';
+            fadeIn.cancel();fadeOut.cancel();
+            cover.remove();
+            s.handoff=false;
+          });
+        });
+      };
+      requestAnimationFrame(settle);
     });
   }
   function start(e){
     const s=state;
-    if(!s||s.animating||!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;
+    if(!s||s.animating||s.handoff||!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0))return;
     if(!e.target.closest('.calendar-sheet,.flow-wheel-neighbor'))return;
     s.drag={id:e.pointerId,x:e.clientX,y:e.clientY,time:performance.now(),moved:false,vertical:false};
   }
@@ -265,6 +315,8 @@
     if(!s)return;
     s.observe.disconnect();
     s.neighbors.forEach(info=>info?.card.remove());
+    s.layout.querySelectorAll('.flow-wheel-handoff').forEach(el=>el.remove());
+    s.main.style.removeProperty('opacity');
     s.layout.classList.remove('flow-wheel-enabled','flow-wheel-dragging');
     s.main.style.removeProperty('transform');
     s.main.style.removeProperty('transform-origin');
@@ -275,7 +327,7 @@
     const main=layout?.querySelector(':scope > .calendar-sheet');
     if(!layout||!main||!monthFrom(scene))return;
     clear();
-    const s={scene,layout,main,neighbors:[null,null],drag:null,progress:0,key:'',stamp:'',animating:false,clickBlockUntil:0,observe:null};
+    const s={scene,layout,main,neighbors:[null,null],drag:null,progress:0,key:'',stamp:'',animating:false,handoff:false,clickBlockUntil:0,observe:null};
     state=s;
     layout.classList.add('flow-wheel-enabled');
     layout.addEventListener('pointerdown',start,{passive:true});
