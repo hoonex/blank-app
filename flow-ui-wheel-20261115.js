@@ -109,12 +109,45 @@
     if(!s||!s.scene.isConnected)return;
     s.progress=progress;
     const height=s.main.offsetHeight;
-    const angle=.82; // radians, ~47 degrees between months on the wheel
-    // Hub stays close to the bottom of the visible viewport, not below an arbitrary 3D surface.
-    const radius=clamp(window.innerHeight-s.layout.getBoundingClientRect().top-height*.5-28,330,760);
+    const width=s.main.offsetWidth;
+    const viewportHeight=window.visualViewport?.height || window.innerHeight;
+    const centerY=s.layout.getBoundingClientRect().top+height*.5;
+    // The wheel's common physical hub is >one full viewport BEYOND the
+    // visible bottom. It stays well below the screen, even when Chrome's
+    // address bar expands or collapses.
+    const hubY=Math.max(viewportHeight*2.55,centerY+viewportHeight*1.35);
+    const radius=hubY-centerY;
+    // Dynamically find the smallest angular spacing that keeps consecutive
+    // calendar rectangles apart at EVERY point of the swipe, not only at rest.
+    // At midpoint one card moves out as its neighbor moves into the center.
+    const halfWidth=theta=>(
+      Math.abs(width*Math.cos(theta))+
+      Math.abs(height*Math.sin(theta))
+    )*.5;
+    const nearestGap=step=>{
+      let gap=Infinity;
+      for(let i=0;i<=16;i++){
+        const t=i/16;
+        const a=-t*step;
+        const b=(1-t)*step;
+        const rightOfCurrent=radius*Math.sin(a)+halfWidth(a);
+        const leftOfNext=radius*Math.sin(b)-halfWidth(b);
+        gap=Math.min(gap,leftOfNext-rightOfCurrent);
+      }
+      return gap;
+    };
+    const clearance=12; // pixels of real whitespace between all card edges
+    let low=.01,high=.76;
+    for(let i=0;i<23;i++){
+      const mid=(low+high)*.5;
+      if(nearestGap(mid)>=clearance)high=mid;
+      else low=mid;
+    }
+    const angle=high;
     const pivot=`50% calc(50% + ${radius.toFixed(1)}px)`;
     s.main.style.transformOrigin=pivot;
     s.main.style.transform=`rotate(${(-progress*angle).toFixed(5)}rad)`;
+    s.main.style.zIndex=String(Math.round(100-Math.abs(progress)*40));
     const nextHeight=height+'px';
     for(const info of s.neighbors){
       const relative=info.side-progress;
@@ -124,7 +157,7 @@
       card.style.transformOrigin=pivot;
       card.style.transform=`translateX(-50%) rotate(${rad.toFixed(5)}rad)`;
       card.style.pointerEvents=!s.animating&&Math.abs(relative)<1.15?'auto':'none';
-      card.style.zIndex=String(10-Math.round(Math.abs(relative)*3));
+      card.style.zIndex=String(Math.round(100-Math.abs(relative)*40));
       // Virtualize offscreen columns; full grid only as the month turns toward center.
       updateGrid(info,relative);
     }
