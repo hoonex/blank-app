@@ -1,0 +1,17 @@
+/* Today date rail: displacement controls ongoing speed while held.
+   Disable native momentum only for the enhanced rail, keeping vertical page scroll. */
+.day-carousel.flow-velocity-rail{
+  touch-action:pan-y pinch-zoom!important;
+  overscroll-behavior-x:contain;
+  cursor:grab;
+}
+.day-carousel.flow-velocity-rail.flow-velocity-active{
+  scroll-snap-type:none!important;
+  scroll-behavior:auto!important;
+  -webkit-overflow-scrolling:auto;
+  cursor:grabbing;
+}
+.day-carousel.flow-velocity-rail.flow-velocity-active .day-strip button{
+  cursor:grabbing;
+  scroll-snap-stop:normal;
+}
