@@ -1,0 +1,33 @@
+/* Bus map is a primary school-tab surface, not a secondary toggle. */
+.scene[data-scene="school"] .bus-map-toggle{
+  display:none!important;
+}
+.scene[data-scene="school"] .bus-selected-actions .bus-refresh{
+  min-height:39px;
+  border:1px solid rgba(255,255,255,.17);
+}
+.scene[data-scene="school"] .bus-map{
+  display:grid;
+  margin-top:16px;
+  gap:9px;
+}
+.scene[data-scene="school"] .bus-map-canvas{
+  height:clamp(275px,35vw,390px);
+  border-radius:19px;
+  background:#ecebe4;
+}
+.scene[data-scene="school"] .bus-map-heading small{
+  line-height:1.45;
+  color:#afb6b0;
+}
+@media(max-width:590px){
+  .scene[data-scene="school"] .bus-map-canvas{
+    height:305px;
+    border-radius:17px;
+  }
+  .scene[data-scene="school"] .bus-selected-actions{width:auto}
+  .scene[data-scene="school"] .bus-selected-actions .bus-refresh{
+    flex:0 0 auto;
+    min-width:85px;
+  }
+}
