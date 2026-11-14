@@ -1,0 +1,66 @@
+/* The month wheel has a single common hub BELOW the screen-visible calendar.
+   Each card rotates around this point, following a circular arc. */
+.calendar-sheet::before,.calendar-sheet::after{content:none!important;display:none!important}
+@media(max-width:590px){
+ .calendar-layout.flow-wheel-enabled{
+   position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr);
+   width:100%;max-width:100%;gap:21px;margin:0 auto;
+   overflow:hidden;touch-action:pan-y;overscroll-behavior-x:contain;
+   padding:0 0 calc(123px + env(safe-area-inset-bottom))
+ }
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet{
+   position:relative;z-index:3;overflow:hidden;
+   width:calc(100% - 46px);min-width:0;margin:0 auto;
+   padding:12px 8px 17px;border-radius:26px;
+   background:var(--surface);
+   box-shadow:0 8px 28px rgba(21,24,20,.07);
+   transition:none!important;
+   touch-action:pan-y;will-change:transform;
+   -webkit-tap-highlight-color:transparent
+ }
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet .calendar-grid{min-width:0;width:100%;gap:1px}
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet .calendar-grid button{min-height:55px;touch-action:pan-y}
+ .calendar-layout.flow-wheel-enabled>.event-sheet{
+   position:relative;z-index:20;width:calc(100% - 28px);
+   min-width:0;margin:9px auto 0;
+ }
+ .flow-wheel-neighbor{
+   position:absolute;z-index:1;
+   left:50%;top:0;width:calc(100% - 46px);
+   margin:0;min-height:320px;
+   padding:12px 8px 17px;border-radius:26px;
+   background:var(--surface);
+   box-shadow:0 8px 28px rgba(21,24,20,.07);
+   overflow:hidden;touch-action:pan-y;
+   will-change:transform;cursor:pointer;
+   user-select:none;-webkit-user-select:none;
+ }
+ .flow-wheel-title{height:30px;display:flex;align-items:center;justify-content:center;
+   white-space:nowrap;font-size:13px;font-weight:760;color:var(--ink);letter-spacing:-.035em}
+ .flow-wheel-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:min-content;gap:1px}
+ .flow-wheel-weekday{min-height:32px;display:grid;place-items:center;font-size:11px;font-weight:720;color:var(--muted)}
+ .flow-wheel-date{min-height:55px;display:flex;flex-direction:column;align-items:center;
+   padding:9px 1px 0;gap:4px;font-size:12px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
+ .flow-wheel-date.out-month{opacity:.24}
+ .flow-wheel-event{width:5px;height:5px;background:var(--ink);border-radius:50%}
+ .flow-wheel-lip{position:absolute;top:50%;transform:translateY(-50%);
+   font-size:11px;font-weight:790;letter-spacing:-.03em;
+   color:var(--ink);opacity:.8;writing-mode:vertical-rl;pointer-events:none}
+ .flow-wheel-neighbor[data-wheel-side="-1"] .flow-wheel-lip{right:5px}
+ .flow-wheel-neighbor[data-wheel-side="1"] .flow-wheel-lip{left:5px}
+ .flow-wheel-neighbor:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+ .calendar-layout.flow-wheel-dragging,.calendar-layout.flow-wheel-dragging *{cursor:grabbing!important}
+ html[data-theme=dark] .flow-wheel-neighbor,
+ html[data-theme=dark] .calendar-layout.flow-wheel-enabled>.calendar-sheet{
+   box-shadow:0 8px 28px rgba(0,0,0,.17)
+ }
+}
+@media(max-width:360px){
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet,
+ .flow-wheel-neighbor{width:calc(100% - 34px);padding-inline:5px}
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet .calendar-num{width:27px;height:27px;font-size:11px}
+ .flow-wheel-date{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .calendar-layout.flow-wheel-enabled>.calendar-sheet,.flow-wheel-neighbor{will-change:auto}
+}
