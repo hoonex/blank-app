@@ -100,8 +100,18 @@
       '전체 일정 데이터를 불러오지 못해 달력에 표시된 첫 번째 일정만 보여줍니다.'));
   }
   function fallback(month){
-    // Never claim this is the full list: the Rust calendar truncates multiple
-    // events on one day to the first title plus '+N'.
+    // Never claim this is the full list: Rust truncates multiple day events.
+    // Also verify that the visible grid belongs to this month; month titles
+    // may update before Leptos has patched the actual date buttons.
+    const cells=[...scene?.querySelectorAll('.calendar-sheet .calendar-grid button')||[]];
+    const firstInMonth=cells.findIndex(cell=>!cell.classList.contains('out-month'));
+    const expectedFirstWeekday=new Date(month.year,month.month-1,1).getDay();
+    if(firstInMonth!==expectedFirstWeekday){
+      host.querySelector('.flow-month-events-count').textContent='확인 필요';
+      message('이번 달 전체 일정을 불러오지 못했어요.',
+        '달력에 표시된 일정은 확인할 수 있지만 전체 목록은 연결이 필요합니다.');
+      return;
+    }
     const out=[];
     for(const cell of scene?.querySelectorAll('.calendar-sheet .calendar-grid button:not(.out-month)')||[]){
       const number=Number(cell.querySelector('.calendar-num')?.textContent);
