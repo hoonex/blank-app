@@ -112,39 +112,42 @@
     const width=s.main.offsetWidth;
     const viewportHeight=window.visualViewport?.height || window.innerHeight;
     const centerY=s.layout.getBoundingClientRect().top+height*.5;
-    // The wheel's common physical hub is >one full viewport BEYOND the
-    // visible bottom. It stays well below the screen, even when Chrome's
-    // address bar expands or collapses.
-    const hubY=Math.max(viewportHeight*2.55,centerY+viewportHeight*1.35);
-    const radius=hubY-centerY;
-    // Dynamically find the smallest angular spacing that keeps consecutive
-    // calendar rectangles apart at EVERY point of the swipe, not only at rest.
-    // At midpoint one card moves out as its neighbor moves into the center.
-    const halfWidth=theta=>(
-      Math.abs(width*Math.cos(theta))+
-      Math.abs(height*Math.sin(theta))
-    )*.5;
-    const nearestGap=step=>{
-      let gap=Infinity;
-      for(let i=0;i<=16;i++){
-        const t=i/16;
-        const a=-t*step;
-        const b=(1-t)*step;
-        const rightOfCurrent=radius*Math.sin(a)+halfWidth(a);
-        const leftOfNext=radius*Math.sin(b)-halfWidth(b);
-        gap=Math.min(gap,leftOfNext-rightOfCurrent);
+    const key=[height,width,Math.round(viewportHeight),Math.round(centerY)].join('/');
+    // Hub is more than one viewport height below the visible screen.
+    // Solve spacing ONLY when the dimensions or viewport position change;
+    // rotation frames reuse cached geometry.
+    let geometry=s.geometry;
+    if(!geometry||geometry.key!==key){
+      const hubY=Math.max(viewportHeight*2.55,centerY+viewportHeight*1.35);
+      const radius=hubY-centerY;
+      const halfWidth=theta=>(
+        Math.abs(width*Math.cos(theta))+
+        Math.abs(height*Math.sin(theta))
+      )*.5;
+      const nearestGap=step=>{
+        let gap=Infinity;
+        for(let i=0;i<=16;i++){
+          const t=i/16;
+          const a=-t*step;
+          const b=(1-t)*step;
+          const right=radius*Math.sin(a)+halfWidth(a);
+          const left=radius*Math.sin(b)-halfWidth(b);
+          gap=Math.min(gap,left-right);
+        }
+        return gap;
+      };
+      const clearance=12; // minimum gap in pixels at every swipe frame
+      let low=.01,high=.76;
+      for(let i=0;i<23;i++){
+        const mid=(low+high)*.5;
+        if(nearestGap(mid)>=clearance)high=mid;
+        else low=mid;
       }
-      return gap;
-    };
-    const clearance=12; // pixels of real whitespace between all card edges
-    let low=.01,high=.76;
-    for(let i=0;i<23;i++){
-      const mid=(low+high)*.5;
-      if(nearestGap(mid)>=clearance)high=mid;
-      else low=mid;
+      geometry={key,radius,angle:high,
+        pivot:`50% calc(50% + ${radius.toFixed(1)}px)`};
+      s.geometry=geometry;
     }
-    const angle=high;
-    const pivot=`50% calc(50% + ${radius.toFixed(1)}px)`;
+    const {radius,angle,pivot}=geometry;
     s.main.style.transformOrigin=pivot;
     s.main.style.transform=`rotate(${(-progress*angle).toFixed(5)}rad)`;
     s.main.style.zIndex=String(Math.round(100-Math.abs(progress)*40));
