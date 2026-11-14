@@ -1,0 +1,53 @@
+/* Top-of-app AdFit placement (existing approved 320×100 unit only). */
+.flow-shell .global-header.flow-ad-header {
+  width:100%;max-width:1536px;box-sizing:border-box;
+  min-height:76px;height:auto;
+}
+.flow-shell .global-header.flow-ad-header .flow-adfit-native {
+  display:flex!important;flex:0 0 320px;flex-direction:column;
+  gap:4px;align-items:center;justify-content:center;
+  width:320px;max-width:100%;margin:0!important;
+  min-height:0;padding:0!important;
+}
+.flow-shell .global-header.flow-ad-header .flow-adfit-caption{
+  display:none!important;font-size:10px;font-weight:660;letter-spacing:.035em;
+  color:var(--muted);
+}
+.flow-shell .global-header.flow-ad-header .flow-adfit-native:has(iframe) .flow-adfit-caption{
+  display:block!important;
+}
+.flow-shell .global-header.flow-ad-header .kakao_ad_area {
+  max-width:100%;margin:0 auto;overflow:visible;
+}
+.flow-shell .global-header.flow-ad-header .flow-adfit-native[data-flow-ad-state="empty"]:not(:has(iframe)){
+  display:none!important;
+}
+.flow-shell .global-header.flow-ad-header .rail-navigation{margin-right:auto}
+.onboarding-title .brand-lockup{display:none!important}
+@media(max-width:870px){
+  .flow-shell .global-header.flow-ad-header {
+    height:auto;min-height:0;max-height:none;
+    width:100%;margin:0 auto;padding:7px 12px!important;
+    display:flex;align-items:center;justify-content:center;
+    overflow:visible;gap:0;
+  }
+  .flow-shell .global-header.flow-ad-header .flow-adfit-native{
+    flex:0 0 auto;width:320px;max-width:calc(100vw - 24px);
+    margin:0 auto!important;
+  }
+  .flow-shell .global-header.flow-ad-header:has(.flow-adfit-native:not([data-flow-ad-state="empty"])) {
+    min-height:114px;
+  }
+  .flow-shell .global-header.flow-ad-header:has(.flow-adfit-native[data-flow-ad-state="empty"]:not(:has(iframe))){
+    height:0!important;min-height:0!important;padding:0!important;
+  }
+  .flow-shell .global-header.flow-ad-header .flow-adfit-caption{
+    position:static;margin:0;padding:0;line-height:1.1;
+  }
+}
+@media(min-width:871px){
+  .flow-shell .global-header.flow-ad-header{
+    padding-top:8px;padding-bottom:8px;
+  }
+  .flow-shell .global-header.flow-ad-header:has(iframe){min-height:124px;}
+}
