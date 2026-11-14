@@ -1,0 +1,17 @@
+/* Direct manipulation: a dragged cell follows the physical finger.
+   Chrome must not apply a second horizontal native pan or snap. */
+.day-carousel.flow-direct-rail,
+.day-carousel.flow-direct-rail .day-strip,
+.day-carousel.flow-direct-rail .day-strip button{
+  touch-action:pan-y pinch-zoom!important;
+  -webkit-user-select:none;user-select:none;
+}
+.day-carousel.flow-direct-rail{
+  scroll-snap-type:none!important;
+  scroll-behavior:auto!important;
+  overscroll-behavior-x:contain;cursor:grab;
+}
+.day-carousel.flow-direct-dragging,
+.day-carousel.flow-direct-dragging .day-strip button{
+  cursor:grabbing;
+}
