@@ -270,15 +270,15 @@
     if(oldMode===mode && oldMonth===nextMonth){
       grid.scrollTop=before;
     }else if(mode==='month'){
-      // Keep the chosen date visible on first switch/month change without
-      // disturbing subsequent manual scrolling inside the month grid.
-      requestAnimationFrame(()=>{
-        if(!grid.isConnected || grid.dataset.month!==nextMonth || grid.dataset.view!=='month')return;
+      // Position the chosen date before paint. No late jump after switching
+      // between week and month, and no interruption to manual scrolling.
+      if(grid.isConnected && grid.dataset.month===nextMonth){
         const day=grid.querySelector('.flow-meal-day.selected');
-        if(!day)return;
-        const outer=grid.getBoundingClientRect(),inner=day.getBoundingClientRect();
-        grid.scrollTop+=inner.top-outer.top-(grid.clientHeight-inner.height)/2;
-      });
+        if(day){
+          const outer=grid.getBoundingClientRect(),inner=day.getBoundingClientRect();
+          grid.scrollTop+=inner.top-outer.top-(grid.clientHeight-inner.height)/2;
+        }
+      }
     }else{
       grid.scrollTop=0;
     }
