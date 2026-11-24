@@ -1,0 +1,288 @@
+/* Flow v2: touch-stable bottom dock + information-dense Today + compact school tools. */
+@media(max-width:870px){
+ .flow-shell .mobile-bottom{
+   position:absolute;isolation:isolate;
+   touch-action:none!important;overscroll-behavior:contain;
+   grid-template-columns:repeat(5,minmax(0,1fr))!important;
+ }
+ .flow-shell .mobile-bottom::before{display:none!important}
+ .flow-shell .mobile-bottom .flow-dock-thumb{
+   position:absolute;z-index:1;pointer-events:none;
+   top:5px;bottom:5px;left:0;
+   border-radius:999px;background:var(--accent);
+   transition:transform .19s cubic-bezier(.2,.85,.2,1),width .18s ease;
+   will-change:transform;
+ }
+ .flow-shell .mobile-bottom .flow-dock-thumb.is-dragging{transition:none!important}
+ .flow-shell .mobile-bottom>button{
+   position:relative;z-index:2;min-width:0;
+   border-radius:999px;background:transparent!important;
+   transition:color .12s!important;transform:none!important;
+   color:color-mix(in srgb,var(--night-text) 75%,transparent)!important;
+ }
+ .flow-shell .mobile-bottom>button.flow-selected,
+ .flow-shell .mobile-bottom>button.flow-preview{
+   color:#171917!important;background:transparent!important;opacity:1!important
+ }
+ .flow-shell .mobile-bottom>button.active:not(.flow-selected){
+   background:transparent!important;
+ }
+ /* Replace the oversized hero with a single compact native date/navigation row. */
+ .flow-shell .scene[data-scene="today"] .today-heading{
+   display:flex!important;align-items:center!important;gap:8px!important;
+   width:calc(100% - 28px)!important;
+   min-height:95px!important;height:95px!important;
+   margin:9px auto 0!important;padding:12px 13px!important;
+   border-radius:20px!important;
+   overflow:hidden!important;
+ }
+ .flow-shell .today-heading .hero-topline{
+   position:absolute;right:9px;top:1px;z-index:4;
+   display:block;pointer-events:none;
+ }
+ .flow-shell .today-heading .hero-topline .hero-tag,
+ .flow-shell .today-heading .hero-topline .hero-school{display:none!important}
+ .flow-shell .today-heading .return-to-today{
+   pointer-events:auto;font-size:10px;line-height:1.1;
+   background:var(--night);padding:5px 7px;
+ }
+ .flow-shell .today-heading .hero-core{
+   flex:0 0 37%;width:37%;min-width:0;min-height:0!important;
+   height:auto!important;align-items:center!important;
+ }
+ .flow-shell .today-heading .hero-date h1{
+   display:flex!important;flex-direction:column!important;
+   align-items:flex-start!important;gap:2px!important;
+   min-height:0;line-height:1;
+ }
+ .flow-shell .today-heading .date-motion{
+   display:block!important;min-height:0!important;line-height:1!important;
+   overflow:visible!important;padding:0!important;
+ }
+ .flow-shell .today-heading .hero-numeral{
+   font-size:clamp(31px,9.5vw,44px)!important;
+   line-height:1!important;animation:none!important;
+   letter-spacing:-.055em!important;
+ }
+ .flow-shell .today-heading .hero-weekday{
+   font-size:12px!important;line-height:1.1;
+ }
+ .flow-shell .today-heading .hero-bottom{
+   flex:1 1 0;min-width:0;width:auto!important;
+   margin:0!important;overflow:hidden;
+ }
+ .flow-shell .today-heading .day-carousel{
+   --visible-days:3;--day-gap:4px;
+   width:100%!important;scrollbar-width:none;
+   touch-action:pan-x pan-y pinch-zoom!important;
+   overscroll-behavior-x:contain!important;
+   scroll-snap-type:x mandatory;
+ }
+ .flow-shell .today-heading .day-strip button{
+   min-height:58px!important;padding:5px 1px 10px!important;
+   border-radius:12px!important;gap:2px!important;
+   transform:none!important;scale:1!important;
+   transition:background .13s,color .13s!important;
+ }
+ .flow-shell .today-heading .day-strip button small{font-size:10px!important}
+ .flow-shell .today-heading .day-strip button strong{font-size:15px!important}
+ .flow-shell .today-heading .day-today-label{font-size:8px!important;bottom:2px!important}
+ .flow-shell .scene[data-scene="today"] .today-layout{
+   padding-top:15px!important;gap:16px!important;
+ }
+ .flow-shell .scene[data-scene="today"] .module-heading{
+   gap:8px!important;align-items:center!important;
+   margin-bottom:8px!important;
+ }
+ .flow-shell .scene[data-scene="today"] .module-heading h2{
+   font-size:27px!important;line-height:1!important;
+ }
+ .flow-shell .scene[data-scene="today"] .class-row{
+   min-height:44px!important;padding:5px 7px!important;
+   grid-template-columns:36px minmax(0,1fr)!important;
+ }
+ .flow-shell .scene[data-scene="today"] .class-row strong{font-size:16px!important}
+ .flow-shell .scene[data-scene="today"] .module-kicker{font-size:10px!important}
+ .flow-shell .scene[data-scene="today"] .module-controls{gap:5px!important}
+ .flow-shell .scene[data-scene="today"] .edit-timetable-trigger{font-size:11px!important}
+ /* The month does not lengthen the whole dashboard. Scroll inside the meal card. */
+ .flow-meal-single[data-view="month"] .flow-meal-calendar{
+   max-height:226px;overflow-y:auto;overflow-x:hidden;
+   scrollbar-width:thin;overscroll-behavior-y:contain;
+   -webkit-overflow-scrolling:touch;
+   padding:0 2px 5px 0;
+   scroll-snap-type:y proximity;
+ }
+ .flow-meal-single[data-view="month"] .flow-meal-day{
+   scroll-snap-align:start;
+ }
+ .flow-meal-single[data-view="week"] .flow-meal-calendar{
+   max-height:none;overflow:visible;
+ }
+ .flow-meal-single .flow-meal-day{min-height:76px!important}
+ .flow-meal-single .flow-meal-day-teaser{
+   -webkit-line-clamp:2!important;line-clamp:2!important;
+   max-height:2.7em!important;
+   font-size:9px!important;
+ }
+ .flow-meal-single .flow-meal-day-count{font-size:9px!important}
+ .flow-meal-single .flow-meal-chip{
+   font-size:11px!important;padding:7px 9px!important;
+ }
+ .flow-meal-single .flow-meal-single-head{margin-bottom:9px!important}
+ .flow-meal-single .flow-meal-main{padding-bottom:8px!important}
+ .flow-meal-single .flow-meal-navigator{
+   margin:0 0 6px!important;padding-top:9px!important;
+ }
+ .flow-meal-single .flow-meal-segment{
+   touch-action:none!important;
+   -webkit-tap-highlight-color:transparent;
+ }
+ .flow-meal-single .flow-meal-segment::before{
+   transform:translateX(calc(var(--flow-meal-shift,0) * 100%))!important;
+   transition:transform .17s cubic-bezier(.2,.8,.2,1)!important;
+ }
+ .flow-meal-single .flow-meal-segment[data-dragging="true"]::before{
+   transition:none!important;
+ }
+ .flow-meal-single[data-view="month"] .flow-meal-segment:not([data-dragging="true"]){
+   --flow-meal-shift:1;
+ }
+ /* Native edit model retained: compact controls, no extra explanatory panel. */
+ .timetable-editor{
+   display:flex!important;flex-direction:column!important;gap:10px!important;
+   margin:10px 0 13px!important;padding:13px!important;
+   border-radius:16px!important;
+   border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+   background:var(--surface)!important;
+ }
+ .timetable-editor .editor-help,
+ .timetable-editor .editor-top .module-kicker{display:none!important}
+ .timetable-editor .editor-top h3{font-size:18px!important;margin:0!important}
+ .timetable-editor .editor-close{padding:7px 11px!important;font-size:11px!important}
+ .timetable-editor .editor-periods{
+   display:flex!important;overflow-x:auto;gap:5px!important;
+   scrollbar-width:none;scroll-snap-type:x proximity;
+   padding:2px!important;
+ }
+ .timetable-editor .editor-periods button{
+   flex:0 0 36px;min-width:36px!important;min-height:36px!important;
+   border-radius:10px!important;scroll-snap-align:center;
+ }
+ .timetable-editor .editor-label{font-size:11px!important;color:var(--muted)}
+ .timetable-editor #subject-draft{
+   min-height:43px!important;border-radius:12px!important;
+   font-size:15px!important;
+ }
+ .timetable-editor .editor-actions{display:flex!important;gap:8px!important}
+ .timetable-editor .editor-save,.timetable-editor .editor-reset{
+   flex:1;min-height:41px;border-radius:12px!important;font-size:12px!important;
+ }
+ .timetable-editor .editor-status:empty{display:none!important}
+ .timetable-sheet:has(.timetable-editor) .class-row{
+   cursor:pointer;border-radius:10px;
+ }
+ .timetable-sheet:has(.timetable-editor) .class-row:active{
+   background:color-mix(in srgb,var(--accent) 12%,transparent)
+ }
+}
+@media(max-width:360px){
+ .flow-shell .scene[data-scene="today"] .today-heading{gap:6px!important;padding:10px 10px!important}
+ .flow-shell .today-heading .hero-core{flex-basis:34%;width:34%}
+ .flow-shell .today-heading .hero-numeral{font-size:30px!important}
+ .flow-meal-single[data-view="month"] .flow-meal-calendar{max-height:214px}
+}
+@media(prefers-reduced-motion:reduce){
+ .flow-shell .mobile-bottom .flow-dock-thumb,
+ .flow-meal-single .flow-meal-segment::before{transition:none!important}
+}
+
+
+/* Lightweight type-ahead school search: the original national school
+   selection and grade/class form remain functional. */
+.flow-onboarding-v2{
+  width:min(100%,670px)!important;max-width:670px!important;
+  margin:0 auto!important;grid-template-columns:1fr!important;
+  align-content:start!important;gap:15px!important;
+}
+.flow-onboarding-v2 .onboarding-title{
+  min-width:0;max-width:520px;
+}
+.flow-onboarding-v2 .onboarding-title .brand-lockup,
+.flow-onboarding-v2 .onboarding-title>.eyebrow,
+.flow-onboarding-v2 .onboarding-title>p{display:none!important}
+.flow-onboarding-v2 .onboarding-title h1{
+  font-size:clamp(26px,5vw,38px)!important;line-height:1.16!important;
+  margin:0!important;letter-spacing:-.055em!important;
+}
+.flow-onboarding-v2 .setup-sheet{
+  padding:20px!important;border-radius:24px!important;
+  box-shadow:none!important;
+}
+.flow-onboarding-v2 .setup-sheet>.eyebrow,
+.flow-onboarding-v2 .setup-sheet>p:not(.form-status):not(.flow-school-choice-note):not(.flow-school-search-hint){
+  display:none!important
+}
+.flow-onboarding-v2 .setup-sheet h2{
+  margin:0 0 13px!important;font-size:22px!important;
+}
+.flow-onboarding-v2 .setup-sheet>label[for="school-search"]{display:none!important}
+.flow-onboarding-v2 .search-combo{
+  display:flex;align-items:center;gap:6px!important;
+  padding:4px;border-radius:19px;
+  background:var(--paper-low)!important;
+  border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+}
+.flow-onboarding-v2 .search-combo:focus-within{
+  border-color:var(--accent);outline:1px solid var(--accent);
+}
+.flow-onboarding-v2 .search-combo input{
+  flex:1;min-width:0;height:44px!important;min-height:44px!important;
+  border:0!important;outline:0!important;
+  padding:0 11px!important;
+  background:transparent!important;border-radius:14px!important;
+  box-shadow:none!important;
+}
+.flow-onboarding-v2 .search-combo button{
+  flex:none;min-width:58px!important;min-height:42px!important;
+  border-radius:14px!important;font-size:12px!important;
+  padding:0 12px!important;
+}
+.flow-onboarding-v2 .flow-school-search-hint{margin:7px 4px 10px!important}
+.flow-onboarding-v2 .school-search-results{
+  margin:2px 0 0!important;max-height:238px!important;overflow-y:auto!important;
+  scrollbar-width:thin;gap:1px!important;
+}
+.flow-onboarding-v2 .school-search-results[aria-hidden="true"]{display:none!important}
+.flow-onboarding-v2 .school-search-results .search-option{
+  min-height:50px!important;padding:10px 12px!important;
+  background:transparent!important;border-radius:10px!important;
+  border-bottom:1px solid color-mix(in srgb,var(--ink) 7%,transparent);
+}
+.flow-onboarding-v2 .school-search-results .search-option:active{
+  background:color-mix(in srgb,var(--accent) 13%,var(--surface))!important;
+}
+.flow-onboarding-v2.flow-school-chosen:not(.flow-picker-editing) .school-search-results{
+  display:none!important;
+}
+.flow-onboarding-v2 .selection-summary{
+  cursor:pointer;margin:12px 0 7px!important;
+  padding:12px 14px!important;border-radius:15px!important;
+  font-size:14px!important
+}
+.flow-onboarding-v2 .selection-summary::after{
+  content:"변경";float:right;
+  font-size:11px;color:var(--accent);font-weight:700
+}
+.flow-onboarding-v2 .flow-school-choice-note{margin-bottom:10px!important}
+.flow-onboarding-v2 .setup-complete{margin-top:14px!important}
+@media(max-width:870px){
+ .flow-onboarding-v2{
+   padding:clamp(38px,10svh,88px) 18px 50px!important;
+   min-height:100dvh!important;
+ }
+ .flow-onboarding-v2 .setup-sheet{padding:16px!important}
+}
+@media(max-width:360px){
+ .flow-onboarding-v2{padding-left:12px!important;padding-right:12px!important}
+}
