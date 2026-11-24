@@ -73,4 +73,13 @@
 - Nielsen Norman Group — [Visual Hierarchy in UX](https://www.nngroup.com/articles/visual-hierarchy-ux-definition/)
 - Nielsen Norman Group — [5 Principles of Visual Design](https://www.nngroup.com/articles/principles-visual-design/)
 
-**구현 파일:** `flow-icons-handdrawn-v1.js`, `flow-reading-order-v1.css`.
+**현재 적용 파일:** `flow-icons-handdrawn-v1.js`, `flow-reading-order-v2.css`. 앞서 만든 v1 CSS는 브라우저 캐시 회피를 위해 파일명을 변경했으며, 운영 HTML은 v2를 참조한다.
+
+## 확인한 실제 렌더링 결과
+
+- 320px 모바일: SVG 5개, 버튼 약 50×54px, 도크 66px, 가로 넘침 없음
+- 393px 모바일: SVG 5개, 버튼 약 62×58px, 도크 70px, 가로 넘침 없음
+- 800px 태블릿: SVG 5개, 도크 70px, 급식 항목 1열로 렌더링
+- 1440px 데스크톱: 상단 탐색에 18px SVG 5개, 버튼 높이 44px, 오늘 날짜 패널 축소
+- 터치 이벤트 모의 테스트: 드래그 중 버스 미리 강조 → 놓으면 버스 선택, 클릭도 유지
+- 브라우저 테스트와 운영 HTML/자산 HTTP 200까지 확인. **갤럭시 실기기는 검증하지 않음.**
