@@ -34,6 +34,9 @@
       link.title=item.description;
       link.setAttribute("aria-label",item.description+" 새 탭에서 열기");
       const label=document.createElement("span");label.textContent=item.label;
+      if(item.label==="정동위키"){
+        const note=document.createElement("small");note.textContent=" · 비공식";label.append(note);
+      }
       const arrow=document.createElement("span");
       arrow.className="flow-shortcut-arrow";
       arrow.textContent="↗";arrow.setAttribute("aria-hidden","true");
@@ -48,7 +51,7 @@
     pending=true;
     requestAnimationFrame(()=>{pending=false;build();});
   });
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
   addEventListener("pageshow",build);
   build();
 })();
