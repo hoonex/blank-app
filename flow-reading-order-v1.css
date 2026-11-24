@@ -1,0 +1,237 @@
+/*
+ * FLOW / visual hierarchy v1
+ * Hand-drawn nav vectors, 24-unit source grid, consistent optical weight.
+ * The only active rail element is the moving coral thumb from existing JS.
+ * No replacement of the original carousel, tab gesture, meal fetch or editor.
+ */
+.flow-shell {
+  --flow-control-surface: var(--paper, #f4f3ee);
+  --flow-content-line: color-mix(in srgb,var(--ink) 10%,transparent);
+  --flow-reading-muted: color-mix(in srgb,var(--ink) 64%,transparent);
+}
+.flow-shell .flow-nav-symbol{
+  display:block;flex:none;overflow:visible;pointer-events:none;
+  width:22px;height:22px;
+  stroke-width:1.85;
+  transition:stroke-width .13s ease;
+}
+.flow-shell .flow-selected .flow-nav-symbol{stroke-width:2.15}
+.flow-shell .rail-navigation.flow-icons-ready button{
+  display:inline-flex!important;align-items:center!important;justify-content:center;
+  gap:7px!important;min-height:44px;
+  padding:10px 14px!important;font-size:12.5px!important;
+  line-height:1.2;white-space:nowrap;
+}
+.flow-shell .rail-navigation.flow-icons-ready .flow-nav-symbol{width:18px;height:18px}
+.flow-shell .rail-navigation button:focus-visible,
+.flow-shell .mobile-bottom button:focus-visible{
+  outline:2px solid var(--accent)!important;
+  outline-offset:2px;
+}
+.flow-shell .rail-navigation button.flow-selected{
+  --flow-control-surface:var(--night);
+}
+@media(max-width:870px){
+  .flow-shell .mobile-bottom.flow-icons-ready{
+    height:70px!important;
+    bottom:calc(24px + env(safe-area-inset-bottom, 0px))!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    align-items:stretch;
+    padding:5px!important;
+    gap:2px!important;
+    border-radius:25px!important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready .flow-dock-thumb{
+    top:5px;bottom:5px;
+    border-radius:20px!important;
+    --flow-control-surface:var(--accent);
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready>button{
+    --flow-control-surface:var(--paper,#f4f3ee);
+    display:flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;
+    text-align:center!important;
+    gap:3px!important;
+    min-width:0!important;min-height:56px!important;
+    padding:4px 0!important;
+    font-size:10.8px!important;
+    font-weight:700!important;
+    line-height:1.17!important;
+    letter-spacing:-.035em!important;
+    border-radius:19px!important;
+    background:transparent!important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready>button.flow-selected,
+  .flow-shell .mobile-bottom.flow-icons-ready>button.flow-preview{
+    --flow-control-surface:var(--accent);
+    font-weight:840!important;
+    color:#171917!important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready>button:not(.flow-selected):not(.flow-preview){
+    color:color-mix(in srgb,var(--ink) 70%,transparent)!important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready .flow-nav-symbol{
+    width:22px;height:22px;flex:none;
+  }
+  .flow-shell .flow-main{
+    padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))!important;
+  }
+
+  /* First scan: date -> period -> subject. The number of classes is metadata. */
+  .flow-shell .scene[data-scene="today"] .today-layout{
+    gap:15px!important;padding-top:16px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading{
+    margin-bottom:8px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading h2{
+    font-size:27px!important;letter-spacing:-.065em;
+  }
+  .flow-shell .scene[data-scene="today"] .module-count{
+    padding:5px 7px!important;border-radius:9px!important;
+    color:var(--flow-reading-muted)!important;
+    background:var(--paper-low)!important;
+    font-size:10px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-rows{
+    gap:0!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row{
+    min-height:49px!important;gap:7px!important;
+    padding:7px 5px!important;
+    border-radius:0!important;
+    border-bottom:1px solid var(--flow-content-line);
+    animation:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row strong{
+    font-size:17px!important;font-weight:730!important;
+    line-height:1.32!important;
+    letter-spacing:-.035em;
+  }
+  .flow-shell .scene[data-scene="today"] .class-period{
+    font-size:11px!important;font-weight:700!important;
+    color:var(--flow-reading-muted)!important;
+    font-variant-numeric:tabular-nums;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row.flow-period-active{
+    background:color-mix(in srgb,var(--accent) 11%,transparent)!important;
+    border-radius:11px!important;
+    border-bottom-color:transparent;
+    box-shadow:inset 3px 0 var(--accent);
+  }
+}
+@media(min-width:871px){
+  /* Desktop: the original 289px hero pushed actual subjects below the fold. */
+  .flow-shell .scene[data-scene="today"] .today-heading{
+    padding:16px clamp(24px,3vw,42px) 15px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-core{
+    min-height:94px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-small{
+    font-size:10px!important;margin-bottom:3px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-numeral{
+    font-size:clamp(58px,5.4vw,84px)!important;
+    animation:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-weekday{
+    font-size:18px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button{
+    min-height:65px!important;
+    padding:6px 3px 14px!important;
+    border-radius:14px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button strong{
+    font-size:18px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .today-layout{
+    padding-top:22px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading h2{
+    font-size:clamp(29px,2.7vw,36px)!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row strong{
+    font-size:clamp(16px,1.35vw,20px)!important;
+  }
+}
+/* Meals: one clean menu list, not six separate badges of equal visual weight. */
+.flow-shell .scene[data-scene="today"] .flow-meal-single .flow-meal-date-label{
+  font-size:clamp(17px,2.1vw,20px)!important;
+  font-weight:820!important;
+  line-height:1.25!important;
+  letter-spacing:-.045em!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-detail-heading{
+  padding-bottom:7px;
+  border-bottom:1px solid var(--flow-content-line);
+  font-size:12px!important;
+  line-height:1.4;
+  color:var(--flow-reading-muted);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-kcal{
+  white-space:nowrap;
+  font-size:11.5px!important;
+  font-weight:720;
+  color:var(--flow-reading-muted);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-main{
+  gap:9px!important;
+  padding-bottom:13px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chips{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:start;
+  gap:5px 15px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chip{
+  position:relative;
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  border:0!important;
+  padding:6px 1px 6px 14px!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--ink)!important;
+  font-size:12.5px!important;
+  font-weight:670!important;
+  line-height:1.35!important;
+  word-break:keep-all!important;
+  overflow-wrap:anywhere!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chip::before{
+  content:"";
+  position:absolute;left:1px;top:12px;
+  width:4px;height:4px;border-radius:50%;
+  background:var(--accent);
+}
+/* Preserve existing full menu semantics; these are presentation-only changes. */
+@media(max-width:360px){
+  .flow-shell .mobile-bottom.flow-icons-ready{
+    height:66px!important;bottom:calc(21px + env(safe-area-inset-bottom,0px))!important;
+    border-radius:23px!important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready>button{
+    gap:2px!important;font-size:10px!important;min-height:52px!important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready .flow-nav-symbol{
+    width:21px;height:21px;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-chips{
+    gap:4px 9px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-chip{
+    font-size:12px!important;padding-left:11px!important;
+  }
+}
+html[data-theme="dark"] .flow-shell .mobile-bottom.flow-icons-ready>button:not(.flow-selected):not(.flow-preview){
+  color:#e4e5df!important;
+}
+@media(prefers-reduced-motion:reduce){
+ .flow-shell .flow-nav-symbol{transition:none!important}
+}
