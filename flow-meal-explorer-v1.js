@@ -99,7 +99,18 @@
     if(cache.size>8)cache.delete(cache.keys().next().value);
     return byDate;
   }
-  function resetMonth(){current=today();month=monthStart(current);view='week';loaded=null;}
+  function selectedDay(){
+    const base=today();
+    const label=document.querySelector('.scene[data-scene="today"] .hero-numeral')?.textContent||'';
+    const match=label.match(/(\d{1,2})\s*\.\s*(\d{1,2})/);
+    if(!match)return base;
+    const m=Number(match[1]),d=Number(match[2]);
+    const choices=[-1,0,1].map(delta=>new Date(Date.UTC(base.getUTCFullYear()+delta,m-1,d)))
+      .filter(date=>date.getUTCMonth()===m-1&&date.getUTCDate()===d);
+    if(!choices.length)return base;
+    return choices.sort((a,b)=>Math.abs(a-base)-Math.abs(b-base))[0];
+  }
+  function resetMonth(){current=selectedDay();month=monthStart(current);view='week';loaded=null;}
   function status(value,mode='info'){
     const node=explorer?.querySelector('.flow-meal-status');
     if(node){node.textContent=value;node.dataset.state=mode;}
