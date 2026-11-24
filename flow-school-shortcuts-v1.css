@@ -57,3 +57,4 @@
 @media(prefers-reduced-motion:reduce){
   .flow-school-shortcut{transition:none}
 }
+.flow-school-shortcut small{font-size:10px;font-weight:520;color:var(--muted);white-space:nowrap}
