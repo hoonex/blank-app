@@ -304,7 +304,7 @@
       if(e.button!==0)return;
       gesture={id:e.pointerId,x:e.clientX,y:e.clientY};
       segment.dataset.dragging='true';
-      segment.style.setProperty('--flow-meal-shift',String(fraction(e.clientX)));
+      segment.style.setProperty('--flow-meal-shift',(fraction(e.clientX)*100).toFixed(1)+'%');
       setMode(pick(e.clientX));
       if(segment.setPointerCapture){
         try{segment.setPointerCapture(e.pointerId);}catch(_){}
@@ -312,7 +312,7 @@
     });
     segment.addEventListener('pointermove',e=>{
       if(!gesture||e.pointerId!==gesture.id)return;
-      segment.style.setProperty('--flow-meal-shift',String(fraction(e.clientX)));
+      segment.style.setProperty('--flow-meal-shift',(fraction(e.clientX)*100).toFixed(1)+'%');
       const candidate=pick(e.clientX);
       segment.dataset.preview=candidate;
       // The selected mode follows the finger, not an on-release threshold.
