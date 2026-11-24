@@ -1,0 +1,91 @@
+/* Minimal school-first information architecture. The native School page
+   remains stateful; its bus component gets a separate fifth nav destination. */
+.flow-shell[data-flow-section="school"] .scene[data-scene="school"] .bus-panel{display:none!important}
+.flow-shell[data-flow-section="bus"] .scene[data-scene="school"] .school-sheet{display:none!important}
+.flow-shell[data-flow-section="bus"] .scene[data-scene="school"]>.scene-head{display:none!important}
+.flow-shell[data-flow-section="bus"] .scene[data-scene="school"] .bus-panel{margin-top:12px}
+.scene-head .hero-tag,.scene-head .eyebrow{display:none!important}
+.scene-head{
+  min-height:0!important;padding:0!important;
+  margin-top:10px!important;margin-bottom:5px!important;
+}
+.scene-head h1{
+  font-size:clamp(28px,3.7vw,45px)!important;
+  line-height:1.1!important;letter-spacing:-.065em!important;
+  margin:0!important;
+}
+.calendar-toolbar{margin-top:7px!important;margin-bottom:12px!important}
+.calendar-toolbar h2{font-size:clamp(25px,3vw,34px)!important}
+.flow-shell .school-sheet>.eyebrow{display:none!important}
+.flow-shell .school-sheet{padding-top:9px!important}
+.flow-shell .school-sheet h2{
+  font-size:clamp(26px,4.2vw,40px)!important;margin:0 0 8px!important;
+  overflow-wrap:anywhere
+}
+.flow-shell .school-details{margin:20px 0!important;gap:10px!important}
+.flow-shell .school-details>div{gap:3px!important}
+.flow-shell .school-details strong{font-size:16px!important}
+.flow-shell .settings-sheet{margin-top:5px!important;padding:0 0 100px!important}
+.flow-shell .settings-sheet .setting-row{
+  min-height:64px!important;padding:14px 0!important;
+  gap:14px!important;border-bottom:1px solid color-mix(in srgb,var(--muted) 13%,transparent);
+}
+.flow-shell .settings-sheet .setting-row small{display:none!important}
+.flow-shell .settings-sheet .setting-row strong{font-size:17px!important}
+.flow-shell .settings-sheet .setting-toggle{
+  padding:11px 15px!important;min-width:0!important;
+  font-size:12px!important;white-space:nowrap
+}
+.flow-shell .settings-sheet .setting-row.flow-nonaction-row{display:none!important}
+.flow-shell .bus-title .module-kicker{display:none!important}
+.flow-shell .bus-title{margin-bottom:12px!important}
+.flow-shell .bus-title h2{font-size:clamp(25px,4vw,34px)!important}
+.flow-shell .flow-nearby-title .flow-nearby-description{font-size:10px}
+.flow-shell .bus-panel .bus-footnote{margin-top:6px}
+/* Five equally weighted destinations, including the standalone Bus tab. */
+@media(min-width:871px){
+  .flow-shell .rail-navigation .flow-bus-tab{
+    font-size:13px;font-weight:720;color:var(--muted);
+    border-radius:var(--radius-control);padding:11px 19px;
+  }
+  .flow-shell .rail-navigation button.flow-selected{
+    background:var(--night)!important;color:var(--night-text)!important;
+  }
+  .flow-shell .rail-navigation button.active:not(.flow-selected){
+    background:transparent!important;color:var(--muted)!important;
+  }
+}
+@media(max-width:870px){
+  .flow-shell .mobile-bottom{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    --nav-gap:3px!important;gap:3px!important;
+  }
+  .flow-shell .mobile-bottom::before{display:none!important}
+  .flow-shell .mobile-bottom>button{
+    min-width:0!important;font-size:12px!important;letter-spacing:-.03em;
+    background:transparent!important;color:#55594e!important;
+    border-radius:999px!important;
+  }
+  .flow-shell .mobile-bottom>button.active:not(.flow-selected){
+    background:transparent!important;color:#55594e!important;
+  }
+  .flow-shell .mobile-bottom>button.flow-selected,
+  .flow-shell .mobile-bottom>button.flow-preview{
+    background:var(--accent)!important;color:#171917!important;
+  }
+  .flow-shell .mobile-bottom>button.flow-preview{opacity:.78}
+  html[data-theme="dark"] .flow-shell .mobile-bottom>button:not(.flow-selected){
+    color:#e4e5dc!important;
+  }
+  .flow-shell .scene-head{margin-top:8px!important}
+  .flow-shell .school-sheet,.flow-shell .settings-sheet{
+    width:calc(100% - 28px)!important;
+  }
+  .flow-shell .school-details{grid-template-columns:1fr!important;gap:12px!important}
+  .flow-shell .school-sheet p{margin:9px 0;font-size:12px}
+}
+@media(max-width:390px){
+  .flow-shell .mobile-bottom>button{font-size:11px!important}
+  .flow-shell .settings-sheet .setting-row strong{font-size:16px!important}
+  .flow-shell .settings-sheet .setting-toggle{padding:10px 12px!important}
+}
