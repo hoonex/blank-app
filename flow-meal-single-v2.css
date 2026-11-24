@@ -1,0 +1,184 @@
+/* Flow School single-surface meals, 2026-11-24.
+   No nested duplicate menu and no accordion. The original Leptos meal
+   nodes remain mounted for reactive data, but are hidden only after JS mounts. */
+.scene[data-scene="today"] .meal-sheet.flow-meal-single-host{
+  background:var(--surface)!important;
+  color:var(--ink)!important;
+  min-height:0!important;
+  padding:19px 17px 18px!important;
+  border-radius:23px!important;
+  overflow:visible!important;
+  box-shadow:none!important;
+  position:relative;
+}
+.flow-meal-single-host > .aside-top,
+.flow-meal-single-host > h2,
+.flow-meal-single-host > .meal-list,
+.flow-meal-single-host > .meal-foot,
+.flow-meal-single-host > .empty-note{
+  display:none!important;
+}
+.flow-meal-single{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  min-width:0;
+}
+.flow-meal-single-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;min-width:0;margin-bottom:12px;
+}
+.flow-meal-date-label{
+  min-width:0;overflow-wrap:anywhere;
+  font-size:21px;line-height:1.2;letter-spacing:-.055em;font-weight:835;
+}
+.flow-meal-segment{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0;min-width:120px;flex:0 0 126px;
+  position:relative;isolation:isolate;
+  background:var(--paper-low);padding:4px;
+  border-radius:999px;
+  touch-action:pan-y;
+}
+.flow-meal-segment::before{
+  content:"";position:absolute;z-index:0;pointer-events:none;
+  left:4px;top:4px;bottom:4px;width:calc((100% - 8px)/2);
+  border-radius:999px;background:var(--night);
+  transform:translateX(0);
+  transition:transform .22s cubic-bezier(.22,.85,.25,1);
+}
+.flow-meal-single[data-view="month"] .flow-meal-segment::before,
+.flow-meal-segment[data-preview="month"]::before{
+  transform:translateX(100%);
+}
+.flow-meal-segment[data-preview="week"]::before{
+  transform:translateX(0);
+}
+.flow-meal-segment button{
+  position:relative;z-index:1;
+  min-width:0;min-height:30px;
+  border-radius:999px;background:transparent!important;
+  padding:5px 6px;color:var(--muted);
+  font-size:11px;line-height:1.2;font-weight:770;
+  user-select:none;-webkit-user-select:none;
+}
+.flow-meal-segment button.selected{color:var(--night-text)}
+.flow-meal-segment[data-preview="month"] button[data-view="month"],
+.flow-meal-segment[data-preview="week"] button[data-view="week"]{
+  color:var(--night-text)
+}
+.flow-meal-main{
+  display:flex;flex-direction:column;gap:9px;
+  min-height:38px;min-width:0;
+  padding:1px 0 12px;
+}
+.flow-meal-detail-heading{
+  display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;
+  gap:8px;color:var(--muted);font-size:11px;font-weight:710;
+  line-height:1.4;
+}
+.flow-meal-kcal{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.flow-meal-chips{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;
+}
+.flow-meal-chip{
+  background:var(--paper-low);border-radius:11px;
+  padding:8px 10px;font-size:12px;line-height:1.4;
+  font-weight:700;color:var(--ink);
+  overflow-wrap:anywhere;max-width:100%;
+  word-break:keep-all;
+}
+.flow-meal-empty{font-size:12px;color:var(--muted);margin:5px 0 8px;line-height:1.5}
+.flow-meal-navigator{
+  display:grid;grid-template-columns:35px minmax(0,1fr) 35px;
+  align-items:center;gap:8px;
+  margin:2px 0 10px;padding-top:13px;
+  border-top:1px solid color-mix(in srgb,var(--ink) 11%,transparent);
+}
+.flow-meal-range{
+  text-align:center;min-width:0;
+  font-size:12px;font-weight:760;white-space:nowrap;
+  letter-spacing:-.035em;font-variant-numeric:tabular-nums;
+}
+.flow-meal-arrow{
+  display:grid;place-items:center;
+  height:35px;width:35px;
+  padding:0;border-radius:50%;
+  font-size:24px;line-height:1;font-weight:470;
+  background:var(--paper-low);color:var(--ink);
+}
+.flow-meal-arrow:active{transform:scale(.94)}
+.flow-meal-calendar{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:4px;min-width:0;
+  touch-action:pan-y;
+}
+.flow-meal-weekday{
+  display:grid;place-items:center;min-height:23px;
+  font-size:10px;line-height:1;font-weight:750;color:var(--muted);
+}
+.flow-meal-day{
+  min-width:0;min-height:94px;display:flex;flex-direction:column;
+  gap:5px;align-items:flex-start;text-align:left;
+  padding:8px 6px 7px;
+  border-radius:11px;
+  border:1px solid color-mix(in srgb,var(--ink) 11%,transparent);
+  background:transparent;color:var(--ink);
+  overflow:hidden;
+}
+.flow-meal-day.selected{
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+  box-shadow:inset 0 0 0 1px var(--accent);
+  border-color:var(--accent);
+}
+.flow-meal-day:active{transform:scale(.985)}
+.flow-meal-day-number{
+  font-size:12px;font-weight:830;line-height:1.1;
+  font-variant-numeric:tabular-nums;
+}
+.flow-meal-day-teaser{
+  width:100%;min-width:0;
+  font-size:10px;font-weight:620;line-height:1.35;
+  overflow-wrap:anywhere;word-break:keep-all;
+  display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:3;line-clamp:3;overflow:hidden;
+  max-height:4.05em;
+  mask-image:linear-gradient(to bottom,#000 73%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,#000 73%,transparent 100%);
+}
+.flow-meal-day-count{
+  margin-top:auto;font-size:10px;line-height:1.1;color:var(--muted);font-weight:700;
+}
+.flow-meal-spacer{min-height:89px}
+.flow-meal-warning{
+  margin:10px 0 0;padding:8px 0;color:var(--muted);
+  font-size:11px;line-height:1.5;
+}
+.flow-meal-warning[hidden]{display:none!important}
+.flow-meal-retry{
+  display:none;align-self:flex-start;
+  margin-top:6px;padding:8px 12px;
+  background:var(--paper-low);border-radius:999px;
+  font-size:11px;font-weight:730;color:var(--ink);
+}
+.flow-meal-warning:not([hidden])+.flow-meal-retry{display:inline-flex}
+@media(max-width:590px){
+  .scene[data-scene="today"] .meal-sheet.flow-meal-single-host{
+    padding:17px 15px!important;border-radius:23px!important;
+  }
+  .flow-meal-date-label{font-size:20px}
+  .flow-meal-chip{font-size:12px;padding:8px 10px}
+  .flow-meal-day{padding:8px 5px 7px;min-height:92px}
+  .flow-meal-day-teaser{font-size:9.5px}
+}
+@media(max-width:360px){
+  .flow-meal-date-label{font-size:19px}
+  .flow-meal-segment{flex-basis:119px;min-width:119px}
+  .flow-meal-calendar{gap:3px}
+  .flow-meal-day{min-height:90px;padding:7px 4px 6px}
+  .flow-meal-day-teaser{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .flow-meal-segment::before{transition:none}
+}
