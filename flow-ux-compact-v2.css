@@ -139,14 +139,14 @@
    -webkit-tap-highlight-color:transparent;
  }
  .flow-meal-single .flow-meal-segment::before{
-   transform:translateX(calc(var(--flow-meal-shift,0) * 100%))!important;
+   transform:translateX(var(--flow-meal-shift,0%))!important;
    transition:transform .17s cubic-bezier(.2,.8,.2,1)!important;
  }
  .flow-meal-single .flow-meal-segment[data-dragging="true"]::before{
    transition:none!important;
  }
  .flow-meal-single[data-view="month"] .flow-meal-segment:not([data-dragging="true"]){
-   --flow-meal-shift:1;
+   --flow-meal-shift:100%;
  }
  /* Native edit model retained: compact controls, no extra explanatory panel. */
  .timetable-editor{
