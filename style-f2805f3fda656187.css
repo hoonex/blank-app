@@ -4,10 +4,10 @@
    Screen state lives in Leptos; CSS animates actual state transitions. */
 :root {
   color-scheme:light;
-  --paper:#f4f3ee; --paper-low:#ecebe4; --ink:#171917;
-  --muted:#70746c; --faint:#9da096; --accent:#D98570;
-  --surface:#faf9f4; --night:#191b18; --night-text:#f5f6ee;
-  --radius-panel:28px; --radius-item:16px; --radius-control:999px;
+  --paper:#f5f6f3; --paper-low:#e9ede8; --ink:#1b2422;
+  --muted:#596860; --faint:#76847b; --accent:#d98570;
+  --surface:#ffffff; --night:#20332d; --night-text:#f7f9f5;
+  --radius-panel:20px; --radius-item:12px; --radius-control:12px;
   --ease:cubic-bezier(.22,1,.36,1);
   --snap:cubic-bezier(.76,0,.24,1);
   font-family:Inter,Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
@@ -66,7 +66,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   position:relative;isolation:isolate;overflow:hidden;
   background:var(--night);color:var(--night-text);
   width:calc(100% - clamp(36px,8vw,128px));max-width:1408px;
-  margin:9px auto 0;padding:25px clamp(23px,3.6vw,52px) 23px;
+  margin:9px auto 0;padding:20px clamp(23px,3.6vw,48px) 16px;
   border-radius:var(--radius-panel);
 }
 .hero-topline{display:flex;align-items:center;justify-content:space-between;gap:14px}
@@ -79,14 +79,14 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .return-to-today:active{background:var(--accent);color:#171917}
 .hero-topline:has(.return-to-today) .hero-school{margin-left:auto}
 .hero-school{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
-.hero-core{min-height:132px;display:flex;align-items:center}
+.hero-core{min-height:88px;display:flex;align-items:center}
 .hero-date{min-width:0}
 .hero-small{display:block;font-size:11px;letter-spacing:.02em;font-weight:600;color:#b6bcb0;margin:0 0 7px}
 .hero-date h1{margin:0;display:flex;align-items:baseline;gap:clamp(12px,3vw,26px);white-space:nowrap;line-height:1.12}
 .date-motion{display:inline-flex;overflow:visible;vertical-align:middle;padding:.08em .12em .14em .025em;min-height:1.12em}
 .hero-numeral{
-  display:inline-block;font-size:clamp(79px,9.4vw,128px);
-  line-height:1.09;font-weight:840;letter-spacing:-.072em;font-variant-numeric:tabular-nums;
+  display:inline-block;font-size:clamp(56px,6vw,84px);
+  line-height:1.09;font-weight:650;letter-spacing:-.035em;font-variant-numeric:tabular-nums;
   animation:digit-in .56s var(--snap) both
 }
 .hero-weekday{font-size:clamp(18px,2.3vw,27px);font-weight:750;letter-spacing:-.04em;color:var(--accent)}
@@ -117,8 +117,8 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .day-strip button{
   flex:0 0 var(--day-cell);width:var(--day-cell);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  position:relative;min-width:0;min-height:79px;padding:8px 3px 17px;
-  border-radius:19px;background:transparent;color:#aeb5a9;
+  position:relative;min-width:0;min-height:64px;padding:8px 3px 17px;
+  border-radius:12px;background:transparent;color:#d3dcd3;
   scroll-snap-align:center;scroll-snap-stop:normal;
   transition:background .2s,color .2s,scale .2s cubic-bezier(.2,1.6,.22,1);
   -webkit-tap-highlight-color:transparent;
@@ -152,12 +152,12 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   max-width:1408px;margin:0 auto;
   width:calc(100% - clamp(36px,8vw,128px));
   display:grid;grid-template-columns:minmax(0,1.38fr) minmax(280px,.72fr);
-  gap:clamp(28px,5.3vw,75px);align-items:start;padding:29px 0 95px
+  gap:clamp(24px,4vw,56px);align-items:start;padding:28px 0 95px
 }
 .timetable-sheet,.today-aside{min-width:0}
 .module-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:15px}
 .module-kicker{font-size:12px;font-weight:660;color:var(--muted)}
-.module-heading h2{display:flex;align-items:flex-start;gap:14px;font-size:clamp(32px,3.2vw,46px);line-height:1.1;letter-spacing:-.065em;font-weight:800;margin:4px 0 0}
+.module-heading h2{display:flex;align-items:flex-start;gap:14px;font-size:clamp(26px,2.4vw,34px);line-height:1.2;letter-spacing:-.025em;font-weight:650;margin:4px 0 0}
 .module-count{
   font-size:11px;line-height:1.1;letter-spacing:0;font-variant-numeric:tabular-nums;
   background:var(--accent);color:#171917;padding:6px 9px;border-radius:var(--radius-control);font-weight:820
@@ -190,7 +190,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .class-row{
   display:grid;grid-template-columns:48px minmax(0,1fr);
   align-items:center;gap:11px;min-height:clamp(54px,5vw,67px);
-  padding:0 14px 0 10px;border-radius:var(--radius-item);
+  padding:0 14px 0 10px;border-radius:0;border-bottom:1px solid rgba(27,36,34,.09);
   transition:background .25s,transform .24s var(--ease),padding .24s var(--ease);
   animation:row-in .4s var(--ease) both
 }
@@ -200,9 +200,9 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .class-row:nth-child(5){animation-delay:.1s}
 .class-row:nth-child(6){animation-delay:.125s}
 .class-row:nth-child(7){animation-delay:.15s}
-.class-row:hover{background:var(--paper-low);padding-left:20px}
+.class-row:hover{background:var(--paper-low)}
 .class-period{font-size:12px;font-weight:760;color:var(--faint);font-variant-numeric:tabular-nums}
-.class-row strong{font-size:clamp(18px,2vw,24px);line-height:1.2;letter-spacing:-.035em;font-weight:660;overflow-wrap:anywhere}
+.class-row strong{font-size:clamp(16px,1.5vw,20px);line-height:1.3;letter-spacing:0;font-weight:600;overflow-wrap:anywhere}
 .week-grid{display:grid;gap:3px;animation:list-in .38s var(--ease) both;min-width:0}
 .week-grid-row{
   display:grid;grid-template-columns:36px repeat(5,minmax(0,1fr));
@@ -243,20 +243,20 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 }
 .today-aside{display:grid;gap:18px}
 .meal-sheet{
-  position:relative;overflow:hidden;background:var(--accent);color:#171917;
+  position:relative;overflow:hidden;background:var(--surface);color:var(--ink);border:1px solid rgba(27,36,34,.12);border-top:4px solid var(--accent);
   padding:clamp(24px,3vw,34px);border-radius:var(--radius-panel);
   min-height:285px;animation:panel-in .53s var(--ease) both
 }
 .aside-top{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;font-weight:720}
 .meal-sheet h2{
-  margin:18px 0 16px;font-size:clamp(32px,3.4vw,44px);line-height:1.06;
+  margin:12px 0 20px;font-size:clamp(26px,2.4vw,34px);line-height:1.15;
   letter-spacing:-.065em;font-weight:800
 }
 .meal-sheet h2 em{font-style:normal}
-.meal-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 16px;padding:0;margin:0;list-style:none;text-align:center}
-.meal-list li{font-size:13px;line-height:1.4;font-weight:700;overflow-wrap:anywhere}
+.meal-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;padding:0;margin:0;list-style:none;text-align:left}
+.meal-list li{font-size:15px;line-height:1.5;font-weight:500;overflow-wrap:anywhere}
 .meal-list li::before{content:none}
-.meal-sheet h2,.meal-sheet .aside-top,.meal-foot{text-align:center;justify-content:center}
+.meal-sheet h2,.meal-sheet .aside-top,.meal-foot{text-align:left;justify-content:flex-start}
 .meal-foot{font-size:11px;margin:22px 0 0;opacity:.7;font-weight:650}
 .meal-sheet .empty-note{color:#353a2c}
 .upcoming-sheet{
@@ -529,8 +529,8 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .class-period{font-size:12px}
  .class-row:hover{padding-left:14px}
  .today-aside{grid-template-columns:1fr;gap:15px}
- .meal-sheet{min-height:0;padding:23px;border-radius:25px}
- .meal-sheet h2{font-size:32px;margin:14px 0 17px}
+ .meal-sheet{min-height:0;padding:20px;border-radius:20px}
+ .meal-sheet h2{font-size:26px;margin:12px 0 16px}
  .meal-list{gap:8px 12px}
  .upcoming-sheet{padding:13px 5px}
  .event-lead{font-size:27px}
@@ -613,7 +613,7 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
 /* Tactile feedback that respects hover, drag and reduced-motion. */
 :where(.mobile-bottom button,.switch-track button,.day-strip button){transform-origin:center;transition-timing-function:cubic-bezier(.18,.92,.3,1.18)}
 :where(.mobile-bottom button,.switch-track button,.date-actions button,.day-strip button):active{scale:.94}
-@media(max-width:590px){.meal-list{gap:12px 10px}.meal-list li{font-size:13px}}
+@media(max-width:590px){.meal-list{gap:12px 10px}.meal-list li{font-size:15px}}
 
 /* Input bars stay outside the scrollport: no page content can appear beneath
    the OS gesture indicator or bottom dock even while Chrome resizes its UI. */
