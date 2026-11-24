@@ -1,0 +1,48 @@
+/* Flow School · floating dock correction.
+   Intentionally mobile-only: desktop keeps the tested top navigation. */
+@media (max-width: 870px) {
+  .flow-shell .mobile-bottom {
+    position: fixed !important;
+    z-index: 100 !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(26px + env(safe-area-inset-bottom, 0px)) !important;
+    width: calc(100% - 48px) !important;
+    max-width: 420px !important;
+    height: 60px !important;
+    margin: 0 !important;
+    transform: translate3d(-50%,0,0) !important;
+    border: 1px solid color-mix(in srgb,var(--ink) 11%,transparent) !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb,var(--paper) 95%,transparent) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    backdrop-filter: blur(16px) saturate(120%);
+    box-shadow:
+      0 18px 42px rgba(13,19,15,.19),
+      0 4px 12px rgba(13,19,15,.09),
+      0 1px 1px rgba(13,19,15,.06) !important;
+    isolation: isolate;
+  }
+  .flow-shell .mobile-bottom .flow-dock-thumb {
+    top: 5px;
+    bottom: 5px;
+    border-radius: 999px !important;
+  }
+  .flow-shell .mobile-bottom > button {
+    min-width: 0 !important;
+    min-height: 48px;
+  }
+  /* Reserve real scrolling space behind the raised, floating control. */
+  .flow-shell .flow-main {
+    padding-bottom: calc(142px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+@media(max-width:360px){
+  .flow-shell .mobile-bottom {
+    width:calc(100% - 34px) !important;
+    bottom:calc(21px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .flow-shell .mobile-bottom .flow-dock-thumb{transition:none!important}
+}
