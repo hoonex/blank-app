@@ -75,7 +75,7 @@
     width:22px;height:22px;flex:none;
   }
   .flow-shell .flow-main{
-    padding-bottom:calc(138px + env(safe-area-inset-bottom,0px))!important;
+    padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;
   }
 
   /* First scan: date -> period -> subject. The number of classes is metadata. */
@@ -234,4 +234,12 @@ html[data-theme="dark"] .flow-shell .mobile-bottom.flow-icons-ready>button:not(.
 }
 @media(prefers-reduced-motion:reduce){
  .flow-shell .flow-nav-symbol{transition:none!important}
+}
+/* At tablet width the Today sidebar is itself only ~250px wide.
+   A one-column meal list keeps dish names readable without truncation. */
+@media(min-width:591px) and (max-width:870px){
+  .flow-shell .scene[data-scene="today"] .flow-meal-chips{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:3px!important;
+  }
 }
