@@ -1,0 +1,187 @@
+/*
+ * Flow School · Motion & detail polish
+ * 2026-11-25 — CSS-only, no gesture interception or state changes.
+ * Keep frame work small: primary entrances use only transform / opacity.
+ */
+.flow-shell{
+  --flow-ease-soft:cubic-bezier(.20,.83,.23,1);
+  --flow-ease-fast:cubic-bezier(.22,.78,.29,1);
+  --flow-motion-fast:150ms;
+  --flow-motion-control:210ms;
+  --flow-motion-dock:260ms;
+  --flow-motion-screen:280ms;
+}
+
+/* 1. Replace the previous directional 28px + clip-path scene wipe.
+      Small forward movement, readable immediately, no large repainting mask. */
+@keyframes flow-polish-enter{
+  from{opacity:.89;transform:translate3d(0,6px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes flow-polish-fade{
+  from{opacity:.88}
+  to{opacity:1}
+}
+.flow-shell .flow-main > .scene{
+  animation:flow-polish-enter var(--flow-motion-screen) var(--flow-ease-soft) both !important;
+  transform-origin:50% 0;
+}
+.flow-shell .flow-main > .scene[data-scene="calendar"]{
+  /* The calendar wheel measures its own layout while mounting. */
+  animation:flow-polish-fade 210ms ease-out both !important;
+}
+
+/* 2. Do not animate the geometry of touch targets or re-route clicks.
+      Smooth the existing JS-driven floating selector's final position. */
+@media(max-width:870px){
+  .flow-shell .mobile-bottom .flow-dock-thumb{
+    transition:
+      transform var(--flow-motion-dock) var(--flow-ease-soft),
+      width 220ms var(--flow-ease-fast) !important;
+  }
+  .flow-shell .mobile-bottom .flow-dock-thumb.is-dragging{
+    transition:none !important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready > button{
+    transition:color var(--flow-motion-fast) ease-out,
+      opacity var(--flow-motion-fast) ease-out !important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready .flow-nav-symbol{
+    transition:transform 150ms var(--flow-ease-fast),
+      stroke-width 150ms ease-out,
+      opacity 150ms ease-out !important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready > button:active .flow-nav-symbol{
+    transform:scale(.94);
+  }
+  /* A slightly lighter separation from the page, without extra containers. */
+  .flow-shell .mobile-bottom.flow-icons-ready{
+    box-shadow:0 14px 35px rgba(13,19,15,.15),
+      0 4px 12px rgba(13,19,15,.075),
+      0 1px 1px rgba(13,19,15,.04) !important;
+  }
+}
+@media(min-width:871px){
+  .flow-shell .rail-navigation button{
+    transition:color 180ms ease-out,
+      background-color 220ms var(--flow-ease-soft),
+      transform 150ms var(--flow-ease-fast) !important;
+  }
+  .flow-shell .rail-navigation button:active{
+    transform:scale(.98);
+  }
+  .flow-shell .rail-navigation .flow-nav-symbol{
+    transition:transform 150ms ease-out,stroke-width 170ms ease-out !important;
+  }
+}
+
+/* 3. Today date buttons and week/day switch.
+      Keep the native kinetic date shuttle and its selected-day math intact. */
+.flow-shell .today-heading .day-strip button{
+  transition:background-color 220ms var(--flow-ease-soft),
+    color 180ms ease-out,opacity 150ms ease-out !important;
+}
+.flow-shell .today-heading .day-strip button:active{
+  opacity:.86;
+}
+.flow-shell .scene[data-scene="today"] .switch-track button{
+  transition:background-color 220ms var(--flow-ease-soft),
+    color 180ms ease-out,opacity 150ms ease-out !important;
+}
+.flow-shell .scene[data-scene="today"] .edit-timetable-trigger{
+  transition:color 160ms ease-out,
+    background-color 190ms ease-out,
+    opacity 150ms ease-out !important;
+}
+.flow-shell .scene[data-scene="today"] .edit-timetable-trigger:active{
+  opacity:.77;
+}
+
+/* 4. Meals: fast visual feedback, while all data/calendar scrolling is immediate.
+      Do not animate 21-23 month cells on every rerender. */
+.flow-shell .flow-meal-single .flow-meal-segment::before{
+  transition:transform 240ms var(--flow-ease-soft) !important;
+}
+.flow-shell .flow-meal-single .flow-meal-segment[data-dragging="true"]::before{
+  transition:none !important;
+}
+.flow-shell .flow-meal-single .flow-meal-segment button{
+  transition:color 160ms ease-out !important;
+}
+.flow-shell .flow-meal-single .flow-meal-arrow{
+  transition:transform 160ms var(--flow-ease-fast),
+    background-color 160ms ease-out !important;
+}
+.flow-shell .flow-meal-single .flow-meal-arrow:active{
+  transform:scale(.96);
+}
+@keyframes flow-polish-detail{
+  from{opacity:.72;transform:translate3d(0,3px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chip{
+  animation:flow-polish-detail 195ms var(--flow-ease-soft) both;
+}
+.flow-shell .flow-meal-day.selected{
+  /* A newly inserted date is the only calendar element that gets an entrance. */
+  animation:flow-polish-fade 170ms ease-out both;
+}
+.flow-shell .flow-meal-day:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
+}
+
+/* 5. Native school links and edits use tiny feedback only, no extra travel. */
+.flow-shell .flow-school-shortcut{
+  transition:color 170ms ease-out,
+    background-color 170ms ease-out !important;
+}
+.flow-shell .flow-school-shortcut .flow-shortcut-arrow{
+  transition:transform 180ms var(--flow-ease-soft),
+    color 160ms ease-out;
+}
+@media(hover:hover) and (pointer:fine){
+  .flow-shell .flow-school-shortcut:hover .flow-shortcut-arrow{
+    transform:translate3d(2px,-2px,0);
+    color:var(--accent);
+  }
+}
+.flow-shell .timetable-editor{
+  animation:flow-polish-enter 210ms var(--flow-ease-soft) both;
+}
+.flow-shell .timetable-editor .editor-periods button,
+.flow-shell .timetable-editor .editor-save,
+.flow-shell .timetable-editor .editor-reset{
+  transition:color 160ms ease-out,background-color 180ms ease-out !important;
+}
+.flow-shell :is(button,a):focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+/* Reduced-motion is a true no-motion mode, not a fast flashing entrance. */
+@media(prefers-reduced-motion:reduce){
+  .flow-shell .flow-main > .scene,
+  .flow-shell .timetable-editor,
+  .flow-shell .flow-meal-day.selected,
+  .flow-shell .scene[data-scene="today"] .flow-meal-chip{
+    animation:none !important;
+  }
+  .flow-shell .mobile-bottom .flow-dock-thumb,
+  .flow-shell .mobile-bottom.flow-icons-ready > button,
+  .flow-shell .mobile-bottom.flow-icons-ready .flow-nav-symbol,
+  .flow-shell .flow-meal-single .flow-meal-segment::before,
+  .flow-shell .flow-meal-single .flow-meal-segment button,
+  .flow-shell .flow-meal-single .flow-meal-arrow,
+  .flow-shell .rail-navigation button,
+  .flow-shell .rail-navigation .flow-nav-symbol,
+  .flow-shell .today-heading .day-strip button,
+  .flow-shell .scene[data-scene="today"] .switch-track button,
+  .flow-shell .flow-school-shortcut,
+  .flow-shell .flow-school-shortcut .flow-shortcut-arrow{
+    transition:none !important;
+  }
+  .flow-shell .mobile-bottom.flow-icons-ready > button:active .flow-nav-symbol{
+    transform:none;
+  }
+}
