@@ -131,12 +131,10 @@
   font-size:17px;font-weight:800;
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{
-  counter-reset:flow-destination;
   gap:var(--flow-ref-space-3);
   grid-template-columns:repeat(2,minmax(0,1fr));
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut{
-  counter-increment:flow-destination;
   position:relative;
   display:grid;grid-template-columns:1fr auto;align-content:start;
   column-gap:var(--flow-ref-space-2);row-gap:var(--flow-ref-space-1);
@@ -151,12 +149,16 @@
   transition:background-color .18s ease,border-color .18s ease,transform .18s ease;
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut::before{
-  content:counter(flow-destination,decimal-leading-zero);
+  content:"학교";
   display:block;grid-column:1/-1;
   font-size:11px;font-weight:780;line-height:1.2;
   font-variant-numeric:tabular-nums;
   color:var(--flow-ref-text-soft);
 }
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(1)::before{content:"공식 정보"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(2)::before{content:"학습 · 과제"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(3)::before{content:"비공식 자료"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(4)::before{content:"학교 길찾기"}
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut>span:first-child{
   min-width:0;overflow-wrap:anywhere;
 }
