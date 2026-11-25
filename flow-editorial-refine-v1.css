@@ -97,12 +97,26 @@
 }
 @media(max-width:360px){
  .flow-shell .scene[data-scene="today"] .module-heading{
-   position:relative;gap:5px!important
+   gap:5px!important
  }
- /* Share must not create an extra line in the tightly packed control group. */
- .flow-shell .scene[data-scene="today"] .flow-brief-open{
-   position:absolute;top:28px;right:70px;
+ /* A stable two-row grid: absolute buttons collided with the native
+    day/week switch after a selected date changed the period status. */
+ .flow-shell .scene[data-scene="today"] .module-controls{
+   display:grid!important;
+   grid-template-columns:minmax(0,1fr) auto!important;
+   align-content:center;align-items:center;
+   column-gap:4px!important;row-gap:4px!important;
+ }
+ .flow-shell .scene[data-scene="today"] .module-controls>.edit-timetable-trigger{
+   grid-column:1;grid-row:1;
+   padding-inline:10px!important;white-space:nowrap
+ }
+ .flow-shell .scene[data-scene="today"] .module-controls>.flow-brief-open{
+   position:static;grid-column:2;grid-row:1;
    min-height:34px;padding:7px 9px;
+ }
+ .flow-shell .scene[data-scene="today"] .module-controls>.switch-track{
+   grid-column:1/-1;grid-row:2;justify-self:end;
  }
 }
 
