@@ -101,7 +101,7 @@
  }
  /* Share must not create an extra line in the tightly packed control group. */
  .flow-shell .scene[data-scene="today"] .flow-brief-open{
-   position:absolute;top:10px;right:77px;
+   position:absolute;top:28px;right:70px;
    min-height:34px;padding:7px 9px;
  }
 }
