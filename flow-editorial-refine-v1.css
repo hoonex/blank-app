@@ -96,10 +96,14 @@
  }
 }
 @media(max-width:360px){
- .flow-shell .scene[data-scene="today"] .flow-brief-open{
-   padding-inline:8px;min-height:32px
+ .flow-shell .scene[data-scene="today"] .module-heading{
+   position:relative;gap:5px!important
  }
- .flow-shell .scene[data-scene="today"] .module-heading{gap:5px!important}
+ /* Share must not create an extra line in the tightly packed control group. */
+ .flow-shell .scene[data-scene="today"] .flow-brief-open{
+   position:absolute;top:10px;right:77px;
+   min-height:34px;padding:7px 9px;
+ }
 }
 
 /* School: links already exist and are school-scoped. Make each destination
@@ -158,6 +162,7 @@
 
 /* On-demand 'day sheet' uses the page's own matte material, not a new design system. */
 .flow-brief-dialog{
+  --flow-ref-stroke:color-mix(in srgb,var(--ink) 10%,transparent);
   position:fixed;
   inset:auto 0 0 0;
   width:min(440px,calc(100% - 24px));max-width:none;
