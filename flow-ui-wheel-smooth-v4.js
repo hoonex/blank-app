@@ -28,6 +28,29 @@
     });
     return result;
   }
+  // Leptos may append "+1" as an anonymous text node after the month loads.
+  // Do not wrap or replace that reactive node: a tiny one-time opacity blend
+  // on its existing button smooths late counts without breaking accessibility.
+  const seenExtraCounts=new WeakMap();
+  function softenNewCounts(s) {
+    const grid=s?.main?.querySelector('.calendar-grid');
+    if(!grid||reduced)return;
+    for(const button of grid.querySelectorAll('button')){
+      let count='';
+      for(const node of button.childNodes){
+        if(node.nodeType===Node.TEXT_NODE && /^\\s*\\+\\d+\\s*$/.test(node.nodeValue||'')){
+          count=node.nodeValue.trim();break;
+        }
+      }
+      const previous=seenExtraCounts.get(button);
+      if(count && previous!==count && typeof button.animate==='function'){
+        button.animate([{opacity:.83},{opacity:1}],{
+          duration:220,easing:'cubic-bezier(.2,.8,.2,1)'
+        });
+      }
+      seenExtraCounts.set(button,count);
+    }
+  }
   function buildCard(side,year,month) {
     const [y,m]=shift(year,month,side);
     const card=document.createElement('section');
@@ -175,6 +198,7 @@
     if(!m)return;
     const [y,mo]=m;
     const key=monthKey(y,mo);
+    softenNewCounts(s);
     const marks=capturedEvents(s.main);
     const stamp=Array.from(marks).sort((a,b)=>a-b).join(',');
     memory.set(key,marks);
@@ -362,7 +386,7 @@
       pending=true;
       requestAnimationFrame(()=>{
         pending=false;
-        if(state===s){refresh();position(s.progress);}
+        if(state===s){softenNewCounts(s);refresh();position(s.progress);}
       });
     });
     const title=scene.querySelector('.calendar-toolbar');
