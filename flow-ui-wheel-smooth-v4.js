@@ -38,7 +38,7 @@
     for(const button of grid.querySelectorAll('button')){
       let count='';
       for(const node of button.childNodes){
-        if(node.nodeType===Node.TEXT_NODE && /^\\s*\\+\\d+\\s*$/.test(node.nodeValue||'')){
+        if(node.nodeType===Node.TEXT_NODE && /^\s*\+\d+\s*$/.test(node.nodeValue||'')){
           count=node.nodeValue.trim();break;
         }
       }
