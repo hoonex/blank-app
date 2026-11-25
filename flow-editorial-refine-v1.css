@@ -101,15 +101,16 @@
  }
  /* A stable two-row grid: absolute buttons collided with the native
     day/week switch after a selected date changed the period status. */
+ .flow-shell .scene[data-scene="today"] .module-heading-copy{min-width:0;flex:1 1 auto}
  .flow-shell .scene[data-scene="today"] .module-controls{
-   display:grid!important;
+   display:grid!important;flex:0 0 104px!important;width:104px!important;
    grid-template-columns:minmax(0,1fr) auto!important;
    align-content:center;align-items:center;
    column-gap:4px!important;row-gap:4px!important;
  }
  .flow-shell .scene[data-scene="today"] .module-controls>.edit-timetable-trigger{
    grid-column:1;grid-row:1;
-   padding-inline:10px!important;white-space:nowrap
+   padding-inline:8px!important;white-space:nowrap;min-width:0
  }
  .flow-shell .scene[data-scene="today"] .module-controls>.flow-brief-open{
    position:static;grid-column:2;grid-row:1;
