@@ -11,7 +11,7 @@
   --flow-ref-space-3:12px;
   --flow-ref-space-4:16px;
   --flow-ref-space-5:24px;
-  --flow-ref-text-soft:var(--muted);
+  --flow-ref-text-soft:color-mix(in srgb,var(--ink) 55%,var(--muted));
   --flow-ref-stroke:color-mix(in srgb,var(--ink) 10%,transparent);
 }
 
