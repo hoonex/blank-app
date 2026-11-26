@@ -49,13 +49,15 @@
     refresh.type='button';
     refresh.addEventListener('click',locate);
     heading.append(headingCopy,refresh);
-    const status=text('p','flow-nearby-status','내 위치를 사용하면 가까운 정류장 3곳을 찾을 수 있어요.');
+    const status=text('p','flow-nearby-status','');
     status.setAttribute('role','status');
     const list=text('div','flow-nearby-list');
     list.setAttribute('aria-label','가까운 정류장 3곳');
     const help=text('p','flow-nearby-footnote','거리 = 직선거리 · 대구시 정류장 데이터');
     section.append(heading,status,list,help);
-    host.insertBefore(section,host.querySelector('.bus-search'));
+    const search=host.querySelector('.bus-search');
+    if(search)search.after(section);
+    else host.append(section);
     card=section;
     return section;
   }

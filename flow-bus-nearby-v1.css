@@ -1,16 +1,16 @@
 /* Compact nearest-stop picker: 3 verified Daegu BIS stops; no imaginary bus GPS. */
 .scene[data-scene="school"] .flow-nearby-stops{
   width:100%;min-width:0;margin:4px 0 21px;padding:17px 16px 15px;
-  border-radius:21px;background:var(--paper-low);
+  border-radius:var(--flow-surface-radius);background:var(--paper-low);
 }
 .flow-nearby-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .flow-nearby-title{display:flex;flex-direction:column;gap:3px;min-width:0}
 .flow-nearby-title>strong{font-size:17px;line-height:1.25;letter-spacing:-.04em;font-weight:820}
 .flow-nearby-description{font-size:11px;color:var(--muted);line-height:1.4}
 .flow-nearby-locate{
-  flex:0 0 auto;border-radius:999px;background:var(--surface);
+  flex:0 0 auto;border-radius:999px;background:var(--surface);min-height:var(--flow-target-size);
   padding:9px 12px;font-size:11px;font-weight:760;line-height:1.2;
-  transition:background .18s,transform .18s;
+  transition:background var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out);
 }
 .flow-nearby-locate:active{transform:scale(.97)}
 .flow-nearby-locate:disabled{opacity:.55;cursor:progress}
@@ -22,11 +22,11 @@
 .flow-nearby-stop{
   width:100%;min-width:0;display:grid;align-items:center;
   grid-template-columns:30px minmax(0,1fr) auto 11px;
-  gap:12px;padding:11px 12px;border-radius:14px;text-align:left;
+  gap:12px;padding:11px 12px;border-radius:var(--flow-action-radius);text-align:left;
   background:var(--surface);color:var(--ink);
-  transition:background .18s,transform .18s;
+  transition:background var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out);
 }
-.flow-nearby-stop:active{transform:scale(.991)}
+.flow-nearby-stop:active{transform:scale(var(--flow-press-scale))}
 .flow-nearby-stop:disabled{opacity:.6}
 .flow-nearby-stop.is-selected{background:color-mix(in srgb,var(--accent) 22%,var(--surface))}
 .flow-nearby-rank{font-size:13px;font-weight:790;color:var(--muted);font-variant-numeric:tabular-nums}

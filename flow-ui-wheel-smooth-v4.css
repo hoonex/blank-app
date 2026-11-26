@@ -11,9 +11,9 @@
  .calendar-layout.flow-wheel-enabled>.calendar-sheet{
    position:relative;z-index:3;overflow:hidden;
    width:calc(100% - 82px);min-width:0;margin:0 auto;
-   padding:12px 8px 17px;border-radius:26px;
+   padding:12px 8px 17px;border-radius:var(--flow-surface-radius);
    background:var(--surface);
-   box-shadow:0 8px 28px rgba(21,24,20,.07);
+   box-shadow:var(--flow-wheel-shadow);
    transition:none!important;
    touch-action:pan-y;will-change:transform;
    -webkit-tap-highlight-color:transparent
@@ -50,9 +50,9 @@
    position:absolute;z-index:1;
    left:50%;top:0;width:calc(100% - 82px);
    margin:0;min-height:320px;
-   padding:12px 8px 17px;border-radius:26px;
+   padding:12px 8px 17px;border-radius:var(--flow-surface-radius);
    background:var(--surface);
-   box-shadow:0 8px 28px rgba(21,24,20,.07);
+   box-shadow:var(--flow-wheel-shadow);
    overflow:hidden;touch-action:pan-y;
    will-change:transform;cursor:pointer;
    user-select:none;-webkit-user-select:none;
@@ -84,7 +84,7 @@
  .calendar-layout.flow-wheel-dragging,.calendar-layout.flow-wheel-dragging *{cursor:grabbing!important}
  html[data-theme=dark] .flow-wheel-neighbor,
  html[data-theme=dark] .calendar-layout.flow-wheel-enabled>.calendar-sheet{
-   box-shadow:0 8px 28px rgba(0,0,0,.17)
+   box-shadow:var(--flow-wheel-shadow)
  }
 }
 @media(max-width:360px){

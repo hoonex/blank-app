@@ -425,12 +425,12 @@
   min-height:106px;
   padding:var(--flow-ref-space-4)!important;
   border:1px solid var(--flow-ref-stroke)!important;
-  border-radius:var(--radius-item);
+  border-radius:var(--flow-action-radius);
   background:var(--surface);
-  box-shadow:0 1px 3px rgba(17,19,16,.025);
+  box-shadow:var(--flow-surface-shadow);
   color:var(--ink)!important;
   font-size:15px;font-weight:770;
-  transition:background-color .18s ease,border-color .18s ease,transform .18s ease;
+  transition:background-color var(--flow-motion-state) ease,border-color var(--flow-motion-state) ease,transform var(--flow-motion-state) var(--flow-ease-out);
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut::before{
   content:"학교";

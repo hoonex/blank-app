@@ -7,6 +7,8 @@
   const WEEK=['일','월','화','수','목','금','토'];
   const cache=new Map();
   let scene=null,host=null,title=null,monthObserver=null,controller=null,activeKey='',scheduled=false;
+  let activeFilter='all';
+  const FILTERS=[['all','전체'],['exam','시험·평가'],['break','휴업·방학']];
   const pad=n=>String(n).padStart(2,'0');
   function parseMonth(){
     const txt=title?.textContent||'';
@@ -48,14 +50,66 @@
       top.append(copy,count);
       const content=create('div','flow-month-events-body');
       content.setAttribute('aria-live','polite');
-      panel.append(top,content);
+      const filters=create('div','flow-month-events-filters');
+      filters.setAttribute('role','group');
+      filters.setAttribute('aria-label','학사일정 이름 필터');
+      filters.title='실제 일정 이름에 포함된 단어를 기준으로 표시합니다.';
+      for(const [key,label] of FILTERS){
+        const button=create('button','flow-month-events-filter',label);
+        button.type='button';
+        button.dataset.filter=key;
+        button.setAttribute('aria-pressed',key==='all'?'true':'false');
+        button.classList.toggle('active',key==='all');
+        button.addEventListener('click',()=>{
+          activeFilter=key;
+          for(const item of filters.querySelectorAll('button')){
+            const active=item.dataset.filter===key;
+            item.classList.toggle('active',active);
+            item.setAttribute('aria-pressed',active?'true':'false');
+          }
+          applyFilter();
+        });
+        filters.append(button);
+      }
+      panel.append(top,filters,content);
       root.appendChild(panel);
     }
     return panel;
   }
+  function matchesFilter(name){
+    if(activeFilter==='exam')return /시험|평가|모의고사|고사|수능/.test(name);
+    if(activeFilter==='break')return /휴업|휴교|방학|공휴일|재량휴무|개교기념/.test(name);
+    return true;
+  }
+  function applyFilter(){
+    if(!host?.isConnected)return;
+    const list=host.querySelector('.flow-month-events-list');
+    const rows=[...list?.querySelectorAll('.flow-month-event')||[]];
+    const filters=host.querySelector('.flow-month-events-filters');
+    if(filters)filters.hidden=!rows.length;
+    host.querySelector('.flow-month-events-filter-empty')?.remove();
+    let visible=0;
+    for(const row of rows){
+      const ok=matchesFilter(row.querySelector('.flow-month-event-name')?.textContent||'');
+      row.hidden=!ok;
+      if(ok)visible++;
+    }
+    if(rows.length){
+      const partial=host.dataset.eventsPartial==='true';
+      host.querySelector('.flow-month-events-count').textContent=activeFilter==='all'
+        ?(partial?'일부 표시':rows.length+'건')
+        :(visible+' / '+rows.length+'건'+(partial?' · 일부':''));
+      if(!visible){
+        const empty=create('p','flow-month-events-filter-empty','이 달의 일정 이름에 해당 항목이 없어요.');
+        list.after(empty);
+      }
+    }
+  }
   function message(text,secondary){
     const body=host.querySelector('.flow-month-events-body');
     body.replaceChildren();
+    const filters=host.querySelector('.flow-month-events-filters');
+    if(filters)filters.hidden=true;
     const box=create('p','flow-month-events-message',text);
     body.appendChild(box);
     if(secondary)body.appendChild(create('p','flow-month-events-footnote',secondary));
@@ -66,7 +120,10 @@
     count.textContent=partial?'일부 표시':items.length+'건';
     const body=host.querySelector('.flow-month-events-body');
     body.replaceChildren();
+    host.dataset.eventsPartial=partial?'true':'false';
     if(!items.length){
+      const filters=host.querySelector('.flow-month-events-filters');
+      if(filters)filters.hidden=true;
       message(partial?'달력에서 확인할 수 있는 일정이 없어요.':'이번 달에 등록된 학사일정이 없어요.',
         partial?'학사일정 연결을 확인한 뒤 다시 표시합니다.':null);
       return;
@@ -96,6 +153,7 @@
       list.appendChild(row);
     }
     body.appendChild(list);
+    applyFilter();
     if(partial)body.appendChild(create('p','flow-month-events-footnote',
       '전체 일정 데이터를 불러오지 못해 달력에 표시된 첫 번째 일정만 보여줍니다.'));
   }
