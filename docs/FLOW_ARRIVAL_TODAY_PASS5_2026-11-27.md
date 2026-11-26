@@ -22,3 +22,9 @@
 ## Deployment
 
 After final candidate passes, push the static asset commit, verify GitHub byte equality, repin only V2_RELEASE in blank-app while preserving legacy SHA and Worker settings. Verify live changed assets and rerun all three browser suites without interception. Record actual deployed SHA, version, percentage, results in follow-up.
+
+## Production sign-off
+
+- UI pin: `c8ca10ca983a93fee47a19bcdb70449a1900279f`; Worker `8166c92f-c46b-4e8b-8415-e5f2af8ea5df`; deployment `20c88e57-8be5-4bac-ac21-e08ca66fcdab`, 100%, 2026-11-26T15:13:21.776689Z. Rollback version `24ab6909-8f40-4159-aecc-38a9cb0ad00c`. Legacy pin unchanged.
+- Changed runtime files: 5/5 GitHub raw and production HTTP 200, byte-for-byte match against Git blobs; production release header `c8ca10ca983a`. HTML SHA256 `99532d33e313b37e2ebb805472c9d8b964f7dd61479ca97bf91b107e3c52cdcb`.
+- Live browser: arrival/today 3/3 (60 assertions), global matrix 16/16, school/bus 3/3 (63 assertions), exit 0, zero JS/static HTTP errors. No candidate interception. Evidence `vector-qa/pass6-final/{arrival-today-live,live,school-bus-live}/result.json`. This documentation-only follow-up does not change the deployed pin.
