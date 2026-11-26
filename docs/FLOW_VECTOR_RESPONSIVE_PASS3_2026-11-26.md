@@ -45,3 +45,11 @@ Reviewed public product pages/help, public pattern-library descriptions and comp
 ## Remaining work / do not overstate
 
 Actual finger swipes and animation frame timing on physical phones, screen-reader speech, multiple schools and onboarding/search, school phone missing-field UX, frequent-stop favorites and live GPS/BIS arrival scenarios, time-of-day simulations, and deeper product-reference hands-on research remain unverified or unimplemented. Do not label these complete. No wholesale redesign of the already-shipped date ribbon and wheel; no changes to the separate campus map. Production release/QA recorded separately after successful deployment.
+
+## Production sign-off (2026-11-26 23:00 KST)
+
+- Deployed UI pin: `4738405dee674c4b4ad6638a4cc3ad6fefa356d1`, pushed to `flow-vector-controls-20261126`. Legacy pin remains `b1ac095b47baa0c09430559bf127e7c873fa9263`.
+- Cloudflare Worker `blank-app`: version `93dab987-c7e6-4313-9e2a-3c1bb923c490`, deployment `7c88c9d2-cff8-4719-9684-d862ece4614d`, 100%, timestamp `2026-11-26T14:00:36.521552Z`. Previous version `70bd481c-6fea-436f-9fb0-ee154b289614` is the rollback point. Only `V2_RELEASE` changed in worker module, other settings retained.
+- Public GET `https://blank-app.agfvrd.workers.dev/` and eleven changed CSS/JS assets: **12/12 HTTP 200**, each `x-flow-ui-release: 4738405dee67`, byte-for-byte equal to pinned Git blobs. HTML SHA256 `529739c11a71cfc0d1e62b48548bc8c09bd1a4d7279d5dd01549fdcc3dc43af8`; core CSS SHA256 `f30832c626c425c89f38c92159796a8b9b0f233da93bee36d3b428fe87e8c9c5`.
+- `node scripts/qa-flow-browser.mjs --live`: **16/16**, exit 0, 31 checks per case (32 at 768px), zero page exceptions and zero static asset HTTP errors. No request interception. Evidence at `vector-qa/pass4/live/result.json` and corresponding screenshots on the local machine.
+- This sign-off is a documentation-only follow-up commit; the deployed code SHA remains `4738405...` rather than the subsequent documentation branch tip. Do not repin production simply to include this note.
