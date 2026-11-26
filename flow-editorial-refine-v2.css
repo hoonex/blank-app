@@ -76,13 +76,13 @@
   border:1px solid color-mix(in srgb,var(--ink) 7%,transparent);
   padding:3px!important;
   background:var(--paper-low);
-  border-radius:11px!important;
+  border-radius:var(--flow-segment-radius)!important;
 }
 .flow-shell .scene[data-scene="today"] .switch-track button{
   min-height:28px;min-width:54px;
   padding:6px 10px!important;
   font-size:11px!important;line-height:1.1;
-  border-radius:8px!important;
+  border-radius:var(--flow-segment-thumb-radius)!important;
 }
 .flow-shell .scene[data-scene="today"] .switch-track:has(button.chosen)::before{
   border-radius:8px!important;
@@ -183,9 +183,9 @@
 .flow-shell .scene[data-scene="today"] .meal-sheet.flow-meal-single-host{
   padding:21px 22px 19px!important;
   background:var(--surface)!important;
-  border:1px solid color-mix(in srgb,var(--ink) 7%,transparent);
-  border-radius:22px!important;
-  box-shadow:0 2px 9px color-mix(in srgb,var(--ink) 2%,transparent)!important;
+  border:1px solid var(--flow-surface-border);
+  border-radius:var(--flow-surface-radius)!important;
+  box-shadow:var(--flow-surface-shadow)!important;
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-single-head{
   align-items:center;
@@ -199,11 +199,11 @@
 .flow-shell .scene[data-scene="today"] .flow-meal-segment{
   min-width:104px!important;flex:0 0 104px!important;
   padding:3px!important;
-  border-radius:10px!important;
+  border-radius:var(--flow-segment-radius)!important;
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-segment::before{
   left:3px;top:3px;bottom:3px;width:calc((100% - 6px)/2);
-  border-radius:8px!important;
+  border-radius:var(--flow-segment-thumb-radius)!important;
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-segment button{
   min-height:30px;
@@ -427,7 +427,7 @@
   border:1px solid var(--flow-ref-stroke)!important;
   border-radius:var(--flow-action-radius);
   background:var(--surface);
-  box-shadow:var(--flow-surface-shadow);
+  box-shadow:none;
   color:var(--ink)!important;
   font-size:15px;font-weight:770;
   transition:background-color var(--flow-motion-state) ease,border-color var(--flow-motion-state) ease,transform var(--flow-motion-state) var(--flow-ease-out);
@@ -454,7 +454,7 @@
   background:color-mix(in srgb,var(--accent) 10%,var(--surface));
   border-color:color-mix(in srgb,var(--accent) 65%,var(--surface))!important;
 }
-.flow-shell .scene[data-scene="school"] .flow-school-shortcut:active{transform:scale(.985)}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:active{transform:scale(var(--flow-press-scale))}
 @media(max-width:360px){
   .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{gap:var(--flow-ref-space-2)}
   .flow-shell .scene[data-scene="school"] .flow-school-shortcut{padding:12px!important;min-height:104px;font-size:13px}

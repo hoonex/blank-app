@@ -100,7 +100,7 @@
 /* 4. Meals: fast visual feedback, while all data/calendar scrolling is immediate.
       Do not animate 21-23 month cells on every rerender. */
 .flow-shell .flow-meal-single .flow-meal-segment::before{
-  transition:transform 240ms var(--flow-ease-soft) !important;
+  transition:transform var(--flow-motion-layout) var(--flow-ease-soft) !important;
 }
 .flow-shell .flow-meal-single .flow-meal-segment[data-dragging="true"]::before{
   transition:none !important;
@@ -113,7 +113,7 @@
     background-color 160ms ease-out !important;
 }
 .flow-shell .flow-meal-single .flow-meal-arrow:active{
-  transform:scale(.96);
+  transform:scale(var(--flow-press-scale));
 }
 @keyframes flow-polish-detail{
   from{opacity:.72;transform:translate3d(0,3px,0)}

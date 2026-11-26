@@ -10,6 +10,7 @@
   /* Shared surface roles: passive, action, inverse, floating, wheel. */
   --radius-panel:24px; --radius-item:14px; --radius-control:999px;
   --flow-surface-radius:24px; --flow-action-radius:14px;
+  --flow-segment-radius:11px; --flow-segment-thumb-radius:8px;
   --flow-surface-border:color-mix(in srgb,var(--ink) 8%,transparent);
   --flow-surface-shadow:0 1px 5px rgba(17,21,17,.035);
   --flow-floating-shadow:0 12px 34px rgba(15,19,15,.20);
@@ -64,11 +65,11 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .rail-navigation button{
   font-size:13px;font-weight:720;color:var(--muted);
   border-radius:var(--radius-control);padding:11px 19px;
-  transition:color .2s,background .25s,transform .23s var(--ease)
+  transition:color var(--flow-motion-state),background var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out)
 }
 .rail-navigation button.active{background:var(--night);color:var(--night-text)}
 .rail-navigation button:hover:not(.active){background:var(--paper-low);color:var(--ink)}
-.rail-navigation button:active{transform:scale(.94)}
+.rail-navigation button:active{transform:scale(var(--flow-press-scale))}
 .global-meta{display:flex;align-items:center;gap:18px;font-size:11px;color:var(--muted);white-space:nowrap}
 .global-meta a{font-size:11px;font-weight:760;transition:color .2s}
 .global-meta a:hover{color:var(--ink)}
@@ -181,10 +182,10 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .switch-track button{
   position:relative;z-index:2;min-width:59px;
   padding:9px 13px;border-radius:var(--radius-control);
-  font-size:12px;font-weight:720;color:var(--muted);transition:color .23s,transform .2s
+  font-size:12px;font-weight:720;color:var(--muted);transition:color var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out)
 }
 .switch-track button.chosen{background:var(--night);color:var(--night-text)}
-.switch-track button:active{transform:scale(.93)}
+.switch-track button:active{transform:scale(var(--flow-press-scale))}
 @supports selector(:has(*)){
  .switch-track::before{content:"";position:absolute;pointer-events:none;z-index:1;left:4px;top:4px;bottom:4px;
    width:calc((100% - 12px)/2);border-radius:var(--radius-control);background:var(--night);
@@ -230,7 +231,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .week-grid-header button span{font-size:12px}
 .week-grid-header button strong{font-size:13px;font-variant-numeric:tabular-nums}
 .week-grid-header button.today{background:var(--accent);color:#171917}
-.week-grid-header button:active{transform:scale(.95)}
+.week-grid-header button:active{transform:scale(var(--flow-press-scale))}
 .week-period-title,.week-period{
  display:grid;place-items:center;
  color:var(--muted);font-size:11px;font-weight:740;
@@ -249,7 +250,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .week-cell span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .week-cell.today:not(.empty){background:color-mix(in srgb,var(--accent) 20%,transparent)}
 .week-cell.empty{color:var(--faint);font-weight:500}
-.week-cell:active{transform:scale(.92);background:var(--accent);color:#171917}
+.week-cell:active{transform:scale(var(--flow-press-scale));background:var(--accent);color:#171917}
 @media(hover:hover){
  .week-cell:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 }
@@ -280,10 +281,10 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .transit-link{
   display:inline-flex;align-items:center;gap:15px;
   background:var(--night);color:var(--night-text);border-radius:var(--radius-control);
-  padding:12px 18px;font-size:12px;font-weight:740;transition:transform .24s var(--ease),background .25s,color .25s
+  padding:12px 18px;font-size:12px;font-weight:740;transition:transform var(--flow-motion-state) var(--flow-ease-out),background var(--flow-motion-state),color var(--flow-motion-state)
 }
 .transit-link span{transition:transform .24s var(--ease)}
-.transit-link:hover{background:var(--accent);color:#171917;transform:translateY(-2px)}
+.transit-link:hover{background:var(--accent);color:#171917}
 .transit-link:hover span{transform:translate(3px,-3px)}
 .empty-note{padding:24px 6px;color:var(--muted);font-size:13px;line-height:1.6}
 .scene-head{
@@ -328,7 +329,7 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 }
 .calendar-grid button.out-month{opacity:.3}
 @media(hover:hover) and (pointer:fine){
- .calendar-grid button:hover:not(.selected){background:var(--paper-low);transform:scale(1.02)}
+ .calendar-grid button:hover:not(.selected){background:var(--paper-low)}
 }
 .calendar-grid button:active{transform:scale(var(--flow-press-scale))}
 .calendar-num{display:grid;place-items:center;border-radius:var(--radius-control);
@@ -368,9 +369,9 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .school-actions{display:flex;align-items:center;gap:20px;flex-wrap:wrap;font-size:13px;font-weight:740}
 .button-strong{display:inline-flex;align-items:center;justify-content:center;
   padding:13px 22px;border-radius:var(--radius-control);background:var(--accent);color:#171917;font-size:13px;font-weight:760;
-  transition:transform .25s var(--ease),background .25s}
-.button-strong:hover{transform:translateY(-2px);background:var(--accent)}
-.button-strong:active{transform:scale(.95)}
+  transition:transform var(--flow-motion-state) var(--flow-ease-out),background var(--flow-motion-state)}
+.button-strong:hover{background:color-mix(in srgb,var(--accent) 85%,var(--surface))}
+.button-strong:active{transform:scale(var(--flow-press-scale))}
 .settings-sheet{padding-top:15px}
 .setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:105px;padding:20px 0;border-radius:var(--radius-item)}
 .setting-row>div{display:grid;gap:6px}
@@ -380,12 +381,12 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
   display:inline-flex;align-items:center;justify-content:center;flex:none;
   background:var(--night);color:var(--night-text);border-radius:var(--radius-control);
   padding:12px 20px;min-width:128px;font-size:12px;font-weight:740;
-  transition:background .2s,color .2s,transform .24s var(--ease)
+  transition:background var(--flow-motion-state),color var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out)
 }
-.setting-toggle:hover{background:var(--accent);color:#171917;transform:translateY(-2px)}
+.setting-toggle:hover{background:var(--accent);color:#171917}
 html[data-theme="dark"] .setting-toggle{background:var(--paper-low);color:var(--ink)}
 html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#171917}
-.setting-toggle:active{transform:scale(.94)}
+.setting-toggle:active{transform:scale(var(--flow-press-scale))}
 .note{max-width:1408px;width:calc(100% - clamp(36px,8vw,128px));margin:0 auto 50px;color:var(--muted);font-size:12px}
 .onboarding{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,460px);
@@ -541,7 +542,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .class-period{font-size:12px}
  .class-row:hover{padding-left:14px}
  .today-aside{grid-template-columns:1fr;gap:15px}
- .meal-sheet{min-height:0;padding:23px;border-radius:25px}
+ .meal-sheet{min-height:0;padding:23px;border-radius:var(--flow-surface-radius)}
  .meal-sheet h2{font-size:32px;margin:14px 0 17px}
  .meal-list{gap:8px 12px}
  .upcoming-sheet{padding:13px 5px}
@@ -570,7 +571,7 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
    font-size:0;line-height:0;overflow:hidden
  }
  .calendar-event-text:empty{visibility:hidden}
- .event-sheet{border-radius:25px;min-height:195px}
+ .event-sheet{border-radius:var(--flow-surface-radius);min-height:195px}
  .picked-date{margin:14px 0 17px}
  .picked-date h2{font-size:44px}
  .school-sheet,.settings-sheet{padding:15px 0 50px}
@@ -687,7 +688,7 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
  .flow-main>.scene{padding-bottom:100px}
 }
 @media(max-width:590px){
- .bus-panel{width:calc(100% - 28px);padding:19px;border-radius:25px}
+ .bus-panel{width:calc(100% - 28px);padding:19px;border-radius:var(--flow-surface-radius)}
  .bus-source{display:none}
  .bus-search input{font-size:13px;padding:9px 8px}
  .bus-search button{padding:8px 15px}
