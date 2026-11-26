@@ -133,10 +133,22 @@ async function choose(target){
       if(!button)break;
       const desired=addDay(view.selected,dest-view.active);
       if(desired===view.selected)break;
+      const acrossWindow=(idx<0||idx>=view.buttons.length);
+      const firstBefore=view.buttons[0]?.getAttribute('aria-label');
       button.click(); // Only Leptos changes the actual selected date.
       state.selected=desired;
       await waitFrame();
       await waitFrame();
+      if(acrossWindow){
+        // Rust rebases its 181-day window asynchronously. Do not attempt
+        // another edge click against the old window while that rebase runs.
+        for(let settle=0;settle<30;settle++){
+          const current=nativeView();
+          if(current&&(current.active!==dest||
+            current.buttons[0]?.getAttribute('aria-label')!==firstBefore))break;
+          await new Promise(resolve=>setTimeout(resolve,20));
+        }
+      }
       const check=nativeView();
       if(check?.selected===target){ok=true;break;}
     }
