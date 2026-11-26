@@ -1,0 +1,240 @@
+/*
+ * Flow School / Week Navigator v1
+ * Compact weekly scannability from mobile date-strip references + native
+ * year/month picker. No custom physics or duplicate school data requests.
+ * Only the original Leptos date-strip is hidden, never deleted.
+ */
+/* Keep Leptos date-strip geometry for its asynchronous 181-day rebase. */
+.flow-shell .scene[data-scene="today"].flow-weeknav-enabled>.today-heading{
+ display:flex!important;position:absolute!important;left:14px!important;top:0!important;
+ z-index:-1!important;opacity:0!important;pointer-events:none!important;
+ width:calc(100% - 28px)!important;height:96px!important;min-height:96px!important;
+ overflow:hidden!important;clip-path:inset(100%)!important
+}
+.flow-shell .scene[data-scene="today"]>.flow-weeknav{
+ --flow-week-line:color-mix(in srgb,var(--ink) 12%,transparent);
+ width:calc(100% - 28px);
+ margin:6px auto 8px;
+ box-sizing:border-box;
+ padding:4px 0 6px;
+ min-width:0;
+ color:var(--ink);
+ border-bottom:1px solid var(--flow-week-line);
+ font:inherit;
+}
+.flow-weeknav,.flow-weeknav *{box-sizing:border-box}
+.flow-weeknav-head{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;min-height:32px;margin-bottom:4px
+}
+.flow-weeknav-month{
+ display:inline-flex;align-items:center;justify-content:flex-start;
+ gap:8px;min-width:0;
+ font:inherit;font-size:19px;font-weight:850;letter-spacing:-.065em;
+ padding:4px 2px!important;border:0;background:none!important;color:var(--ink);
+ line-height:1.2;white-space:nowrap;
+}
+.flow-weeknav-month .flow-weeknav-chevron{
+ color:var(--muted);font-size:15px;font-weight:700;
+ transform:translateY(-2px);
+}
+.flow-weeknav-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:none}
+.flow-weeknav-actions>button{
+ display:grid;place-items:center;flex:none;
+ border:0!important;color:var(--ink);
+ background:transparent!important;
+ box-shadow:none!important;
+ transition:color .15s ease,background-color .15s ease,transform .15s ease
+}
+.flow-weeknav-arrow{
+ width:31px;height:31px;border-radius:11px!important;
+ font-size:26px;font-weight:350;line-height:1;
+}
+.flow-weeknav-arrow:hover,.flow-weeknav-arrow:focus-visible{
+ background:var(--paper-low)!important
+}
+.flow-weeknav-today{
+ min-width:46px;height:31px;padding:0 9px!important;
+ background:var(--paper-low)!important;
+ border-radius:10px!important;
+ font-size:12px;font-weight:800;
+}
+.flow-weeknav-today[data-at-today="true"]{
+ color:var(--muted);background:transparent!important;
+}
+.flow-weeknav-days{
+ display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+ gap:3px;min-width:0;
+ touch-action:pan-y pinch-zoom;
+ -webkit-user-select:none;user-select:none;
+}
+.flow-weeknav-day{
+ position:relative;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:3px;
+ width:100%;min-width:0;min-height:54px;
+ padding:5px 1px!important;margin:0;
+ border:1px solid transparent!important;
+ background:transparent!important;color:var(--ink)!important;
+ border-radius:14px!important;
+ transition:background-color .16s ease,border-color .16s ease,color .16s ease!important;
+ font-variant-numeric:tabular-nums;
+ cursor:pointer;
+}
+.flow-weeknav-day small{
+ color:var(--muted);font-size:11px;font-weight:650;line-height:1.15
+}
+.flow-weeknav-day strong{
+ color:inherit;font-size:19px;font-weight:780;
+ letter-spacing:-.04em;line-height:1.1
+}
+.flow-weeknav-day .flow-weeknav-day-marker{
+ display:block;position:absolute;bottom:4px;
+ width:4px;height:4px;border-radius:50%;
+ background:transparent;pointer-events:none;
+}
+.flow-weeknav-day.is-today:not(.is-selected) .flow-weeknav-day-marker{
+ background:var(--accent)
+}
+.flow-weeknav-day.is-today:not(.is-selected) strong{
+ color:var(--ink)
+}
+.flow-weeknav-day.is-selected{
+ background:var(--night)!important;color:var(--night-text)!important;
+ border-color:var(--night)!important;
+}
+.flow-weeknav-day.is-selected small{
+ color:color-mix(in srgb,var(--night-text) 73%,transparent)
+}
+.flow-weeknav-day.is-selected .flow-weeknav-day-marker{background:var(--accent)}
+.flow-weeknav-day:not(.is-selected):hover{
+ background:var(--paper-low)!important
+}
+.flow-weeknav-day:focus-visible,
+.flow-weeknav-month:focus-visible,
+.flow-weeknav-actions button:focus-visible{
+ outline:2px solid var(--accent)!important;outline-offset:2px
+}
+.flow-weeknav-days button:active{transform:scale(.97)}
+.flow-weeknav-busy .flow-weeknav-days{pointer-events:none}
+.flow-weeknav-status{
+ display:block;position:absolute;width:1px;height:1px;
+ overflow:hidden;clip-path:inset(50%);white-space:nowrap;
+}
+@media(max-width:360px){
+ .flow-shell .scene[data-scene="today"]>.flow-weeknav{margin:6px auto 8px;padding:3px 0 6px}
+ .flow-weeknav-month{font-size:18px}
+ .flow-weeknav-head{margin-bottom:3px}
+ .flow-weeknav-actions{gap:2px}
+ .flow-weeknav-arrow{width:29px;height:31px;font-size:25px}
+ .flow-weeknav-today{min-width:41px;height:31px;padding:0 7px!important;font-size:11px}
+ .flow-weeknav-days{gap:1px}
+ .flow-weeknav-day{min-height:52px;border-radius:11px!important}
+ .flow-weeknav-day strong{font-size:18px}
+}
+@media(min-width:871px){
+ .flow-shell .scene[data-scene="today"]>.flow-weeknav{
+   display:grid;grid-template-columns:minmax(250px,300px) minmax(0,1fr);
+   align-items:center;gap:clamp(18px,3vw,42px);
+   width:calc(100% - clamp(40px,8vw,112px));max-width:1500px;
+   min-height:92px;margin:0 auto 18px;padding:9px 0 13px;
+ }
+ .flow-weeknav-head{margin:0}
+ .flow-weeknav-month{font-size:25px}
+ .flow-weeknav-days{gap:7px;max-width:750px;width:100%}
+ .flow-weeknav-day{min-height:62px}
+ .flow-weeknav-day strong{font-size:20px}
+}
+
+/* Active date must stand out from the charcoal surface in dark mode. */
+html[data-theme="dark"] .flow-weeknav-day.is-selected{
+ background:var(--accent)!important;
+ color:#171917!important;
+ border-color:var(--accent)!important;
+}
+html[data-theme="dark"] .flow-weeknav-day.is-selected small{color:rgba(23,25,23,.82)}
+html[data-theme="dark"] .flow-weeknav-day.is-selected .flow-weeknav-day-marker{background:#171917}
+
+/* Month chooser: native accessible dialog, no second on-page calendar. */
+.flow-month-sheet{
+ position:fixed;inset:auto 0 0;
+ width:min(425px,calc(100% - 20px));max-width:none;
+ max-height:min(82dvh,740px);overflow:auto;
+ padding:0;margin:auto auto max(12px,env(safe-area-inset-bottom));
+ border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+ border-radius:24px;
+ color:var(--ink);background:var(--surface);
+ box-shadow:0 18px 65px rgba(0,0,0,.19);
+ font:inherit;overscroll-behavior:contain
+}
+.flow-month-sheet::backdrop{background:rgba(11,13,11,.49);backdrop-filter:blur(3px)}
+.flow-month-sheet-inner{padding:20px}
+.flow-month-sheet-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.flow-month-sheet-kicker{color:var(--muted);font-size:11px;font-weight:780}
+.flow-month-sheet-title{font-size:27px;font-weight:840;letter-spacing:-.065em;margin:4px 0 0}
+.flow-month-sheet-close{
+ width:40px;height:40px;border:0!important;
+ border-radius:50%!important;color:var(--ink);
+ background:var(--paper-low)!important;
+ font-size:25px;line-height:1;
+}
+.flow-month-sheet-nav{
+ display:flex;justify-content:space-between;align-items:center;
+ margin:13px 0 9px;gap:12px;
+}
+.flow-month-sheet-nav-label{color:var(--muted);font-size:12px;font-weight:750}
+.flow-month-sheet-nav button{
+ width:40px;height:40px;border:0!important;border-radius:12px!important;
+ background:var(--paper-low)!important;color:var(--ink);font-size:26px;
+}
+.flow-month-sheet-grid{
+ display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px 2px;
+}
+.flow-month-sheet-weekday{
+ display:grid;place-items:center;height:32px;
+ font-size:11px;color:var(--muted);font-weight:730;
+}
+.flow-month-sheet-placeholder{height:43px}
+.flow-month-sheet-day{
+ min-width:0;min-height:43px;margin:0;padding:0!important;
+ display:grid;place-items:center;
+ border-radius:12px!important;background:transparent!important;
+ border:1px solid transparent!important;
+ color:var(--ink)!important;font-size:14px;font-weight:720;
+ font-variant-numeric:tabular-nums;
+}
+.flow-month-sheet-day.is-selected{
+ background:var(--night)!important;color:var(--night-text)!important;
+}
+.flow-month-sheet-day.is-today:not(.is-selected){
+ border-color:var(--accent)!important;
+}
+.flow-month-sheet-day:hover:not(.is-selected){
+ background:var(--paper-low)!important
+}
+.flow-month-sheet-footer{
+ display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+ border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+ padding-top:13px;margin-top:15px
+}
+.flow-month-sheet-now{
+ background:var(--paper-low)!important;color:var(--ink)!important;
+ border-radius:12px!important;padding:10px 15px!important;
+ min-height:40px;font-size:13px;font-weight:790;
+}
+.flow-month-sheet-hint{color:var(--muted);font-size:11px;line-height:1.5;flex:1 1 200px;margin:0}
+.flow-month-sheet button:focus-visible{
+ outline:2px solid var(--accent)!important;outline-offset:2px
+}
+@media(min-width:700px){
+ .flow-month-sheet{inset:0;width:min(420px,90vw);margin:auto;border-radius:23px}
+}
+@media(prefers-reduced-motion:no-preference){
+ .flow-month-sheet[open]{animation:flow-month-appear .2s cubic-bezier(.2,.8,.2,1) both}
+ @keyframes flow-month-appear{
+  from{opacity:.88;transform:translateY(9px)}
+  to{opacity:1;transform:translateY(0)}
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .flow-weeknav *, .flow-month-sheet *{transition:none!important;animation:none!important}
+}
