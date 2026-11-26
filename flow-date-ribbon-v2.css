@@ -133,7 +133,7 @@
 }
 @media(min-width:871px){
  .flow-shell .scene[data-scene="today"] .today-heading.flow-date-ribbon-ready{
-   width:100%!important;max-width:none!important;margin-top:9px!important;
+   width:92%!important;max-width:none!important;margin:9px auto 0!important;
  }
  .flow-shell .scene[data-scene="today"] .flow-date-ribbon{
    display:grid;grid-template-columns:195px minmax(0,1fr);
