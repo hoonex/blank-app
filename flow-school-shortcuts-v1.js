@@ -39,7 +39,7 @@
       }
       const arrow=document.createElement("span");
       arrow.className="flow-shortcut-arrow";
-      arrow.textContent="↗";arrow.setAttribute("aria-hidden","true");
+      arrow.append(FlowActionIcons.create('external-link'));arrow.setAttribute("aria-hidden","true");
       link.append(label,arrow);
       grid.append(link);
     }

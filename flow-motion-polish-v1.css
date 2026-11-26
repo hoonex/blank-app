@@ -11,6 +11,20 @@
   --flow-motion-dock:260ms;
   --flow-motion-screen:280ms;
 }
+/* SVG actions: identical stroke/grid across calendar, meals, shortcuts,
+   scheduled events, nearby stops and settings. Not icon-font characters. */
+.flow-action-icon{
+  display:block;flex:none;width:18px;height:18px;
+  pointer-events:none;color:inherit;
+}
+.flow-date-month-icon .flow-action-icon{width:18px;height:18px}
+.flow-month-event-arrow .flow-action-icon,
+.flow-nearby-arrow .flow-action-icon,
+.flow-shortcut-arrow .flow-action-icon{width:17px;height:17px}
+.setting-toggle:has(>.flow-action-icon){
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+}
+.setting-toggle>.flow-action-icon{width:14px;height:14px}
 
 /* 1. Replace the previous directional 28px + clip-path scene wipe.
       Small forward movement, readable immediately, no large repainting mask. */

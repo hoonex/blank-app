@@ -29,7 +29,7 @@
 .flow-month-event-date strong{font-size:22px;line-height:1;font-weight:810;letter-spacing:-.055em}
 .flow-month-event-date small{font-size:10px;line-height:1.15;color:var(--muted);font-weight:730}
 .flow-month-event-name{font-size:15px;font-weight:710;line-height:1.4;overflow-wrap:anywhere;letter-spacing:-.03em}
-.flow-month-event-arrow{font-size:23px;font-weight:450;color:var(--muted);line-height:1;text-align:right}
+.flow-month-event-arrow{display:grid;place-items:center;color:var(--muted);line-height:1;text-align:right}
 .flow-month-events-message{margin:3px 0 0;border-top:1px solid color-mix(in srgb,var(--muted) 18%,transparent);
   padding:20px 0 7px;color:var(--muted);font-size:13px}
 .flow-month-events-footnote{font-size:11px;line-height:1.55;color:var(--muted);margin:12px 0 0}

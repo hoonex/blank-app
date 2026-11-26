@@ -421,11 +421,13 @@
     const main=mk('section','flow-meal-main');
     main.setAttribute('aria-label','선택한 날짜 급식 메뉴');
     const rail=mk('div','flow-meal-navigator');
-    const prev=mk('button','flow-meal-arrow','‹');prev.type='button';
+    const prev=mk('button','flow-meal-arrow');prev.type='button';
+    prev.append(FlowActionIcons.create('chevron-left'));
     prev.setAttribute('aria-label','이전 '+(mode==='week'?'기간':'기간'));
     prev.addEventListener('click',()=>periodStep(-1));
     const label=mk('strong','flow-meal-range');
-    const nextButton=mk('button','flow-meal-arrow','›');nextButton.type='button';
+    const nextButton=mk('button','flow-meal-arrow');nextButton.type='button';
+    nextButton.append(FlowActionIcons.create('chevron-right'));
     nextButton.setAttribute('aria-label','다음 기간');
     nextButton.addEventListener('click',()=>periodStep(1));
     rail.append(prev,label,nextButton);

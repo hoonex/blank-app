@@ -47,8 +47,8 @@
 .flow-school-shortcut:hover{color:var(--accent);}
 .flow-school-shortcut:active{background:color-mix(in srgb,var(--accent) 9%,transparent);}
 .flow-shortcut-arrow{
-  flex:none;
-  color:var(--muted);font-size:18px;font-weight:450;line-height:1;
+  flex:none;display:grid;place-items:center;
+  color:var(--muted);line-height:1;
 }
 @media(max-width:390px){
   .flow-school-shortcut-grid{column-gap:14px}

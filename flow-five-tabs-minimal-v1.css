@@ -34,6 +34,7 @@
 .flow-shell .settings-sheet .setting-row strong{font-size:17px!important}
 .flow-shell .settings-sheet .setting-toggle{
   padding:11px 15px!important;min-width:0!important;
+  min-height:var(--flow-target-size)!important;
   font-size:12px!important;white-space:nowrap
 }
 .flow-shell .settings-sheet .setting-row.flow-nonaction-row{display:none!important}

@@ -62,6 +62,49 @@
     }
     return svg;
   }
+  // Flow action icons use the same 24-unit grid, stroke and rounded joints
+  // as the existing navigation icons. Never use font glyphs as UI controls.
+  const actionPaths=Object.freeze({
+    'calendar':'M4.5 9.5h15M8 3.5v3M16 3.5v3M6.5 5h11a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM8.5 13h2M13.5 13h2M8.5 16.5h2',
+    'chevron-left':'M14.5 5.5 8 12l6.5 6.5',
+    'chevron-right':'M9.5 5.5 16 12l-6.5 6.5',
+    'external-link':'M13.5 5h5.5v5.5M19 5l-9.5 9.5M19 13.5V18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5'
+  });
+  function action(name){
+    if(!Object.hasOwn(actionPaths,name))throw new Error('Unknown Flow action icon: '+name);
+    const svg=document.createElementNS(SVG_NS,'svg');
+    svg.setAttribute('class','flow-action-icon');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.setAttribute('width','20');
+    svg.setAttribute('height','20');
+    svg.setAttribute('fill','none');
+    svg.setAttribute('stroke','currentColor');
+    svg.setAttribute('stroke-width','2');
+    svg.setAttribute('stroke-linecap','round');
+    svg.setAttribute('stroke-linejoin','round');
+    svg.setAttribute('aria-hidden','true');
+    svg.setAttribute('focusable','false');
+    svg.setAttribute('data-flow-action',name);
+    const path=document.createElementNS(SVG_NS,'path');
+    path.setAttribute('d',actionPaths[name]);
+    svg.append(path);
+    return svg;
+  }
+  // Loaded before feature scripts. The helper makes icons reusable and
+  // avoids independent, visually mismatched arrows in each UI feature.
+  window.FlowActionIcons=Object.freeze({create:action});
+  function upgradeSettingsActions(){
+    for(const el of document.querySelectorAll('.flow-shell .settings-sheet .setting-toggle')){
+      if(el.dataset.flowIconDone==='true')continue;
+      const label=el.textContent.trim();
+      if(!label.endsWith('↗'))continue;
+      const copy=label.slice(0,-1).trim();
+      if(!copy)continue;
+      el.replaceChildren(document.createTextNode(copy),action(copy==='다시 선택'?'chevron-right':'external-link'));
+      el.dataset.flowIconDone='true';
+      if(el.tagName==='A'&&el.target==='_blank'&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',copy+' 새 탭에서 열기');
+    }
+  }
   const targets=['.flow-shell .mobile-bottom','.flow-shell .rail-navigation'];
   function apply() {
     for(const selector of targets){
@@ -78,6 +121,7 @@
         if(!button.hasAttribute('aria-label'))button.setAttribute('aria-label',label);
       }
     }
+    upgradeSettingsActions();
   }
   let scheduled=false;
   const observer=new MutationObserver(()=>{

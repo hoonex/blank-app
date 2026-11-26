@@ -34,7 +34,7 @@
 .flow-nearby-stop-label strong{font-size:13px;font-weight:790;line-height:1.3;overflow-wrap:anywhere}
 .flow-nearby-stop-label small{font-size:10px;line-height:1.3;color:var(--muted)}
 .flow-nearby-distance{font-size:12px;font-weight:730;white-space:nowrap;font-variant-numeric:tabular-nums}
-.flow-nearby-arrow{font-size:21px;font-weight:440;color:var(--muted);line-height:1}
+.flow-nearby-arrow{display:grid;place-items:center;color:var(--muted);line-height:1}
 .flow-nearby-footnote{font-size:10px;line-height:1.4;color:var(--muted);margin:10px 0 0}
 @media(hover:hover) and (pointer:fine){
  .flow-nearby-locate:hover{background:color-mix(in srgb,var(--accent) 16%,var(--surface))}

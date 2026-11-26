@@ -91,7 +91,7 @@
 }
 .flow-meal-empty{font-size:12px;color:var(--muted);margin:5px 0 8px;line-height:1.5}
 .flow-meal-navigator{
-  display:grid;grid-template-columns:35px minmax(0,1fr) 35px;
+  display:grid;grid-template-columns:44px minmax(0,1fr) 44px;
   align-items:center;gap:8px;
   margin:2px 0 10px;padding-top:13px;
   border-top:1px solid color-mix(in srgb,var(--ink) 11%,transparent);
@@ -103,9 +103,8 @@
 }
 .flow-meal-arrow{
   display:grid;place-items:center;
-  height:35px;width:35px;
+  height:44px;width:44px;
   padding:0;border-radius:50%;
-  font-size:24px;line-height:1;font-weight:470;
   background:var(--paper-low);color:var(--ink);
 }
 .flow-meal-arrow:active{transform:scale(var(--flow-press-scale))}

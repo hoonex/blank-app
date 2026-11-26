@@ -140,7 +140,8 @@
       const date=create('span','flow-month-event-date');
       date.append(create('strong','',pad(when.day)),create('small','',when.week));
       const name=create('span','flow-month-event-name',item.name);
-      const arrow=create('span','flow-month-event-arrow','›');
+      const arrow=create('span','flow-month-event-arrow');
+      arrow.append(FlowActionIcons.create('chevron-right'));
       arrow.setAttribute('aria-hidden','true');
       row.append(date,name,arrow);
       row.addEventListener('click',()=>{

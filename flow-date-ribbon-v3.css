@@ -32,13 +32,13 @@
 }
 .flow-shell .scene[data-scene="today"] .flow-date-ribbon-head{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  min-width:0;min-height:32px;
+  min-width:0;min-height:44px;
 }
 .flow-shell .scene[data-scene="today"] .flow-date-month-button{
   display:inline-flex;align-items:center;gap:7px;flex:0 1 auto;
-  min-width:0;min-height:32px;
-  padding:0 4px 0 1px;
-  border:0;border-radius:10px;
+  min-width:0;min-height:44px;
+  padding:5px 9px;
+  border:0;border-radius:var(--flow-action-radius);
   color:var(--ink);background:transparent;
   font-size:18px;font-weight:820;letter-spacing:-.055em;line-height:1.1;
   font-variant-numeric:tabular-nums;
@@ -46,17 +46,17 @@
   -webkit-tap-highlight-color:transparent;
 }
 .flow-shell .scene[data-scene="today"] .flow-date-month-name{white-space:nowrap}
-.flow-shell .scene[data-scene="today"] .flow-date-month-chevron{
-  position:relative;top:-2px;font-size:18px;font-weight:400;color:var(--muted);
+.flow-shell .scene[data-scene="today"] .flow-date-month-icon{
+  display:grid;place-items:center;color:var(--muted);
   transform-origin:50% 50%;
-  transition:transform .17s ease;
+  transition:transform var(--flow-motion-state) var(--flow-ease-out);
 }
 @media(hover:hover) and (pointer:fine){
- .flow-shell .scene[data-scene="today"] .flow-date-month-button:hover .flow-date-month-chevron{transform:translateY(2px)}
+ .flow-shell .scene[data-scene="today"] .flow-date-month-button:hover{background:var(--paper-low)}
 }
 .flow-shell .scene[data-scene="today"] .flow-date-tools{display:flex;align-items:center;gap:5px;flex:none}
 .flow-shell .scene[data-scene="today"] .flow-date-today{
-  min-height:30px;padding:5px 10px;
+  min-height:44px;padding:8px 10px;
   border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
   border-radius:999px;background:var(--surface);
   color:var(--ink);font-size:11px;font-weight:770;
@@ -65,10 +65,9 @@
 .flow-shell .scene[data-scene="today"] .flow-date-today[hidden]{display:none!important}
 .flow-shell .scene[data-scene="today"] .flow-date-step{
   display:grid;place-items:center;flex:none;
-  width:30px;height:30px;padding:0;
+  width:44px;height:44px;padding:0;
   color:var(--ink);background:var(--paper-low);
   border:0;border-radius:50%;
-  font-family:inherit;font-size:25px;font-weight:400;line-height:1;
   cursor:pointer;
 }
 .flow-shell .scene[data-scene="today"] .flow-date-step:disabled{opacity:.28;cursor:default}
@@ -143,7 +142,7 @@
    min-width:0;flex-wrap:wrap;justify-content:flex-start;align-content:center;
  }
  .flow-shell .scene[data-scene="today"] .flow-date-month-button{
-   flex:0 0 100%;font-size:24px;min-height:35px;
+   flex:0 0 100%;font-size:24px;min-height:44px;
  }
  .flow-shell .scene[data-scene="today"] .flow-date-tools{gap:7px}
  .flow-shell .scene[data-scene="today"] .flow-date-week-grid{
@@ -174,15 +173,14 @@
   background:rgba(9,13,11,.49);backdrop-filter:blur(3px)
 }
 .flow-date-picker-body{padding:19px}
-.flow-date-picker-head{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px}
+.flow-date-picker-head{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px}
 .flow-date-picker-title{
   margin:0;color:var(--ink);text-align:center;
   font-size:18px;font-weight:800;letter-spacing:-.045em
 }
 .flow-date-picker-arrow{
-  display:grid;place-items:center;width:36px;height:36px;padding:0;
+  display:grid;place-items:center;width:44px;height:44px;padding:0;
   background:var(--paper-low);color:var(--ink);border:0;border-radius:50%;
-  font-size:26px;font-weight:400;line-height:1;
 }
 .flow-date-picker-arrow:disabled{opacity:.27}
 .flow-date-picker-weekdays,
@@ -207,7 +205,7 @@
 }
 .flow-date-picker-day:disabled{opacity:.16}
 .flow-date-picker-close{
-  display:block;min-width:84px;min-height:38px;margin:16px 0 0 auto;
+  display:block;min-width:84px;min-height:44px;margin:16px 0 0 auto;
   border:0;border-radius:12px;background:var(--paper-low);
   color:var(--ink);font:inherit;font-size:13px;font-weight:760;
 }
@@ -227,7 +225,7 @@
 }
 @media(prefers-reduced-motion:reduce){
  .flow-shell .scene[data-scene="today"] .flow-date-day,
- .flow-shell .scene[data-scene="today"] .flow-date-month-chevron{
+ .flow-shell .scene[data-scene="today"] .flow-date-month-icon{
   transition:none!important
  }
  .flow-date-month-dialog[open]{animation:none!important}

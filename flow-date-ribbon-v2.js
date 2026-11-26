@@ -79,6 +79,7 @@
     const showingSelected=s.selected>=s.weekStart&&s.selected<s.weekStart+count;
     const monthTarget=showingSelected?s.dates[s.selected]:dateAt(s,s.weekStart+3);
     s.monthButton.querySelector('.flow-date-month-name').textContent=monthTitle(monthTarget);
+    s.monthButton.setAttribute('aria-label',monthTitle(monthTarget)+' 날짜 선택 달력 열기');
     s.todayButton.hidden=s.selected===s.realIndex&&showingSelected;
     s.prevButton.disabled=s.weekStart+6<7;
     s.nextButton.disabled=s.weekStart+7>maxIdx(s);
@@ -109,12 +110,15 @@
   function openPicker(s){
     if(s.dialog?.open)return;
     const dialog=elem('dialog','flow-date-month-dialog');
+    dialog.id='flow-date-picker';
     dialog.setAttribute('aria-label','날짜 선택 달력');
     const content=elem('div','flow-date-picker-body');
     const head=elem('div','flow-date-picker-head');
-    const prev=elem('button','flow-date-picker-arrow flow-date-picker-prev','‹');
+    const prev=elem('button','flow-date-picker-arrow flow-date-picker-prev');
     const title=elem('h2','flow-date-picker-title');
-    const next=elem('button','flow-date-picker-arrow flow-date-picker-next','›');
+    const next=elem('button','flow-date-picker-arrow flow-date-picker-next');
+    prev.append(FlowActionIcons.create('chevron-left'));
+    next.append(FlowActionIcons.create('chevron-right'));
     const close=elem('button','flow-date-picker-close','닫기');
     prev.type=next.type=close.type='button';
     prev.setAttribute('aria-label','이전 달');
@@ -156,9 +160,16 @@
     }
     prev.addEventListener('click',()=>{if(monthAllowed(yy,mm-1)){const d=new Date(yy,mm-1,1);yy=d.getFullYear();mm=d.getMonth();draw()}});
     next.addEventListener('click',()=>{if(monthAllowed(yy,mm+1)){const d=new Date(yy,mm+1,1);yy=d.getFullYear();mm=d.getMonth();draw()}});
-    dialog.addEventListener('close',()=>{dialog.remove();s.dialog=null;if(s.monthButton.isConnected)s.monthButton.focus({preventScroll:true})},{once:true});
+    dialog.addEventListener('close',()=>{
+      dialog.remove();s.dialog=null;
+      if(s.monthButton.isConnected){
+        s.monthButton.setAttribute('aria-expanded','false');
+        s.monthButton.focus({preventScroll:true});
+      }
+    },{once:true});
     draw();
-    try{dialog.showModal()}catch(e){dialog.remove();s.dialog=null}
+    try{dialog.showModal();s.monthButton.setAttribute('aria-expanded','true')}
+    catch(e){dialog.remove();s.dialog=null;s.monthButton.setAttribute('aria-expanded','false')}
   }
   function make(s){
     const ribbon=elem('div','flow-date-ribbon');
@@ -167,13 +178,19 @@
     const month=elem('button','flow-date-month-button');
     month.type='button';
     month.setAttribute('aria-haspopup','dialog');
-    month.setAttribute('aria-label','월별 달력 열기');
-    month.append(elem('span','flow-date-month-name'),elem('span','flow-date-month-chevron','⌄'));
+    month.setAttribute('aria-controls','flow-date-picker');
+    month.setAttribute('aria-expanded','false');
+    const monthIcon=elem('span','flow-date-month-icon');
+    monthIcon.setAttribute('aria-hidden','true');
+    monthIcon.append(FlowActionIcons.create('calendar'));
+    month.append(elem('span','flow-date-month-name'),monthIcon);
     const actions=elem('div','flow-date-tools');
     const today=elem('button','flow-date-today','오늘');today.type='button';
     today.addEventListener('click',()=>jump(s,s.realIndex));
-    const prev=elem('button','flow-date-step flow-date-prev','‹');
-    const next=elem('button','flow-date-step flow-date-next','›');
+    const prev=elem('button','flow-date-step flow-date-prev');
+    const next=elem('button','flow-date-step flow-date-next');
+    prev.append(FlowActionIcons.create('chevron-left'));
+    next.append(FlowActionIcons.create('chevron-right'));
     prev.type=next.type='button';
     prev.setAttribute('aria-label','이전 주');
     next.setAttribute('aria-label','다음 주');

@@ -87,7 +87,8 @@
       const label=text('span','flow-nearby-stop-label');
       label.append(text('strong','',stop.name),text('small','',stop.number?'정류장 '+stop.number:'대구 버스 정류장'));
       const distance=text('span','flow-nearby-distance',stop.m<1000?round(stop.m)+'m':(stop.m/1000).toFixed(1)+'km');
-      const chevron=text('span','flow-nearby-arrow','›');chevron.setAttribute('aria-hidden','true');
+      const chevron=text('span','flow-nearby-arrow');chevron.setAttribute('aria-hidden','true');
+      chevron.append(FlowActionIcons.create('chevron-right'));
       button.append(index,label,distance,chevron);
       button.setAttribute('aria-label',stop.name+', 직선거리 '+distance.textContent+', 선택하기');
       button.addEventListener('click',()=>choose(stop,button));
