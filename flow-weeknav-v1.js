@@ -26,7 +26,7 @@ function actualToday(){
 const TODAY=actualToday();
 const reduce=matchMedia('(prefers-reduced-motion: reduce)');
 const state={scene:null,source:null,widget:null,dialog:null,selected:null,week:null,month:null,
-  sourceObserver:null,scheduled:false,pending:false,lastSwipe:0,seq:0,focused:null};
+  sourceObserver:null,scheduled:false,pending:false,lastSwipe:0,seq:0,focused:null,expanded:false};
 function el(tag,cls,txt){
   const v=document.createElement(tag);
   if(cls)v.className=cls;
@@ -67,8 +67,19 @@ function render(){
   const selected=s.selected,week=monday(selected);
   const month=fromMs(selected);
   const period=month.getUTCFullYear()+'년 '+(month.getUTCMonth()+1)+'월';
-  setText(root.querySelector('.flow-weeknav-month-text'),period);
-  root.querySelector('.flow-weeknav-month')?.setAttribute('aria-label',period+' 월간 달력에서 날짜 선택');
+  setText(root.querySelector('.flow-weeknav-month-text'),(month.getUTCMonth()+1)+'월 '+month.getUTCDate()+'일');
+  setText(root.querySelector('.flow-weeknav-month-weekday'),DAYS[month.getUTCDay()]+'요일');
+  root.querySelector('.flow-weeknav-month')?.setAttribute('aria-label',formatLong(selected)+' 날짜 선택창 열기');
+  const toggle=root.querySelector('.flow-weeknav-expand');
+  root.classList.toggle('is-expanded',s.expanded);
+  if(toggle){
+    toggle.setAttribute('aria-expanded',String(s.expanded));
+    toggle.setAttribute('aria-label',s.expanded?'주간 날짜 닫기':'7일 날짜 펼치기');
+  }
+  const left=root.querySelector('.flow-weeknav-arrow[aria-label^="이전"]');
+  const right=root.querySelector('.flow-weeknav-arrow[aria-label^="다음"]');
+  if(left)left.setAttribute('aria-label',s.expanded?'이전 주':'이전 날짜');
+  if(right)right.setAttribute('aria-label',s.expanded?'다음 주':'다음 날짜');
   const todayBtn=root.querySelector('.flow-weeknav-today');
   todayBtn.dataset.atToday=sameDay(selected,TODAY)?'true':'false';
   todayBtn.setAttribute('aria-label',sameDay(selected,TODAY)?'오늘 날짜가 선택되어 있습니다':'오늘 날짜로 돌아가기');
@@ -161,7 +172,7 @@ async function choose(target){
   }
   return ok;
 }
-function navigateWeek(step){if(state.selected!==null)void choose(addDay(state.selected,step*7));}
+function navigateStep(step){if(state.selected!==null)void choose(addDay(state.selected,step*(state.expanded?7:1)));}
 function drawMonth(dialog){
   const wrap=dialog.querySelector('.flow-month-sheet-grid');
   if(!wrap)return;
@@ -227,16 +238,24 @@ function createWidget(){
   const month=el('button','flow-weeknav-month');month.type='button';
   month.setAttribute('aria-label','월간 달력에서 날짜 선택');
   month.append(el('span','flow-weeknav-month-text','날짜'));
+  month.append(el('span','flow-weeknav-month-weekday',''));
   month.append(el('span','flow-weeknav-chevron','⌄'));
   month.addEventListener('click',showMonth);
   const actions=el('div','flow-weeknav-actions');
   const prev=el('button','flow-weeknav-arrow','‹'),next=el('button','flow-weeknav-arrow','›');
   for(const b of [prev,next])b.type='button';
-  prev.setAttribute('aria-label','이전 주');next.setAttribute('aria-label','다음 주');
-  prev.addEventListener('click',()=>navigateWeek(-1));next.addEventListener('click',()=>navigateWeek(1));
+  prev.setAttribute('aria-label','이전 날짜');next.setAttribute('aria-label','다음 날짜');
+  prev.addEventListener('click',()=>navigateStep(-1));next.addEventListener('click',()=>navigateStep(1));
+  const expand=el('button','flow-weeknav-expand','7일');expand.type='button';
+  expand.setAttribute('aria-expanded','false');
+  expand.setAttribute('aria-label','7일 날짜 펼치기');
+  expand.addEventListener('click',()=>{
+    state.expanded=!state.expanded;
+    render();
+  });
   const today=el('button','flow-weeknav-today','오늘');today.type='button';
   today.addEventListener('click',()=>void choose(TODAY));
-  actions.append(prev,next,today);head.append(month,actions);root.append(head);
+  actions.append(prev,next,expand,today);head.append(month,actions);root.append(head);
   const strip=el('div','flow-weeknav-days');strip.setAttribute('role','group');strip.setAttribute('aria-label','요일별 날짜');
   let touch=null;
   strip.addEventListener('pointerdown',e=>{if(e.isPrimary&&(e.pointerType!=='mouse'||e.button===0))touch={x:e.clientX,y:e.clientY,id:e.pointerId}},{passive:true});
@@ -246,11 +265,14 @@ function createWidget(){
     if(Math.abs(dx)>42 && Math.abs(dx)>Math.abs(dy)*1.2){
       state.lastSwipe=performance.now();
       if(e.cancelable)e.preventDefault();
-      navigateWeek(dx<0?1:-1);
+      navigateStep(dx<0?1:-1);
     }
   });
   strip.addEventListener('pointercancel',()=>{touch=null});
   root.append(strip);
+  head.addEventListener('pointerdown',e=>{
+    if(e.isPrimary&&e.target.closest('button')===null)touch={x:e.clientX,y:e.clientY,id:e.pointerId};
+  },{passive:true});
   const status=el('span','flow-weeknav-status','');status.setAttribute('aria-live','polite');
   root.append(status);
   return root;
