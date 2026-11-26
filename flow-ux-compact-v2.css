@@ -244,7 +244,7 @@
   box-shadow:none!important;
 }
 .flow-onboarding-v2 .search-combo button{
-  flex:none;min-width:58px!important;min-height:42px!important;
+  flex:none;min-width:58px!important;min-height:44px!important;
   border-radius:14px!important;font-size:12px!important;
   padding:0 12px!important;
 }
@@ -266,13 +266,15 @@
   display:none!important;
 }
 .flow-onboarding-v2 .selection-summary{
-  cursor:pointer;margin:12px 0 7px!important;
-  padding:12px 14px!important;border-radius:15px!important;
-  font-size:14px!important
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:12px 0 7px!important;
+  padding:6px 10px 6px 14px!important;border-radius:var(--flow-action-radius)!important;
+  font-size:14px!important;overflow-wrap:anywhere
 }
-.flow-onboarding-v2 .selection-summary::after{
-  content:"변경";float:right;
-  font-size:11px;color:var(--accent);font-weight:700
+.flow-onboarding-v2 .flow-school-reselect{
+  flex:none;min-height:44px;min-width:52px;padding:0 10px;
+  border-radius:var(--flow-action-radius);font-size:12px;color:var(--accent);font-weight:700;
+  border:1px solid currentColor
 }
 .flow-onboarding-v2 .flow-school-choice-note{margin-bottom:10px!important}
 .flow-onboarding-v2 .setup-complete{margin-top:14px!important}

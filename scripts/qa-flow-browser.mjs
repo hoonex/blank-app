@@ -12,7 +12,7 @@ const matrix=widths.flatMap(w=>['light','dark'].map(theme=>({w,theme})));
 const root=new URL('../',import.meta.url);
 const dest=resolve(process.env.FLOW_QA_DIR||'qa-flow-browser-output',live?'live':'candidate');
 mkdirSync(dest,{recursive:true});
-const names=['flow-icons-handdrawn-v1.js','flow-feature-guide-v1.js','flow-feature-guide-v1.css','style-f2805f3fda656187.css','flow-editorial-refine-v2.css','flow-bus-nearby-v1.css','flow-bus-flat-mobile-v1.css','flow-date-ribbon-v3.css','flow-meal-single-v2.css','flow-current-period-v3.js','flow-month-events-v1.css'];
+const names=['flow-icons-handdrawn-v1.js','flow-feature-guide-v1.js','flow-feature-guide-v1.css','style-f2805f3fda656187.css','flow-editorial-refine-v2.css','flow-bus-nearby-v1.css','flow-bus-flat-mobile-v1.css','flow-date-ribbon-v3.css','flow-meal-single-v2.css','flow-current-period-v3.js','flow-month-events-v1.css','flow-bus-nearby-v2.js','flow-school-shortcuts-v1.js','flow-school-shortcuts-v1.css','flow-onboarding-v2.js','flow-ux-compact-v2.css','flow-ux-quick-actions-v1.js'];
 const files=new Map(names.map(n=>[n,n==='style-f2805f3fda656187.css'?execFileSync('git',['show',':'+n],{cwd:root}):readFileSync(new URL(n,root))]));
 const html=readFileSync(new URL('index.html',root));
 const origin='https://blank-app.agfvrd.workers.dev';

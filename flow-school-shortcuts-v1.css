@@ -58,3 +58,12 @@
   .flow-school-shortcut{transition:none}
 }
 .flow-school-shortcut small{font-size:10px;font-weight:520;color:var(--muted);white-space:nowrap}
+.flow-school-change{
+  display:inline-flex;align-items:center;gap:6px;min-height:var(--flow-target-size);
+  padding:0 12px;border:1px solid var(--flow-surface-border);border-radius:var(--flow-action-radius);
+  background:var(--surface);font-size:12px;font-weight:740;
+  transition:background var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out);
+}
+.flow-school-change:hover{background:var(--paper-low)}
+.flow-school-change:active{transform:scale(var(--flow-press-scale))}
+.flow-school-missing{font-size:12px;color:var(--muted)}

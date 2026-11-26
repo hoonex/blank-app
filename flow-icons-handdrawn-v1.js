@@ -72,7 +72,8 @@
     'close':'M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5',
     'help':'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM9.5 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1-1.8 1.5-1.8 3M12 17h.01',
     'sun':'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
-    'moon':'M20.5 15.2A9 9 0 0 1 8.8 3.5a9 9 0 1 0 11.7 11.7Z'
+    'moon':'M20.5 15.2A9 9 0 0 1 8.8 3.5a9 9 0 1 0 11.7 11.7Z',
+    'bookmark':'M6 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v15l-6-4-6 4Z'
   });
   function action(name){
     if(!Object.hasOwn(actionPaths,name))throw new Error('Unknown Flow action icon: '+name);

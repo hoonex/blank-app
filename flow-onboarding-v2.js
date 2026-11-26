@@ -54,6 +54,12 @@ function update(){
   const fields=form.querySelector('.two-fields');
   if(!summary||!fields){root.classList.remove('flow-school-chosen');return;}
   root.classList.add('flow-school-chosen');
+  if(!summary.querySelector('.flow-school-reselect')){
+    const change=document.createElement('button');
+    change.type='button';change.className='flow-school-reselect';change.textContent='변경';
+    change.setAttribute('aria-label','선택한 학교 변경');
+    summary.append(change);
+  }
   const name=Array.from(summary.childNodes).filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim()||summary.textContent.trim();
   const kind=kindOf(name),maxGrade=kind==='elementary'?6:3;
   const select=fields.querySelector('select');

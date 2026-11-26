@@ -8,7 +8,7 @@ const entries=[
   ['flow-meal-select-fast-v1.js',['chevron-left','chevron-right']],
   ['flow-month-events-v1.js',['chevron-right']],
   ['flow-school-shortcuts-v1.js',['external-link']],
-  ['flow-bus-nearby-v2.js',['chevron-right']],
+  ['flow-bus-nearby-v2.js',['chevron-right','bookmark']],
   ['flow-feature-guide-v1.js',['close','help']]
 ];
 const iconSource=source('flow-icons-handdrawn-v1.js');
@@ -16,7 +16,7 @@ const checks=[];
 const verify=(label,fn)=>{fn();checks.push(label)};
 
 verify('Shared icon system loads ahead of every dependent feature',()=>{
-  const iconLink='flow-icons-handdrawn-v1.js?v=vector-2';
+  const iconLink='flow-icons-handdrawn-v1.js?v=vector-3';
   const anchor=html.indexOf(iconLink);
   assert.ok(anchor>0,'Shared icon provider not linked');
   for(const [name] of entries){
@@ -54,7 +54,7 @@ verify('All actionable date, meal and settings controls reserve at least 44px',(
 
 verify('Updated assets are cache-busted exactly once',()=>{
   for(const name of ['flow-date-ribbon-v2.js','flow-date-ribbon-v3.css','flow-icons-handdrawn-v1.js','flow-five-tabs-minimal-v1.css','flow-meal-select-fast-v1.js','flow-school-shortcuts-v1.js','flow-month-events-v1.js','flow-bus-nearby-v2.js']){
-    const version=['flow-icons-handdrawn-v1.js','flow-date-ribbon-v3.css'].includes(name)?'2':'1';
+    const version=['flow-icons-handdrawn-v1.js','flow-school-shortcuts-v1.js','flow-bus-nearby-v2.js'].includes(name)?'3':name==='flow-date-ribbon-v3.css'?'2':'1';
     const match=html.match(new RegExp(name.replace(/[.]/g,'\\.')+'\\?v=vector-'+version,'g'))||[];
     assert.equal(match.length,1,'Missing/duplicate versioned asset: '+name);
   }
@@ -62,7 +62,7 @@ verify('Updated assets are cache-busted exactly once',()=>{
 verify('Guide and desktop controls use shared vectors, with cache-busted assets',()=>{
   assert.ok(iconSource.includes("upgradeCalendarActions()"));
   assert.ok(iconSource.includes("label==='←'?'chevron-left':label==='→'?'chevron-right'"));
-  for(const name of ['flow-feature-guide-v1.js','flow-feature-guide-v1.css','flow-editorial-refine-v2.css','flow-bus-nearby-v1.css','flow-meal-single-v2.css']){
+  for(const name of ['flow-feature-guide-v1.js','flow-feature-guide-v1.css','flow-editorial-refine-v2.css','flow-meal-single-v2.css']){
     assert.ok(html.includes(name+'?v=vector-2'),name+' stale URL');
   }
 });

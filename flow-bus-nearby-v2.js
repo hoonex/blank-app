@@ -3,11 +3,13 @@
   // Daegu public coordinates: locally compute proximity; GPS never sent to server.
   // Resolve IDs against the existing BIS search bridge before suggesting a stop.
   const DATA='/flow-v2/frontend-rust/dist/bus-stop-coords.json';
-  const FAVORITE='flow-daegu-favorite-stop-v1';
+  const LAST_STOP='flow-daegu-favorite-stop-v1'; // Native Rust's last selection, not an explicit favorite.
+  const SAVED_STOPS='flow-daegu-saved-stops-v1';
+  const MAX_SAVED=6;
   const MAX_DISTANCE=5000;
   const R=6371000;
   let datasetPromise=null,scene=null,card=null,run=0,loading=false;
-  let currentCandidates=[],anchor=null,pendingChoice=false;
+  let currentCandidates=[],anchor=null,pendingChoice=false,favoritePanel=null,favoriteStamp='';
   const round=n=>Math.round(n);
   function dist(a,b,c,d){
     const x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180;
@@ -16,7 +18,7 @@
   }
   function saved(){
     try{
-      const s=JSON.parse(localStorage.getItem(FAVORITE)||'null');
+      const s=JSON.parse(localStorage.getItem(LAST_STOP)||'null');
       return s&&Number.isFinite(s.lat)&&Number.isFinite(s.lng)?s:null;
     }catch(_){return null;}
   }
@@ -38,6 +40,86 @@
     if(cl)e.className=cl;
     if(label!==undefined)e.textContent=label;
     return e;
+  }
+  function validStop(s){
+    return s&&/^\d{10}$/.test(s.id)&&/^\d+$/.test(s.number)&&typeof s.name==='string'&&s.name.trim()&&Number.isFinite(s.lat)&&Number.isFinite(s.lng);
+  }
+  function favorites(){
+    try{
+      const rows=JSON.parse(localStorage.getItem(SAVED_STOPS)||'[]');
+      return Array.isArray(rows)?[...new Map(rows.filter(validStop).map(s=>[s.id,s])).values()].slice(0,MAX_SAVED):[];
+    }catch(_){return []}
+  }
+  function updateFavorites(stop){
+    if(!validStop(stop))return;
+    const old=favorites(),exists=old.some(s=>s.id===stop.id);
+    if(!exists&&old.length>=MAX_SAVED){favoriteMessage('즐겨찾기는 최대 6곳까지 저장할 수 있어요.');return;}
+    const next=exists?old.filter(s=>s.id!==stop.id):[...old,{id:stop.id,name:stop.name,number:stop.number,lat:stop.lat,lng:stop.lng}];
+    try{localStorage.setItem(SAVED_STOPS,JSON.stringify(next));}
+    catch(_){favoriteMessage('이 브라우저에 저장하지 못했어요. 저장 공간이나 설정을 확인해 주세요.');return;}
+    renderFavorites();
+    syncFavoriteButton();
+    favoriteMessage(stop.name+(exists?' 즐겨찾기에서 삭제했어요.':' 즐겨찾기에 저장했어요.'));
+  }
+  function favoriteMessage(message){
+    const status=favoritePanel?.querySelector('.flow-favorite-status');
+    if(status)status.textContent=message;
+  }
+  function bookmarkButton(stop,selected,callback){
+    const b=text('button','flow-favorite-toggle');
+    b.type='button';b.setAttribute('aria-pressed',String(selected));
+    b.setAttribute('aria-label',stop.name+' '+(selected?'즐겨찾기 삭제':'즐겨찾기 저장'));
+    b.append(FlowActionIcons.create('bookmark'));
+    b.addEventListener('click',callback);
+    return b;
+  }
+  function mountFavorites(host){
+    const section=text('section','flow-favorites');
+    section.setAttribute('aria-label','즐겨찾기 정류장');
+    const title=text('h3','','즐겨찾기');
+    const list=text('div','flow-favorite-list');
+    const status=text('p','flow-favorite-status');status.setAttribute('role','status');
+    section.append(title,list,status);
+    card.before(section);
+    favoritePanel=section;favoriteStamp='';
+    renderFavorites();
+  }
+  function renderFavorites(){
+    if(!favoritePanel?.isConnected)return;
+    const rows=favorites(),stamp=JSON.stringify(rows);
+    if(stamp===favoriteStamp)return;
+    favoriteStamp=stamp;
+    const list=favoritePanel.querySelector('.flow-favorite-list');
+    const active=document.activeElement?.closest('.flow-favorite-row');
+    const activeId=active?.dataset.stopId;
+    list.replaceChildren();
+    if(!rows.length){list.append(text('p','flow-favorite-empty','정류장을 선택한 뒤 북마크를 눌러 저장하세요.'));return;}
+    for(const stop of rows){
+      const row=text('div','flow-favorite-row');row.dataset.stopId=stop.id;
+      const open=text('button','flow-favorite-open');open.type='button';
+      const label=text('span','flow-nearby-stop-label');
+      label.append(text('strong','',stop.name),text('small','','정류장 '+stop.number));
+      open.append(label,FlowActionIcons.create('chevron-right'));
+      open.setAttribute('aria-label',stop.name+' 정류장 '+stop.number+' 도착정보 보기');
+      open.addEventListener('click',()=>choose(stop,open));
+      row.append(open,bookmarkButton(stop,true,()=>updateFavorites(stop)));
+      list.append(row);
+    }
+    if(activeId){(Array.from(list.children).find(r=>r.dataset.stopId===activeId)||list.firstElementChild)?.querySelector('button')?.focus({preventScroll:true});}
+  }
+  function syncFavoriteButton(){
+    const selected=scene?.querySelector('.bus-selected'),actions=selected?.querySelector('.bus-selected-actions');
+    if(!actions)return;
+    const stop=saved(),name=selected.querySelector('.bus-stop-name strong')?.textContent.trim(),number=selected.querySelector('.bus-stop-name span')?.textContent.replace(/[^0-9]/g,'');
+    const existing=actions.querySelector('.flow-favorite-toggle');
+    if(!validStop(stop)||stop.name!==name||stop.number!==number){existing?.remove();return;}
+    const isSaved=favorites().some(s=>s.id===stop.id);
+    if(existing?.dataset.stopId===stop.id){
+      existing.setAttribute('aria-pressed',String(isSaved));existing.setAttribute('aria-label',stop.name+' '+(isSaved?'즐겨찾기 삭제':'즐겨찾기 저장'));return;
+    }
+    existing?.remove();
+    const b=bookmarkButton(stop,isSaved,()=>updateFavorites(stop));b.dataset.stopId=stop.id;
+    actions.prepend(b);
   }
   function makeUI(host){
     const section=text('section','flow-nearby-stops');
@@ -213,9 +295,11 @@
       button.disabled=false;
       if(success){
         setStatus('','ready');
-        card.querySelectorAll('.flow-nearby-stop').forEach(b=>b.classList.toggle('is-selected',b.dataset.stopId===stop.id));
+        card?.querySelectorAll('.flow-nearby-stop').forEach(b=>b.classList.toggle('is-selected',b.dataset.stopId===stop.id));
+        if(button.classList.contains('flow-favorite-open'))favoriteMessage('');
       }else{
         setStatus('해당 정류장을 선택하지 못했어요. 아래 검색 결과에서 직접 선택해 주세요.','error');
+        if(button.classList.contains('flow-favorite-open'))favoriteMessage('저장한 정류장을 찾지 못했어요. 정류장 이름으로 다시 검색해 주세요.');
       }
     };
     const poll=()=>{
@@ -232,12 +316,14 @@
   }
   function activate(next){
     if(document.querySelector('.flow-shell')?.dataset.flowSection!=='bus')return;
-    if(scene===next&&card?.isConnected)return;
-    scene=next;card=null;run++;
+    if(scene===next&&card?.isConnected){syncFavoriteButton();return;}
+    scene=next;card=null;favoritePanel=null;run++;
     if(!scene)return;
     const panel=scene.querySelector('.bus-panel');
     if(!panel)return;
     makeUI(panel);
+    mountFavorites(panel);
+    syncFavoriteButton();
     const stop=saved();
     if(stop)populate(stop,'saved');
     // Never open a geolocation permission prompt without a user gesture.

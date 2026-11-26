@@ -14,24 +14,31 @@
     if(!input||!button||!results)return;
     input.placeholder='학교 이름 검색';
     input.setAttribute('autocomplete','off');
-    input.setAttribute('aria-autocomplete','list');
+    input.removeAttribute('aria-autocomplete');
     input.setAttribute('aria-label','학교 이름 검색');
     results.id='flow-school-autocomplete';
     input.setAttribute('aria-controls',results.id);
     button.setAttribute('aria-label','학교 검색');
-    let timeout=0,latest='';
+    let timeout=0,composing=false;
+    const visible=()=>next.classList.contains('flow-picker-editing')&&input.value.trim().length>=2;
+    function sync(){
+      const show=visible();
+      results.setAttribute('aria-hidden',String(!show));
+      input.removeAttribute('aria-expanded');
+      results.querySelectorAll('button.search-option').forEach(b=>b.tabIndex=show?0:-1);
+    }
     function run(){
       clearTimeout(timeout);
+      if(composing)return;
       const q=input.value.trim();
-      latest=q;
       next.classList.add('flow-picker-editing');
       if(q.length<2){
         next.classList.remove('flow-has-query');
-        results.setAttribute('aria-hidden','true');
+        sync();
         return;
       }
       next.classList.add('flow-has-query');
-      results.removeAttribute('aria-hidden');
+      sync();
       timeout=setTimeout(()=>{
         if(input.isConnected && input.value.trim()===q && q.length>=2){
           button.click(); // calls the original school search with live query
@@ -39,15 +46,22 @@
       },280);
     }
     input.addEventListener('input',run);
+    input.addEventListener('compositionstart',()=>{composing=true;clearTimeout(timeout);});
+    input.addEventListener('compositionend',()=>{composing=false;run();});
     input.addEventListener('focus',()=>{
       next.classList.add('flow-picker-editing');
       next.classList.toggle('flow-has-query',input.value.trim().length>=2);
+      sync();
     });
     input.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){clearTimeout(timeout);}
+      if(e.isComposing||composing)return;
+      if(e.key==='Enter'){clearTimeout(timeout);if(input.value.trim().length>=2){e.preventDefault();button.click();}}
+      if(e.key==='ArrowDown'&&visible()){
+        const first=results.querySelector('button.search-option');if(first){e.preventDefault();first.focus();}
+      }
       if(e.key==='Escape'){
         clearTimeout(timeout);next.classList.remove('flow-picker-editing');
-        input.blur();
+        sync();
       }
     });
     results.addEventListener('click',e=>{
@@ -56,18 +70,27 @@
       clearTimeout(timeout);
       next.classList.remove('flow-picker-editing');
       input.blur();
+      sync();
+      requestAnimationFrame(()=>form.querySelector('.two-fields select')?.focus({preventScroll:true}));
     },true);
+    results.addEventListener('keydown',e=>{
+      const items=[...results.querySelectorAll('button.search-option')],i=items.indexOf(e.target);
+      if(i<0)return;
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+        e.preventDefault();(items[i+(e.key==='ArrowDown'?1:-1)]||input).focus();
+      }else if(e.key==='Escape'){e.preventDefault();input.focus();next.classList.remove('flow-picker-editing');sync();}
+    });
     form.addEventListener('click',e=>{
-      if(e.target.closest('.selection-summary')){
+      if(e.target.closest('.flow-school-reselect')){
         next.classList.add('flow-picker-editing');
         input.focus();
+        input.select();
+        sync();
       }
     });
-    const observer=new MutationObserver(()=>{
-      const total=results.querySelectorAll('.search-option').length;
-      input.setAttribute('aria-expanded',String(total>0&&next.classList.contains('flow-picker-editing')));
-    });
+    const observer=new MutationObserver(sync);
     observer.observe(results,{childList:true,subtree:false});
+    sync();
   }
   function timetable(next){
     if(!next||currentTimetable===next)return;

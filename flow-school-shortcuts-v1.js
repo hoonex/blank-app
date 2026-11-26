@@ -13,6 +13,25 @@
   function build(){
     const school=document.querySelector('.flow-shell .scene[data-scene="school"] .school-sheet');
     if(!school)return;
+    if(!school.querySelector('.flow-school-change')){
+      const change=document.createElement('button');
+      change.type='button';change.className='flow-school-change';change.textContent='학교·학급 변경';
+      change.append(FlowActionIcons.create('chevron-right'));
+      change.addEventListener('click',()=>{
+        const nav=[...document.querySelectorAll('.mobile-bottom>button,.rail-navigation>button')].find(b=>b.textContent.trim()==='설정'&&b.getBoundingClientRect().width>0);
+        nav?.click();
+        requestAnimationFrame(()=>document.querySelector('.settings-sheet .setting-toggle:has(svg[data-flow-action="chevron-right"])')?.focus({preventScroll:true}));
+      });
+      school.querySelector('.school-details')?.before(change);
+    }
+    for(const row of school.querySelectorAll('.school-details>div')){
+      if(row.querySelector('small')?.textContent.trim()==='전화번호'){
+        const value=row.querySelector('strong');
+        if(!value?.textContent.trim()&&!row.querySelector('.flow-school-missing')){
+          const note=document.createElement('span');note.className='flow-school-missing';note.textContent='정보 미제공';row.append(note);
+        }else if(value?.textContent.trim())row.querySelector('.flow-school-missing')?.remove();
+      }
+    }
     const heading=school.querySelector('h2');
     const name=heading?.textContent?.trim()||"";
     const existing=school.querySelector(':scope > .flow-school-shortcuts');
