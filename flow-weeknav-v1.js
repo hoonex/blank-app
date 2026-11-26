@@ -66,7 +66,9 @@ function render(){
   if(!root||!s.selected)return;
   const selected=s.selected,week=monday(selected);
   const month=fromMs(selected);
-  setText(root.querySelector('.flow-weeknav-month-text'),month.getUTCFullYear()+'년 '+(month.getUTCMonth()+1)+'월');
+  const period=month.getUTCFullYear()+'년 '+(month.getUTCMonth()+1)+'월';
+  setText(root.querySelector('.flow-weeknav-month-text'),period);
+  root.querySelector('.flow-weeknav-month')?.setAttribute('aria-label',period+' 월간 달력에서 날짜 선택');
   const todayBtn=root.querySelector('.flow-weeknav-today');
   todayBtn.dataset.atToday=sameDay(selected,TODAY)?'true':'false';
   todayBtn.setAttribute('aria-label',sameDay(selected,TODAY)?'오늘 날짜가 선택되어 있습니다':'오늘 날짜로 돌아가기');
@@ -113,8 +115,8 @@ function sync(){
 }
 function waitFrame(){return new Promise(resolve=>requestAnimationFrame(resolve));}
 async function choose(target){
-  const token=++state.seq;
   if(state.pending)return false;
+  const token=++state.seq;
   state.pending=true;
   state.widget?.classList.add('flow-weeknav-busy');
   let ok=false;
@@ -272,8 +274,8 @@ const globalObserver=new MutationObserver(records=>{
   for(const r of records){
     if(r.type!=='childList')continue;
     if([...r.addedNodes,...r.removedNodes].some(n=>n.nodeType===1 &&
-      (n.matches?.('.today-heading,.scene[data-scene="today"],.day-carousel')||
-       n.querySelector?.('.today-heading,.scene[data-scene="today"],.day-carousel')))){
+      (n.matches?.('.today-heading,.scene[data-scene="today"],.day-carousel,.day-strip')||
+       n.querySelector?.('.today-heading,.scene[data-scene="today"],.day-carousel,.day-strip')))){
       schedule();break;
     }
   }
