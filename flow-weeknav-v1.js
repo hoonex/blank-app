@@ -270,9 +270,6 @@ function createWidget(){
   });
   strip.addEventListener('pointercancel',()=>{touch=null});
   root.append(strip);
-  head.addEventListener('pointerdown',e=>{
-    if(e.isPrimary&&e.target.closest('button')===null)touch={x:e.clientX,y:e.clientY,id:e.pointerId};
-  },{passive:true});
   const status=el('span','flow-weeknav-status','');status.setAttribute('aria-live','polite');
   root.append(status);
   return root;
