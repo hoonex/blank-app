@@ -1,0 +1,461 @@
+/* Flow School Today V3: composition-specific styling + school utilities.
+ * Replaces editorial-refine-v1 without adding a CSS layer.
+ * All dates, meals and class rows remain the original NEIS/Rust data.
+ */
+/* Flow Today V3 / cohesive editorial hierarchy
+ * Source: real Leptos timetable, calendar ribbon and NEIS meal surface.
+ * No new data calls or fabricated class times.
+ * In final build this replaces Today rules in the editorial stylesheet and
+ * is integrated into the existing date/meal component stylesheets.
+ */
+.flow-shell .scene[data-scene="today"] .today-layout{
+  max-width:1140px;
+  padding-top:17px;
+  gap:26px;
+  align-items:start;
+}
+.flow-shell .scene[data-scene="today"] .timetable-sheet{
+  min-width:0;
+}
+.flow-shell .scene[data-scene="today"] .module-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin:0 0 14px;
+  gap:12px;
+}
+.flow-shell .scene[data-scene="today"] .module-heading-copy{
+  display:flex;flex-direction:column;align-items:flex-start;
+  flex:0 1 auto;min-width:0;
+}
+.flow-shell .scene[data-scene="today"] .module-kicker{
+  color:var(--muted);
+  font-size:10px;line-height:1.25;
+  font-weight:750;letter-spacing:.025em;
+}
+.flow-shell .scene[data-scene="today"] .module-heading h2{
+  display:flex;align-items:center;flex-wrap:nowrap;gap:9px;
+  font-size:clamp(27px,3vw,38px);
+  letter-spacing:-.065em;line-height:1.08;
+  margin:4px 0 0;
+  color:var(--ink);white-space:nowrap;
+}
+.flow-shell .scene[data-scene="today"] .module-count{
+  font-size:10px;line-height:1.1;letter-spacing:0;
+  font-weight:780;
+  color:var(--muted);
+  background:transparent;
+  border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+  border-radius:999px;
+  padding:5px 8px;
+}
+.flow-shell .scene[data-scene="today"] .module-controls{
+  display:flex;align-items:center;gap:10px;
+  flex:0 0 auto;min-width:0;
+}
+.flow-shell .scene[data-scene="today"] .edit-timetable-trigger{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:6px 2px!important;
+  min-height:34px!important;
+  border:0!important;
+  border-radius:6px!important;
+  color:var(--muted)!important;
+  background:transparent!important;
+  font-size:11px!important;font-weight:730!important;
+  white-space:nowrap;
+  transition:color .16s ease!important;
+}
+.flow-shell .scene[data-scene="today"] .edit-timetable-trigger:hover{
+  color:var(--ink)!important;
+}
+.flow-shell .scene[data-scene="today"] .edit-timetable-trigger:focus-visible{
+  outline:2px solid var(--accent)!important;outline-offset:3px;
+}
+.flow-shell .scene[data-scene="today"] .switch-track{
+  min-height:35px;
+  border:1px solid color-mix(in srgb,var(--ink) 7%,transparent);
+  padding:3px!important;
+  background:var(--paper-low);
+  border-radius:11px!important;
+}
+.flow-shell .scene[data-scene="today"] .switch-track button{
+  min-height:28px;min-width:54px;
+  padding:6px 10px!important;
+  font-size:11px!important;line-height:1.1;
+  border-radius:8px!important;
+}
+.flow-shell .scene[data-scene="today"] .switch-track:has(button.chosen)::before{
+  border-radius:8px!important;
+}
+.flow-shell .scene[data-scene="today"] .class-rows{
+  display:grid!important;
+  position:relative;
+  gap:0!important;
+  padding-left:0;
+  isolation:isolate;
+}
+.flow-shell .scene[data-scene="today"] .class-rows::before{
+  content:"";
+  position:absolute;pointer-events:none;
+  top:22px;bottom:22px;left:19px;
+  border-left:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+  z-index:0;
+}
+.flow-shell .scene[data-scene="today"] .class-row{
+  display:grid;grid-template-columns:39px minmax(0,1fr)!important;
+  position:relative;z-index:1;
+  align-items:center;
+  gap:14px!important;
+  width:100%;min-height:48px!important;
+  margin:0;padding:3px 8px 3px 0!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:transparent;
+  box-shadow:none;
+  cursor:pointer;
+  animation:none!important;
+  transition:background-color .16s ease!important;
+}
+.flow-shell .scene[data-scene="today"] .class-row+.class-row{
+  margin-top:2px;
+}
+.flow-shell .scene[data-scene="today"] .class-row .class-period{
+  display:grid;place-items:center;
+  width:38px!important;height:38px!important;
+  min-width:38px;
+  margin:0;
+  border:1px solid color-mix(in srgb,var(--ink) 14%,var(--surface));
+  border-radius:50%!important;
+  background:var(--surface)!important;
+  color:var(--muted)!important;
+  font-size:10px!important;font-weight:790!important;
+  font-variant-numeric:tabular-nums;
+  line-height:1.1;
+}
+.flow-shell .scene[data-scene="today"] .class-row strong{
+  display:block;
+  min-width:0;
+  color:var(--ink);
+  font-size:clamp(16px,1.65vw,21px)!important;
+  line-height:1.25;letter-spacing:-.037em;
+  font-weight:750!important;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+.flow-shell .scene[data-scene="today"] .class-row:hover,
+.flow-shell .scene[data-scene="today"] .class-row:focus-visible{
+  background:color-mix(in srgb,var(--ink) 5%,var(--surface));
+}
+.flow-shell .scene[data-scene="today"] .class-row:focus-visible{
+  outline:2px solid var(--accent)!important;outline-offset:1px;
+}
+.flow-shell .scene[data-scene="today"] .class-row.flow-period-active{
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+  box-shadow:none!important;
+  padding-left:0!important;
+}
+.flow-shell .scene[data-scene="today"] .class-row.flow-period-active .class-period{
+  color:#171917!important;
+  background:var(--accent)!important;
+  border-color:var(--accent)!important;
+}
+.flow-shell .scene[data-scene="today"] .class-row.flow-period-done{
+  opacity:.62!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-live-period:not(.flow-live-hidden){
+  display:grid!important;
+  grid-template-columns:8px auto 1fr;
+  align-items:center;column-gap:7px;row-gap:5px;
+  padding:9px 11px!important;margin:9px 0 2px!important;
+  border-radius:10px!important;
+  background:color-mix(in srgb,var(--accent) 11%,var(--surface));
+}
+.flow-shell .scene[data-scene="today"] .flow-live-period-summary{
+  min-width:0;overflow-wrap:anywhere;
+}
+.flow-shell .scene[data-scene="today"] .flow-live-period-progress{
+  grid-column:1/-1;height:2px!important;
+}
+.flow-shell .scene[data-scene="today"] .today-aside{
+  min-width:0;
+}
+/* Meal: daily menu remains the hero. Weekly dates are a compact supporting
+   navigation strip, never a second grid of repeated food descriptions. */
+.flow-shell .scene[data-scene="today"] .meal-sheet.flow-meal-single-host{
+  padding:21px 22px 19px!important;
+  background:var(--surface)!important;
+  border:1px solid color-mix(in srgb,var(--ink) 7%,transparent);
+  border-radius:22px!important;
+  box-shadow:0 2px 9px color-mix(in srgb,var(--ink) 2%,transparent)!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-single-head{
+  align-items:center;
+  margin:0 0 14px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-date-label{
+  font-size:clamp(20px,2vw,25px)!important;
+  line-height:1.13;font-weight:820;
+  letter-spacing:-.058em;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-segment{
+  min-width:104px!important;flex:0 0 104px!important;
+  padding:3px!important;
+  border-radius:10px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-segment::before{
+  left:3px;top:3px;bottom:3px;width:calc((100% - 6px)/2);
+  border-radius:8px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-segment button{
+  min-height:30px;
+  padding:4px 5px!important;
+  font-size:11px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-main{
+  gap:11px!important;
+  padding:0 0 16px!important;
+  min-height:46px;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-detail-heading{
+  font-size:11px!important;
+  letter-spacing:-.015em;
+  color:var(--muted);
+  gap:5px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-kcal{
+  font-variant-numeric:tabular-nums;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chips{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;gap:2px 12px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chip{
+  display:flex;align-items:center;
+  position:relative;
+  min-height:27px;
+  background:transparent!important;
+  border:0!important;border-radius:0!important;
+  padding:4px 0 4px 12px!important;
+  font-size:12px!important;line-height:1.35;
+  font-weight:680!important;letter-spacing:-.022em;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-chip::before{
+  content:"";position:absolute;left:1px;top:12px;
+  width:4px;height:4px;border-radius:50%;
+  background:var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-navigator{
+  grid-template-columns:29px minmax(0,1fr) 29px!important;
+  gap:6px!important;
+  margin:0 0 7px!important;padding:9px 0 0!important;
+  border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-range{
+  font-size:11px!important;font-weight:740!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-arrow{
+  width:29px!important;height:29px!important;
+  border-radius:10px!important;font-size:21px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"]{
+  gap:3px!important;
+  align-items:stretch;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-weekday{
+  min-height:17px!important;
+  font-size:10px;
+  color:var(--muted);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day{
+  display:grid;place-items:center;
+  min-height:39px!important;height:39px!important;
+  padding:4px!important;
+  border-radius:10px!important;
+  background:var(--paper-low);
+  border:1px solid transparent;
+  box-shadow:none!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day.selected{
+  background:color-mix(in srgb,var(--accent) 14%,var(--surface));
+  border-color:var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day-number{
+  font-size:13px!important;line-height:1.1;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day-teaser,
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day-count{
+  display:none!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-spacer{
+  min-height:39px!important;
+}
+.flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="month"]{
+  row-gap:5px!important;
+}
+/* The two actual information blocks should share baseline and gutters. */
+@media(min-width:871px){
+  .flow-shell .scene[data-scene="today"] .today-layout{
+    width:calc(100% - 64px);
+    grid-template-columns:minmax(0,1.35fr) minmax(340px,.8fr);
+    gap:34px;
+    padding:23px 0 80px;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading{margin-bottom:19px}
+  .flow-shell .scene[data-scene="today"] .class-row{
+    min-height:52px!important;
+    grid-template-columns:44px minmax(0,1fr)!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row .class-period{
+    width:40px!important;height:40px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-rows::before{left:19px}
+}
+@media(max-width:870px){
+  .flow-shell .scene[data-scene="today"] .today-layout{
+    width:calc(100% - 28px);
+    grid-template-columns:minmax(0,1fr)!important;
+    padding:13px 0 160px!important;
+    gap:20px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .timetable-sheet{
+    padding:0 2px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading{
+    margin-bottom:9px!important;
+    align-items:center!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-heading h2{
+    font-size:31px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row{
+    min-height:44px!important;
+    grid-template-columns:36px minmax(0,1fr)!important;
+    gap:12px!important;
+    padding:3px 6px 3px 0!important;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row .class-period{
+    width:35px!important;height:35px!important;min-width:35px;
+  }
+  .flow-shell .scene[data-scene="today"] .class-rows::before{
+    left:17px!important;top:20px;bottom:20px;
+  }
+  .flow-shell .scene[data-scene="today"] .class-row strong{
+    font-size:17px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .meal-sheet.flow-meal-single-host{
+    padding:16px 16px 17px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-single-head{
+    margin-bottom:11px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-date-label{
+    font-size:21px!important;
+  }
+}
+@media(max-width:360px){
+  .flow-shell .scene[data-scene="today"] .module-heading{
+    align-items:start!important;
+  }
+  .flow-shell .scene[data-scene="today"] .module-controls{
+    flex-direction:column;align-items:flex-end;gap:3px;
+  }
+  .flow-shell .scene[data-scene="today"] .edit-timetable-trigger{
+    min-height:20px!important;padding:0!important;
+  }
+  .flow-shell .scene[data-scene="today"] .switch-track{
+    min-height:32px;padding:2px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .switch-track button{
+    padding:5px 6px!important;min-width:48px;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-chips{
+    gap:2px 7px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-chip{
+    font-size:11.5px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .flow-shell .scene[data-scene="today"] .class-row,
+  .flow-shell .scene[data-scene="today"] .edit-timetable-trigger{
+    transition:none!important;
+  }
+}
+/* Align the desktop week strip with both Today information columns. */
+@media(min-width:871px){
+  .flow-shell .scene[data-scene="today"] .today-heading.flow-date-ribbon-ready{
+    width:min(1140px,calc(100% - 64px))!important;
+    margin:9px auto 0!important;
+  }
+}
+@media(min-width:591px) and (max-width:870px){
+  .flow-shell .scene[data-scene="today"] .flow-meal-chips{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:870px){
+  .flow-shell .scene[data-scene="today"] .today-layout{
+    padding-bottom:calc(160px + env(safe-area-inset-bottom,0px))!important;
+  }
+  .flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day{
+    min-height:44px!important;height:44px!important;
+  }
+}
+
+
+/* School: links already exist and are school-scoped. Make each destination
+   legible as a specific utility, not four indistinguishable text rows. */
+.flow-shell .scene[data-scene="school"] .flow-school-shortcuts{
+  border:0!important;margin-top:var(--flow-ref-space-5)!important;
+  padding-top:var(--flow-ref-space-3)!important;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcuts>h3{
+  margin-bottom:var(--flow-ref-space-3);
+  font-size:17px;font-weight:800;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{
+  gap:var(--flow-ref-space-3);
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut{
+  position:relative;
+  display:grid;grid-template-columns:1fr auto;align-content:start;
+  column-gap:var(--flow-ref-space-2);row-gap:var(--flow-ref-space-1);
+  min-height:106px;
+  padding:var(--flow-ref-space-4)!important;
+  border:1px solid var(--flow-ref-stroke)!important;
+  border-radius:var(--radius-item);
+  background:var(--surface);
+  box-shadow:0 1px 3px rgba(17,19,16,.025);
+  color:var(--ink)!important;
+  font-size:15px;font-weight:770;
+  transition:background-color .18s ease,border-color .18s ease,transform .18s ease;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut::before{
+  content:"학교";
+  display:block;grid-column:1/-1;
+  font-size:11px;font-weight:780;line-height:1.2;
+  font-variant-numeric:tabular-nums;
+  color:var(--flow-ref-text-soft);
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(1)::before{content:"공식 정보"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(2)::before{content:"학습 · 과제"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(3)::before{content:"비공식 자료"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(4)::before{content:"학교 길찾기"}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut>span:first-child{
+  min-width:0;overflow-wrap:anywhere;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut>span:last-child{
+  color:var(--accent);font-size:19px;line-height:1.1;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:hover,
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:focus-visible{
+  background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+  border-color:color-mix(in srgb,var(--accent) 65%,var(--surface))!important;
+}
+.flow-shell .scene[data-scene="school"] .flow-school-shortcut:active{transform:scale(.985)}
+@media(max-width:360px){
+  .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{gap:var(--flow-ref-space-2)}
+  .flow-shell .scene[data-scene="school"] .flow-school-shortcut{padding:12px!important;min-height:104px;font-size:13px}
+}
