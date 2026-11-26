@@ -21,3 +21,10 @@
 ## Deploy gate
 
 Commit and push only validated static assets and tests. Update only the Flow Worker V2 release pin after rechecking current version, preserve legacy pin and settings. Repeat changed asset byte comparison and browser tests without interception. Record deployment version and QA in separate follow-up.
+
+## Production sign-off
+
+- Pinned UI: `b840d431ee93dbd81ba9c4f3fd0def50591efc67`; previous rollback version `93dab987-c7e6-4313-9e2a-3c1bb923c490`.
+- Worker blank-app version `24ab6909-8f40-4159-aecc-38a9cb0ad00c`, deployment `ef374ccf-35a7-43d8-81ff-cc2ecbe28415`, 100%, 2026-11-26T14:10:45.037775Z. Legacy release unchanged.
+- Nine changed runtime assets: GitHub raw and live GET each 9/9 HTTP 200 and byte-for-byte equality against pinned Git blobs; live release header `b840d431ee93`. HTML SHA256 `2281c7e339c9b200e64758b85612499d13c1a2cb20e1526f7f00da60ba21c15c`.
+- Live school/bus QA 3/3 (63 assertions), live global browser matrix 16/16, both exit 0, no JS/static HTTP errors. Actual production, no asset interception. Evidence `vector-qa/pass5/school-bus-live/result.json` and `vector-qa/pass5/live/result.json`. This documentation commit does not change the deployed UI pin.
