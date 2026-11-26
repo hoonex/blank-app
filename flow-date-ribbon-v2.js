@@ -15,6 +15,15 @@
   };
   const sameDay=(a,b)=>a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
   const noon=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
+  // Derive the base date from the real Leptos "오늘" button, not a guessed
+  // browser timezone. Choose the closest matching calendar year.
+  function nativeToday(button){
+    const now=noon(new Date());
+    const match=(button?.getAttribute('aria-label')||'').match(/(\d+)월\s*(\d+)일/);
+    if(!match)return now;
+    return [-1,0,1].map(delta=>new Date(now.getFullYear()+delta,Number(match[1])-1,Number(match[2]),12))
+      .sort((a,b)=>Math.abs(a.getTime()-now.getTime())-Math.abs(b.getTime()-now.getTime()))[0];
+  }
   const dayAdd=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n,12);
   const dayDiff=(a,b)=>Math.round((Date.UTC(a.getFullYear(),a.getMonth(),a.getDate())-Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()))/86400000);
   const mondayIdx=(s,i)=>i-((s.dates[i].getDay()+6)%7);
@@ -211,16 +220,18 @@
   function sync(){
     if(!state)return;
     if(!state.heading.isConnected||!state.strip.isConnected){stop();return}
+    let replacedNativeButtons=false;
     if(!state.buttons[0]?.isConnected){
       const fresh=[...state.strip.querySelectorAll('button')];
       const ri=fresh.findIndex(b=>b.classList.contains('real-today')||b.getAttribute('aria-label')?.includes('오늘'));
       if(ri<0||fresh.length<7){stop();return}
       state.buttons=fresh;state.realIndex=ri;
+      state.realDate=nativeToday(fresh[ri]);
       state.dates=fresh.map((_,i)=>dayAdd(state.realDate,i-ri));
-      state.renderedWeek=null;
+      state.renderedWeek=null;replacedNativeButtons=true;
     }
     const current=state.buttons.findIndex(b=>b.classList.contains('active'));
-    if(current>=0&&current!==state.selected){
+    if(current>=0&&(current!==state.selected||replacedNativeButtons)){
       state.selected=current;state.weekStart=mondayIdx(state,current);
       render(state,0);
     }
@@ -241,7 +252,7 @@
     const realIndex=buttons.findIndex(b=>b.classList.contains('real-today')||b.getAttribute('aria-label')?.includes('오늘'));
     const selected=buttons.findIndex(b=>b.classList.contains('active'));
     if(realIndex<0||selected<0||buttons.length<7)return;
-    const realDate=noon(new Date());
+    const realDate=nativeToday(buttons[realIndex]);
     const s={heading,strip,buttons,realIndex,realDate,dates:buttons.map((_,i)=>dayAdd(realDate,i-realIndex)),
       selected,weekStart:0,renderedWeek:null,renderedCount:null,suppressClickUntil:0,observer:null,dialog:null};
     s.weekStart=mondayIdx(s,selected);
