@@ -1,5 +1,12 @@
 # Flow School 디자인 레퍼런스 · 적용 지도 (2026-11-26)
 
+> **2026-11-26 운영 변경:** 이전의 '하루 요약 공유' 기능과 버튼은 사용자 피드백에 따라 철회했다. 아래 'v1 적용' 기록은 과거 시도에 대한 기록이다. 현재 화면에는 공유 기능이 없다. 오늘 탭의 날짜 바는 **컴팩트 날짜 내비게이터**로 교체했다. 기존 `flow-today-shuttle-v4.js`의 반대방향 드래그, 선택 예정 날짜, 자연스러운 중앙 안착은 그대로 사용한다.
+>
+> **새 날짜 UI 근거:** [Apple Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers) (작은 공간의 compact picker), [Material 3 date picker accessibility](https://md3.io/components/datepicker/accessibility/) (선택·오늘 구분과 날짜 접근성), [Roman Kamushken의 가로 날짜 스트립](https://dribbble.com/shots/19975073-Calendar-templates-Date-picker-UI-design) (요일과 숫자의 2단 위계). 사진·디자인·코드를 복제하지 않고 Flow의 기존 팔레트·타이포·동작에 맞게 재구성했다.
+>
+> **이번 범위:** 작은 화면 3일(320–389px), 일반 모바일 5일(390–590px), 대형 모바일/태블릿 7일(591–870px), PC 11일(871px 이상). 선택 상태, 키보드 포커스, 다크 모드 대비, 기존 5탭과 달력 유지. 새로운 렌더러·패키지·API 요청은 없다.
+
+
 ## 적용 원칙
 
 이번 디자인 작업은 [edisonmbli/refactoring-ui-skill](https://github.com/edisonmbli/refactoring-ui-skill)을 **진단 규칙집**으로 활용했다. 이 저장소는 *Refactoring UI* 도서의 저자 공식 플러그인이 아닌 독립 MIT 프로젝트이며, 도서 내용 전체를 복제하거나 공식 승인을 주장하지 않는다. Claude Code의 `/plugin install` 명령은 현재 서비스 런타임에 필요하지 않다. 디자인 규칙은 이 문서와 실제 Flow CSS에 반영하며, Skill 전체를 런타임에 배포하지 않는다.
