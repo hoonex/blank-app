@@ -145,6 +145,15 @@
  .flow-weeknav-day strong{font-size:20px}
 }
 
+/* Active date must stand out from the charcoal surface in dark mode. */
+html[data-theme="dark"] .flow-weeknav-day.is-selected{
+ background:var(--accent)!important;
+ color:#171917!important;
+ border-color:var(--accent)!important;
+}
+html[data-theme="dark"] .flow-weeknav-day.is-selected small{color:rgba(23,25,23,.82)}
+html[data-theme="dark"] .flow-weeknav-day.is-selected .flow-weeknav-day-marker{background:#171917}
+
 /* Month chooser: native accessible dialog, no second on-page calendar. */
 .flow-month-sheet{
  position:fixed;inset:auto 0 0;
