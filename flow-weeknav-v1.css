@@ -14,9 +14,9 @@
 .flow-shell .scene[data-scene="today"]>.flow-weeknav{
  --flow-week-line:color-mix(in srgb,var(--ink) 12%,transparent);
  width:calc(100% - 28px);
- margin:10px auto 14px;
+ margin:6px auto 8px;
  box-sizing:border-box;
- padding:6px 0 10px;
+ padding:4px 0 6px;
  min-width:0;
  color:var(--ink);
  border-bottom:1px solid var(--flow-week-line);
@@ -25,12 +25,12 @@
 .flow-weeknav,.flow-weeknav *{box-sizing:border-box}
 .flow-weeknav-head{
  display:flex;align-items:center;justify-content:space-between;
- gap:8px;min-height:38px;margin-bottom:9px
+ gap:8px;min-height:32px;margin-bottom:4px
 }
 .flow-weeknav-month{
  display:inline-flex;align-items:center;justify-content:flex-start;
  gap:8px;min-width:0;
- font:inherit;font-size:20px;font-weight:850;letter-spacing:-.065em;
+ font:inherit;font-size:19px;font-weight:850;letter-spacing:-.065em;
  padding:4px 2px!important;border:0;background:none!important;color:var(--ink);
  line-height:1.2;white-space:nowrap;
 }
@@ -47,14 +47,14 @@
  transition:color .15s ease,background-color .15s ease,transform .15s ease
 }
 .flow-weeknav-arrow{
- width:33px;height:33px;border-radius:11px!important;
+ width:31px;height:31px;border-radius:11px!important;
  font-size:26px;font-weight:350;line-height:1;
 }
 .flow-weeknav-arrow:hover,.flow-weeknav-arrow:focus-visible{
  background:var(--paper-low)!important
 }
 .flow-weeknav-today{
- min-width:46px;height:33px;padding:0 9px!important;
+ min-width:46px;height:31px;padding:0 9px!important;
  background:var(--paper-low)!important;
  border-radius:10px!important;
  font-size:12px;font-weight:800;
@@ -71,7 +71,7 @@
 .flow-weeknav-day{
  position:relative;display:flex;flex-direction:column;
  align-items:center;justify-content:center;gap:3px;
- width:100%;min-width:0;min-height:58px;
+ width:100%;min-width:0;min-height:54px;
  padding:5px 1px!important;margin:0;
  border:1px solid transparent!important;
  background:transparent!important;color:var(--ink)!important;
@@ -121,14 +121,14 @@
  overflow:hidden;clip-path:inset(50%);white-space:nowrap;
 }
 @media(max-width:360px){
- .flow-shell .scene[data-scene="today"]>.flow-weeknav{margin:8px auto 11px;padding:4px 0 9px}
+ .flow-shell .scene[data-scene="today"]>.flow-weeknav{margin:6px auto 8px;padding:3px 0 6px}
  .flow-weeknav-month{font-size:18px}
- .flow-weeknav-head{margin-bottom:6px}
+ .flow-weeknav-head{margin-bottom:3px}
  .flow-weeknav-actions{gap:2px}
  .flow-weeknav-arrow{width:29px;height:31px;font-size:25px}
  .flow-weeknav-today{min-width:41px;height:31px;padding:0 7px!important;font-size:11px}
  .flow-weeknav-days{gap:1px}
- .flow-weeknav-day{min-height:57px;border-radius:11px!important}
+ .flow-weeknav-day{min-height:52px;border-radius:11px!important}
  .flow-weeknav-day strong{font-size:18px}
 }
 @media(min-width:871px){
