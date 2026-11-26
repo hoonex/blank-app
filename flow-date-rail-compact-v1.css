@@ -1,0 +1,243 @@
+/*
+ * FLOW / Compact date navigator v1
+ * Sources: Refactoring UI §2.1, §3.4, §8.5; Apple compact picker guidance;
+ * horizontal seven/five-day strip patterns. Uses current Leptos data and
+ * flow-today-shuttle-v4.js unchanged. No duplicate renderers or observers.
+ *
+ * Design intent: date context remains legible, neighboring days are visible,
+ * selection and "today" have distinct non-color indicators, and date controls
+ * no longer dominate the screen. Mobile body 96px; desktop 112px.
+ */
+
+/* Preserve original semantic date buttons and native shuttle pointer events. */
+.flow-shell .scene[data-scene="today"] .today-heading{
+  background:var(--surface)!important;
+  color:var(--ink)!important;
+  border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+  box-shadow:0 6px 18px color-mix(in srgb,var(--night) 5%,transparent);
+}
+.flow-shell .scene[data-scene="today"] .hero-numeral{
+  color:var(--ink)!important;
+  font-variant-numeric:tabular-nums;
+}
+.flow-shell .scene[data-scene="today"] .hero-weekday{color:var(--muted)!important}
+.flow-shell .scene[data-scene="today"] .hero-topline .hero-tag,
+.flow-shell .scene[data-scene="today"] .hero-topline .hero-school{
+  color:var(--muted)!important;
+}
+.flow-shell .scene[data-scene="today"] .return-to-today{
+  color:var(--ink)!important;
+  background:var(--paper-low)!important;
+  text-decoration-color:var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .day-strip button{
+  color:var(--muted)!important;
+  border:1px solid transparent;
+  border-radius:13px!important;
+  font-variant-numeric:tabular-nums;
+  transition:background-color .18s ease,color .18s ease,box-shadow .18s ease!important;
+}
+.flow-shell .scene[data-scene="today"] .day-strip button strong{
+  color:inherit;
+  font-weight:770!important;
+}
+.flow-shell .scene[data-scene="today"] .day-strip button:not(.active):hover{
+  color:var(--ink)!important;
+  background:var(--paper-low)!important;
+}
+.flow-shell .scene[data-scene="today"] .day-strip button.real-today:not(.active){
+  color:var(--ink)!important;
+  background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important;
+  border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+}
+.flow-shell .scene[data-scene="today"] .day-strip button.active{
+  color:var(--night-text)!important;
+  background:var(--night)!important;
+  border-color:transparent!important;
+  box-shadow:inset 0 -3px 0 var(--accent);
+  transform:none!important;
+  scale:1!important;
+}
+.flow-shell .scene[data-scene="today"] .day-strip button.active .day-today-label{
+  color:var(--night-text)!important;
+}
+.flow-shell .scene[data-scene="today"] .day-strip button:focus-visible{
+  outline:2px solid var(--accent)!important;
+  outline-offset:2px;
+}
+
+/* Finger-driven shuttle: keep touch geometry, only its visual feedback changes. */
+.flow-shell .scene[data-scene="today"] .day-carousel.flow-shuttle-rail.flow-shuttle-dragging .day-strip button.active{
+  background:color-mix(in srgb,var(--accent) 15%,var(--surface))!important;
+  color:var(--ink)!important;
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .day-carousel.flow-shuttle-rail .day-strip button.flow-shuttle-landing:not(.active){
+  color:var(--ink)!important;
+  background:color-mix(in srgb,var(--accent) 12%,var(--surface))!important;
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .flow-shuttle-grip{
+  background:var(--night);color:var(--night-text);
+  border-radius:13px;
+  box-shadow:0 6px 15px color-mix(in srgb,var(--night) 21%,transparent);
+}
+.flow-shell .scene[data-scene="today"] .flow-shuttle-grip .day-today-label{
+  color:var(--night-text);
+}
+.flow-shell .scene[data-scene="today"] .flow-shuttle-landing-label{
+  color:var(--night-text);background:var(--night);
+  border-radius:999px;
+}
+
+/* Mobile/tablet: a compact composed control, not a giant black hero panel. */
+@media(max-width:870px){
+  .flow-shell .scene[data-scene="today"] .today-heading{
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    width:calc(100% - 28px)!important;
+    height:96px!important;min-height:96px!important;
+    margin:9px auto 0!important;
+    padding:11px 12px!important;
+    border-radius:20px!important;
+    overflow:hidden!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-core{
+    flex:0 0 27%!important;width:27%!important;min-width:0!important;
+    min-height:0!important;height:auto!important;
+    padding-right:8px;
+    border-right:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+  }
+  .flow-shell .scene[data-scene="today"] .hero-date h1{
+    display:flex!important;flex-direction:column!important;
+    align-items:flex-start!important;gap:3px!important;
+    min-height:0!important;
+    line-height:1!important;
+  }
+  .flow-shell .scene[data-scene="today"] .date-motion{
+    padding:0!important;min-height:0!important;overflow:visible!important;
+    line-height:1!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-numeral{
+    font-size:clamp(28px,8.5vw,36px)!important;
+    font-weight:810!important;letter-spacing:-.075em!important;
+    line-height:1!important;animation:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-weekday{
+    font-size:11px!important;line-height:1.15!important;
+    font-weight:690!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-bottom{
+    flex:1 1 0!important;width:auto!important;min-width:0!important;
+    margin:0!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-carousel{
+    --visible-days:7;--day-gap:4px;
+    width:100%!important;
+    scroll-behavior:auto!important;
+    overscroll-behavior-x:contain;
+    scrollbar-width:none;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button{
+    min-height:62px!important;
+    padding:8px 0 12px!important;gap:3px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button small{
+    font-size:11px!important;font-weight:700!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button strong{
+    font-size:17px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-today-label{
+    font-size:9px!important;bottom:1px!important;font-weight:800!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-topline{
+    position:absolute;z-index:3;
+    right:9px;top:2px;
+    pointer-events:none;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-topline .hero-tag,
+  .flow-shell .scene[data-scene="today"] .hero-topline .hero-school{
+    display:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .return-to-today{
+    pointer-events:auto;font-size:10px!important;
+    padding:5px 7px!important;
+  }
+}
+@media(min-width:390px) and (max-width:590px){
+  .flow-shell .scene[data-scene="today"] .day-carousel{--visible-days:5}
+}
+@media(max-width:389px){
+  .flow-shell .scene[data-scene="today"] .day-carousel{--visible-days:3}
+  .flow-shell .scene[data-scene="today"] .today-heading{gap:7px!important}
+  .flow-shell .scene[data-scene="today"] .hero-core{
+    flex-basis:28%!important;width:28%!important;padding-right:6px
+  }
+}
+
+/* Desktop: 11-day rail on the same compact row; preserve calendar click. */
+@media(min-width:871px){
+  .flow-shell .scene[data-scene="today"] .today-heading{
+    display:grid!important;
+    grid-template-columns:164px minmax(0,1fr);
+    align-items:center;
+    column-gap:20px;
+    min-height:112px!important;height:112px!important;
+    padding:13px clamp(20px,2.4vw,32px)!important;
+    margin-top:9px!important;
+    border-radius:24px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-topline{
+    position:absolute;right:14px;top:6px;z-index:3;
+    pointer-events:none;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-topline .hero-tag,
+  .flow-shell .scene[data-scene="today"] .hero-topline .hero-school{
+    display:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .return-to-today{
+    pointer-events:auto;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-core{
+    min-width:0!important;min-height:0!important;
+    padding-right:18px;
+    border-right:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+  }
+  .flow-shell .scene[data-scene="today"] .hero-date h1{
+    display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+    gap:2px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .date-motion{
+    padding:0!important;min-height:0!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-numeral{
+    font-size:clamp(36px,3.6vw,48px)!important;
+    line-height:1!important;letter-spacing:-.073em!important;
+    animation:none!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-weekday{
+    font-size:12px!important;line-height:1.2!important;
+  }
+  .flow-shell .scene[data-scene="today"] .hero-bottom{
+    min-width:0!important;width:100%!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-carousel{
+    --visible-days:11;--day-gap:5px;
+    width:100%!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button{
+    min-height:67px!important;
+    padding:7px 2px 12px!important;
+  }
+  .flow-shell .scene[data-scene="today"] .day-strip button small{font-size:11px!important}
+  .flow-shell .scene[data-scene="today"] .day-strip button strong{font-size:18px!important}
+  .flow-shell .scene[data-scene="today"] .day-today-label{font-size:9px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .flow-shell .scene[data-scene="today"] .day-strip button{
+    transition:none!important;
+  }
+}
