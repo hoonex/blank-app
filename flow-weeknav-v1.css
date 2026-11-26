@@ -4,8 +4,12 @@
  * year/month picker. No custom physics or duplicate school data requests.
  * Only the original Leptos date-strip is hidden, never deleted.
  */
+/* Keep Leptos date-strip geometry for its asynchronous 181-day rebase. */
 .flow-shell .scene[data-scene="today"].flow-weeknav-enabled>.today-heading{
- display:none!important
+ display:flex!important;position:absolute!important;left:14px!important;top:0!important;
+ z-index:-1!important;opacity:0!important;pointer-events:none!important;
+ width:calc(100% - 28px)!important;height:96px!important;min-height:96px!important;
+ overflow:hidden!important;clip-path:inset(100%)!important
 }
 .flow-shell .scene[data-scene="today"]>.flow-weeknav{
  --flow-week-line:color-mix(in srgb,var(--ink) 12%,transparent);
