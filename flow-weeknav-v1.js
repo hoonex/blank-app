@@ -262,6 +262,10 @@ function mount(){
     if(state.widget&&!state.widget.isConnected){state.widget=null;state.source=null}
     return;
   }
+  // Hidden native 181-day buttons must not enter keyboard/screen reader order.
+  // Programmatic .click() still triggers the verified Rust selection handler.
+  heading.inert=true;
+  heading.setAttribute('aria-hidden','true');
   if(state.widget?.isConnected&&state.source===source&&state.scene===scene){sync();return}
   state.sourceObserver?.disconnect();state.sourceObserver=null;
   state.scene=scene;state.source=source;
