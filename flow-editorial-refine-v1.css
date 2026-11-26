@@ -63,61 +63,16 @@
   outline-offset:-2px;
 }
 
-/* A compact opt-in action: no extra page card or second toolbar. */
-.flow-shell .scene[data-scene="today"] .flow-brief-open{
-  align-items:center;justify-content:center;
-  display:inline-flex;
-  flex:0 0 auto;
-  min-height:36px;
-  border-radius:var(--radius-control);
-  padding:8px 12px;
-  color:var(--ink);
-  background:var(--paper-low);
-  font-size:11px;font-weight:780;line-height:1.2;
-  transition:background-color .15s ease,transform .15s ease;
-}
-.flow-shell .scene[data-scene="today"] .flow-brief-open:hover{
-  background:color-mix(in srgb,var(--accent) 22%,var(--surface));
-}
-.flow-shell .scene[data-scene="today"] .flow-brief-open:active{transform:scale(.96)}
-.flow-shell .scene[data-scene="today"] .timetable-sheet:not(:has(.class-rows)) .flow-brief-open{display:none}
-/* Keep the original "과목 수정", "하루", "주간" controls clickable and visible. */
+/* Retain the small-screen timetable hierarchy, without the optional share UI. */
 @media(max-width:590px){
- .flow-shell .scene[data-scene="today"] .module-controls{gap:4px!important}
- .flow-shell .scene[data-scene="today"] .flow-brief-open{
-   min-height:34px;padding:7px 10px;font-size:11px
- }
+ .flow-shell .scene[data-scene="today"] .module-controls{gap:5px!important}
  .flow-shell .scene[data-scene="today"] .class-rows{gap:2px!important}
  .flow-shell .scene[data-scene="today"] .class-row{
-   min-height:49px!important;padding:7px 5px!important;grid-template-columns:32px minmax(0,1fr)!important
+   min-height:49px!important;padding:7px 5px!important;
+   grid-template-columns:32px minmax(0,1fr)!important
  }
  .flow-shell .scene[data-scene="today"] .class-row .class-period{
    width:27px;height:27px;min-width:27px;border-radius:9px
- }
-}
-@media(max-width:360px){
- .flow-shell .scene[data-scene="today"] .module-heading{
-   gap:5px!important
- }
- /* A stable two-row grid: absolute buttons collided with the native
-    day/week switch after a selected date changed the period status. */
- .flow-shell .scene[data-scene="today"] .module-heading-copy{min-width:0;flex:1 1 auto}
- .flow-shell .scene[data-scene="today"] .module-controls{
-   display:grid!important;flex:0 0 104px!important;width:104px!important;
-   grid-template-columns:minmax(0,1fr) auto!important;
-   align-content:center;align-items:center;
-   column-gap:4px!important;row-gap:4px!important;
- }
- .flow-shell .scene[data-scene="today"] .module-controls>.edit-timetable-trigger{
-   grid-column:1;grid-row:1;
-   padding-inline:8px!important;white-space:nowrap;min-width:0
- }
- .flow-shell .scene[data-scene="today"] .module-controls>.flow-brief-open{
-   position:static;grid-column:2;grid-row:1;
-   min-height:34px;padding:7px 9px;
- }
- .flow-shell .scene[data-scene="today"] .module-controls>.switch-track{
-   grid-column:1/-1;grid-row:2;justify-self:end;
  }
 }
 
@@ -177,68 +132,3 @@
   .flow-shell .scene[data-scene="school"] .flow-school-shortcut{padding:12px!important;min-height:104px;font-size:13px}
 }
 
-/* On-demand 'day sheet' uses the page's own matte material, not a new design system. */
-.flow-brief-dialog{
-  --flow-ref-stroke:color-mix(in srgb,var(--ink) 10%,transparent);
-  position:fixed;
-  inset:auto 0 0 0;
-  width:min(440px,calc(100% - 24px));max-width:none;
-  max-height:min(76dvh,740px);overflow:auto;
-  padding:0;margin:auto auto max(18px,env(safe-area-inset-bottom));
-  color:var(--ink);background:var(--surface);
-  border:1px solid var(--flow-ref-stroke);
-  border-radius:24px;
-  box-shadow:0 22px 70px rgba(5,10,5,.24);
-  font:inherit;
-  overscroll-behavior:contain;
-}
-.flow-brief-dialog::backdrop{background:rgba(13,17,13,.53);backdrop-filter:blur(4px)}
-.flow-brief-dialog .flow-brief-inner{padding:24px}
-.flow-brief-dialog .flow-brief-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.flow-brief-dialog .flow-brief-kicker{display:block;font-size:11px;font-weight:760;color:var(--muted);letter-spacing:.035em}
-.flow-brief-dialog h2{font-size:27px;line-height:1.12;letter-spacing:-.055em;margin:5px 0 4px}
-.flow-brief-dialog .flow-brief-school{font-size:12px;line-height:1.5;color:var(--muted);margin:0}
-.flow-brief-dialog .flow-brief-close{
- display:grid;place-items:center;flex:none;width:38px;height:38px;
- border-radius:999px;background:var(--paper-low);font-size:24px
-}
-.flow-brief-dialog .flow-brief-section{
- padding:20px 0 0;margin-top:20px;
- border-top:1px solid var(--flow-ref-stroke)
-}
-.flow-brief-dialog .flow-brief-section h3{
- display:flex;justify-content:space-between;gap:12px;
- font-size:14px;font-weight:810;margin:0 0 13px
-}
-.flow-brief-dialog .flow-brief-section h3 small{font-size:11px;font-weight:700;color:var(--muted)}
-.flow-brief-dialog .flow-brief-subjects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
-.flow-brief-dialog .flow-brief-subjects li{
- display:flex;align-items:center;gap:9px;min-width:0;
- padding:9px;background:var(--paper-low);border-radius:12px;
-}
-.flow-brief-dialog .flow-brief-subjects li small{font-size:11px;font-weight:750;color:var(--muted)}
-.flow-brief-dialog .flow-brief-subjects li strong{min-width:0;font-size:13px;font-weight:750;overflow-wrap:anywhere}
-.flow-brief-dialog .flow-brief-meals{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}
-.flow-brief-dialog .flow-brief-meals li{
- padding:7px 10px;background:var(--paper-low);border-radius:9px;
- font-size:12px;font-weight:690;line-height:1.4
-}
-.flow-brief-dialog .flow-brief-empty{font-size:13px;color:var(--muted);margin:0}
-.flow-brief-dialog .flow-brief-actions{display:flex;gap:8px;margin-top:22px}
-.flow-brief-dialog .flow-brief-actions button{flex:1;min-height:44px;padding:10px 14px;border-radius:12px;font-size:13px;font-weight:770;background:var(--paper-low)}
-.flow-brief-dialog .flow-brief-actions button:first-child{background:var(--night);color:var(--night-text)}
-.flow-brief-dialog .flow-brief-status{min-height:18px;margin:8px 0 0;color:var(--muted);font-size:12px}
-.flow-brief-dialog .flow-brief-disclaimer{color:var(--muted);font-size:11px;line-height:1.5;margin:12px 0 0}
-.flow-brief-dialog :is(button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(max-width:590px){
- .flow-brief-dialog{width:calc(100% - 20px);margin-bottom:calc(10px + env(safe-area-inset-bottom));border-radius:22px}
- .flow-brief-dialog .flow-brief-inner{padding:20px}
-}
-@media(prefers-reduced-motion:no-preference){
- .flow-brief-dialog[open]{animation:flow-brief-in .22s cubic-bezier(.22,1,.36,1) both}
- @keyframes flow-brief-in{from{opacity:.78;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-}
-@media(prefers-reduced-motion:reduce){
- .flow-brief-dialog[open]{animation:none!important}
- .flow-shell .flow-brief-open{transition:none!important}
-}
