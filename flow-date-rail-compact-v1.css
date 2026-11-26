@@ -244,3 +244,19 @@
     transition:none!important;
   }
 }
+
+/* Optical contrast audit: in Flow dark mode the inherited muted token may
+ * remain tuned for a light surface. Derive readable secondary text from the
+ * actual ink/surface pair and use brand accent for the current selection. */
+html[data-theme="dark"] .flow-shell .scene[data-scene="today"] .hero-weekday,
+html[data-theme="dark"] .flow-shell .scene[data-scene="today"] .day-strip button:not(.active):not(.real-today){
+  color:color-mix(in srgb,var(--ink) 66%,var(--surface))!important;
+}
+html[data-theme="dark"] .flow-shell .scene[data-scene="today"] .day-strip button.active{
+  background:var(--accent)!important;
+  color:#171917!important;
+  box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--ink) 35%,var(--accent));
+}
+html[data-theme="dark"] .flow-shell .scene[data-scene="today"] .day-strip button.active .day-today-label{
+  color:#171917!important;
+}
