@@ -14,9 +14,9 @@
 .flow-shell .scene[data-scene="today"]>.flow-weeknav{
  --flow-week-line:color-mix(in srgb,var(--ink) 12%,transparent);
  width:calc(100% - 28px);
- margin:6px auto 8px;
+ margin:5px auto 8px;
  box-sizing:border-box;
- padding:4px 0 6px;
+ padding:4px 0 7px;
  min-width:0;
  color:var(--ink);
  border-bottom:1px solid var(--flow-week-line);
@@ -25,20 +25,21 @@
 .flow-weeknav,.flow-weeknav *{box-sizing:border-box}
 .flow-weeknav-head{
  display:flex;align-items:center;justify-content:space-between;
- gap:8px;min-height:32px;margin-bottom:4px
+ gap:8px;min-height:44px;margin-bottom:0
 }
 .flow-weeknav-month{
  display:inline-flex;align-items:center;justify-content:flex-start;
- gap:8px;min-width:0;
+ gap:6px;min-width:0;
  font:inherit;font-size:19px;font-weight:850;letter-spacing:-.065em;
  padding:4px 2px!important;border:0;background:none!important;color:var(--ink);
  line-height:1.2;white-space:nowrap;
 }
+ .flow-weeknav-month-weekday{font-size:12px;color:var(--muted);font-weight:720;letter-spacing:-.03em}
 .flow-weeknav-month .flow-weeknav-chevron{
  color:var(--muted);font-size:15px;font-weight:700;
  transform:translateY(-2px);
 }
-.flow-weeknav-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex:none}
+.flow-weeknav-actions{display:flex;align-items:center;justify-content:flex-end;gap:3px;flex:none}
 .flow-weeknav-actions>button{
  display:grid;place-items:center;flex:none;
  border:0!important;color:var(--ink);
@@ -53,8 +54,16 @@
 .flow-weeknav-arrow:hover,.flow-weeknav-arrow:focus-visible{
  background:var(--paper-low)!important
 }
+ .flow-weeknav-expand{
+ min-width:38px;height:31px;padding:0 8px!important;
+ background:var(--paper-low)!important;color:var(--ink)!important;
+ border-radius:10px!important;font-size:11px;font-weight:790;
+}
+.flow-weeknav-expand[aria-expanded="true"]{
+ background:color-mix(in srgb,var(--accent) 19%,var(--surface))!important;
+}
 .flow-weeknav-today{
- min-width:46px;height:31px;padding:0 9px!important;
+ min-width:42px;height:31px;padding:0 8px!important;
  background:var(--paper-low)!important;
  border-radius:10px!important;
  font-size:12px;font-weight:800;
@@ -62,11 +71,15 @@
 .flow-weeknav-today[data-at-today="true"]{
  color:var(--muted);background:transparent!important;
 }
-.flow-weeknav-days{
- display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+ .flow-weeknav-days{
+ display:none;grid-template-columns:repeat(7,minmax(0,1fr));
  gap:3px;min-width:0;
  touch-action:pan-y pinch-zoom;
  -webkit-user-select:none;user-select:none;
+}
+ .flow-weeknav.is-expanded .flow-weeknav-days{
+ display:grid;margin-top:7px;padding-top:7px;
+ border-top:1px solid var(--flow-week-line);
 }
 .flow-weeknav-day{
  position:relative;display:flex;flex-direction:column;
@@ -122,26 +135,25 @@
 }
 @media(max-width:360px){
  .flow-shell .scene[data-scene="today"]>.flow-weeknav{margin:6px auto 8px;padding:3px 0 6px}
- .flow-weeknav-month{font-size:18px}
- .flow-weeknav-head{margin-bottom:3px}
+ .flow-weeknav-month{font-size:17px;gap:4px}
+ .flow-weeknav-head{margin-bottom:0}
  .flow-weeknav-actions{gap:2px}
  .flow-weeknav-arrow{width:29px;height:31px;font-size:25px}
- .flow-weeknav-today{min-width:41px;height:31px;padding:0 7px!important;font-size:11px}
+ .flow-weeknav-today{min-width:38px;height:31px;padding:0 6px!important;font-size:11px}
+ .flow-weeknav-expand{min-width:34px;padding:0 6px!important}
  .flow-weeknav-days{gap:1px}
  .flow-weeknav-day{min-height:52px;border-radius:11px!important}
  .flow-weeknav-day strong{font-size:18px}
 }
 @media(min-width:871px){
  .flow-shell .scene[data-scene="today"]>.flow-weeknav{
-   display:grid;grid-template-columns:minmax(250px,300px) minmax(0,1fr);
-   align-items:center;gap:clamp(18px,3vw,42px);
-   width:calc(100% - clamp(40px,8vw,112px));max-width:1500px;
-   min-height:92px;margin:0 auto 18px;padding:9px 0 13px;
+   display:block;width:calc(100% - clamp(40px,8vw,112px));max-width:1500px;
+   min-height:58px;margin:0 auto 17px;padding:6px 0 7px;
  }
- .flow-weeknav-head{margin:0}
- .flow-weeknav-month{font-size:25px}
- .flow-weeknav-days{gap:7px;max-width:750px;width:100%}
- .flow-weeknav-day{min-height:62px}
+ .flow-weeknav-head{min-height:45px;margin:0}
+ .flow-weeknav-month{font-size:23px}
+ .flow-weeknav.is-expanded .flow-weeknav-days{gap:7px;max-width:750px;width:100%;margin-left:auto;margin-right:auto}
+ .flow-weeknav-day{min-height:58px}
  .flow-weeknav-day strong{font-size:20px}
 }
 
@@ -229,6 +241,8 @@ html[data-theme="dark"] .flow-weeknav-day.is-selected .flow-weeknav-day-marker{b
  .flow-month-sheet{inset:0;width:min(420px,90vw);margin:auto;border-radius:23px}
 }
 @media(prefers-reduced-motion:no-preference){
+ .flow-weeknav.is-expanded .flow-weeknav-days{animation:flow-weeknav-expand .16s ease-out both}
+ @keyframes flow-weeknav-expand{from{opacity:.7;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
  .flow-month-sheet[open]{animation:flow-month-appear .2s cubic-bezier(.2,.8,.2,1) both}
  @keyframes flow-month-appear{
   from{opacity:.88;transform:translateY(9px)}
