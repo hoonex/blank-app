@@ -256,6 +256,29 @@ function createWidget(){
   const today=el('button','flow-weeknav-today','오늘');today.type='button';
   today.addEventListener('click',()=>void choose(TODAY));
   actions.append(prev,next,expand,today);head.append(month,actions);root.append(head);
+  // A short horizontal swipe across the collapsed title is one-day navigation.
+  // Expanded week strip retains its one-week swipe gesture below.
+  let headTouch=null;
+  head.addEventListener('pointerdown',e=>{
+    if(e.isPrimary&&(e.pointerType!=='mouse'||e.button===0)){
+      headTouch={id:e.pointerId,x:e.clientX,y:e.clientY};
+    }
+  },{passive:true});
+  head.addEventListener('pointerup',e=>{
+    if(!headTouch||headTouch.id!==e.pointerId)return;
+    const dx=e.clientX-headTouch.x,dy=e.clientY-headTouch.y;headTouch=null;
+    if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.3){
+      state.lastSwipe=performance.now();
+      if(e.cancelable)e.preventDefault();
+      navigateStep(dx<0?1:-1);
+    }
+  });
+  head.addEventListener('pointercancel',()=>{headTouch=null});
+  head.addEventListener('click',e=>{
+    if(e.isTrusted&&performance.now()-state.lastSwipe<500){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+  },true);
   const strip=el('div','flow-weeknav-days');strip.setAttribute('role','group');strip.setAttribute('aria-label','요일별 날짜');
   let touch=null;
   strip.addEventListener('pointerdown',e=>{if(e.isPrimary&&(e.pointerType!=='mouse'||e.button===0))touch={x:e.clientX,y:e.clientY,id:e.pointerId}},{passive:true});
