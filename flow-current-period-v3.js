@@ -56,16 +56,16 @@
     const past=periods.filter(p=>p.end<=current.minutes).map(p=>p.period);
     if(during)return {
       type:'live',number:during.period,
-      title:during.period+'교시 수업 중',
+      title:during.period+'교시 예상 시간',
       detail:Math.max(1,during.end-current.minutes)+'분 남음',
       times:toTime(during.start)+'–'+toTime(during.end),
       progress:Math.max(0,Math.min(1,(current.minutes-during.start)/(during.end-during.start))),
       past
     };
     if(next){
-      const lunch=periods[3]&&periods[4];
-      const isLunch=!!lunch&&current.minutes>=lunch.end && current.minutes<periods[4].start;
-      const label=isLunch?'점심시간':current.minutes<periods[0].start?'수업 시작 전':'쉬는 시간';
+      const lunch=periods.find(p=>p.period===4),afternoon=periods.find(p=>p.period===5);
+      const isLunch=!!lunch&&!!afternoon&&current.minutes>=lunch.end&&current.minutes<afternoon.start;
+      const label=isLunch?'점심시간 참고':current.minutes<periods[0].start?'수업 시작 전 참고':'다음 교시 참고';
       return {type:isLunch?'lunch':'break',number:0,
         title:label,detail:next.period+'교시 시작까지 '+(next.start-current.minutes)+'분',
         times:next.period+'교시 '+toTime(next.start)+' 시작',progress:0,past};
@@ -113,10 +113,11 @@
     const weekToday=[...scene.querySelectorAll('.timetable-sheet .week-grid .week-cell.today:not(.empty)')];
     const available=rows.length?rows.map(row=>Number(row.querySelector('.class-period')?.textContent)):
       weekToday.map(row=>Number(row.closest('.week-grid-row')?.querySelector('.week-period')?.textContent));
-    const maxPeriod=Math.max(0,...available.filter(Number.isInteger));
     const reference=type==='middle'?MIDDLE:HIGH;
-    const periods=reference.filter(period=>period.period<=maxPeriod);
-    const active=isToday&&type!=='unknown'&&periods.length>0&&current.weekday!=='Sat'&&current.weekday!=='Sun';
+    // Missing NEIS rows are unknown, not confirmed lessons. Never fall back
+    // to high-school hours for elementary or unclassified school profiles.
+    const periods=reference.filter(period=>available.includes(period.period));
+    const active=isToday&&(type==='middle'||type==='high')&&periods.length>0&&current.weekday!=='Sat'&&current.weekday!=='Sun';
     setClass(indicator,'flow-live-hidden',!active);
     if(!active){
       for(const row of [...rows,...weekRows]) {
@@ -142,8 +143,7 @@
     setAttribute(indicator,'data-phase',status.type);
     setAttribute(indicator,'data-school-type',type);
     setText(indicator.querySelector('.flow-live-period-title'),status.title);
-    const caution=type==='elementary'?'초등 별도 기준 미제공 · 참고 시간':
-      type==='middle'?'중학교 참고 시간':'고등학교 참고 시간';
+    const caution=type==='middle'?'중학교 참고 시간 · 학교별 타종 미확인':'고등학교 참고 시간 · 학교별 타종 미확인';
     setText(indicator.querySelector('.flow-live-period-summary'),
       status.detail+' · '+status.times+' · '+caution);
     const fill=indicator.querySelector('.flow-live-period-progress i');

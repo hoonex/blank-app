@@ -18,6 +18,8 @@
   --flow-motion-state:160ms; --flow-motion-layout:240ms; --flow-motion-enter:300ms;
   --flow-press-scale:.985; --flow-ease-out:cubic-bezier(.22,1,.36,1);
   --flow-target-size:44px;
+  --flow-space-1:4px; --flow-space-2:8px; --flow-space-3:12px;
+  --flow-space-4:16px; --flow-space-5:24px; --flow-space-6:32px;
   --ease:cubic-bezier(.22,1,.36,1);
   --snap:cubic-bezier(.76,0,.24,1);
   font-family:Inter,Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
@@ -302,11 +304,12 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .calendar-toolbar h2{font-size:clamp(24px,2.7vw,38px);font-weight:800;letter-spacing:-.07em;margin:0}
 .month-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
 .month-actions button{display:grid;place-items:center;min-width:var(--flow-target-size);height:var(--flow-target-size);padding:0 14px;
-  background:var(--paper-low);color:var(--ink);border-radius:999px;
+  background:var(--paper-low);color:var(--ink);border-radius:var(--flow-action-radius);
   font-size:17px;line-height:1;font-weight:730;
-  transition:background .18s,color .18s,scale .19s cubic-bezier(.2,.9,.25,1)}
+  transition:background var(--flow-motion-state),color var(--flow-motion-state),scale var(--flow-motion-state) var(--flow-ease-out)}
+.month-actions button.month-chevron{width:var(--flow-target-size);padding:0}
 .month-actions button.month-reset{font-size:12px;white-space:nowrap;min-width:72px}
-.month-actions button:active{scale:.92;background:var(--accent);color:#171917}
+.month-actions button:active{scale:var(--flow-press-scale);background:var(--accent);color:#171917}
 @media(hover:hover) and (pointer:fine){
  .month-actions button:hover{background:color-mix(in srgb,var(--accent) 23%,var(--paper-low));color:var(--ink)}
 }
@@ -373,13 +376,13 @@ html,body,button,a{-webkit-tap-highlight-color:transparent}
 .button-strong:hover{background:color-mix(in srgb,var(--accent) 85%,var(--surface))}
 .button-strong:active{transform:scale(var(--flow-press-scale))}
 .settings-sheet{padding-top:15px}
-.setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:105px;padding:20px 0;border-radius:var(--radius-item)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;min-height:105px;padding:20px 0}
 .setting-row>div{display:grid;gap:6px}
 .setting-row strong{font-size:22px;font-weight:760;letter-spacing:-.04em}
 .setting-row small{font-size:12px;color:var(--muted)}
 .setting-toggle{
   display:inline-flex;align-items:center;justify-content:center;flex:none;
-  background:var(--night);color:var(--night-text);border-radius:var(--radius-control);
+  background:var(--night);color:var(--night-text);border-radius:var(--flow-action-radius);
   padding:12px 20px;min-width:128px;font-size:12px;font-weight:740;
   transition:background var(--flow-motion-state),color var(--flow-motion-state),transform var(--flow-motion-state) var(--flow-ease-out)
 }
@@ -460,7 +463,6 @@ html[data-theme="dark"] .setting-toggle:hover{background:var(--accent);color:#17
  .brand-lockup{align-items:center;line-height:1.18;overflow:visible}
  .brand-lockup strong{line-height:1.15;padding-top:2px}
  .brand-edition{align-self:center}
- .month-actions .month-chevron{display:none}
  .rail-navigation,.global-meta{display:none}
  .brand-wrap{min-width:0}
  .brand-lockup strong{font-size:30px}
@@ -651,7 +653,7 @@ html[data-theme="dark"] .transit-caution{color:var(--muted)}
   user-select:text;-webkit-user-select:text;-webkit-touch-callout:default}
 .bus-search input::placeholder{color:var(--muted)}
 .bus-search:focus-within{outline:2px solid var(--accent);outline-offset:2px}
-.bus-search button,.bus-refresh{min-height:var(--flow-target-size);padding:8px 18px;border-radius:999px;
+.bus-search button,.bus-refresh{min-height:var(--flow-target-size);padding:8px 18px;border-radius:var(--flow-action-radius);
   background:var(--night);color:var(--night-text);font-weight:740;font-size:12px;
   white-space:nowrap;transition:scale .18s,background .18s}
 .bus-search button:active,.bus-refresh:active{scale:var(--flow-press-scale)}

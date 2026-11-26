@@ -50,9 +50,9 @@
    border-color:rgba(255,255,255,.23)!important;
    box-shadow:var(--flow-floating-shadow)!important;
  }
- html[data-theme="dark"] .mobile-bottom button:not(.active):not(.preview){color:#e4e5dc!important}
- html[data-theme="dark"] .mobile-bottom button.active,
- html[data-theme="dark"] .mobile-bottom button.preview{color:#171917!important}
+ html[data-theme="dark"] .mobile-bottom button:not(.flow-selected):not(.flow-preview){color:#e4e5dc!important}
+ html[data-theme="dark"] .mobile-bottom button.flow-selected,
+ html[data-theme="dark"] .mobile-bottom button.flow-preview{color:#171917!important}
  .calendar-layout>.flow-month-events{padding:23px 21px;border-radius:var(--flow-surface-radius)}
 }
 @media(max-width:590px){

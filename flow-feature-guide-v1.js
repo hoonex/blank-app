@@ -74,7 +74,8 @@
     overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
     overlay.setAttribute('aria-label','Flow School 사용 가이드');
     const head=node('header','flow-guide-head');
-    const dismiss=node('button','flow-guide-close','×');
+    const dismiss=node('button','flow-guide-close');
+    dismiss.append(window.FlowActionIcons.create('close'));
     dismiss.type='button';dismiss.setAttribute('aria-label','가이드 닫기');
     dismiss.addEventListener('click',close);
     const progress=node('div','flow-guide-progress');
@@ -122,7 +123,8 @@
     }
     const nearby=document.querySelector('.scene[data-scene="school"] .flow-nearby-heading');
     if(nearby&&!nearby.querySelector('.flow-guide-help')){
-      const button=node('button','flow-guide-help','?');
+      const button=node('button','flow-guide-help');
+      button.append(window.FlowActionIcons.create('help'));
       button.type='button';button.setAttribute('aria-label','버스 기능 도움말');
       button.addEventListener('click',()=>{open();draw(3);});
       nearby.append(button);

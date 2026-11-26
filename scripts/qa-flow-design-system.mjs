@@ -46,6 +46,13 @@ check('Clickable school tiles have action radius without fake elevation',()=>{
  assert.ok(s.includes('box-shadow:none'));
  assert.ok(s.includes('border-radius:var(--flow-action-radius)'));
 });
+check('School tiles resolve defined spacing and border tokens',()=>{
+ for(const token of ['--flow-space-2','--flow-space-3','--flow-space-4','--flow-space-5','--flow-surface-border']){
+  assert.ok(css.base.includes(token+':'),token+' undefined');
+ }
+ assert.doesNotMatch(css.editorial,/var\(--flow-ref-/,'Obsolete undefined design tokens');
+ hasToken(css.editorial,'.flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid','gap','flow-space-3');
+});
 check('Segment controls share geometry',()=>{
  hasToken(css.editorial,'.flow-shell .scene[data-scene="today"] .switch-track','border-radius','flow-segment-radius');
  hasToken(css.editorial,'.flow-shell .scene[data-scene="today"] .flow-meal-segment','border-radius','flow-segment-radius');

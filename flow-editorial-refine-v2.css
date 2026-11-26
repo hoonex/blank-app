@@ -407,24 +407,24 @@
 /* School: links already exist and are school-scoped. Make each destination
    legible as a specific utility, not four indistinguishable text rows. */
 .flow-shell .scene[data-scene="school"] .flow-school-shortcuts{
-  border:0!important;margin-top:var(--flow-ref-space-5)!important;
-  padding-top:var(--flow-ref-space-3)!important;
+  border:0!important;margin-top:var(--flow-space-5)!important;
+  padding-top:var(--flow-space-3)!important;
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcuts>h3{
-  margin-bottom:var(--flow-ref-space-3);
+  margin-bottom:var(--flow-space-3);
   font-size:17px;font-weight:800;
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{
-  gap:var(--flow-ref-space-3);
+  gap:var(--flow-space-3);
   grid-template-columns:repeat(2,minmax(0,1fr));
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut{
   position:relative;
   display:grid;grid-template-columns:1fr auto;align-content:center;
-  column-gap:var(--flow-ref-space-2);row-gap:var(--flow-ref-space-2);
+  column-gap:var(--flow-space-2);row-gap:var(--flow-space-2);
   min-height:86px;
-  padding:var(--flow-ref-space-4)!important;
-  border:1px solid var(--flow-ref-stroke)!important;
+  padding:var(--flow-space-4)!important;
+  border:1px solid var(--flow-surface-border)!important;
   border-radius:var(--flow-action-radius);
   background:var(--surface);
   box-shadow:none;
@@ -437,7 +437,7 @@
   display:block;grid-column:1/-1;
   font-size:11px;font-weight:780;line-height:1.2;
   font-variant-numeric:tabular-nums;
-  color:var(--flow-ref-text-soft);
+  color:var(--muted);
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(1)::before{content:"공식 정보"}
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut:nth-child(2)::before{content:"학습 · 과제"}
@@ -456,6 +456,6 @@
 }
 .flow-shell .scene[data-scene="school"] .flow-school-shortcut:active{transform:scale(var(--flow-press-scale))}
 @media(max-width:360px){
-  .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{gap:var(--flow-ref-space-2)}
+  .flow-shell .scene[data-scene="school"] .flow-school-shortcut-grid{gap:var(--flow-space-2)}
   .flow-shell .scene[data-scene="school"] .flow-school-shortcut{padding:12px!important;min-height:86px;font-size:13px}
 }

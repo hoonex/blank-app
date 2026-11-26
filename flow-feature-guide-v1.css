@@ -10,10 +10,13 @@ html.flow-guide-active{overflow:hidden!important}
   display:flex;flex-direction:column;flex:none;gap:16px
 }
 .flow-guide-close{
-  align-self:flex-end;color:#f4f5ef;font-size:39px;line-height:1;
-  font-weight:300;min-height:42px;min-width:46px;
-  display:grid;place-items:center
+  align-self:flex-end;color:#f4f5ef;min-height:var(--flow-target-size,44px);min-width:var(--flow-target-size,44px);
+  display:grid;place-items:center;border-radius:var(--flow-action-radius,14px);
+  transition:background var(--flow-motion-state,160ms),transform var(--flow-motion-state,160ms)
 }
+.flow-guide-close:hover{background:#383e37}
+.flow-guide-close:active{transform:scale(var(--flow-press-scale,.985))}
+.flow-guide-close:focus-visible,.flow-guide-help:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .flow-guide-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .flow-guide-progress i{
   display:block;height:3px;border-radius:3px;background:#424642;
@@ -79,17 +82,18 @@ html.flow-guide-active{overflow:hidden!important}
 .flow-guide-controls{margin-top:auto;padding-top:14px;display:flex;align-items:center;gap:14px}
 .flow-guide-prev{
   flex:none;padding:12px;font-size:14px;font-weight:740;
-  color:#c2c7be;border-radius:20px;
+  color:#c2c7be;border-radius:var(--flow-action-radius,14px);min-height:44px;
 }
 .flow-guide-prev[hidden]{display:none!important}
 .flow-guide-next{
-  flex:1;min-height:58px;border-radius:999px;background:#e0917d;color:#171917;
+  flex:1;min-height:58px;border-radius:var(--flow-action-radius,14px);background:#e0917d;color:#171917;
   font-size:17px;font-weight:790;letter-spacing:-.025em;
 }
-.flow-guide-next:active{transform:scale(.992)}
+.flow-guide-next:active,.flow-guide-prev:active,.flow-guide-help:active{transform:scale(var(--flow-press-scale,.985))}
+.flow-guide-next:focus-visible,.flow-guide-prev:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .flow-guide-help{
-  width:29px;height:29px;min-width:29px;border-radius:50%;
-  background:var(--surface);color:var(--ink);font-size:14px;font-weight:800;
+  width:44px;height:44px;min-width:44px;border-radius:var(--flow-action-radius,14px);
+  background:var(--surface);color:var(--ink);
   display:grid;place-items:center
 }
 @media(max-width:590px){

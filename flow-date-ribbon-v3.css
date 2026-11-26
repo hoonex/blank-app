@@ -58,7 +58,7 @@
 .flow-shell .scene[data-scene="today"] .flow-date-today{
   min-height:44px;padding:8px 10px;
   border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
-  border-radius:999px;background:var(--surface);
+  border-radius:var(--flow-action-radius);background:var(--surface);
   color:var(--ink);font-size:11px;font-weight:770;
   white-space:nowrap;cursor:pointer;
 }
@@ -67,7 +67,7 @@
   display:grid;place-items:center;flex:none;
   width:44px;height:44px;padding:0;
   color:var(--ink);background:var(--paper-low);
-  border:0;border-radius:50%;
+  border:0;border-radius:var(--flow-action-radius);
   cursor:pointer;
 }
 .flow-shell .scene[data-scene="today"] .flow-date-step:disabled{opacity:.28;cursor:default}
@@ -114,7 +114,7 @@
   border-radius:50%;background:var(--accent);
 }
 .flow-shell .scene[data-scene="today"] .flow-date-day:disabled{opacity:.2;cursor:default}
-.flow-shell .scene[data-scene="today"] .flow-date-day:active:not(:disabled){transform:scale(.96)}
+.flow-shell .scene[data-scene="today"] .flow-date-day:active:not(:disabled){transform:scale(var(--flow-press-scale))}
 .flow-shell .scene[data-scene="today"] .flow-date-month-button:focus-visible,
 .flow-shell .scene[data-scene="today"] .flow-date-today:focus-visible,
 .flow-shell .scene[data-scene="today"] .flow-date-step:focus-visible,
@@ -164,8 +164,8 @@
   margin:0 auto;padding:0;
   color:var(--ink);background:var(--surface);
   border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
-  border-radius:23px;
-  box-shadow:0 24px 80px rgba(0,0,0,.22);
+  border-radius:var(--flow-surface-radius);
+  box-shadow:var(--flow-floating-shadow);
   font:inherit;overflow:auto;
   overscroll-behavior:contain;
 }
@@ -180,7 +180,7 @@
 }
 .flow-date-picker-arrow{
   display:grid;place-items:center;width:44px;height:44px;padding:0;
-  background:var(--paper-low);color:var(--ink);border:0;border-radius:50%;
+  background:var(--paper-low);color:var(--ink);border:0;border-radius:var(--flow-action-radius);
 }
 .flow-date-picker-arrow:disabled{opacity:.27}
 .flow-date-picker-weekdays,
