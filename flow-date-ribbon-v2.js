@@ -70,7 +70,7 @@
     const showingSelected=s.selected>=s.weekStart&&s.selected<s.weekStart+count;
     const monthTarget=showingSelected?s.dates[s.selected]:dateAt(s,s.weekStart+3);
     s.monthButton.querySelector('.flow-date-month-name').textContent=monthTitle(monthTarget);
-    s.todayButton.hidden=s.selected===s.realIndex;
+    s.todayButton.hidden=s.selected===s.realIndex&&showingSelected;
     s.prevButton.disabled=s.weekStart+6<7;
     s.nextButton.disabled=s.weekStart+7>maxIdx(s);
     if(s.renderedWeek===s.weekStart&&s.renderedCount===count){
@@ -119,7 +119,7 @@
     dialog.append(content);
     document.body.append(dialog);
     s.dialog=dialog;
-    const current=s.dates[s.selected];
+    const current=s.selected>=s.weekStart&&s.selected<s.weekStart+visibleCount()?s.dates[s.selected]:dateAt(s,s.weekStart+3);
     let yy=current.getFullYear(),mm=current.getMonth();
     const first=s.dates[0],last=s.dates.at(-1);
     function monthAllowed(y,m){const d=new Date(y,m,1);return d<=new Date(last.getFullYear(),last.getMonth(),1)&&d>=new Date(first.getFullYear(),first.getMonth(),1)}
@@ -211,6 +211,14 @@
   function sync(){
     if(!state)return;
     if(!state.heading.isConnected||!state.strip.isConnected){stop();return}
+    if(!state.buttons[0]?.isConnected){
+      const fresh=[...state.strip.querySelectorAll('button')];
+      const ri=fresh.findIndex(b=>b.classList.contains('real-today')||b.getAttribute('aria-label')?.includes('오늘'));
+      if(ri<0||fresh.length<7){stop();return}
+      state.buttons=fresh;state.realIndex=ri;
+      state.dates=fresh.map((_,i)=>dayAdd(state.realDate,i-ri));
+      state.renderedWeek=null;
+    }
     const current=state.buttons.findIndex(b=>b.classList.contains('active'));
     if(current>=0&&current!==state.selected){
       state.selected=current;state.weekStart=mondayIdx(state,current);
@@ -246,7 +254,13 @@
     requestAnimationFrame(()=>{queued=false;mount()});
   }
   document.addEventListener('click',e=>{
-    if(e.target.closest('.mobile-bottom,.rail-navigation'))setTimeout(queueMount,60);
+    if(e.target.closest('.mobile-bottom,.rail-navigation')){
+      setTimeout(queueMount,60);
+    }else if(!state||!state.heading?.isConnected){
+      // First-time school setup can complete well after the initial Rust boot.
+      setTimeout(queueMount,100);
+      setTimeout(queueMount,650);
+    }
   },{capture:true,passive:true});
   addEventListener('TrunkApplicationStarted',()=>setTimeout(queueMount,80));
   addEventListener('pageshow',queueMount);
