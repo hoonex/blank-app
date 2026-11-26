@@ -131,8 +131,8 @@
  .flow-shell .scene[data-scene="today"]>.flow-weeknav{
    display:grid;grid-template-columns:minmax(250px,300px) minmax(0,1fr);
    align-items:center;gap:clamp(18px,3vw,42px);
-   width:100%;min-height:92px;
-   margin:0 0 18px;padding:9px 0 13px;
+   width:calc(100% - clamp(40px,8vw,112px));max-width:1500px;
+   min-height:92px;margin:0 auto 18px;padding:9px 0 13px;
  }
  .flow-weeknav-head{margin:0}
  .flow-weeknav-month{font-size:25px}
