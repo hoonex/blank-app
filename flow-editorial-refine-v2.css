@@ -269,7 +269,7 @@
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-day{
   display:grid;place-items:center;
-  min-height:39px!important;height:39px!important;
+  min-height:44px!important;height:44px!important;
   padding:4px!important;
   border-radius:10px!important;
   background:var(--paper-low);
@@ -288,7 +288,7 @@
   display:none!important;
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="week"] .flow-meal-spacer{
-  min-height:39px!important;
+  min-height:44px!important;
 }
 .flow-shell .scene[data-scene="today"] .flow-meal-calendar[data-view="month"]{
   row-gap:5px!important;
