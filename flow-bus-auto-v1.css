@@ -1,33 +1,47 @@
-/* Bus map is a primary school-tab surface, not a secondary toggle. */
+/* Arrival information is primary; the native map is optional. */
 .scene[data-scene="school"] .bus-map-toggle{
-  display:none!important;
+  min-height:var(--flow-target-size);
+  border-radius:var(--flow-action-radius);
+  padding:8px 12px;
 }
 .scene[data-scene="school"] .bus-selected-actions .bus-refresh{
-  min-height:39px;
+  min-height:var(--flow-target-size);
   border:1px solid rgba(255,255,255,.17);
 }
+.scene[data-scene="school"] .bus-selected{display:flex;flex-direction:column}
 .scene[data-scene="school"] .bus-map{
   display:grid;
+  order:1;
   margin-top:16px;
   gap:9px;
 }
 .scene[data-scene="school"] .bus-map-canvas{
-  height:clamp(275px,35vw,390px);
-  border-radius:19px;
+  height:clamp(220px,23vw,300px);
+  border-radius:var(--flow-action-radius);
   background:#ecebe4;
 }
 .scene[data-scene="school"] .bus-map-heading small{
   line-height:1.45;
   color:#afb6b0;
 }
+.scene[data-scene="school"] .flow-map-dismiss{
+  min-height:var(--flow-target-size);padding:0 10px;
+  border-radius:var(--flow-action-radius);background:rgba(255,255,255,.12);
+  color:var(--night-text);font-size:12px;font-weight:740;
+}
+.scene[data-scene="school"] .flow-map-dismiss:active{transform:scale(var(--flow-press-scale))}
+.scene[data-scene="school"] .bus-map-heading{scroll-margin:16px}
 @media(max-width:590px){
   .scene[data-scene="school"] .bus-map-canvas{
-    height:305px;
-    border-radius:17px;
+    height:220px;
   }
-  .scene[data-scene="school"] .bus-selected-actions{width:auto}
+  .scene[data-scene="school"] .bus-selected-actions{width:100%}
   .scene[data-scene="school"] .bus-selected-actions .bus-refresh{
-    flex:0 0 auto;
+    flex:1;
     min-width:85px;
   }
+}
+@media(min-width:871px){
+  .flow-shell[data-flow-section="bus"] .scene[data-scene="school"] .bus-panel{max-width:1000px}
+  .scene[data-scene="school"] .bus-arrivals{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 }

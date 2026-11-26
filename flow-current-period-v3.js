@@ -79,11 +79,11 @@
   const getDateMode=()=>scene?.querySelector('.hero-tag')?.textContent.trim()==='오늘의 학교생활';
   function mount(){
     const found=document.querySelector('.scene[data-scene="today"]');
-    if(found===scene)return;
+    if(found===scene&&indicator?.isConnected)return;
     observer?.disconnect();observer=null;scene=found;
     indicator=null;heading=null;
     if(!scene)return;
-    heading=scene.querySelector('.timetable-sheet .module-heading-copy');
+    heading=scene.querySelector('.timetable-sheet .module-heading');
     if(!heading)return;
     indicator=document.createElement('div');
     indicator.className='flow-live-period';
@@ -92,10 +92,12 @@
     const dot=document.createElement('span');dot.className='flow-live-period-dot';
     const title=document.createElement('strong');title.className='flow-live-period-title';
     const summary=document.createElement('span');summary.className='flow-live-period-summary';
+    const next=document.createElement('span');next.className='flow-live-period-next';
+    const caution=document.createElement('span');caution.className='flow-live-period-caution';
     const line=document.createElement('span');line.className='flow-live-period-progress';
     const fill=document.createElement('i');line.append(fill);
-    indicator.append(dot,title,summary,line);
-    heading.append(indicator);
+    indicator.append(dot,title,summary,next,caution,line);
+    heading.after(indicator);
     observer=new MutationObserver(schedule);
     observer.observe(scene,{childList:true,subtree:true,characterData:true});
     render();
@@ -117,11 +119,17 @@
     // Missing NEIS rows are unknown, not confirmed lessons. Never fall back
     // to high-school hours for elementary or unclassified school profiles.
     const periods=reference.filter(period=>available.includes(period.period));
+    const subjectFor=period=>{
+      const daily=rows.find(r=>Number(r.querySelector('.class-period')?.textContent)===period);
+      const weekly=weekToday.find(r=>Number(r.closest('.week-grid-row')?.querySelector('.week-period')?.textContent)===period);
+      return daily?.querySelector('strong')?.textContent.trim()||weekly?.textContent.trim()||'';
+    };
     const active=isToday&&(type==='middle'||type==='high')&&periods.length>0&&current.weekday!=='Sat'&&current.weekday!=='Sun';
     setClass(indicator,'flow-live-hidden',!active);
     if(!active){
-      for(const row of [...rows,...weekRows]) {
+      for(const row of [...rows,...weekRows,...weekToday]) {
         setClass(row,'flow-period-active',false);setClass(row,'flow-period-done',false);
+        setClass(row,'flow-period-next',false);
         row.style.removeProperty('--flow-progress');
         row.removeAttribute('aria-current');
       }
@@ -131,9 +139,10 @@
     // After dismissal no redundant end-of-day banner or faded lesson rows.
     if(status.type==='done'){
       setClass(indicator,'flow-live-hidden',true);
-      for(const row of [...rows,...weekRows]){
+      for(const row of [...rows,...weekRows,...weekToday]){
         setClass(row,'flow-period-active',false);
         setClass(row,'flow-period-done',false);
+        setClass(row,'flow-period-next',false);
         row.style.removeProperty('--flow-progress');
         row.removeAttribute('aria-current');
       }
@@ -142,17 +151,28 @@
     setClass(indicator,'flow-live-hidden',false);
     setAttribute(indicator,'data-phase',status.type);
     setAttribute(indicator,'data-school-type',type);
-    setText(indicator.querySelector('.flow-live-period-title'),status.title);
-    const caution=type==='middle'?'중학교 참고 시간 · 학교별 타종 미확인':'고등학교 참고 시간 · 학교별 타종 미확인';
-    setText(indicator.querySelector('.flow-live-period-summary'),
-      status.detail+' · '+status.times+' · '+caution);
+    const upcoming=periods.find(p=>current.minutes<p.start);
+    const currentSubject=status.number?subjectFor(status.number):'';
+    const nextSubject=upcoming?subjectFor(upcoming.period):'';
+    setText(indicator.querySelector('.flow-live-period-title'),status.type==='live'?
+      status.number+'교시'+(currentSubject?' · '+currentSubject:''):'다음 '+(upcoming?upcoming.period+'교시':'수업')+(nextSubject?' · '+nextSubject:''));
+    setText(indicator.querySelector('.flow-live-period-summary'),status.type==='live'?status.detail:status.times);
+    setText(indicator.querySelector('.flow-live-period-next'),status.type==='live'&&upcoming?'다음 '+upcoming.period+'교시'+(nextSubject?' · '+nextSubject:''):status.type!=='live'?status.detail:'');
+    setText(indicator.querySelector('.flow-live-period-caution'),'예상 시간 · 학교별 타종 미확인');
     const fill=indicator.querySelector('.flow-live-period-progress i');
     if(fill&&fill.style.transform!=='scaleX('+status.progress.toFixed(3)+')')
       fill.style.transform='scaleX('+status.progress.toFixed(3)+')';
-    [...rows,...weekRows].forEach(row=>{
-      const period=Number(row.querySelector('.class-period,.week-period')?.textContent);
+    // A weekly grid contains multiple dates per row. Highlight only today's
+    // actual lesson cell, never the entire week at that period.
+    for(const row of weekRows){
+      setClass(row,'flow-period-active',false);setClass(row,'flow-period-done',false);setClass(row,'flow-period-next',false);
+      row.removeAttribute('aria-current');
+    }
+    [...rows,...weekToday].forEach(row=>{
+      const period=Number(row.querySelector('.class-period')?.textContent||row.closest('.week-grid-row')?.querySelector('.week-period')?.textContent);
       const live=status.type==='live'&&status.number===period;
       const done=status.past.includes(period);
+      setClass(row,'flow-period-next',!live&&upcoming?.period===period);
       setClass(row,'flow-period-active',live);
       setClass(row,'flow-period-done',done&&!live);
       if(live)setAttribute(row,'aria-current','step');

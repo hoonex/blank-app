@@ -8,7 +8,7 @@ const root=new URL('../',import.meta.url);
 const out=resolve(process.env.FLOW_QA_DIR||'qa-flow-browser-output',live?'school-bus-live':'school-bus-candidate');
 mkdirSync(out,{recursive:true});
 const origin='https://blank-app.agfvrd.workers.dev';
-const names=['index.html','flow-icons-handdrawn-v1.js','flow-bus-nearby-v2.js','flow-bus-nearby-v1.css','flow-onboarding-v2.js','flow-ux-quick-actions-v1.js','flow-ux-compact-v2.css','flow-school-shortcuts-v1.js','flow-school-shortcuts-v1.css'];
+const names=['index.html','flow-icons-handdrawn-v1.js','flow-bus-nearby-v2.js','flow-bus-nearby-v1.css','flow-onboarding-v2.js','flow-ux-quick-actions-v1.js','flow-ux-compact-v2.css','flow-school-shortcuts-v1.js','flow-school-shortcuts-v1.css','flow-bus-auto-v1.css','flow-bus-auto-v2.js','flow-current-period-v3.js','flow-editorial-refine-v2.css'];
 const files=new Map(names.map(n=>[n,readFileSync(new URL(n,root))]));
 const browser=await chromium.launch({headless:true,executablePath:process.env.FLOW_CHROME||undefined,args:['--no-sandbox']});
 const results=[];

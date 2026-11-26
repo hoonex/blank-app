@@ -163,14 +163,32 @@
 }
 .flow-shell .scene[data-scene="today"] .flow-live-period:not(.flow-live-hidden){
   display:grid!important;
-  grid-template-columns:8px auto 1fr;
-  align-items:center;column-gap:7px;row-gap:5px;
-  padding:9px 11px!important;margin:9px 0 2px!important;
-  border-radius:10px!important;
+  grid-template-columns:8px minmax(0,1fr) auto;
+  align-items:center;column-gap:8px;row-gap:5px;
+  padding:12px!important;margin:0 0 12px!important;
+  border-radius:var(--flow-action-radius)!important;
   background:color-mix(in srgb,var(--accent) 11%,var(--surface));
 }
+.flow-shell .scene[data-scene="today"] .flow-live-period-title{
+  white-space:normal;overflow-wrap:anywhere;font-size:14px;
+}
 .flow-shell .scene[data-scene="today"] .flow-live-period-summary{
-  min-width:0;overflow-wrap:anywhere;
+  min-width:0;white-space:nowrap;font-size:11px;font-weight:720;color:var(--ink);
+}
+.flow-live-period-next{grid-column:2/-1;font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.flow-live-period-next:empty{display:none}
+.flow-live-period-caution{grid-column:2/-1;font-size:10px;color:var(--muted)}
+.flow-live-period[data-phase="break"] .flow-live-period-progress,
+.flow-live-period[data-phase="lunch"] .flow-live-period-progress{display:none}
+.flow-shell .scene[data-scene="today"] .class-row.flow-period-next .class-period{
+  border-color:var(--accent);color:var(--ink)!important;
+}
+.flow-shell .scene[data-scene="today"] .week-cell.flow-period-active{
+  background:color-mix(in srgb,var(--accent) 25%,var(--surface));
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+.flow-shell .scene[data-scene="today"] .week-cell.flow-period-next{
+  box-shadow:inset 0 0 0 1px var(--accent);
 }
 .flow-shell .scene[data-scene="today"] .flow-live-period-progress{
   grid-column:1/-1;height:2px!important;
@@ -298,7 +316,7 @@
   .flow-shell .scene[data-scene="today"] .today-layout{
     width:calc(100% - 64px);
     grid-template-columns:minmax(0,1.35fr) minmax(340px,.8fr);
-    gap:34px;
+    gap:28px;
     padding:23px 0 80px;
   }
   .flow-shell .scene[data-scene="today"] .module-heading{margin-bottom:19px}

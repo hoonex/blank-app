@@ -62,9 +62,10 @@ verify('Updated assets are cache-busted exactly once',()=>{
 verify('Guide and desktop controls use shared vectors, with cache-busted assets',()=>{
   assert.ok(iconSource.includes("upgradeCalendarActions()"));
   assert.ok(iconSource.includes("label==='←'?'chevron-left':label==='→'?'chevron-right'"));
-  for(const name of ['flow-feature-guide-v1.js','flow-feature-guide-v1.css','flow-editorial-refine-v2.css','flow-meal-single-v2.css']){
+  for(const name of ['flow-feature-guide-v1.js','flow-feature-guide-v1.css','flow-meal-single-v2.css']){
     assert.ok(html.includes(name+'?v=vector-2'),name+' stale URL');
   }
+  assert.ok(html.includes('flow-editorial-refine-v2.css?v=vector-3'));
 });
 console.log('PASS '+checks.length+' action icon contract groups');
 for(const label of checks)console.log('✓ '+label);
